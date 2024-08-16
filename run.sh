@@ -1,0 +1,1 @@
+./build/inOneWeekend > image.ppm
