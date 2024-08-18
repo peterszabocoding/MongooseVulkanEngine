@@ -4,23 +4,40 @@
 # See README.md for guidance.
 #---------------------------------------------------------------------------------------------------
 
-cmake_minimum_required ( VERSION 3.1.0...3.27.0 )
+cmake_minimum_required ( VERSION 3.30.2 )
+
 
 project ( RTWeekend LANGUAGES CXX )
+
 
 # Set to C++11
 set ( CMAKE_CXX_STANDARD          11 )
 set ( CMAKE_CXX_STANDARD_REQUIRED ON )
 set ( CMAKE_CXX_EXTENSIONS        OFF )
 
+
+message(STATUS "Fetching GLFW...")
+
+include(FetchContent)
+FetchContent_Declare(
+  glfw
+  GIT_REPOSITORY https://github.com/glfw/glfw.git
+  GIT_TAG 3.4
+)
+FetchContent_MakeAvailable(glfw)
+
 # Source
 
 set ( EXTERNAL
   #src/external/stb_image.h
+
 )
 
 set ( SOURCE_ONE_WEEKEND
   ./src/main.cpp
+  ./src/application/window.cpp
+  ./src/application/application.cpp
+  ./src/renderer/renderer.cpp
 )
 
 include_directories(src)
@@ -59,3 +76,5 @@ endif()
 
 # Executables
 add_executable(inOneWeekend      ${EXTERNAL} ${SOURCE_ONE_WEEKEND})
+target_link_libraries (inOneWeekend PRIVATE glfw)
+target_link_libraries (inOneWeekend PRIVATE "-framework OpenGL")
