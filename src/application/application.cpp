@@ -4,7 +4,12 @@
 
 Application::Application()
 {
-    window = new Window(WindowParams(), [&]() {
+    WindowParams params;
+    params.title = WINDOW_TITLE;
+    params.width = WINDOW_WIDTH;
+    params.height = WINDOW_HEIGHT;
+
+    window = new Window(params, [&]() {
         running = false;
         window->Terminate();
     });
@@ -21,7 +26,7 @@ Application::~Application()
 void Application::OnCreate()
 {
     running = true;
-    Renderer::Render(800, 800);
+    Renderer::Render(WINDOW_WIDTH, WINDOW_HEIGHT);
 }
 
 void Application::OnUpdate()

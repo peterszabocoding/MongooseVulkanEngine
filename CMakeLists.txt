@@ -1,17 +1,15 @@
 #---------------------------------------------------------------------------------------------------
 # CMake Build Configuration for the Ray Tracing Weekend Series
-#
-# See README.md for guidance.
 #---------------------------------------------------------------------------------------------------
 
 cmake_minimum_required ( VERSION 3.30.2 )
 
 
-project ( RTWeekend LANGUAGES CXX )
+project ( RTWeekend LANGUAGES C CXX )
 
 
-# Set to C++11
-set ( CMAKE_CXX_STANDARD          11 )
+# Set to C++17
+set ( CMAKE_CXX_STANDARD          17 )
 set ( CMAKE_CXX_STANDARD_REQUIRED ON )
 set ( CMAKE_CXX_EXTENSIONS        OFF )
 
@@ -30,7 +28,16 @@ FetchContent_MakeAvailable(glfw)
 
 set ( EXTERNAL
   #src/external/stb_image.h
+  ./external/glad/src/glad.c
 
+  ./external/imgui/imgui.cpp
+  ./external/imgui/imgui_demo.cpp
+  ./external/imgui/imgui_draw.cpp
+  ./external/imgui/imgui_tables.cpp
+  ./external/imgui/imgui_widgets.cpp
+
+  ./external/imgui/backends/imgui_impl_glfw.cpp
+  ./external/imgui/backends/imgui_impl_opengl3.cpp
 )
 
 set ( SOURCE_ONE_WEEKEND
@@ -40,6 +47,8 @@ set ( SOURCE_ONE_WEEKEND
   ./src/renderer/renderer.cpp
 )
 
+include_directories(external/glad/include)
+include_directories(external/imgui)
 include_directories(src)
 
 # Specific compiler flags below. We're not going to add options for all possible compilers, but if
@@ -75,6 +84,10 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 # Executables
-add_executable(inOneWeekend      ${EXTERNAL} ${SOURCE_ONE_WEEKEND})
+add_executable(inOneWeekend ${EXTERNAL} ${SOURCE_ONE_WEEKEND})
 target_link_libraries (inOneWeekend PRIVATE glfw)
-target_link_libraries (inOneWeekend PRIVATE "-framework OpenGL")
+
+# Add OpenGL on Apple platforms
+if(APPLE)
+  target_link_libraries (inOneWeekend PRIVATE "-framework OpenGL")
+endif(APPLE)
