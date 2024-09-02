@@ -1,14 +1,11 @@
 
 #include "application/application.h"
+#include <iostream>
 
-int main() {
+int main( int argc, char* argv[] )
+{
+    Raytracing::Application* application = Raytracing::Application::Create();
+    application->Run();
 
-    Application* application = new Application();
-
-    while(application->isRunning())
-    {
-        application->OnUpdate();
-    }
-
-    delete application;
+    return 0;
 }

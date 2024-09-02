@@ -1,27 +1,42 @@
+#pragma once
+
 #include <functional>
 
 class GLFWwindow;
 
-typedef std::function<void()> OnWindowCloseCallback;
+namespace Raytracing {
 
-struct WindowParams {
-    unsigned int width = 800;
-    unsigned int height = 800;
-    const char* title = "Default Title";
-};
+    typedef std::function<void()> OnWindowCloseCallback;
 
-class Window {
+    struct WindowParams {
+        unsigned int width = 800;
+        unsigned int height = 800;
+        const char* title = "Default Title";
+    };
 
-    public:
+    class Window {
 
-        Window(WindowParams params = WindowParams(), OnWindowCloseCallback callback = []{});
-        ~Window() = default;
+        public:
+            Window(const WindowParams params) 
+            {
+                windowParams = params;
+            }
+            virtual ~Window() = default;
 
-        void OnUpdate();
-        void Terminate();
+            virtual void OnCreate() {}
+            virtual void OnUpdate() {}
 
-    private:
-        GLFWwindow* glfwWindow;
-        OnWindowCloseCallback windowCloseCallback;
+            virtual void SetOnWindowCloseCallback(OnWindowCloseCallback callback)
+            {
+                windowCloseCallback = callback;
+            } 
 
-};
+            static Window* Create(const WindowParams params = WindowParams());
+
+        protected:
+            WindowParams windowParams;
+            OnWindowCloseCallback windowCloseCallback;
+
+    };
+
+}

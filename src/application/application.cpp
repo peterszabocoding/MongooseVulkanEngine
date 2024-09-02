@@ -1,44 +1,25 @@
 #include "application.h"
-#include "renderer/renderer.h"
-#include <iostream>
 
-Application::Application()
-{
-    WindowParams params;
-    params.title = WINDOW_TITLE;
-    params.width = WINDOW_WIDTH;
-    params.height = WINDOW_HEIGHT;
+#ifdef PLATFORM_MACOS
+#include "platform/macos/macosApplication.h"
+#endif
 
-    window = new Window(params, [&]() {
-        running = false;
-        window->Terminate();
-    });
-    OnCreate();
-}
+namespace Raytracing {
+    Application* Application::Create()
+    {
 
-Application::~Application()
-{
-    OnDestroy();
-    delete window;
+        return new MacOSApplication();
 
-}
 
-void Application::OnCreate()
-{
-    running = true;
-    Renderer::Render(WINDOW_WIDTH, WINDOW_HEIGHT);
-}
+        /*
+        #ifdef PLATFORM_MACOS
+        return new MacOSApplication();
+        #endif
 
-void Application::OnUpdate()
-{
-    window->OnUpdate();
-}
+        #ifndef PLATFORM_MACOS
+        return nullptr;
+        #endif
 
-void Application::OnDestroy()
-{
-}
-
-bool Application::isRunning()
-{
-    return running;
+        */
+    }
 }

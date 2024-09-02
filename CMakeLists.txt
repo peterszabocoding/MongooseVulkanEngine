@@ -44,7 +44,9 @@ set ( SOURCE_ONE_WEEKEND
   ./src/main.cpp
   ./src/application/window.cpp
   ./src/application/application.cpp
-  ./src/renderer/renderer.cpp
+  ./src/platform/macos/macosApplication.cpp
+  ./src/platform/macos/macosWindow.cpp
+  ./src/renderer/metalRenderer.cpp
 )
 
 include_directories(external/glad/include)
@@ -89,5 +91,13 @@ target_link_libraries (inOneWeekend PRIVATE glfw)
 
 # Add OpenGL on Apple platforms
 if(APPLE)
+  # Library definition
+  include_directories(external/metal-cmake/metal-cpp)
+  include_directories(external/metal-cmake/metal-cpp-extensions)
+  add_subdirectory(external/metal-cmake) 
+
+  add_compile_definitions(PLATFORM_MACOS)
+  
+  target_link_libraries (inOneWeekend PRIVATE METAL_CPP)
   target_link_libraries (inOneWeekend PRIVATE "-framework OpenGL")
 endif(APPLE)

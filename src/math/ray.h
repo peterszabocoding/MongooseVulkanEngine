@@ -2,20 +2,24 @@
 
 #include "vec3.h"
 
-class ray {
-  public:
-    ray() {}
+namespace Raytracing {
 
-    ray(const point3& origin, const vec3& direction) : o(origin), dir(direction) {}
+  class ray {
+    public:
+      ray() {}
 
-    const point3& origin() const  { return o; }
-    const vec3& direction() const { return dir; }
+      ray(const point3& origin, const vec3& direction) : o(origin), dir(direction) {}
 
-    point3 at(double t) const {
-        return o + t*dir;
-    }
+      const point3& origin() const  { return o; }
+      const vec3& direction() const { return dir; }
 
-  private:
-    point3 o;
-    vec3 dir;
-};
+      point3 at(double t) const {
+          return o + t*dir;
+      }
+
+    private:
+      point3 o;
+      vec3 dir;
+  };
+
+}

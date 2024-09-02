@@ -1,21 +1,17 @@
-#include "window.h"
+#pragma once
 
 static constexpr char* WINDOW_TITLE = "Raytracing in one weekend";
 static constexpr int WINDOW_WIDTH = 800;
 static constexpr int WINDOW_HEIGHT = 800;
 
-class Application {
-    public:
-        Application();
-        ~Application();
+namespace Raytracing {
+    class Application {
+        public:
+            virtual ~Application() {}
 
-        void OnCreate();
-        void OnUpdate();
-        void OnDestroy();
+            virtual void OnCreate() {}
+            virtual void Run() {}
 
-        bool isRunning();
-
-    private:
-        Window* window;
-        bool running = false;
-};
+            static Application* Create();
+    };
+}
