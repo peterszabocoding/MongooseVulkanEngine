@@ -23,7 +23,7 @@ namespace Raytracing {
 
         _pMtkView = MTK::View::alloc()->init( frame, _pDevice );
         _pMtkView->setColorPixelFormat( MTL::PixelFormat::PixelFormatBGRA8Unorm_sRGB );
-        _pMtkView->setClearColor( MTL::ClearColor::Make( 0.0, 0.0, 1.0, 1.0 ) );
+        _pMtkView->setClearColor( MTL::ClearColor::Make( 0.0, 0.0, 0.0, 1.0 ) );
         _pMtkView->setDelegate( _pViewDelegate );
 
         _pWindow->setContentView( _pMtkView );
@@ -44,7 +44,7 @@ namespace Raytracing {
 
     void MacOSWindow::OnUpdate()
     {
-        renderer->draw(_pViewDelegate->getView());
+        renderer->Draw(_pViewDelegate->getView());
     }
 
 }

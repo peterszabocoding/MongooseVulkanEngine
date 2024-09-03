@@ -42,10 +42,15 @@ set ( EXTERNAL
 
 set ( SOURCE_ONE_WEEKEND
   ./src/main.cpp
+
   ./src/application/window.cpp
   ./src/application/application.cpp
+  
   ./src/platform/macos/macosApplication.cpp
   ./src/platform/macos/macosWindow.cpp
+
+  ./src/renderer/shader.cpp
+  ./src/renderer/metalShader.cpp
   ./src/renderer/metalRenderer.cpp
 )
 
