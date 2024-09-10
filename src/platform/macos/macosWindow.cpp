@@ -1,11 +1,15 @@
 #include "macosWindow.h"
 
+#include <iostream>
+#include <stdio.h>
+
 namespace Raytracing {
 
     MacOSWindow::MacOSWindow(const WindowParams params): Window(params)
     {
         // Setup application window
         CGRect frame = (CGRect){ {100.0, 100.0}, {static_cast<CGFloat>(params.width), static_cast<CGFloat>(params.height)} };
+
         _pWindow = NS::Window::alloc()->init(
             frame,
             NS::WindowStyleMaskClosable | NS::WindowStyleMaskTitled,
@@ -30,6 +34,7 @@ namespace Raytracing {
 
         renderer = new MetalRenderer();
         renderer->SetMTLDevice(_pDevice);
+        renderer->SetResolution(400, 400);
     }
 
     MacOSWindow::~MacOSWindow()
@@ -44,6 +49,7 @@ namespace Raytracing {
 
     void MacOSWindow::OnUpdate()
     {
+        renderer->Render();
         renderer->Draw(_pViewDelegate->getView());
     }
 

@@ -2,7 +2,6 @@
 #include <iostream>
 
 #include "math/color.h"
-#include "math/vec3.h"
 
 #define NS_PRIVATE_IMPLEMENTATION
 #define MTL_PRIVATE_IMPLEMENTATION
@@ -12,7 +11,9 @@
 #include <AppKit/AppKit.hpp>
 #include <MetalKit/MetalKit.hpp>
 
-#include <simd/simd.h>
+#include <ctime> 
+
+#include "util/timer.h"
 
 namespace Raytracing {
 
@@ -24,26 +25,47 @@ namespace Raytracing {
     {
         _pCommandQueue->release();
         _pDevice->release();
+        if(image) delete[] image;
     }
 
-    void MetalRenderer::Render(unsigned int image_width, unsigned int image_height)
+    void MetalRenderer::SetResolution(unsigned long image_width, unsigned long image_height)
     {
+        renderWidth = image_width;
+        renderHeight = image_height;
+
+        image = new simd::uint1[renderWidth * renderHeight];
+    }
+
+    void MetalRenderer::Render()
+    {
+        Timer timer;
+        if (renderWidth == 0 || renderHeight == 0) return;
+
         // Render
-        std::cout << "P3\n" << image_width << ' ' << image_height << "\n255\n";
+        for (int j = 0; j < renderHeight; j++) {
+            for (int i = 0; i < renderWidth; i++) {
+                vec3 pixelColor(
+                    double(i) / (renderWidth-1), 
+                    double(j) / (renderHeight-1), 
+                    0.0);
 
-        for (int j = 0; j < image_height; j++) {
-            std::clog << "\rScanlines remaining: " << (image_height - j) << ' ' << std::flush;
+                unsigned int pixel = i + j * renderWidth;
+                
+                // Translate the [0,1] component values to the byte range [0,255].
+                uint8_t rbyte = uint8_t(255.999 * pixelColor.x());
+                uint8_t gbyte = uint8_t(255.999 * pixelColor.y());
+                uint8_t bbyte = uint8_t(255.999 * pixelColor.z());
 
-            for (int i = 0; i < image_width; i++) {
-                color pixelColor(
-                    double(i) / (image_width-1), 
-                    double(j) / (image_height-1), 
-                    1.0);
-                write_color(std::cout, pixelColor);
+                image[pixel] = (255 << 24) | (rbyte << 16) | (gbyte << 8) | (bbyte);
             }
         }
 
-        std::clog << "\rDone.                 \n";
+        MTL::Region region = {
+            0, 0, 0,                         // MTLOrigin
+            renderWidth, renderHeight, 1     // MTLSize
+        };
+
+        _pTexture->replaceRegion(region, 0, image, 4 * renderWidth);
     }
 
     void MetalRenderer::SetMTLDevice(MTL::Device *device)
@@ -65,9 +87,9 @@ namespace Raytracing {
         MTL::RenderCommandEncoder* pEnc = pCmd->renderCommandEncoder( pRpd );
 
         pEnc->setRenderPipelineState( shader->GetRenderPipelineState() );
-        pEnc->setVertexBuffer( _pVertexPositionsBuffer, 0, 0 );
-        pEnc->setVertexBuffer( _pVertexColorsBuffer, 0, 1 );
-        //pEnc->drawPrimitives( MTL::PrimitiveType::PrimitiveTypeTriangle, NS::UInteger(0), NS::UInteger(3) );
+        pEnc->setVertexBuffer( _pVertexBuffer, 0, 0 );
+
+        pEnc->setFragmentTexture(_pTexture, 0);
 
         pEnc->drawIndexedPrimitives(
             MTL::PrimitiveTypeTriangleStrip, 
@@ -88,20 +110,12 @@ namespace Raytracing {
         const size_t NumVertices = 4;
         const size_t Indices = 6;
 
-        simd::float3 positions[NumVertices] =
+        MetalVertex vertices[NumVertices] =
         {
-            { -1.0f, -1.0f, 0.0f },
-            { -1.0f, 1.0f, 0.0f },
-            { 1.0f,  1.0f, 0.0f },
-            { 1.0f,  -1.0f, 0.0f },
-        };
-
-        simd::float3 colors[NumVertices] =
-        {
-            {  0.0,     0.0f,   0.0f },
-            {  1.0f,    0.0f,   0.0f },
-            {  1.0f,    1.0f,   0.0f },
-            {  0.0f,    1.0f,   0.0f }
+            { { -1.0f, -1.0f, 0.0f }, { 0.0,  0.0f } },
+            { { -1.0f, 1.0f,  0.0f }, { 0.0f, 1.0f } },
+            { { 1.0f,  1.0f,  0.0f }, { 1.0f, 1.0f } },
+            { { 1.0f,  -1.0f, 0.0f }, { 1.0f, 0.0f } }
         };
 
         simd::int8 indices[Indices] = 
@@ -112,19 +126,25 @@ namespace Raytracing {
 
         const size_t positionsDataSize = NumVertices * sizeof( simd::float3 );
         const size_t colorDataSize = NumVertices * sizeof( simd::float3 );
+
+        const size_t vertexDataSize = NumVertices * sizeof(MetalVertex);
         const size_t indicesDataSize = Indices * sizeof(simd::int8);
 
-        _pVertexPositionsBuffer = _pDevice->newBuffer( positionsDataSize, MTL::ResourceStorageModeManaged );
-        _pVertexColorsBuffer = _pDevice->newBuffer( colorDataSize, MTL::ResourceStorageModeManaged );
+        _pVertexBuffer = _pDevice->newBuffer(vertexDataSize, MTL::ResourceStorageModeManaged);
         _pIndexBuffer = _pDevice->newBuffer(indicesDataSize, MTL::ResourceStorageModeManaged);
 
-        memcpy( _pVertexPositionsBuffer->contents(), positions, positionsDataSize );
-        memcpy( _pVertexColorsBuffer->contents(), colors, colorDataSize );
+        memcpy( _pVertexBuffer->contents(), vertices, vertexDataSize);
         memcpy( _pIndexBuffer->contents(), indices, indicesDataSize);
 
-        _pVertexPositionsBuffer->didModifyRange( NS::Range::Make( 0, _pVertexPositionsBuffer->length() ) );
-        _pVertexColorsBuffer->didModifyRange( NS::Range::Make( 0, _pVertexColorsBuffer->length() ) );
+        _pVertexBuffer->didModifyRange( NS::Range::Make( 0, _pVertexBuffer->length() ) );
         _pIndexBuffer->didModifyRange( NS::Range::Make( 0, _pIndexBuffer->length() ) );
+
+        MTL::TextureDescriptor* textureDesc = MTL::TextureDescriptor::alloc()->init();
+        textureDesc->setPixelFormat(MTL::PixelFormat::PixelFormatBGRA8Unorm);
+        textureDesc->setWidth(400);
+        textureDesc->setHeight(400);
+
+        _pTexture = _pDevice->newTexture(textureDesc);
     }
 
 }

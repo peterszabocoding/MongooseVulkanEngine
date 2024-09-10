@@ -32,8 +32,8 @@ namespace Raytracing {
         pApp->setActivationPolicy( NS::ActivationPolicy::ActivationPolicyRegular );
 
         WindowParams params;
-        params.width = 400;
-        params.height = 400;
+        params.width = 600;
+        params.height = 600;
         params.title = "Raytracing in one weekend";
         window = new MacOSWindow(params);
     }
