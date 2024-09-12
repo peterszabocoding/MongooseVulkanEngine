@@ -51,6 +51,7 @@ set ( SOURCE_ONE_WEEKEND
 
   ./src/renderer/shader.cpp
   ./src/renderer/metalShader.cpp
+  ./src/renderer/renderer.cpp
   ./src/renderer/metalRenderer.cpp
 )
 

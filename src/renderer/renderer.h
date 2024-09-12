@@ -14,8 +14,16 @@ namespace Raytracing {
 
         public:
             virtual ~Renderer() {};
+            
+            virtual void Render();
+            virtual void SetResolution(unsigned long image_width, unsigned long image_height);
 
-            virtual void Render() = 0;
-            virtual void SetResolution(unsigned long image_width, unsigned long image_height) = 0;
+        protected:
+            virtual void ProcessPixel(unsigned int pixelCount, vec3 pixelColor) = 0;
+            virtual void OnRenderFinished() = 0;
+
+        protected:
+            unsigned long renderWidth = 0, renderHeight = 0;
+
     };
 }

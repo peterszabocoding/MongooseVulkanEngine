@@ -19,23 +19,21 @@ namespace Raytracing {
 
     class MetalRenderer: public Renderer {
         public:
-
             MetalRenderer();
             virtual ~MetalRenderer();
-
-            virtual void Render() override;
             virtual void SetResolution(unsigned long image_width, unsigned long image_height) override;
-            
 
             void SetMTLDevice(MTL::Device* device);
             void Draw( MTK::View* pView );
+
+        protected:
+            virtual void ProcessPixel(unsigned int pixelCount, vec3 pixelColor) override;
+            virtual void OnRenderFinished() override;
 
         private:
             void buildBuffers();
 
         private:
-            unsigned long renderWidth = 0, renderHeight = 0;
-
             simd::uint1* image;
 
             MTL::Device* _pDevice;
@@ -50,5 +48,6 @@ namespace Raytracing {
             MTL::Buffer* _pIndexBuffer;
 
             MTL::Texture* _pTexture;
+            MTL::Region region;
     };
 }

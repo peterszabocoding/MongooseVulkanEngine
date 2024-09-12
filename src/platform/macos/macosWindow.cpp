@@ -8,7 +8,7 @@ namespace Raytracing {
     MacOSWindow::MacOSWindow(const WindowParams params): Window(params)
     {
         // Setup application window
-        CGRect frame = (CGRect){ {100.0, 100.0}, {static_cast<CGFloat>(params.width), static_cast<CGFloat>(params.height)} };
+        CGRect frame = (CGRect){ {0.0, 0.0}, {static_cast<CGFloat>(params.width), static_cast<CGFloat>(params.height)} };
 
         _pWindow = NS::Window::alloc()->init(
             frame,

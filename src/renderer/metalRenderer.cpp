@@ -1,8 +1,6 @@
 #include "metalRenderer.h"
 #include <iostream>
 
-#include "math/color.h"
-
 #define NS_PRIVATE_IMPLEMENTATION
 #define MTL_PRIVATE_IMPLEMENTATION
 #define MTK_PRIVATE_IMPLEMENTATION
@@ -10,10 +8,6 @@
 #include <Metal/Metal.hpp>
 #include <AppKit/AppKit.hpp>
 #include <MetalKit/MetalKit.hpp>
-
-#include <ctime> 
-
-#include "util/timer.h"
 
 namespace Raytracing {
 
@@ -28,43 +22,28 @@ namespace Raytracing {
         if(image) delete[] image;
     }
 
-    void MetalRenderer::SetResolution(unsigned long image_width, unsigned long image_height)
+    void MetalRenderer::ProcessPixel(unsigned int pixelCount, vec3 pixelColor)
     {
-        renderWidth = image_width;
-        renderHeight = image_height;
+        // Translate the [0,1] component values to the byte range [0,255].
+        uint8_t rbyte = uint8_t(255.999 * pixelColor.x());
+        uint8_t gbyte = uint8_t(255.999 * pixelColor.y());
+        uint8_t bbyte = uint8_t(255.999 * pixelColor.z());
 
-        image = new simd::uint1[renderWidth * renderHeight];
+        image[pixelCount] = (255 << 24) | (rbyte << 16) | (gbyte << 8) | (bbyte);
     }
 
-    void MetalRenderer::Render()
+    void MetalRenderer::SetResolution(unsigned long image_width, unsigned long image_height)
     {
-        Timer timer;
-        if (renderWidth == 0 || renderHeight == 0) return;
-
-        // Render
-        for (int j = 0; j < renderHeight; j++) {
-            for (int i = 0; i < renderWidth; i++) {
-                vec3 pixelColor(
-                    double(i) / (renderWidth-1), 
-                    double(j) / (renderHeight-1), 
-                    0.0);
-
-                unsigned int pixel = i + j * renderWidth;
-                
-                // Translate the [0,1] component values to the byte range [0,255].
-                uint8_t rbyte = uint8_t(255.999 * pixelColor.x());
-                uint8_t gbyte = uint8_t(255.999 * pixelColor.y());
-                uint8_t bbyte = uint8_t(255.999 * pixelColor.z());
-
-                image[pixel] = (255 << 24) | (rbyte << 16) | (gbyte << 8) | (bbyte);
-            }
-        }
-
-        MTL::Region region = {
+        Renderer::SetResolution(image_width, image_height);
+        image = new simd::uint1[renderWidth * renderHeight];
+        region = {
             0, 0, 0,                         // MTLOrigin
             renderWidth, renderHeight, 1     // MTLSize
         };
+    }
 
+    void MetalRenderer::OnRenderFinished()
+    {
         _pTexture->replaceRegion(region, 0, image, 4 * renderWidth);
     }
 
@@ -74,7 +53,6 @@ namespace Raytracing {
         _pCommandQueue = _pDevice->newCommandQueue();
 
         shader = new MetalShader(_pDevice, "shader/shader.metal");
-
         buildBuffers();
     }
 
