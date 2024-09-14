@@ -7,7 +7,6 @@ cmake_minimum_required ( VERSION 3.30.2 )
 
 project ( RTWeekend LANGUAGES C CXX )
 
-
 # Set to C++17
 set ( CMAKE_CXX_STANDARD          17 )
 set ( CMAKE_CXX_STANDARD_REQUIRED ON )
@@ -22,22 +21,29 @@ FetchContent_Declare(
   GIT_REPOSITORY https://github.com/glfw/glfw.git
   GIT_TAG 3.4
 )
+FetchContent_Declare(
+  glm
+  GIT_REPOSITORY https://github.com/g-truc/glm
+  GIT_TAG 1.0.1
+)
+
 FetchContent_MakeAvailable(glfw)
+FetchContent_MakeAvailable(glm)
 
 # Source
 
 set ( EXTERNAL
   #src/external/stb_image.h
-  ./external/glad/src/glad.c
+  #./external/glad/src/glad.c
 
-  ./external/imgui/imgui.cpp
-  ./external/imgui/imgui_demo.cpp
-  ./external/imgui/imgui_draw.cpp
-  ./external/imgui/imgui_tables.cpp
-  ./external/imgui/imgui_widgets.cpp
+  #./external/imgui/imgui.cpp
+  #./external/imgui/imgui_demo.cpp
+  #./external/imgui/imgui_draw.cpp
+  #./external/imgui/imgui_tables.cpp
+  #./external/imgui/imgui_widgets.cpp
 
-  ./external/imgui/backends/imgui_impl_glfw.cpp
-  ./external/imgui/backends/imgui_impl_opengl3.cpp
+  #./external/imgui/backends/imgui_impl_glfw.cpp
+  #./external/imgui/backends/imgui_impl_opengl3.cpp
 )
 
 set ( SOURCE_ONE_WEEKEND
@@ -50,9 +56,10 @@ set ( SOURCE_ONE_WEEKEND
   ./src/platform/macos/macosWindow.cpp
 
   ./src/renderer/shader.cpp
-  ./src/renderer/metalShader.cpp
   ./src/renderer/renderer.cpp
-  ./src/renderer/metalRenderer.cpp
+  ./src/renderer/camera.cpp
+  ./src/renderer/metal/metalShader.cpp
+  ./src/renderer/metal/metalRenderer.cpp
 )
 
 include_directories(external/glad/include)
@@ -93,7 +100,8 @@ endif()
 
 # Executables
 add_executable(inOneWeekend ${EXTERNAL} ${SOURCE_ONE_WEEKEND})
-target_link_libraries (inOneWeekend PRIVATE glfw)
+# target_link_libraries (inOneWeekend PRIVATE glfw)
+# target_link_libraries (inOneWeekend PRIVATE glm)
 
 # Add OpenGL on Apple platforms
 if(APPLE)
@@ -105,5 +113,5 @@ if(APPLE)
   add_compile_definitions(PLATFORM_MACOS)
   
   target_link_libraries (inOneWeekend PRIVATE METAL_CPP)
-  target_link_libraries (inOneWeekend PRIVATE "-framework OpenGL")
+  # target_link_libraries (inOneWeekend PRIVATE "-framework OpenGL")
 endif(APPLE)

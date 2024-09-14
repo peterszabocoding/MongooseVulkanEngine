@@ -9,8 +9,9 @@ namespace Raytracing {
 
         public:
 
-            Timer()
+            Timer(const char* timerLabel)
             {
+                label = timerLabel;
                 startPoint = std::chrono::high_resolution_clock::now();
             }
 
@@ -29,10 +30,11 @@ namespace Raytracing {
                 auto duration = end - start;
                 double ms = duration * 0.001;
 
-                std::clog << duration << " us (" << ms << " ms)" << std::endl;
+                std::clog << label << " | " << duration << " us (" << ms << " ms)" << std::endl;
             }
 
         private:
+            const char* label;
             std::chrono::time_point<std::chrono::high_resolution_clock> startPoint;
     };
 

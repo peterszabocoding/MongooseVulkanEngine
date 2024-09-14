@@ -1,14 +1,11 @@
 #pragma once
 
-#include "renderer.h"
-#include "math/vec3.h"
-
 #include <Metal/Metal.hpp>
 #include <MetalKit/MetalKit.hpp>
-
-#include "renderer/metalShader.h"
-
 #include <simd/simd.h>
+
+#include "metalShader.h"
+#include "renderer/renderer.h"
 
 namespace Raytracing {
 
@@ -21,17 +18,19 @@ namespace Raytracing {
         public:
             MetalRenderer();
             virtual ~MetalRenderer();
-            virtual void SetResolution(unsigned long image_width, unsigned long image_height) override;
 
             void SetMTLDevice(MTL::Device* device);
             void Draw( MTK::View* pView );
 
         protected:
             virtual void ProcessPixel(unsigned int pixelCount, vec3 pixelColor) override;
-            virtual void OnRenderFinished() override;
+
+            virtual void OnRenderBegin(const Camera& camera) override;
+            virtual void OnRenderFinished(const Camera& camera) override;
 
         private:
             void buildBuffers();
+            void createTexture(unsigned int width, unsigned int height);
 
         private:
             simd::uint1* image;

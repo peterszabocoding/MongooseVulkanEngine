@@ -4,17 +4,17 @@
 
 namespace Raytracing {
 
-  class ray {
+  class Ray {
     public:
-      ray() {}
+      Ray() {}
 
-      ray(const point3& origin, const vec3& direction) : o(origin), dir(direction) {}
+      Ray(const point3& origin, const vec3& direction) : o(origin), dir(direction) {}
 
       const point3& origin() const  { return o; }
       const vec3& direction() const { return dir; }
 
       point3 at(double t) const {
-          return o + t*dir;
+          return o + t * dir;
       }
 
     private:

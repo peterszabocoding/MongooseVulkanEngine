@@ -1,7 +1,7 @@
 #pragma once
 
 #include "application/application.h"
-#include "renderer/metalRenderer.h"
+#include "renderer/metal/metalRenderer.h"
 
 #define NS_PRIVATE_IMPLEMENTATION
 #define MTL_PRIVATE_IMPLEMENTATION

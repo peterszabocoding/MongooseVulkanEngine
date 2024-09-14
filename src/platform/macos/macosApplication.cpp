@@ -1,5 +1,4 @@
 #include "macosApplication.h"
-#include "renderer/metalRenderer.h"
 #include "macosWindow.h"
 
 #include <iostream>

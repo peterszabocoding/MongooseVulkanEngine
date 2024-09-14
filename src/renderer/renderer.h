@@ -1,6 +1,9 @@
 #pragma once
 
 #include "math/vec3.h"
+#include "math/ray.h"
+
+#include "camera.h"
 
 namespace Raytracing {
 
@@ -14,16 +17,17 @@ namespace Raytracing {
 
         public:
             virtual ~Renderer() {};
-            
-            virtual void Render();
-            virtual void SetResolution(unsigned long image_width, unsigned long image_height);
+
+            virtual void Render(const Camera& camera);
 
         protected:
             virtual void ProcessPixel(unsigned int pixelCount, vec3 pixelColor) = 0;
-            virtual void OnRenderFinished() = 0;
+            virtual void OnRenderBegin(const Camera& camera) = 0;
+            virtual void OnRenderFinished(const Camera& camera) = 0;
 
-        protected:
-            unsigned long renderWidth = 0, renderHeight = 0;
+        private:
+            vec3 RayColor(const Ray& r);
+            double HitSphere(const point3& center, double radius, const Ray& r);
 
     };
 }

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "application/window.h"
-#include "renderer/metalRenderer.h"
+#include "renderer/metal/metalRenderer.h"
 
 #include <Metal/Metal.hpp>
 #include <AppKit/AppKit.hpp>
@@ -41,7 +41,8 @@ namespace Raytracing {
             MTL::Device* _pDevice;
             MTKViewDelegate* _pViewDelegate = nullptr;
 
-            MetalRenderer* renderer;
+            MetalRenderer renderer;
+            Camera camera;
     };
 
 }

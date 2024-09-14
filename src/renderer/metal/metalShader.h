@@ -1,6 +1,6 @@
 #pragma once
 
-#include "shader.h"
+#include "renderer/shader.h"
 
 #include <Metal/Metal.hpp>
 #include <MetalKit/MetalKit.hpp>

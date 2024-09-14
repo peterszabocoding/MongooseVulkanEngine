@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <iostream>
+#include "util/timer.h"
 
 namespace Raytracing {
 
@@ -96,7 +97,7 @@ namespace Raytracing {
                     u.e[0] * v.e[1] - u.e[1] * v.e[0]);
     }
 
-    inline vec3 unit_vector(const vec3& v) {
+    inline vec3 normalize(const vec3& v) {
         return v / v.length();
     }
 

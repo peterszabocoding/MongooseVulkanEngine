@@ -7,11 +7,6 @@
 namespace Raytracing {
     Application* Application::Create()
     {
-
-        return new MacOSApplication();
-
-
-        /*
         #ifdef PLATFORM_MACOS
         return new MacOSApplication();
         #endif
@@ -19,7 +14,5 @@ namespace Raytracing {
         #ifndef PLATFORM_MACOS
         return nullptr;
         #endif
-
-        */
     }
 }

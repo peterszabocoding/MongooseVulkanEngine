@@ -32,9 +32,8 @@ namespace Raytracing {
 
         _pWindow->setContentView( _pMtkView );
 
-        renderer = new MetalRenderer();
-        renderer->SetMTLDevice(_pDevice);
-        renderer->SetResolution(400, 400);
+        camera.SetResolution(params.width, params.height);
+        renderer.SetMTLDevice(_pDevice);
     }
 
     MacOSWindow::~MacOSWindow()
@@ -44,13 +43,12 @@ namespace Raytracing {
         _pDevice->release();
 
         delete _pViewDelegate;
-        delete renderer;
     }
 
     void MacOSWindow::OnUpdate()
     {
-        renderer->Render();
-        renderer->Draw(_pViewDelegate->getView());
+        renderer.Render(camera);
+        renderer.Draw(_pViewDelegate->getView());
     }
 
 }

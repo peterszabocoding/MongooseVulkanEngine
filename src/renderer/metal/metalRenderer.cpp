@@ -32,19 +32,22 @@ namespace Raytracing {
         image[pixelCount] = (255 << 24) | (rbyte << 16) | (gbyte << 8) | (bbyte);
     }
 
-    void MetalRenderer::SetResolution(unsigned long image_width, unsigned long image_height)
+    void MetalRenderer::OnRenderBegin(const Camera &camera)
     {
-        Renderer::SetResolution(image_width, image_height);
-        image = new simd::uint1[renderWidth * renderHeight];
+        delete[] image;
+        image = new simd::uint1[camera.Width() * camera.Height()];
+
+        if(!_pTexture) createTexture(camera.Width(), camera.Height());
+
         region = {
             0, 0, 0,                         // MTLOrigin
-            renderWidth, renderHeight, 1     // MTLSize
+            camera.Width() , camera.Height(), 1     // MTLSize
         };
     }
 
-    void MetalRenderer::OnRenderFinished()
+    void MetalRenderer::OnRenderFinished(const Camera& camera)
     {
-        _pTexture->replaceRegion(region, 0, image, 4 * renderWidth);
+        _pTexture->replaceRegion(region, 0, image, 4 * camera.Width());
     }
 
     void MetalRenderer::SetMTLDevice(MTL::Device *device)
@@ -116,13 +119,15 @@ namespace Raytracing {
 
         _pVertexBuffer->didModifyRange( NS::Range::Make( 0, _pVertexBuffer->length() ) );
         _pIndexBuffer->didModifyRange( NS::Range::Make( 0, _pIndexBuffer->length() ) );
+    }
 
+    void MetalRenderer::createTexture(unsigned int width, unsigned int height)
+    {
         MTL::TextureDescriptor* textureDesc = MTL::TextureDescriptor::alloc()->init();
         textureDesc->setPixelFormat(MTL::PixelFormat::PixelFormatBGRA8Unorm);
-        textureDesc->setWidth(400);
-        textureDesc->setHeight(400);
+        textureDesc->setWidth(width);
+        textureDesc->setHeight(height);
 
         _pTexture = _pDevice->newTexture(textureDesc);
     }
-
 }
