@@ -22,7 +22,7 @@ namespace Raytracing {
             const vec3 Direction() const { return direction; }
 
         private:
-            double focalLength = 0.75;
+            double focalLength = 1.0;
             double aspectRatio = 0.0;
 
             unsigned int viewportWidth = 1;

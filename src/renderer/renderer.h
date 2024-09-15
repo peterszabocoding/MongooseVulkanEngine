@@ -1,9 +1,12 @@
 #pragma once
 
+#include <vector>
+
 #include "math/vec3.h"
 #include "math/ray.h"
 
 #include "camera.h"
+#include "math/hitable.h"
 
 namespace Raytracing {
 
@@ -17,8 +20,7 @@ namespace Raytracing {
 
         public:
             virtual ~Renderer() {};
-
-            virtual void Render(const Camera& camera);
+            virtual void Render(const Camera& camera, const std::vector<Hitable*>& scene);
 
         protected:
             virtual void ProcessPixel(unsigned int pixelCount, vec3 pixelColor) = 0;
@@ -26,8 +28,8 @@ namespace Raytracing {
             virtual void OnRenderFinished(const Camera& camera) = 0;
 
         private:
-            vec3 RayColor(const Ray& r);
-            double HitSphere(const point3& center, double radius, const Ray& r);
+            vec3 GetSkyColor(const Ray& r);
+            vec3 RayColor(const Ray& r, vec3 N);
 
     };
 }

@@ -5,7 +5,7 @@
 
 namespace Raytracing
 {
-    void Renderer::Render(const Camera& camera)
+    void Renderer::Render(const Camera& camera, const std::vector<Hitable*>& scene)
     {
         Timer timer("Render");
         if (camera.Width() == 0 || camera.Height() == 0) return;
@@ -35,7 +35,17 @@ namespace Raytracing
             for (int x = 0; x < camera.Width(); x++) {
                 vec3 pixel_center = pixel00_loc + (x * pixel_delta_u) + (y * pixel_delta_v);
                 vec3 ray_direction = pixel_center - camera.Position();
-                vec3 pixelColor = RayColor(Ray(camera.Position(), ray_direction));
+                Ray ray = Ray(camera.Position(), ray_direction);
+
+                vec3 pixelColor = GetSkyColor(ray);
+                for(auto hitable : scene)
+                {
+                    HitRecord hitRecord;
+                    bool wasHit = hitable->Hit(ray, 0.01, 100.0, hitRecord);
+                    if(!wasHit) continue;
+
+                    pixelColor = RayColor(ray, hitRecord.normal);
+                }
 
                 unsigned int pixelCount = x + y * camera.Width();
                 ProcessPixel(pixelCount, pixelColor);
@@ -45,31 +55,15 @@ namespace Raytracing
         OnRenderFinished(camera);
     }
 
-    vec3 Renderer::RayColor(const Ray& r) {
-        vec3 sphereCenter = point3(0, 0, -1);     
-        if (double t = HitSphere(sphereCenter, 0.5, r) > 0)
-        {
-            vec3 N = normalize(r.at(t) - sphereCenter);
-            return 0.5 * vec3(N.x() + 1, N.y() + 1, N.z() + 1);
-        }
+    vec3 Renderer::RayColor(const Ray& r, vec3 N) {
+        return 0.5 * vec3(N.x() + 1, N.y() + 1, N.z() + 1);
+    }
 
+    vec3 Renderer::GetSkyColor(const Ray& r)
+    {
         vec3 unit_direction = normalize(r.direction());
         auto a = 0.5 * (unit_direction.y() + 1.0);
         return (1.0 - a) * vec3(1.0, 1.0, 1.0) + a * vec3(0.5, 0.7, 1.0);
-    }
-
-    double Renderer::HitSphere(const point3& center, double radius, const Ray& r) {
-        vec3 oc = center - r.origin();
-        auto a = dot(r.direction(), r.direction());
-        auto b = -2.0 * dot(r.direction(), oc);
-        auto c = dot(oc, oc) - radius*radius;
-        auto discriminant = b * b - 4 * a * c;
-
-        if (discriminant < 0) {
-            return -1.0;
-        } else {
-            return (-b - std::sqrt(discriminant) ) / (2.0 * a);
-        }
     }
 }
 

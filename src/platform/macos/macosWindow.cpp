@@ -3,6 +3,8 @@
 #include <iostream>
 #include <stdio.h>
 
+#include "renderer/test_scene.h"
+
 namespace Raytracing {
 
     MacOSWindow::MacOSWindow(const WindowParams params): Window(params)
@@ -47,7 +49,7 @@ namespace Raytracing {
 
     void MacOSWindow::OnUpdate()
     {
-        renderer.Render(camera);
+        renderer.Render(camera, test_scene);
         renderer.Draw(_pViewDelegate->getView());
     }
 
