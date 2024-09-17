@@ -11,6 +11,11 @@ set ( CMAKE_CXX_STANDARD          17 )
 set ( CMAKE_CXX_STANDARD_REQUIRED ON )
 set ( CMAKE_CXX_EXTENSIONS        OFF )
 
+
+message(STATUS "Looking for Vulkan...")
+find_package(Vulkan REQUIRED)
+
+
 message(STATUS "Fetching GLFW...")
 
 include(FetchContent)
@@ -105,12 +110,6 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     add_compile_options(-Wunused-variable) # Variable is defined but unused
 endif()
 
-
-
-# target_link_libraries (inOneWeekend PRIVATE glfw)
-# target_link_libraries (inOneWeekend PRIVATE glm)
-
-# Add OpenGL on Apple platforms
 if(APPLE)
   # Library definition
   include_directories(external/metal-cmake/metal-cpp)
@@ -130,6 +129,18 @@ endif(APPLE)
 if(WIN32)
   add_compile_definitions(PLATFORM_WINDOWS)
 
+  FILE(GLOB_RECURSE HEADERS "src/**.h")
+
   # Executables
-  add_executable(inOneWeekend ${EXTERNAL} ${SOURCE_ONE_WEEKEND} ${SOURCE_ONE_WEEKEND_WINDOWS})
+  add_executable(inOneWeekend ${EXTERNAL} ${HEADERS} ${SOURCE_ONE_WEEKEND} ${SOURCE_ONE_WEEKEND_WINDOWS})
+
+  # target include directories
+  target_include_directories(inOneWeekend PRIVATE ${Vulkan_INCLUDE_DIRS})
+
+  # target link libraries
+  target_link_libraries(inOneWeekend PRIVATE ${Vulkan_LIBRARIES})
+
 endif(WIN32)
+
+target_link_libraries (inOneWeekend PRIVATE glfw)
+# target_link_libraries (inOneWeekend PRIVATE glm)
