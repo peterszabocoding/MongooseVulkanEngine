@@ -6,3 +6,15 @@ build/
 *.ppm
 imgui.ini
 
+# CMake Windows
+.vs/
+_deps/
+CMakeFiles/
+Debug/
+inOneWeekend.dir/
+CMakeCache.txt
+cmake_install.cmake
+*.sln
+*.vcxproj
+*.vcxproj.user
+*.vcxproj.filters

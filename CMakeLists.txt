@@ -4,14 +4,12 @@
 
 cmake_minimum_required ( VERSION 3.30.2 )
 
-
 project ( RTWeekend LANGUAGES C CXX )
 
 # Set to C++17
 set ( CMAKE_CXX_STANDARD          17 )
 set ( CMAKE_CXX_STANDARD_REQUIRED ON )
 set ( CMAKE_CXX_EXTENSIONS        OFF )
-
 
 message(STATUS "Fetching GLFW...")
 
@@ -51,20 +49,29 @@ set ( SOURCE_ONE_WEEKEND
 
   ./src/application/window.cpp
   ./src/application/application.cpp
-  
-  ./src/platform/macos/macosApplication.cpp
-  ./src/platform/macos/macosWindow.cpp
 
   ./src/renderer/shader.cpp
   ./src/renderer/renderer.cpp
   ./src/renderer/camera.cpp
+
+  ./src/platform/windows/windowsApplication.cpp
+)
+
+set ( SOURCE_ONE_WEEKEND_APPLE
+  ./src/platform/macos/macosApplication.cpp
+  ./src/platform/macos/macosWindow.cpp
   ./src/renderer/metal/metalShader.cpp
   ./src/renderer/metal/metalRenderer.cpp
 )
 
-include_directories(external/glad/include)
+set ( SOURCE_ONE_WEEKEND_WINDOWS
+  ./src/platform/windows/windowsApplication.cpp
+  ./src/platform/windows/windowsWindow.cpp
+)
+
+include_directories("src/")
 include_directories(external/imgui)
-include_directories(src)
+include_directories(external/glad/include)
 
 # Specific compiler flags below. We're not going to add options for all possible compilers, but if
 # you're new to CMake (like we are), the following may be a helpful example if you're using a
@@ -98,8 +105,8 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     add_compile_options(-Wunused-variable) # Variable is defined but unused
 endif()
 
-# Executables
-add_executable(inOneWeekend ${EXTERNAL} ${SOURCE_ONE_WEEKEND})
+
+
 # target_link_libraries (inOneWeekend PRIVATE glfw)
 # target_link_libraries (inOneWeekend PRIVATE glm)
 
@@ -114,4 +121,15 @@ if(APPLE)
   
   target_link_libraries (inOneWeekend PRIVATE METAL_CPP)
   # target_link_libraries (inOneWeekend PRIVATE "-framework OpenGL")
+
+  # Executables
+  add_executable(inOneWeekend ${EXTERNAL} ${SOURCE_ONE_WEEKEND} ${SOURCE_ONE_WEEKEND_APPLE})
+
 endif(APPLE)
+
+if(WIN32)
+  add_compile_definitions(PLATFORM_WINDOWS)
+
+  # Executables
+  add_executable(inOneWeekend ${EXTERNAL} ${SOURCE_ONE_WEEKEND} ${SOURCE_ONE_WEEKEND_WINDOWS})
+endif(WIN32)

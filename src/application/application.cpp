@@ -4,15 +4,20 @@
 #include "platform/macos/macosApplication.h"
 #endif
 
-namespace Raytracing {
-    Application* Application::Create()
-    {
-        #ifdef PLATFORM_MACOS
-        return new MacOSApplication();
-        #endif
+#ifdef PLATFORM_WINDOWS
+#include "platform/windows/windowsApplication.h"
+#endif
 
-        #ifndef PLATFORM_MACOS
-        return nullptr;
-        #endif
-    }
+namespace Raytracing
+{
+	Application* Application::Create()
+	{
+#ifdef PLATFORM_MACOS
+        return new MacOSApplication();
+#endif
+
+#ifdef PLATFORM_WINDOWS
+		return new WindowsApplication();
+#endif
+	}
 }
