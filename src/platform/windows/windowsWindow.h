@@ -16,6 +16,10 @@ namespace Raytracing
 		virtual void OnUpdate() override;
 
 	private:
+		void InitVulkan();
+		void CreateVkInstance();
+
+	private:
 		GLFWwindow* window;
 		VkInstance instance;
 	};
