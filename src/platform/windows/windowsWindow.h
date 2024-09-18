@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vulkan/vulkan.h>
+
 #include "application/window.h"
 
 namespace Raytracing
@@ -15,5 +17,6 @@ namespace Raytracing
 
 	private:
 		GLFWwindow* window;
+		VkInstance instance;
 	};
 }
