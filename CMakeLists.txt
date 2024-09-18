@@ -58,8 +58,6 @@ set ( SOURCE_ONE_WEEKEND
   ./src/renderer/shader.cpp
   ./src/renderer/renderer.cpp
   ./src/renderer/camera.cpp
-
-  ./src/platform/windows/windowsApplication.cpp
 )
 
 set ( SOURCE_ONE_WEEKEND_APPLE
@@ -117,12 +115,12 @@ if(APPLE)
   add_subdirectory(external/metal-cmake) 
 
   add_compile_definitions(PLATFORM_MACOS)
-  
-  target_link_libraries (inOneWeekend PRIVATE METAL_CPP)
-  # target_link_libraries (inOneWeekend PRIVATE "-framework OpenGL")
 
   # Executables
   add_executable(inOneWeekend ${EXTERNAL} ${SOURCE_ONE_WEEKEND} ${SOURCE_ONE_WEEKEND_APPLE})
+
+  target_link_libraries (inOneWeekend PRIVATE METAL_CPP)
+  # target_link_libraries (inOneWeekend PRIVATE "-framework OpenGL")
 
 endif(APPLE)
 
