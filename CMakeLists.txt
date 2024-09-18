@@ -63,6 +63,8 @@ set ( SOURCE_ONE_WEEKEND
 set ( SOURCE_ONE_WEEKEND_APPLE
   ./src/platform/macos/macosApplication.cpp
   ./src/platform/macos/macosWindow.cpp
+  ./src/platform/macos/macosVulkanApplication.cpp
+  ./src/platform/macos/macosVulkanWindow.cpp
   ./src/renderer/metal/metalShader.cpp
   ./src/renderer/metal/metalRenderer.cpp
 )
@@ -121,6 +123,12 @@ if(APPLE)
 
   target_link_libraries (inOneWeekend PRIVATE METAL_CPP)
   # target_link_libraries (inOneWeekend PRIVATE "-framework OpenGL")
+
+    # target include directories
+    target_include_directories(inOneWeekend PRIVATE ${Vulkan_INCLUDE_DIRS})
+
+    # target link libraries
+    target_link_libraries(inOneWeekend PRIVATE ${Vulkan_LIBRARIES})
 
 endif(APPLE)
 
