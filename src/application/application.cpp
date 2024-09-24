@@ -13,13 +13,13 @@ namespace Raytracing
 {
 	Application* Application::Create()
 	{
-#ifdef PLATFORM_MACOS
-        //return new MacOSApplication();
-        return new MacOSVulkanApplication();
-#endif
+	#ifdef PLATFORM_MACOS
+			//return new MacOSApplication();
+			return new MacOSVulkanApplication();
+	#endif
 
-#ifdef PLATFORM_WINDOWS
-		return new WindowsApplication();
-#endif
+	#ifdef PLATFORM_WINDOWS
+			return new WindowsApplication();
+	#endif
 	}
 }

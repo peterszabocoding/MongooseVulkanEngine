@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include "application.h"
 
 class GLFWwindow;
 
@@ -9,9 +10,9 @@ namespace Raytracing {
     typedef std::function<void()> OnWindowCloseCallback;
 
     struct WindowParams {
-        unsigned int width = 800;
-        unsigned int height = 800;
-        const char* title = "Raytracing in One Weekend";
+        const char* title;
+        unsigned int width;
+        unsigned int height;
     };
 
     class Window {

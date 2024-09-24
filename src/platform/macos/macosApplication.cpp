@@ -12,12 +12,23 @@ namespace Raytracing {
 
         del = new AppDelegate(*this);
         pSharedApplication->setDelegate( del );
+
+        CreateWindow();
     }
 
     MacOSApplication::~MacOSApplication()
     {
         pAutoreleasePool->release();
         delete del;
+    }
+
+    void MacOSApplication::CreateWindow()
+    {
+        WindowParams params;
+        params.width = applicationInfo.windowWidth;
+        params.height = applicationInfo.windowHeight;
+        params.title = applicationInfo.windowTitle.c_str();
+        window = new MacOSWindow(params);
     }
 
     void MacOSApplication::OnCreate()
@@ -29,12 +40,6 @@ namespace Raytracing {
         pApp->setMainMenu( pMenu );
         pApp->activateIgnoringOtherApps( true );
         pApp->setActivationPolicy( NS::ActivationPolicy::ActivationPolicyRegular );
-
-        WindowParams params;
-        params.width = 600;
-        params.height = 600;
-        params.title = "Raytracing in one weekend";
-        window = new MacOSWindow(params);
     }
 
     void MacOSApplication::Run()

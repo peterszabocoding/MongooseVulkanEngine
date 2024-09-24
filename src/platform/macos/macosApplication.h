@@ -51,6 +51,8 @@ namespace Raytracing {
             virtual void OnCreate() override;
             virtual void Run() override;
 
+            void CreateWindow();
+
             NS::Menu* CreateMenuBar();
 
         private:
