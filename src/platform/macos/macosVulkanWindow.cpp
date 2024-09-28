@@ -9,12 +9,10 @@
 
 namespace Raytracing
 {
-
 	MacOSVulkanWindow::MacOSVulkanWindow(const AppInfo appInfo, const WindowParams params): Window(params)
 	{
 		applicationInfo = appInfo;
 		glfwInit();
-
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 		glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
@@ -52,6 +50,8 @@ namespace Raytracing
 			throw std::runtime_error("VK_KHR_portability_subset extension not supported by the device.");
 		}
 
+		VulkanUtils::GetSupportedValidationLayers();
+
 		uint32_t glfwExtensionCount = 0;
 		const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
@@ -60,6 +60,7 @@ namespace Raytracing
 			.ApplicationInfo(applicationInfo)
 			.AddDeviceExtension(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME)
 			.AddDeviceExtensions(glfwExtensions, glfwExtensionCount)
+			.AddValidationLayer(VK_EXT_DEBUG_UTILS_EXTENSION_NAME)
 			.Build();
 	}
 }

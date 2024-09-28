@@ -110,6 +110,9 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     add_compile_options(-Wunused-variable) # Variable is defined but unused
 endif()
 
+# Global definitions
+add_compile_definitions(NDEBUG)
+
 if(APPLE)
   # Library definition
   include_directories(external/metal-cmake/metal-cpp)
