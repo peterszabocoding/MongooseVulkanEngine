@@ -6,7 +6,13 @@ namespace Raytracing
 	void WindowsApplication::OnCreate()
 	{
 		std::cout << "Windows Application OnCreate" << '\n';
-		window = new WindowsWindow(WindowParams());
+
+		WindowParams params;
+		params.title = applicationInfo.windowTitle.c_str();
+		params.width = applicationInfo.windowWidth;
+		params.height = applicationInfo.windowHeight;
+
+		window = new WindowsWindow(applicationInfo, params);
 		window->SetOnWindowCloseCallback([&]()
 		{
 			isRunning = false;
