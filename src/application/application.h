@@ -1,59 +1,58 @@
 #pragma once
 
 #include <string>
+#include "util/Core.h"
 
 class Window;
 
-namespace Raytracing {
+namespace Raytracing
+{
+	struct AppInfo
+	{
+		std::string appName;
+		std::string windowTitle;
+		std::string versionName;
+		Version appVersion;
+		int windowWidth = 800;
+		int windowHeight = 800;
+	};
 
-    struct AppVersion {
-        int major;
-        int minor;
-        int patch;
+	class Application
+	{
+	public:
+		Application()
+		{
+			applicationInfo = AppInfo();
+			applicationInfo.appName = "RaytracingInOneWeekend";
+			applicationInfo.windowWidth = 800;
+			applicationInfo.windowHeight = 800;
 
-        std::string GetVersionName()
-        {
-            return std::to_string(major) + '.' + std::to_string(minor) + "." + std::to_string(patch);
-        }
-    };
+			Version version;
+			version.major = 0;
+			version.minor = 1;
+			version.patch = 0;
 
-    struct AppInfo {
-        std::string appName;
-        std::string windowTitle;
-        std::string versionName;
-        AppVersion appVersion;
-        int windowWidth = 800;
-        int windowHeight = 800;
-    };
+			applicationInfo.appVersion = version;
+			applicationInfo.versionName = version.GetVersionName();
 
-    class Application {
-        public:
-            Application() 
-            {
-                applicationInfo = AppInfo();
-                applicationInfo.appName = "RaytracingInOneWeekend";
-                applicationInfo.windowWidth = 800;
-                applicationInfo.windowHeight = 800;
+			applicationInfo.windowTitle = "Raytracing In One Weekend: " + applicationInfo.versionName;
+		}
 
-                AppVersion version;
-                version.major = 0;
-                version.minor = 1;
-                version.patch = 0;
+		virtual ~Application()
+		{
+		}
 
-                applicationInfo.appVersion = version;
-                applicationInfo.versionName = version.GetVersionName();
+		virtual void OnCreate()
+		{
+		}
 
-                applicationInfo.windowTitle = "Raytracing In One Weekend: " + applicationInfo.versionName;
-            }
+		virtual void Run()
+		{
+		}
 
-            virtual ~Application() {}
+		static Application* Create();
 
-            virtual void OnCreate() {}
-            virtual void Run() {}
-
-            static Application* Create();
-
-        protected:
-            AppInfo applicationInfo;
-    };
+	protected:
+		AppInfo applicationInfo;
+	};
 }

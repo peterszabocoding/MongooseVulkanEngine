@@ -58,6 +58,8 @@ set ( SOURCE_ONE_WEEKEND
   ./src/renderer/shader.cpp
   ./src/renderer/renderer.cpp
   ./src/renderer/camera.cpp
+
+  ./src/renderer/vulkan/vulkanRenderer.cpp
 )
 
 set ( SOURCE_ONE_WEEKEND_APPLE
