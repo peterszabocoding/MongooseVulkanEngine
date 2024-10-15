@@ -22,6 +22,8 @@ namespace Raytracing {
             void SetMTLDevice(MTL::Device* device);
             void Draw( MTK::View* pView );
 
+            virtual void Init(int width, int height) override {};
+
         protected:
             virtual void ProcessPixel(unsigned int pixelCount, vec3 pixelColor) override;
 

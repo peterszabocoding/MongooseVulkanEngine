@@ -3,6 +3,7 @@
 #include <vector>
 #include "application/window.h"
 #include <vulkan/vulkan.h>
+#include "renderer/vulkan/vulkanRenderer.h"
 
 class AppInfo;
 
@@ -17,13 +18,10 @@ namespace Raytracing
 		virtual void OnCreate() override;
 		virtual void OnUpdate() override;
 
-    private:
-        void InitVulkan();
-	    void CreateVkInstance();
-
 	private:
 		GLFWwindow* window;
         VkInstance instance;
 		AppInfo applicationInfo;
+		VulkanRenderer vulkanRenderer;
 	};
 }

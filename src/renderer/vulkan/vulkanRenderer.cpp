@@ -373,12 +373,14 @@ namespace Raytracing
 		for (size_t i = 0; i < glfw_extension_count; i++)
 			glfw_extension_list.push_back(glfw_extensions[i]);
 
+		glfw_extension_list.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+
 		CreateVkInstance(glfw_extension_list, validation_layer_list);
 		CreateSurface();
 
 		physicalDevice = PickPhysicalDevice();
 		device = CreateLogicalDevice();
-		graphicsQueue = GetDeviceQueue();
+		//graphicsQueue = GetDeviceQueue();
 		//presentQueue = VulkanUtils::GetDevicePresentQueue(physicalDevice, device);
 
 		CreateSwapChain();
