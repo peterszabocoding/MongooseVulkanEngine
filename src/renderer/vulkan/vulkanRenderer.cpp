@@ -1,8 +1,5 @@
 #include "vulkanRenderer.h"
 
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-
 #include <set>
 #include <string>
 #include <algorithm>
@@ -32,6 +29,12 @@ namespace Raytracing
 
 	VulkanRenderer::~VulkanRenderer()
 	{
+		CleanupSwapChain();
+
+		vkDestroyPipeline(device, graphicsPipeline, nullptr);
+		vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+		vkDestroyRenderPass(device, renderPass, nullptr);
+
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 		{
 			vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
@@ -41,23 +44,7 @@ namespace Raytracing
 
 		vkDestroyCommandPool(device, commandPool, nullptr);
 
-		for (const auto framebuffer : swapChainFramebuffers)
-		{
-			vkDestroyFramebuffer(device, framebuffer, nullptr);
-		}
-
-		vkDestroyPipeline(device, graphicsPipeline, nullptr);
-		vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
-		vkDestroyRenderPass(device, renderPass, nullptr);
-
-		for (const auto image_view : swapChainImageViews)
-		{
-			vkDestroyImageView(device, image_view, nullptr);
-		}
-
-		vkDestroySwapchainKHR(device, swapChain, nullptr);
 		vkDestroyDevice(device, nullptr);
-
 		vkDestroySurfaceKHR(instance, surface, nullptr);
 		vkDestroyInstance(instance, nullptr);
 	}
@@ -309,16 +296,16 @@ namespace Raytracing
 		InitVulkan();
 	}
 
-	void VulkanRenderer::ProcessPixel(unsigned int pixelCount, vec3 pixelColor)
-	{
-	}
+	void VulkanRenderer::ProcessPixel(unsigned int pixelCount, vec3 pixelColor) {}
 
-	void VulkanRenderer::OnRenderBegin(const Camera& camera)
-	{
-	}
+	void VulkanRenderer::OnRenderBegin(const Camera& camera) {}
 
-	void VulkanRenderer::OnRenderFinished(const Camera& camera)
+	void VulkanRenderer::OnRenderFinished(const Camera& camera) {}
+
+	void VulkanRenderer::Resize(int width, int height)
 	{
+		Renderer::Resize(width, height);
+		framebufferResized = true;
 	}
 
 	void VulkanRenderer::CreateSurface()
@@ -505,6 +492,7 @@ namespace Raytracing
 		createInfo.clipped = VK_TRUE;
 
 		createInfo.oldSwapchain = VK_NULL_HANDLE;
+
 
 		if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain) != VK_SUCCESS)
 		{
@@ -765,6 +753,28 @@ namespace Raytracing
 		}
 	}
 
+	void VulkanRenderer::RecreateSwapChain()
+	{
+		vkDeviceWaitIdle(device);
+
+		CleanupSwapChain();
+
+		CreateSwapChain();
+		CreateImageViews();
+		CreateFramebuffers();
+	}
+
+	void VulkanRenderer::CleanupSwapChain() const
+	{
+		for (const auto framebuffer : swapChainFramebuffers)
+			vkDestroyFramebuffer(device, framebuffer, nullptr);
+
+		for (const auto image_view : swapChainImageViews)
+			vkDestroyImageView(device, image_view, nullptr);
+
+		vkDestroySwapchainKHR(device, swapChain, nullptr);
+	}
+
 	void VulkanRenderer::CreateCommandBuffers()
 	{
 		commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
@@ -883,12 +893,23 @@ namespace Raytracing
 		Timer timer("Render");
 
 		vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
-		vkResetFences(device, 1, &inFlightFences[currentFrame]);
 
 		uint32_t imageIndex;
-		vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE,
-		                      &imageIndex);
+		VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE,
+		                                        &imageIndex);
 
+		if (result == VK_ERROR_OUT_OF_DATE_KHR)
+		{
+			RecreateSwapChain();
+			return;
+		}
+
+		if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+		{
+			throw std::runtime_error("failed to acquire swap chain image!");
+		}
+
+		vkResetFences(device, 1, &inFlightFences[currentFrame]);
 		vkResetCommandBuffer(commandBuffers[currentFrame], /*VkCommandBufferResetFlagBits*/ 0);
 		RecordCommandBuffer(commandBuffers[currentFrame], imageIndex);
 
@@ -923,12 +944,21 @@ namespace Raytracing
 
 		presentInfo.pImageIndices = &imageIndex;
 
-		vkQueuePresentKHR(presentQueue, &presentInfo);
+		result = vkQueuePresentKHR(presentQueue, &presentInfo);
+		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized)
+		{
+			framebufferResized = false;
+			RecreateSwapChain();
+		}
+		else if (result != VK_SUCCESS)
+		{
+			throw std::runtime_error("failed to present swap chain image!");
+		}
 
 		currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 	}
 
-	void VulkanRenderer::IdleWait() const
+	void VulkanRenderer::IdleWait()
 	{
 		vkDeviceWaitIdle(device);
 	}

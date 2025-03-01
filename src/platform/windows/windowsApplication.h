@@ -9,7 +9,7 @@ namespace Raytracing
 	{
 	public:
 		WindowsApplication() = default;
-		~WindowsApplication() override = default;
+		~WindowsApplication() override;
 
 		virtual void OnCreate() override;
 		virtual void Run() override;

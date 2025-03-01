@@ -3,6 +3,11 @@
 
 namespace Raytracing
 {
+	WindowsApplication::~WindowsApplication()
+	{
+		delete window;
+	}
+
 	void WindowsApplication::OnCreate()
 	{
 		std::cout << "Windows Application OnCreate" << '\n';

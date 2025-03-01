@@ -1,6 +1,9 @@
 #pragma once
 
 #include <functional>
+#include <utility>
+
+#include "renderer/renderer.h"
 
 class GLFWwindow;
 
@@ -18,30 +21,25 @@ namespace Raytracing
 	class Window
 	{
 	public:
-		Window(const WindowParams params)
-		{
-			windowParams = params;
-		}
+		Window(AppInfo appInfo, const WindowParams params);
+		virtual ~Window();
 
-		virtual ~Window() = default;
-
-		virtual void OnCreate()
-		{
-		}
-
-		virtual void OnUpdate()
-		{
-		}
+		virtual void OnCreate();
+		virtual void OnUpdate();
+		virtual void Resize(int width, int height);
 
 		virtual void SetOnWindowCloseCallback(OnWindowCloseCallback callback)
 		{
-			windowCloseCallback = callback;
+			windowCloseCallback = std::move(callback);
 		}
 
-		static Window* Create(const WindowParams params = WindowParams());
-
 	protected:
+		AppInfo applicationInfo;
 		WindowParams windowParams;
+
+		GLFWwindow* window;
 		OnWindowCloseCallback windowCloseCallback;
+
+		Renderer* renderer;
 	};
 }

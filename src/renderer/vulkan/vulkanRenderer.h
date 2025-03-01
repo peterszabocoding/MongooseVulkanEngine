@@ -1,5 +1,7 @@
 #pragma once
 
+#define GLFW_INCLUDE_VULKAN
+
 #include <optional>
 
 #include "renderer/renderer.h"
@@ -38,14 +40,11 @@ namespace Raytracing
 		virtual void OnRenderBegin(const Camera& camera) override;
 		virtual void OnRenderFinished(const Camera& camera) override;
 
-		void SetGLFWwindow(GLFWwindow* window)
-		{
-			glfwWindow = window;
-		}
+		virtual void IdleWait() override;
+		virtual void Resize(int width, int height) override;
+		virtual void DrawFrame() override;
 
 		void CreateSurface();
-		void DrawFrame();
-		void IdleWait() const;
 
 	public:
 		static std::string GetVkResultString(const VkResult vulkan_result);
@@ -84,6 +83,10 @@ namespace Raytracing
 		void CreateCommandBuffers();
 		void CreateSyncObjects();
 
+		void RecreateSwapChain();
+
+		void CleanupSwapChain() const;
+
 		void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) const;
 
 		static VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
@@ -94,7 +97,7 @@ namespace Raytracing
 		int viewportWidth, viewportHeight;
 		uint32_t currentFrame = 0;
 
-		GLFWwindow* glfwWindow;
+		bool framebufferResized = false;
 
 		VkDevice device;
 		VkInstance instance;
@@ -115,13 +118,6 @@ namespace Raytracing
 		VkPipeline graphicsPipeline;
 
 		VkCommandPool commandPool;
-
-		/*
-		VkCommandBuffer commandBuffer;
-		VkSemaphore imageAvailableSemaphore;
-		VkSemaphore renderFinishedSemaphore;
-		VkFence inFlightFence;
-		*/
 
 		std::vector<VkCommandBuffer> commandBuffers;
 		std::vector<VkSemaphore> imageAvailableSemaphores;
