@@ -37,7 +37,12 @@ namespace Raytracing
 
 	void WindowsWindow::OnUpdate()
 	{
-		if (glfwWindowShouldClose(window)) windowCloseCallback();
+		if (glfwWindowShouldClose(window))
+		{
+			windowCloseCallback();
+			vulkanRenderer.IdleWait();
+			return;
+		}
 
 		glfwPollEvents();
 		vulkanRenderer.DrawFrame();

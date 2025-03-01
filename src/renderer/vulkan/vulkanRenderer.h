@@ -9,6 +9,8 @@ class GLFWwindow;
 
 namespace Raytracing
 {
+	constexpr int MAX_FRAMES_IN_FLIGHT = 2;
+
 	struct SwapChainSupportDetails
 	{
 		VkSurfaceCapabilitiesKHR capabilities;
@@ -43,28 +45,28 @@ namespace Raytracing
 
 		void CreateSurface();
 		void DrawFrame();
+		void IdleWait() const;
 
 	public:
-		std::string GetVkResultString(const VkResult vulkan_result);
-		std::vector<VkExtensionProperties> GetAvailableExtensions();
-		bool CheckIfExtensionSupported(const char* ext);
+		static std::string GetVkResultString(const VkResult vulkan_result);
+		static std::vector<VkExtensionProperties> GetAvailableExtensions();
+		static std::vector<VkLayerProperties> GetSupportedValidationLayers();
+		static bool CheckIfExtensionSupported(const char* ext);
+		static bool CheckIfValidationLayerSupported(const char* layer);
+		static inline VkDebugUtilsMessengerCreateInfoEXT CreateDebugMessengerCreateInfo();
 
-		std::vector<VkExtensionProperties> GetSupportedDeviceExtensions();
-		std::vector<VkLayerProperties> GetSupportedValidationLayers();
-		bool CheckIfValidationLayerSupported(const char* layer);
+		std::vector<VkExtensionProperties> GetSupportedDeviceExtensions() const;
 
+		inline bool CheckDeviceExtensionSupport(std::vector<std::string> deviceExtensions) const;
+		inline bool IsDeviceSuitable(VkPhysicalDevice physicalDevice) const;
 
-		inline bool CheckDeviceExtensionSupport(std::vector<std::string> deviceExtensions);
-		inline bool IsDeviceSuitable(VkPhysicalDevice physicalDevice);
-
-		inline VkDebugUtilsMessengerCreateInfoEXT CreateDebugMessengerCreateInfo();
-		inline QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice physicalDevice);
-		inline VkPhysicalDevice PickPhysicalDevice();
+		inline QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice physicalDevice) const;
+		inline VkPhysicalDevice PickPhysicalDevice() const;
 		inline VkDevice CreateLogicalDevice();
-		inline VkQueue GetDeviceQueue();
-		inline VkShaderModule CreateShaderModule(const std::vector<char>& code);
-		inline SwapChainSupportDetails QuerySwapChainSupport();
-		inline VkQueue GetDevicePresentQueue();
+		inline VkQueue GetDeviceQueue() const;
+		inline VkShaderModule CreateShaderModule(const std::vector<char>& code) const;
+		inline SwapChainSupportDetails QuerySwapChainSupport() const;
+		inline VkQueue GetDevicePresentQueue() const;
 
 	private:
 		void InitVulkan();
@@ -79,11 +81,10 @@ namespace Raytracing
 		void CreateRenderPass();
 		void CreateFramebuffers();
 		void CreateCommandPool();
-		void CreateCommandBuffer();
+		void CreateCommandBuffers();
 		void CreateSyncObjects();
 
-
-		void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+		void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) const;
 
 		static VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 		static VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
@@ -91,6 +92,7 @@ namespace Raytracing
 
 	private:
 		int viewportWidth, viewportHeight;
+		uint32_t currentFrame = 0;
 
 		GLFWwindow* glfwWindow;
 
@@ -113,11 +115,18 @@ namespace Raytracing
 		VkPipeline graphicsPipeline;
 
 		VkCommandPool commandPool;
-		VkCommandBuffer commandBuffer;
 
+		/*
+		VkCommandBuffer commandBuffer;
 		VkSemaphore imageAvailableSemaphore;
 		VkSemaphore renderFinishedSemaphore;
 		VkFence inFlightFence;
+		*/
+
+		std::vector<VkCommandBuffer> commandBuffers;
+		std::vector<VkSemaphore> imageAvailableSemaphores;
+		std::vector<VkSemaphore> renderFinishedSemaphores;
+		std::vector<VkFence> inFlightFences;
 
 		std::vector<VkFramebuffer> swapChainFramebuffers;
 		std::vector<VkImageView> swapChainImageViews;

@@ -14,7 +14,7 @@ namespace Raytracing
 	namespace VulkanUtils
 	{
 #ifdef NDEBUG
-		const bool enableValidationLayers = false;
+		constexpr bool enableValidationLayers = false;
 #else
 		const bool enableValidationLayers = true;
 #endif
@@ -32,9 +32,12 @@ namespace Raytracing
 
 	VulkanRenderer::~VulkanRenderer()
 	{
-		vkDestroySemaphore(device, imageAvailableSemaphore, nullptr);
-		vkDestroySemaphore(device, renderFinishedSemaphore, nullptr);
-		vkDestroyFence(device, inFlightFence, nullptr);
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+		{
+			vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
+			vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
+			vkDestroyFence(device, inFlightFences[i], nullptr);
+		}
 
 		vkDestroyCommandPool(device, commandPool, nullptr);
 
@@ -106,7 +109,7 @@ namespace Raytracing
 		return false;
 	}
 
-	std::vector<VkExtensionProperties> VulkanRenderer::GetSupportedDeviceExtensions()
+	std::vector<VkExtensionProperties> VulkanRenderer::GetSupportedDeviceExtensions() const
 	{
 		uint32_t extension_count;
 		vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extension_count, nullptr);
@@ -144,7 +147,7 @@ namespace Raytracing
 		return false;
 	}
 
-	bool VulkanRenderer::CheckDeviceExtensionSupport(std::vector<std::string> deviceExtensions)
+	bool VulkanRenderer::CheckDeviceExtensionSupport(std::vector<std::string> deviceExtensions) const
 	{
 		uint32_t extension_count;
 		vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extension_count, nullptr);
@@ -177,7 +180,7 @@ namespace Raytracing
 		return createInfo;
 	}
 
-	QueueFamilyIndices VulkanRenderer::FindQueueFamilies(VkPhysicalDevice physicalDevice)
+	QueueFamilyIndices VulkanRenderer::FindQueueFamilies(VkPhysicalDevice physicalDevice) const
 	{
 		QueueFamilyIndices indices;
 
@@ -208,13 +211,13 @@ namespace Raytracing
 		return indices;
 	}
 
-	bool VulkanRenderer::IsDeviceSuitable(VkPhysicalDevice physicalDevice)
+	bool VulkanRenderer::IsDeviceSuitable(VkPhysicalDevice physicalDevice) const
 	{
 		const QueueFamilyIndices indices = FindQueueFamilies(physicalDevice);
 		return indices.IsComplete();
 	}
 
-	VkPhysicalDevice VulkanRenderer::PickPhysicalDevice()
+	VkPhysicalDevice VulkanRenderer::PickPhysicalDevice() const
 	{
 		VkPhysicalDevice physical_device = VK_NULL_HANDLE;
 		uint32_t device_count = 0;
@@ -274,7 +277,7 @@ namespace Raytracing
 		return device;
 	}
 
-	VkQueue VulkanRenderer::GetDeviceQueue()
+	VkQueue VulkanRenderer::GetDeviceQueue() const
 	{
 		VkQueue graphics_queue;
 		const QueueFamilyIndices indices = FindQueueFamilies(physicalDevice);
@@ -283,7 +286,7 @@ namespace Raytracing
 		return graphics_queue;
 	}
 
-	VkShaderModule VulkanRenderer::CreateShaderModule(const std::vector<char>& code)
+	VkShaderModule VulkanRenderer::CreateShaderModule(const std::vector<char>& code) const
 	{
 		VkShaderModuleCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -299,7 +302,7 @@ namespace Raytracing
 		return shaderModule;
 	}
 
-	void VulkanRenderer::Init(int width, int height)
+	void VulkanRenderer::Init(const int width, const int height)
 	{
 		viewportWidth = width;
 		viewportHeight = height;
@@ -324,7 +327,7 @@ namespace Raytracing
 			throw std::runtime_error("failed to create window surface!");
 	}
 
-	SwapChainSupportDetails VulkanRenderer::QuerySwapChainSupport()
+	SwapChainSupportDetails VulkanRenderer::QuerySwapChainSupport() const
 	{
 		SwapChainSupportDetails details;
 
@@ -352,7 +355,7 @@ namespace Raytracing
 		return details;
 	}
 
-	VkQueue VulkanRenderer::GetDevicePresentQueue()
+	VkQueue VulkanRenderer::GetDevicePresentQueue() const
 	{
 		VkQueue presentQueue;
 		const QueueFamilyIndices indices = FindQueueFamilies(physicalDevice);
@@ -389,7 +392,7 @@ namespace Raytracing
 		CreateGraphicsPipeline();
 		CreateFramebuffers();
 		CreateCommandPool();
-		CreateCommandBuffer();
+		CreateCommandBuffers();
 		CreateSyncObjects();
 	}
 
@@ -738,22 +741,12 @@ namespace Raytracing
 		}
 	}
 
-	void VulkanRenderer::CreateCommandBuffer()
-	{
-		VkCommandBufferAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.commandPool = commandPool;
-		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandBufferCount = 1;
-
-		if (vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer) != VK_SUCCESS)
-		{
-			throw std::runtime_error("failed to allocate command buffers!");
-		}
-	}
-
 	void VulkanRenderer::CreateSyncObjects()
 	{
+		imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+		renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+		inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+
 		VkSemaphoreCreateInfo semaphoreInfo{};
 		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
@@ -761,15 +754,34 @@ namespace Raytracing
 		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-		if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphore) != VK_SUCCESS ||
-			vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphore) != VK_SUCCESS ||
-			vkCreateFence(device, &fenceInfo, nullptr, &inFlightFence) != VK_SUCCESS)
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 		{
-			throw std::runtime_error("failed to create synchronization objects for a frame!");
+			if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
+				vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
+				vkCreateFence(device, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS)
+			{
+				throw std::runtime_error("failed to create synchronization objects for a frame!");
+			}
 		}
 	}
 
-	void VulkanRenderer::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
+	void VulkanRenderer::CreateCommandBuffers()
+	{
+		commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+
+		VkCommandBufferAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocInfo.commandPool = commandPool;
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		allocInfo.commandBufferCount = (uint32_t)commandBuffers.size();
+
+		if (vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data()) != VK_SUCCESS)
+		{
+			throw std::runtime_error("failed to allocate command buffers!");
+		}
+	}
+
+	void VulkanRenderer::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) const
 	{
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -868,32 +880,35 @@ namespace Raytracing
 
 	void VulkanRenderer::DrawFrame()
 	{
-		vkWaitForFences(device, 1, &inFlightFence, VK_TRUE, UINT64_MAX);
-		vkResetFences(device, 1, &inFlightFence);
+		Timer timer("Render");
+
+		vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
+		vkResetFences(device, 1, &inFlightFences[currentFrame]);
 
 		uint32_t imageIndex;
-		vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+		vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE,
+		                      &imageIndex);
 
-		vkResetCommandBuffer(commandBuffer, /*VkCommandBufferResetFlagBits*/ 0);
-		RecordCommandBuffer(commandBuffer, imageIndex);
+		vkResetCommandBuffer(commandBuffers[currentFrame], /*VkCommandBufferResetFlagBits*/ 0);
+		RecordCommandBuffer(commandBuffers[currentFrame], imageIndex);
 
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-		const VkSemaphore waitSemaphores[] = {imageAvailableSemaphore};
+		const VkSemaphore waitSemaphores[] = {imageAvailableSemaphores[currentFrame]};
 		VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 		submitInfo.waitSemaphoreCount = 1;
 		submitInfo.pWaitSemaphores = waitSemaphores;
 		submitInfo.pWaitDstStageMask = waitStages;
 
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &commandBuffer;
+		submitInfo.pCommandBuffers = &commandBuffers[currentFrame];
 
-		VkSemaphore signalSemaphores[] = {renderFinishedSemaphore};
+		VkSemaphore signalSemaphores[] = {renderFinishedSemaphores[currentFrame]};
 		submitInfo.signalSemaphoreCount = 1;
 		submitInfo.pSignalSemaphores = signalSemaphores;
 
-		if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFence) != VK_SUCCESS)
+		if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS)
 			throw std::runtime_error("failed to submit draw command buffer!");
 
 		VkPresentInfoKHR presentInfo{};
@@ -909,5 +924,12 @@ namespace Raytracing
 		presentInfo.pImageIndices = &imageIndex;
 
 		vkQueuePresentKHR(presentQueue, &presentInfo);
+
+		currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+	}
+
+	void VulkanRenderer::IdleWait() const
+	{
+		vkDeviceWaitIdle(device);
 	}
 }
