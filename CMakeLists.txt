@@ -65,8 +65,6 @@ set ( SOURCE_ONE_WEEKEND
 set ( SOURCE_ONE_WEEKEND_APPLE
   ./src/platform/macos/macosApplication.cpp
   ./src/platform/macos/macosWindow.cpp
-  ./src/platform/macos/macosVulkanApplication.cpp
-  ./src/platform/macos/macosVulkanWindow.cpp
   ./src/renderer/metal/metalShader.cpp
   ./src/renderer/metal/metalRenderer.cpp
 )

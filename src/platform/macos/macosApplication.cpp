@@ -1,92 +1,38 @@
 #include "macosApplication.h"
-#include "macosWindow.h"
-
 #include <iostream>
 
-namespace Raytracing {
-
+namespace Raytracing
+{
     MacOSApplication::MacOSApplication()
     {
-        pAutoreleasePool = NS::AutoreleasePool::alloc()->init();
-        pSharedApplication = NS::Application::sharedApplication();
-
-        del = new AppDelegate(*this);
-        pSharedApplication->setDelegate( del );
-
-        CreateWindow();
-    }
-
-    MacOSApplication::~MacOSApplication()
-    {
-        pAutoreleasePool->release();
-        delete del;
+		CreateWindow();
     }
 
     void MacOSApplication::CreateWindow()
     {
         WindowParams params;
-        params.width = applicationInfo.windowWidth;
-        params.height = applicationInfo.windowHeight;
-        params.title = applicationInfo.windowTitle.c_str();
-        window = new MacOSWindow(params);
+		params.title = applicationInfo.windowTitle.c_str();
+		params.width = applicationInfo.windowWidth;
+		params.height = applicationInfo.windowHeight;
+
+		window = new MacOSWindow(applicationInfo, params);
+		window->SetOnWindowCloseCallback([&]()
+		{
+			isRunning = false;
+		});
     }
 
     void MacOSApplication::OnCreate()
     {
-        // Setup application menu bar
-        NS::Menu* pMenu = CreateMenuBar();
-        NS::Application* pApp = reinterpret_cast<NS::Application*>( del->getLatestNotification()->object() );
+		std::cout << "MacOSVulkanApplication Application OnCreate" << '\n';
+		isRunning = true;
+	}
 
-        pApp->setMainMenu( pMenu );
-        pApp->activateIgnoringOtherApps( true );
-        pApp->setActivationPolicy( NS::ActivationPolicy::ActivationPolicyRegular );
-    }
-
-    void MacOSApplication::Run()
-    {
-        pSharedApplication->run();
-    }
-
-    NS::Menu* MacOSApplication::CreateMenuBar()
-    {
-        using NS::StringEncoding::UTF8StringEncoding;
-
-        NS::Menu* pMainMenu = NS::Menu::alloc()->init();
-        NS::MenuItem* pAppMenuItem = NS::MenuItem::alloc()->init();
-        NS::Menu* pAppMenu = NS::Menu::alloc()->init( NS::String::string( "Appname", UTF8StringEncoding ) );
-
-        NS::String* appName = NS::RunningApplication::currentApplication()->localizedName();
-        NS::String* quitItemName = NS::String::string( "Quit ", UTF8StringEncoding )->stringByAppendingString( appName );
-        SEL quitCb = NS::MenuItem::registerActionCallback( "appQuit", [](void*,SEL,const NS::Object* pSender){
-            auto pApp = NS::Application::sharedApplication();
-            pApp->terminate( pSender );
-        } );
-
-        NS::MenuItem* pAppQuitItem = pAppMenu->addItem( quitItemName, quitCb, NS::String::string( "q", UTF8StringEncoding ) );
-        pAppQuitItem->setKeyEquivalentModifierMask( NS::EventModifierFlagCommand );
-        pAppMenuItem->setSubmenu( pAppMenu );
-
-        NS::MenuItem* pWindowMenuItem = NS::MenuItem::alloc()->init();
-        NS::Menu* pWindowMenu = NS::Menu::alloc()->init( NS::String::string( "Window", UTF8StringEncoding ) );
-
-        SEL closeWindowCb = NS::MenuItem::registerActionCallback( "windowClose", [](void*, SEL, const NS::Object*){
-            auto pApp = NS::Application::sharedApplication();
-                pApp->windows()->object< NS::Window >(0)->close();
-        } );
-        NS::MenuItem* pCloseWindowItem = pWindowMenu->addItem( NS::String::string( "Close Window", UTF8StringEncoding ), closeWindowCb, NS::String::string( "w", UTF8StringEncoding ) );
-        pCloseWindowItem->setKeyEquivalentModifierMask( NS::EventModifierFlagCommand );
-
-        pWindowMenuItem->setSubmenu( pWindowMenu );
-
-        pMainMenu->addItem( pAppMenuItem );
-        pMainMenu->addItem( pWindowMenuItem );
-
-        pAppMenuItem->release();
-        pWindowMenuItem->release();
-        pAppMenu->release();
-        pWindowMenu->release();
-
-        return pMainMenu->autorelease();
-    }
-
+	void MacOSApplication::Run()
+	{
+		std::cout << "MacOSVulkanApplication Application Run" << '\n';
+		while (isRunning) 
+			window->OnUpdate();
+	}
+	
 }
