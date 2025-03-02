@@ -18,12 +18,10 @@ namespace Raytracing
 		virtual void Render(const Camera& camera, const std::vector<Hitable*>& scene);
 
 		virtual void Init(int width, int height) = 0;
-		virtual void SetupImGui(const int width, const int height) = 0;
 		virtual void Resize(int width, int height);
 
 		virtual void IdleWait() {}
 		virtual void DrawFrame() {}
-		virtual void DrawUi() {}
 
 		virtual void SetGLFWwindow(GLFWwindow* window) { glfwWindow = window; }
 

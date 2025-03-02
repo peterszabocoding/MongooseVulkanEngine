@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "application.h"
+#include "imgui_vulkan.h"
 #include "renderer/renderer.h"
 
 class GLFWwindow;
@@ -42,5 +43,6 @@ namespace Raytracing
 		OnWindowCloseCallback windowCloseCallback;
 
 		Renderer* renderer;
+		ImGuiVulkan* imGuiVulkan;
 	};
 }
