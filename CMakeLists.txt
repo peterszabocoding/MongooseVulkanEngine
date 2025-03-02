@@ -81,8 +81,6 @@ set ( SOURCE_ONE_WEEKEND
 set ( SOURCE_ONE_WEEKEND_APPLE
   ./src/platform/macos/macosApplication.cpp
   ./src/platform/macos/macosWindow.cpp
-  ./src/renderer/metal/metalShader.cpp
-  ./src/renderer/metal/metalRenderer.cpp
 )
 
 set ( SOURCE_ONE_WEEKEND_WINDOWS
@@ -132,8 +130,6 @@ if(APPLE)
 
     # Executables
     add_executable(inOneWeekend ${EXTERNAL} ${SOURCE_ONE_WEEKEND} ${SOURCE_ONE_WEEKEND_APPLE})
-
-    target_link_libraries (inOneWeekend PRIVATE METAL_CPP)
 
 endif(APPLE)
 
