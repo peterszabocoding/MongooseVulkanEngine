@@ -1,6 +1,5 @@
 #include "window.h"
 
-#include "GLFW/glfw3.h"
 #include "renderer/vulkan/vulkanRenderer.h"
 
 namespace Raytracing
@@ -24,6 +23,7 @@ namespace Raytracing
 		applicationInfo = std::move(appInfo);
 		windowParams = params;
 		renderer = new VulkanRenderer();
+		imGuiVulkan = new ImGuiVulkan();
 	}
 
 	Window::~Window()
@@ -48,9 +48,7 @@ namespace Raytracing
 
 		renderer->SetGLFWwindow(window);
 		renderer->Init(width, height);
-
-		imGuiVulkan = new ImGuiVulkan(window, dynamic_cast<VulkanRenderer*>(renderer));
-		imGuiVulkan->Init(width, height);
+		imGuiVulkan->Init(window, dynamic_cast<VulkanRenderer*>(renderer), width, height);
 	}
 
 	void Window::OnUpdate()
@@ -79,5 +77,10 @@ namespace Raytracing
 			renderer->Resize(width, height);
 			imGuiVulkan->Resize(width, height);
 		}
+	}
+
+	void Window::SetOnWindowCloseCallback(OnWindowCloseCallback callback)
+	{
+		windowCloseCallback = std::move(callback);
 	}
 }

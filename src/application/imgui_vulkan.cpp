@@ -4,11 +4,7 @@ namespace Raytracing
 {
 	static bool show_demo_window = true;
 
-	ImGuiVulkan::ImGuiVulkan(GLFWwindow* glfwWindow, VulkanRenderer* renderer)
-	{
-		this->renderer = renderer;
-		this->glfwWindow = glfwWindow;
-	}
+	ImGuiVulkan::ImGuiVulkan() = default;
 
 	ImGuiVulkan::~ImGuiVulkan()
 	{
@@ -17,8 +13,10 @@ namespace Raytracing
 		ImGui::DestroyContext();
 	}
 
-	void ImGuiVulkan::Init(const int width, const int height)
+	void ImGuiVulkan::Init(GLFWwindow* window, VulkanRenderer* vulkanRenderer, const int width, const int height)
 	{
+		renderer = vulkanRenderer;
+		glfwWindow = window;
 		SetupImGui(width, height);
 	}
 
@@ -125,7 +123,7 @@ namespace Raytracing
 			g_MinImageCount);
 	}
 
-	void ImGuiVulkan::ImGuiFrameRender(ImGui_ImplVulkanH_Window* wd, ImDrawData* draw_data)
+	void ImGuiVulkan::ImGuiFrameRender(ImDrawData* draw_data) const
 	{
 		VkSemaphore image_acquired_semaphore = wd->FrameSemaphores[wd->SemaphoreIndex].ImageAcquiredSemaphore;
 		VkSemaphore render_complete_semaphore = wd->FrameSemaphores[wd->SemaphoreIndex].RenderCompleteSemaphore;
@@ -194,7 +192,7 @@ namespace Raytracing
 		}
 	}
 
-	void ImGuiVulkan::ImGuiFramePresent(ImGui_ImplVulkanH_Window* wd)
+	void ImGuiVulkan::ImGuiFramePresent() const
 	{
 		/*
 		if (g_SwapChainRebuild)
@@ -223,7 +221,7 @@ namespace Raytracing
 		wd->SemaphoreIndex = (wd->SemaphoreIndex + 1) % wd->SemaphoreCount; // Now we can use the next set of semaphores
 	}
 
-	void ImGuiVulkan::DrawUi()
+	void ImGuiVulkan::DrawUi() const
 	{
 		// Start the Dear ImGui frame
 		ImGui_ImplVulkan_NewFrame();
@@ -237,7 +235,7 @@ namespace Raytracing
 		ImGui::Render();
 
 		ImDrawData* draw_data = ImGui::GetDrawData();
-		ImGuiFrameRender(wd, draw_data);
-		ImGuiFramePresent(wd);
+		ImGuiFrameRender(draw_data);
+		ImGuiFramePresent();
 	}
 }

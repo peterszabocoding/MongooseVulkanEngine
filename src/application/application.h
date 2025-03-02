@@ -12,7 +12,7 @@ namespace Raytracing
 		std::string appName;
 		std::string windowTitle;
 		std::string versionName;
-		Version appVersion;
+		Version appVersion = Version{0, 0, 0};
 		int windowWidth = 800;
 		int windowHeight = 800;
 	};
@@ -22,7 +22,6 @@ namespace Raytracing
 	public:
 		Application()
 		{
-			applicationInfo = AppInfo();
 			applicationInfo.appName = "RaytracingInOneWeekend";
 			applicationInfo.windowWidth = 800;
 			applicationInfo.windowHeight = 800;
@@ -38,17 +37,11 @@ namespace Raytracing
 			applicationInfo.windowTitle = "Raytracing In One Weekend: " + applicationInfo.versionName;
 		}
 
-		virtual ~Application()
-		{
-		}
+		virtual ~Application() {}
 
-		virtual void OnCreate()
-		{
-		}
+		virtual void OnCreate() {}
 
-		virtual void Run()
-		{
-		}
+		virtual void Run() {}
 
 		static Application* Create();
 

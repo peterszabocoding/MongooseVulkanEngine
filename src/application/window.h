@@ -1,13 +1,11 @@
 #pragma once
 
 #include <functional>
-#include <utility>
 
 #include "application.h"
 #include "imgui_vulkan.h"
 #include "renderer/renderer.h"
-
-class GLFWwindow;
+#include "GLFW/glfw3.h"
 
 namespace Raytracing
 {
@@ -30,10 +28,7 @@ namespace Raytracing
 		virtual void OnUpdate();
 		virtual void Resize(int width, int height);
 
-		virtual void SetOnWindowCloseCallback(OnWindowCloseCallback callback)
-		{
-			windowCloseCallback = std::move(callback);
-		}
+		virtual void SetOnWindowCloseCallback(OnWindowCloseCallback callback);
 
 	protected:
 		AppInfo applicationInfo;
@@ -42,7 +37,7 @@ namespace Raytracing
 		GLFWwindow* window;
 		OnWindowCloseCallback windowCloseCallback;
 
-		Renderer* renderer;
-		ImGuiVulkan* imGuiVulkan;
+		Renderer* renderer = nullptr;
+		ImGuiVulkan* imGuiVulkan = nullptr;
 	};
 }

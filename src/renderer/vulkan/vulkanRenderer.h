@@ -11,8 +11,6 @@
 #include "renderer/renderer.h"
 #include "vulkan/vulkan.h"
 
-class GLFWwindow;
-
 namespace Raytracing
 {
 	constexpr int MAX_FRAMES_IN_FLIGHT = 2;
