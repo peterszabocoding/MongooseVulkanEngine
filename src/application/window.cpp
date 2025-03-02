@@ -48,7 +48,9 @@ namespace Raytracing
 
 		renderer->SetGLFWwindow(window);
 		renderer->Init(width, height);
-		renderer->SetupImGui(width, height);
+
+		imGuiVulkan = new ImGuiVulkan(window, dynamic_cast<VulkanRenderer*>(renderer));
+		imGuiVulkan->Init(width, height);
 	}
 
 	void Window::OnUpdate()
@@ -62,7 +64,7 @@ namespace Raytracing
 
 		glfwPollEvents();
 		renderer->DrawFrame();
-		renderer->DrawUi();
+		imGuiVulkan->DrawUi();
 	}
 
 	void Window::Resize(int width, int height)
@@ -75,6 +77,7 @@ namespace Raytracing
 		else
 		{
 			renderer->Resize(width, height);
+			imGuiVulkan->Resize(width, height);
 		}
 	}
 }

@@ -39,7 +39,6 @@ namespace Raytracing
 		virtual ~VulkanRenderer() override;
 
 		virtual void Init(int width, int height) override;
-		virtual void SetupImGui(const int width, const int height) override;
 
 		virtual void ProcessPixel(unsigned int pixelCount, vec3 pixelColor) override;
 		virtual void OnRenderBegin(const Camera& camera) override;
@@ -48,7 +47,21 @@ namespace Raytracing
 		virtual void IdleWait() override;
 		virtual void Resize(int width, int height) override;
 		virtual void DrawFrame() override;
-		virtual void DrawUi() override;
+
+		[[nodiscard]] VkInstance GetInstance() const { return instance; }
+		[[nodiscard]] VkDevice GetDevice() const { return device; }
+		[[nodiscard]] VkSurfaceKHR GetSurface() const { return surface; }
+		[[nodiscard]] VkPhysicalDevice GetPhysicalDevice() const { return physicalDevice; }
+
+		[[nodiscard]] uint32_t GetQueueFamilyIndex() const { return FindQueueFamilies(physicalDevice).graphicsFamily.value(); }
+
+		[[nodiscard]] VkDescriptorPool GetDescriptorPool() const { return g_DescriptorPool; }
+
+		[[nodiscard]] VkQueue GetGraphicsQueue() const { return graphicsQueue; }
+		[[nodiscard]] VkQueue GetPresentQueue() const { return presentQueue; }
+
+		VkAllocationCallbacks* GetAllocationCallbackPointer() const { return g_Allocator; }
+
 
 		void CreateSurface();
 
@@ -59,6 +72,7 @@ namespace Raytracing
 		static bool CheckIfExtensionSupported(const char* ext);
 		static bool CheckIfValidationLayerSupported(const char* layer);
 		static inline VkDebugUtilsMessengerCreateInfoEXT CreateDebugMessengerCreateInfo();
+		static void CheckVkResult(VkResult err);
 
 		std::vector<VkExtensionProperties> GetSupportedDeviceExtensions() const;
 
@@ -100,10 +114,6 @@ namespace Raytracing
 		static VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
 		VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) const;
 
-		void SetupVulkanWindow(VkInstance instance, ImGui_ImplVulkanH_Window* wd, VkSurfaceKHR surface, int width, int height);
-		void ImGuiFrameRender(ImGui_ImplVulkanH_Window* wd, ImDrawData* draw_data);
-		void ImGuiFramePresent(ImGui_ImplVulkanH_Window* wd);
-
 	private:
 		int viewportWidth, viewportHeight;
 		uint32_t currentFrame = 0;
@@ -140,13 +150,7 @@ namespace Raytracing
 		std::vector<VkFramebuffer> swapChainFramebuffers;
 		std::vector<VkImageView> swapChainImageViews;
 
-		ImGui_ImplVulkanH_Window* wd;
-
-		VkAllocationCallbacks* g_Allocator = nullptr;
-		VkDebugReportCallbackEXT g_DebugReport = VK_NULL_HANDLE;
-		VkPipelineCache g_PipelineCache = VK_NULL_HANDLE;
 		VkDescriptorPool g_DescriptorPool = VK_NULL_HANDLE;
-		ImGui_ImplVulkanH_Window g_MainWindowData;
-		uint32_t g_MinImageCount = 2;
+		VkAllocationCallbacks* g_Allocator = nullptr;
 	};
 }
