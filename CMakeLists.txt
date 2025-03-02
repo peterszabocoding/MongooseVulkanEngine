@@ -16,37 +16,50 @@ message(STATUS "Looking for Vulkan...")
 find_package(Vulkan REQUIRED)
 
 
-message(STATUS "Fetching GLFW...")
-
 include(FetchContent)
 FetchContent_Declare(
   glfw
   GIT_REPOSITORY https://github.com/glfw/glfw.git
   GIT_TAG 3.4
 )
+
 FetchContent_Declare(
   glm
   GIT_REPOSITORY https://github.com/g-truc/glm
   GIT_TAG 1.0.1
 )
 
+FetchContent_Declare(
+  imgui
+  GIT_REPOSITORY https://github.com/ocornut/imgui
+  GIT_TAG v1.91.8
+)
+
+message(STATUS "Fetching GLFW...")
 FetchContent_MakeAvailable(glfw)
+
+set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
+
+message(STATUS "Fetching GLM...")
 FetchContent_MakeAvailable(glm)
 
-# Source
+message(STATUS "Fetching ImGui...")
+FetchContent_MakeAvailable(imgui)
 
+set(IMGUI_INCLUDE_DIR ${imgui_SOURCE_DIR}/)
+file(GLOB IMGUI_SOURCES ${imgui_SOURCE_DIR}/*.cpp ${imgui_SOURCE_DIR}/*.h)
+
+add_library(
+    imgui STATIC 
+    ${IMGUI_SOURCES}
+)
+
+# Source
 set ( EXTERNAL
   #src/external/stb_image.h
-  #./external/glad/src/glad.c
-
-  #./external/imgui/imgui.cpp
-  #./external/imgui/imgui_demo.cpp
-  #./external/imgui/imgui_draw.cpp
-  #./external/imgui/imgui_tables.cpp
-  #./external/imgui/imgui_widgets.cpp
-
-  #./external/imgui/backends/imgui_impl_glfw.cpp
-  #./external/imgui/backends/imgui_impl_opengl3.cpp
 )
 
 set ( SOURCE_ONE_WEEKEND
@@ -60,6 +73,9 @@ set ( SOURCE_ONE_WEEKEND
   ./src/renderer/camera.cpp
 
   ./src/renderer/vulkan/vulkanRenderer.cpp
+
+  ${imgui_SOURCE_DIR}/backends/imgui_impl_vulkan.cpp
+  ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
 )
 
 set ( SOURCE_ONE_WEEKEND_APPLE
@@ -75,8 +91,6 @@ set ( SOURCE_ONE_WEEKEND_WINDOWS
 )
 
 include_directories("src/")
-include_directories(external/imgui)
-include_directories(external/glad/include)
 
 # Specific compiler flags below. We're not going to add options for all possible compilers, but if
 # you're new to CMake (like we are), the following may be a helpful example if you're using a
@@ -114,24 +128,12 @@ endif()
 add_compile_definitions(NDEBUG)
 
 if(APPLE)
-  # Library definition
-  include_directories(external/metal-cmake/metal-cpp)
-  include_directories(external/metal-cmake/metal-cpp-extensions)
-  add_subdirectory(external/metal-cmake) 
+    add_compile_definitions(PLATFORM_MACOS)
 
-  add_compile_definitions(PLATFORM_MACOS)
+    # Executables
+    add_executable(inOneWeekend ${EXTERNAL} ${SOURCE_ONE_WEEKEND} ${SOURCE_ONE_WEEKEND_APPLE})
 
-  # Executables
-  add_executable(inOneWeekend ${EXTERNAL} ${SOURCE_ONE_WEEKEND} ${SOURCE_ONE_WEEKEND_APPLE})
-
-  target_link_libraries (inOneWeekend PRIVATE METAL_CPP)
-  # target_link_libraries (inOneWeekend PRIVATE "-framework OpenGL")
-
-    # target include directories
-    target_include_directories(inOneWeekend PRIVATE ${Vulkan_INCLUDE_DIRS})
-
-    # target link libraries
-    target_link_libraries(inOneWeekend PRIVATE ${Vulkan_LIBRARIES})
+    target_link_libraries (inOneWeekend PRIVATE METAL_CPP)
 
 endif(APPLE)
 
@@ -143,13 +145,18 @@ if(WIN32)
   # Executables
   add_executable(inOneWeekend ${EXTERNAL} ${HEADERS} ${SOURCE_ONE_WEEKEND} ${SOURCE_ONE_WEEKEND_WINDOWS})
 
-  # target include directories
-  target_include_directories(inOneWeekend PRIVATE ${Vulkan_INCLUDE_DIRS})
-
-  # target link libraries
-  target_link_libraries(inOneWeekend PRIVATE ${Vulkan_LIBRARIES})
-
 endif(WIN32)
 
+
+set_target_properties(glfw PROPERTIES FOLDER "Dependencies")
+set_target_properties(glm PROPERTIES FOLDER "Dependencies")
+set_target_properties(imgui PROPERTIES FOLDER "Dependencies")
+
+target_include_directories(inOneWeekend PRIVATE ${Vulkan_INCLUDE_DIRS})
+target_include_directories(inOneWeekend PRIVATE ${IMGUI_INCLUDE_DIR})
+
+target_link_libraries(inOneWeekend PRIVATE ${Vulkan_LIBRARIES})
 target_link_libraries (inOneWeekend PRIVATE glfw)
-# target_link_libraries (inOneWeekend PRIVATE glm)
+target_link_libraries (inOneWeekend PRIVATE glm)
+target_link_libraries (inOneWeekend PRIVATE imgui)
+

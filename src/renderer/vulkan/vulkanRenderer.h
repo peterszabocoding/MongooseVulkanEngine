@@ -4,6 +4,10 @@
 
 #include <optional>
 
+#include "imgui.h"
+#include "backends/imgui_impl_glfw.h"
+#include "backends/imgui_impl_vulkan.h"
+
 #include "renderer/renderer.h"
 #include "vulkan/vulkan.h"
 
@@ -35,6 +39,7 @@ namespace Raytracing
 		virtual ~VulkanRenderer() override;
 
 		virtual void Init(int width, int height) override;
+		virtual void SetupImGui(const int width, const int height) override;
 
 		virtual void ProcessPixel(unsigned int pixelCount, vec3 pixelColor) override;
 		virtual void OnRenderBegin(const Camera& camera) override;
@@ -43,6 +48,7 @@ namespace Raytracing
 		virtual void IdleWait() override;
 		virtual void Resize(int width, int height) override;
 		virtual void DrawFrame() override;
+		virtual void DrawUi() override;
 
 		void CreateSurface();
 
@@ -82,9 +88,10 @@ namespace Raytracing
 		void CreateCommandPool();
 		void CreateCommandBuffers();
 		void CreateSyncObjects();
+		void CreateVertexBuffer();
+		void CreateDescriptorPool();
 
 		void RecreateSwapChain();
-
 		void CleanupSwapChain() const;
 
 		void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) const;
@@ -93,12 +100,18 @@ namespace Raytracing
 		static VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
 		VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) const;
 
+		void SetupVulkanWindow(VkInstance instance, ImGui_ImplVulkanH_Window* wd, VkSurfaceKHR surface, int width, int height);
+		void ImGuiFrameRender(ImGui_ImplVulkanH_Window* wd, ImDrawData* draw_data);
+		void ImGuiFramePresent(ImGui_ImplVulkanH_Window* wd);
+
 	private:
 		int viewportWidth, viewportHeight;
 		uint32_t currentFrame = 0;
 
 		bool framebufferResized = false;
 
+
+		// Vulkan
 		VkDevice device;
 		VkInstance instance;
 
@@ -126,5 +139,14 @@ namespace Raytracing
 
 		std::vector<VkFramebuffer> swapChainFramebuffers;
 		std::vector<VkImageView> swapChainImageViews;
+
+		ImGui_ImplVulkanH_Window* wd;
+
+		VkAllocationCallbacks* g_Allocator = nullptr;
+		VkDebugReportCallbackEXT g_DebugReport = VK_NULL_HANDLE;
+		VkPipelineCache g_PipelineCache = VK_NULL_HANDLE;
+		VkDescriptorPool g_DescriptorPool = VK_NULL_HANDLE;
+		ImGui_ImplVulkanH_Window g_MainWindowData;
+		uint32_t g_MinImageCount = 2;
 	};
 }

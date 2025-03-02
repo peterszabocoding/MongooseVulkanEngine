@@ -7,18 +7,10 @@
 
 #include "camera.h"
 #include "math/hitable.h"
-#include "application/application.h"
 #include "GLFW/glfw3.h"
 
 namespace Raytracing
 {
-	struct Vertex
-	{
-		vec3 position;
-		vec3 texCoord;
-		vec3 color = vec3();
-	};
-
 	class Renderer
 	{
 	public:
@@ -26,10 +18,12 @@ namespace Raytracing
 		virtual void Render(const Camera& camera, const std::vector<Hitable*>& scene);
 
 		virtual void Init(int width, int height) = 0;
+		virtual void SetupImGui(const int width, const int height) = 0;
 		virtual void Resize(int width, int height);
 
 		virtual void IdleWait() {}
 		virtual void DrawFrame() {}
+		virtual void DrawUi() {}
 
 		virtual void SetGLFWwindow(GLFWwindow* window) { glfwWindow = window; }
 

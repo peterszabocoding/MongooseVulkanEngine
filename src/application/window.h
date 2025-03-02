@@ -3,6 +3,7 @@
 #include <functional>
 #include <utility>
 
+#include "application.h"
 #include "renderer/renderer.h"
 
 class GLFWwindow;

@@ -48,6 +48,7 @@ namespace Raytracing
 
 		renderer->SetGLFWwindow(window);
 		renderer->Init(width, height);
+		renderer->SetupImGui(width, height);
 	}
 
 	void Window::OnUpdate()
@@ -61,6 +62,7 @@ namespace Raytracing
 
 		glfwPollEvents();
 		renderer->DrawFrame();
+		renderer->DrawUi();
 	}
 
 	void Window::Resize(int width, int height)
