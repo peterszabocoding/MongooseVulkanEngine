@@ -15,13 +15,10 @@ namespace Raytracing
 
 		void Init(GLFWwindow* glfwWindow, VulkanRenderer* renderer, const int width, const int height);
 		void Resize(const int width, const int height);
-		void DrawUi() const;
+		void DrawUi();
 
 	private:
 		void SetupImGui(const int width, const int height);
-		void SetupVulkanWindow(int width, int height);
-		void ImGuiFrameRender(ImDrawData* draw_data) const;
-		void ImGuiFramePresent() const;
 
 	private:
 		uint32_t g_MinImageCount = 2;
@@ -30,9 +27,10 @@ namespace Raytracing
 		GLFWwindow* glfwWindow = nullptr;
 
 		ImGui_ImplVulkanH_Window g_MainWindowData;
-		ImGui_ImplVulkanH_Window* wd = nullptr;
 
 		VkDebugReportCallbackEXT g_DebugReport = VK_NULL_HANDLE;
 		VkPipelineCache g_PipelineCache = VK_NULL_HANDLE;
+
+		bool g_SwapChainRebuild = false;
 	};
 }

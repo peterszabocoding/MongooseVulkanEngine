@@ -61,8 +61,8 @@ namespace Raytracing
 		}
 
 		glfwPollEvents();
-		renderer->DrawFrame();
 		imGuiVulkan->DrawUi();
+		renderer->DrawFrame();
 	}
 
 	void Window::Resize(int width, int height)

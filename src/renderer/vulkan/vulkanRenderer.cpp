@@ -371,7 +371,7 @@ namespace Raytracing
 		for (size_t i = 0; i < glfw_extension_count; i++)
 			glfw_extension_list.push_back(glfw_extensions[i]);
 
-		glfw_extension_list.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+		//glfw_extension_list.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
 
 		CreateVkInstance(glfw_extension_list, validation_layer_list);
 		CreateSurface();
@@ -507,9 +507,13 @@ namespace Raytracing
 			throw std::runtime_error("failed to create swap chain!");
 		}
 
-		vkGetSwapchainImagesKHR(device, swapChain, &image_count, nullptr);
+		VkResult err = vkGetSwapchainImagesKHR(device, swapChain, &image_count, nullptr);
+		CheckVkResult(err);
+
 		swapChainImages.resize(image_count);
-		vkGetSwapchainImagesKHR(device, swapChain, &image_count, swapChainImages.data());
+
+		err = vkGetSwapchainImagesKHR(device, swapChain, &image_count, swapChainImages.data());
+		CheckVkResult(err);
 
 		swapChainImageFormat = surfaceFormat.format;
 		swapChainExtent = extent;
@@ -528,10 +532,10 @@ namespace Raytracing
 			create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
 			create_info.format = swapChainImageFormat;
 
-			create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-			create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-			create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-			create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+			create_info.components.r = VK_COMPONENT_SWIZZLE_R;
+			create_info.components.g = VK_COMPONENT_SWIZZLE_G;
+			create_info.components.b = VK_COMPONENT_SWIZZLE_B;
+			create_info.components.a = VK_COMPONENT_SWIZZLE_A;
 
 			create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 			create_info.subresourceRange.baseMipLevel = 0;
@@ -567,7 +571,6 @@ namespace Raytracing
 		fragShaderStageInfo.pName = "main";
 
 		VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
-
 
 		auto bindingDescription = Vertex::GetBindingDescription();
 		auto attributeDescriptions = Vertex::GetAttributeDescriptions();
@@ -690,12 +693,22 @@ namespace Raytracing
 		subpass.colorAttachmentCount = 1;
 		subpass.pColorAttachments = &colorAttachmentRef;
 
+		VkSubpassDependency dependency = {};
+		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+		dependency.dstSubpass = 0;
+		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependency.srcAccessMask = 0;
+		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
 		VkRenderPassCreateInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 		renderPassInfo.attachmentCount = 1;
 		renderPassInfo.pAttachments = &colorAttachment;
 		renderPassInfo.subpassCount = 1;
 		renderPassInfo.pSubpasses = &subpass;
+		renderPassInfo.dependencyCount = 1;
+		renderPassInfo.pDependencies = &dependency;
 
 		if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
 		{
@@ -773,24 +786,21 @@ namespace Raytracing
 	{
 		VkDescriptorPoolSize pool_sizes[] =
 		{
-			{VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
-			{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
-			{VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000},
-			{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000},
-			{VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000},
-			{VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000},
-			{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000},
-			{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000},
-			{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000},
-			{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000},
-			{VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000}
+			{
+				VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				IMGUI_IMPL_VULKAN_MINIMUM_IMAGE_SAMPLER_POOL_SIZE
+			},
 		};
+
 		VkDescriptorPoolCreateInfo pool_info = {};
 		pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-		pool_info.maxSets = 1000 * IM_ARRAYSIZE(pool_sizes);
+		pool_info.maxSets = 0;
+		for (VkDescriptorPoolSize& pool_size : pool_sizes)
+			pool_info.maxSets += pool_size.descriptorCount;
 		pool_info.poolSizeCount = (uint32_t)IM_ARRAYSIZE(pool_sizes);
 		pool_info.pPoolSizes = pool_sizes;
+
 		VkResult err = vkCreateDescriptorPool(device, &pool_info, g_Allocator, &g_DescriptorPool);
 		CheckVkResult(err);
 	}
@@ -874,6 +884,8 @@ namespace Raytracing
 
 		vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 
+		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffers[currentFrame]);
+
 		vkCmdEndRenderPass(commandBuffer);
 
 		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
@@ -886,7 +898,8 @@ namespace Raytracing
 	{
 		for (const auto& available_format : availableFormats)
 		{
-			if (available_format.format == VK_FORMAT_B8G8R8A8_SRGB
+			// Switch from VK_FORMAT_B8G8R8A8_SRGB because of ImGui
+			if (available_format.format == VK_FORMAT_R8G8B8A8_UNORM
 				&& available_format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
 			{
 				return available_format;
@@ -932,7 +945,7 @@ namespace Raytracing
 
 	void VulkanRenderer::DrawFrame()
 	{
-		Timer timer("Render");
+		//Timer timer("Render");
 
 		vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 

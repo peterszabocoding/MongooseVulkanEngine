@@ -46,20 +46,27 @@ namespace Raytracing
 		virtual void Resize(int width, int height) override;
 		virtual void DrawFrame() override;
 
+		int GetViewportWidth() const { return viewportWidth; }
+		int GetViewportHeight() const { return viewportHeight; }
+
 		[[nodiscard]] VkInstance GetInstance() const { return instance; }
 		[[nodiscard]] VkDevice GetDevice() const { return device; }
 		[[nodiscard]] VkSurfaceKHR GetSurface() const { return surface; }
 		[[nodiscard]] VkPhysicalDevice GetPhysicalDevice() const { return physicalDevice; }
-
 		[[nodiscard]] uint32_t GetQueueFamilyIndex() const { return FindQueueFamilies(physicalDevice).graphicsFamily.value(); }
-
 		[[nodiscard]] VkDescriptorPool GetDescriptorPool() const { return g_DescriptorPool; }
-
 		[[nodiscard]] VkQueue GetGraphicsQueue() const { return graphicsQueue; }
 		[[nodiscard]] VkQueue GetPresentQueue() const { return presentQueue; }
+		[[nodiscard]] VkRenderPass GetRenderPass() const { return renderPass; }
 
-		VkAllocationCallbacks* GetAllocationCallbackPointer() const { return g_Allocator; }
+		[[nodiscard]] VkAllocationCallbacks* GetAllocationCallbackPointer() const { return g_Allocator; }
 
+		[[nodiscard]] VkSemaphore GetImageAvailableSemaphore() const { return imageAvailableSemaphores[currentFrame]; }
+		[[nodiscard]] VkSemaphore GetRenderFinishedSemaphore() const { return renderFinishedSemaphores[currentFrame]; }
+
+		[[nodiscard]] VkSwapchainKHR GetCurrentSwapchain() const { return swapChain; }
+
+		VkCommandBuffer GetCurrentCommandBuffer() { return commandBuffers[currentFrame]; }
 
 		void CreateSurface();
 
