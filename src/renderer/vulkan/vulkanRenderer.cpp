@@ -15,7 +15,7 @@ namespace Raytracing
 #ifdef NDEBUG
 		constexpr bool enableValidationLayers = false;
 #else
-		const bool enableValidationLayers = true;
+		constexpr bool enableValidationLayers = false;
 #endif
 
 		static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
@@ -89,7 +89,8 @@ namespace Raytracing
 		vkEnumerateInstanceExtensionProperties(nullptr, &extension_count, available_extensions.data());
 
 		std::cout << "available extensions:\n";
-		for (const auto& extension : available_extensions) std::cout << '\t' << extension.extensionName << '\n';
+		for (const auto& extension : available_extensions) 
+			std::cout << '\t' << extension.extensionName << '\n';
 
 		return available_extensions;
 	}
@@ -362,16 +363,21 @@ namespace Raytracing
 	void VulkanRenderer::InitVulkan()
 	{
 		GetSupportedValidationLayers();
+		GetAvailableExtensions();
 
 		uint32_t glfw_extension_count = 0;
 		const char** glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extension_count);
 		std::vector<const char*> glfw_extension_list;
-		std::vector<const char*> validation_layer_list = {VK_EXT_DEBUG_UTILS_EXTENSION_NAME};
+		std::vector<const char*> validation_layer_list;
+        
+        //validation_layer_list.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME)
 
 		for (size_t i = 0; i < glfw_extension_count; i++)
 			glfw_extension_list.push_back(glfw_extensions[i]);
 
-		//glfw_extension_list.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+		glfw_extension_list.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+		glfw_extension_list.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+		glfw_extension_list.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
 		CreateVkInstance(glfw_extension_list, validation_layer_list);
 		CreateSurface();
@@ -432,6 +438,11 @@ namespace Raytracing
 
 		if (VulkanUtils::enableValidationLayers && !validationLayers.empty())
 		{
+			std::clog << "Validation layer enabled" << std::endl;
+			for (auto& layer : validationLayers)
+				std::clog << layer << std::endl;
+
+
 			auto debugCreateInfo = CreateDebugMessengerCreateInfo();
 
 			createInfo.enabledLayerCount = validationLayers.size();

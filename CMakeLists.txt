@@ -60,6 +60,8 @@ add_library(
 # Source
 set ( EXTERNAL
   #src/external/stb_image.h
+  ${imgui_SOURCE_DIR}/backends/imgui_impl_vulkan.cpp
+  ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
 )
 
 set ( SOURCE_ONE_WEEKEND
@@ -74,9 +76,6 @@ set ( SOURCE_ONE_WEEKEND
   ./src/renderer/camera.cpp
 
   ./src/renderer/vulkan/vulkanRenderer.cpp
-
-  ${imgui_SOURCE_DIR}/backends/imgui_impl_vulkan.cpp
-  ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
 )
 
 set ( SOURCE_ONE_WEEKEND_APPLE
@@ -126,22 +125,17 @@ endif()
 # Global definitions
 add_compile_definitions(NDEBUG)
 
+FILE(GLOB_RECURSE HEADERS "src/**.h")
+
 if(APPLE)
     add_compile_definitions(PLATFORM_MACOS)
-
-    # Executables
-    add_executable(inOneWeekend ${EXTERNAL} ${SOURCE_ONE_WEEKEND} ${SOURCE_ONE_WEEKEND_APPLE})
-
+    
+    add_executable(inOneWeekend ${EXTERNAL} ${HEADERS} ${SOURCE_ONE_WEEKEND} ${SOURCE_ONE_WEEKEND_APPLE})
 endif(APPLE)
 
 if(WIN32)
   add_compile_definitions(PLATFORM_WINDOWS)
-
-  FILE(GLOB_RECURSE HEADERS "src/**.h")
-
-  # Executables
   add_executable(inOneWeekend ${EXTERNAL} ${HEADERS} ${SOURCE_ONE_WEEKEND} ${SOURCE_ONE_WEEKEND_WINDOWS})
-
 endif(WIN32)
 
 

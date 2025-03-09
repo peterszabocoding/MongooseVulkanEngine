@@ -56,8 +56,9 @@ namespace Raytracing
 		init_info.QueueFamily = renderer->GetQueueFamilyIndex();
 		init_info.Queue = renderer->GetPresentQueue();
 		init_info.DescriptorPool = renderer->GetDescriptorPool();
-		init_info.MinImageCount = 3;
-		init_info.ImageCount = 3;
+		init_info.RenderPass = renderer->GetRenderPass();
+		init_info.MinImageCount = 2;
+		init_info.ImageCount = 2;
 		init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 		init_info.CheckVkResultFn = VulkanRenderer::CheckVkResult;
 
@@ -71,7 +72,8 @@ namespace Raytracing
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 
-		ImGui::ShowDemoWindow(&show_demo_window);
+        if(show_demo_window)
+            ImGui::ShowDemoWindow(&show_demo_window);
 
 		ImGui::Begin("Demo window");
 		ImGui::Text("Demo text");
