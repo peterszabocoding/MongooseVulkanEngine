@@ -45,7 +45,7 @@ struct Vertex
 namespace Primitives
 {
 	const std::vector<Vertex> TRIANGLE = {
-		{{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+		{{0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}},
 		{{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
 		{{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
 	};

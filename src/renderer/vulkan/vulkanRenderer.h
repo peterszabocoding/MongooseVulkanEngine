@@ -7,6 +7,7 @@
 #include "imgui.h"
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_vulkan.h"
+#include "renderer/mesh.h"
 
 #include "renderer/renderer.h"
 #include "vulkan/vulkan.h"
@@ -157,5 +158,10 @@ namespace Raytracing
 
 		VkDescriptorPool g_DescriptorPool = VK_NULL_HANDLE;
 		VkAllocationCallbacks* g_Allocator = nullptr;
+
+		VkBuffer vertexBuffer;
+		VkDeviceMemory vertexBufferMemory;
+
+		std::vector<Vertex> triangle_vertices = Primitives::TRIANGLE;
 	};
 }

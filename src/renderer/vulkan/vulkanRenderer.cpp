@@ -27,6 +27,22 @@ namespace Raytracing
 			std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
 			return VK_FALSE;
 		}
+
+		static uint32_t FindMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties)
+		{
+			VkPhysicalDeviceMemoryProperties memProperties;
+			vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+
+			for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+			{
+				if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
+				{
+					return i;
+				}
+			}
+
+			throw std::runtime_error("failed to find suitable memory type!");
+		}
 	}
 
 	void VulkanRenderer::CheckVkResult(VkResult err)
@@ -38,6 +54,10 @@ namespace Raytracing
 	VulkanRenderer::~VulkanRenderer()
 	{
 		CleanupSwapChain();
+
+		vkDestroyBuffer(device, vertexBuffer, nullptr);
+		vkFreeMemory(device, vertexBufferMemory, nullptr);
+		vkDestroyBuffer(device, vertexBuffer, nullptr);
 
 		vkDestroyPipeline(device, graphicsPipeline, nullptr);
 		vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
@@ -89,7 +109,7 @@ namespace Raytracing
 		vkEnumerateInstanceExtensionProperties(nullptr, &extension_count, available_extensions.data());
 
 		std::cout << "available extensions:\n";
-		for (const auto& extension : available_extensions) 
+		for (const auto& extension : available_extensions)
 			std::cout << '\t' << extension.extensionName << '\n';
 
 		return available_extensions;
@@ -369,8 +389,8 @@ namespace Raytracing
 		const char** glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extension_count);
 		std::vector<const char*> glfw_extension_list;
 		std::vector<const char*> validation_layer_list;
-        
-        //validation_layer_list.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME)
+
+		//validation_layer_list.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME)
 
 		for (size_t i = 0; i < glfw_extension_count; i++)
 			glfw_extension_list.push_back(glfw_extensions[i]);
@@ -569,31 +589,31 @@ namespace Raytracing
 		VkShaderModule vertShaderModule = CreateShaderModule(vertShaderCode);
 		VkShaderModule fragShaderModule = CreateShaderModule(fragShaderCode);
 
-		VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
-		vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-		vertShaderStageInfo.module = vertShaderModule;
-		vertShaderStageInfo.pName = "main";
+		VkPipelineShaderStageCreateInfo vert_shader_stage_info{};
+		vert_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		vert_shader_stage_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
+		vert_shader_stage_info.module = vertShaderModule;
+		vert_shader_stage_info.pName = "main";
 
-		VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
-		fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		fragShaderStageInfo.module = fragShaderModule;
-		fragShaderStageInfo.pName = "main";
+		VkPipelineShaderStageCreateInfo frag_shader_stage_info{};
+		frag_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		frag_shader_stage_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+		frag_shader_stage_info.module = fragShaderModule;
+		frag_shader_stage_info.pName = "main";
 
-		VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
+		VkPipelineShaderStageCreateInfo shader_stages[] = {vert_shader_stage_info, frag_shader_stage_info};
 
-		auto bindingDescription = Vertex::GetBindingDescription();
-		auto attributeDescriptions = Vertex::GetAttributeDescriptions();
+		auto binding_description = Vertex::GetBindingDescription();
+		auto attribute_descriptions = Vertex::GetAttributeDescriptions();
 
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
 		vertexInputInfo.vertexBindingDescriptionCount = 1;
-		vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+		vertexInputInfo.pVertexBindingDescriptions = &binding_description;
 
-		vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
-		vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+		vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attribute_descriptions.size());
+		vertexInputInfo.pVertexAttributeDescriptions = attribute_descriptions.data();
 
 		VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
 		inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -658,7 +678,7 @@ namespace Raytracing
 		VkGraphicsPipelineCreateInfo pipelineInfo{};
 		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 		pipelineInfo.stageCount = 2;
-		pipelineInfo.pStages = shaderStages;
+		pipelineInfo.pStages = shader_stages;
 		pipelineInfo.pVertexInputState = &vertexInputInfo;
 		pipelineInfo.pInputAssemblyState = &inputAssembly;
 		pipelineInfo.pViewportState = &viewportState;
@@ -791,7 +811,43 @@ namespace Raytracing
 		}
 	}
 
-	void VulkanRenderer::CreateVertexBuffer() {}
+	void VulkanRenderer::CreateVertexBuffer()
+	{
+		VkBufferCreateInfo bufferInfo{};
+		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		bufferInfo.size = sizeof(triangle_vertices[0]) * triangle_vertices.size();
+
+		bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		if (vkCreateBuffer(device, &bufferInfo, nullptr, &vertexBuffer) != VK_SUCCESS)
+		{
+			throw std::runtime_error("failed to create vertex buffer!");
+		}
+
+		VkMemoryRequirements memRequirements;
+		vkGetBufferMemoryRequirements(device, vertexBuffer, &memRequirements);
+
+		VkMemoryAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		allocInfo.allocationSize = memRequirements.size;
+		allocInfo.memoryTypeIndex = VulkanUtils::FindMemoryType(
+			physicalDevice,
+			memRequirements.memoryTypeBits,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+		if (vkAllocateMemory(device, &allocInfo, nullptr, &vertexBufferMemory) != VK_SUCCESS)
+		{
+			throw std::runtime_error("failed to allocate vertex buffer memory!");
+		}
+
+		vkBindBufferMemory(device, vertexBuffer, vertexBufferMemory, 0);
+
+		void* data;
+		vkMapMemory(device, vertexBufferMemory, 0, bufferInfo.size, 0, &data);
+		memcpy(data, triangle_vertices.data(), bufferInfo.size);
+		vkUnmapMemory(device, vertexBufferMemory);
+	}
 
 	void VulkanRenderer::CreateDescriptorPool()
 	{
@@ -893,7 +949,11 @@ namespace Raytracing
 		scissor.extent = swapChainExtent;
 		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-		vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+		VkBuffer vertexBuffers[] = {vertexBuffer};
+		VkDeviceSize offsets[] = {0};
+		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+
+		vkCmdDraw(commandBuffer, static_cast<uint32_t>(triangle_vertices.size()), 1, 0, 0);
 
 		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffers[currentFrame]);
 
