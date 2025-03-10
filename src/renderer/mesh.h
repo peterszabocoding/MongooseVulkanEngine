@@ -49,6 +49,17 @@ namespace Primitives
 		{{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
 		{{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
 	};
+
+	const std::vector<uint16_t> RECTANGLE_INDICES = {
+		0, 1, 2, 2, 3, 0
+	};
+
+	const std::vector<Vertex> RECTANGLE_VERTICES = {
+		{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+		{{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+		{{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+		{{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+	};
 }
 
 class Mesh

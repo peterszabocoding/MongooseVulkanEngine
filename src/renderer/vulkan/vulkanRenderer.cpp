@@ -55,6 +55,9 @@ namespace Raytracing
 	{
 		CleanupSwapChain();
 
+		vkDestroyBuffer(device, indexBuffer, nullptr);
+		vkFreeMemory(device, indexBufferMemory, nullptr);
+
 		vkDestroyBuffer(device, vertexBuffer, nullptr);
 		vkFreeMemory(device, vertexBufferMemory, nullptr);
 		vkDestroyBuffer(device, vertexBuffer, nullptr);
@@ -412,6 +415,7 @@ namespace Raytracing
 		CreateFramebuffers();
 		CreateCommandPool();
 		CreateVertexBuffer();
+		CreateIndexBuffer();
 		CreateCommandBuffers();
 		CreateSyncObjects();
 		CreateDescriptorPool();
@@ -813,7 +817,7 @@ namespace Raytracing
 
 	void VulkanRenderer::CreateVertexBuffer()
 	{
-		VkDeviceSize bufferSize = sizeof(triangle_vertices[0]) * triangle_vertices.size();
+		VkDeviceSize bufferSize = sizeof(mesh_vertices[0]) * mesh_vertices.size();
 		VkBuffer stagingBuffer;
 		VkDeviceMemory stagingBufferMemory;
 		CreateBuffer(
@@ -824,7 +828,7 @@ namespace Raytracing
 
 		void* data;
 		vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-		memcpy(data, triangle_vertices.data(), bufferSize);
+		memcpy(data, mesh_vertices.data(), bufferSize);
 		vkUnmapMemory(device, stagingBufferMemory);
 
 		CreateBuffer(
@@ -835,6 +839,37 @@ namespace Raytracing
 			vertexBufferMemory);
 
 		CopyBuffer(stagingBuffer, vertexBuffer, bufferSize);
+
+		vkDestroyBuffer(device, stagingBuffer, nullptr);
+		vkFreeMemory(device, stagingBufferMemory, nullptr);
+	}
+
+	void VulkanRenderer::CreateIndexBuffer()
+	{
+		VkDeviceSize bufferSize = sizeof(mesh_indices[0]) * mesh_indices.size();
+
+		VkBuffer stagingBuffer;
+		VkDeviceMemory stagingBufferMemory;
+		CreateBuffer(
+			bufferSize,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			stagingBuffer,
+			stagingBufferMemory);
+
+		void* data;
+		vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+		memcpy(data, mesh_indices.data(), bufferSize);
+		vkUnmapMemory(device, stagingBufferMemory);
+
+		CreateBuffer(
+			bufferSize,
+			VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			indexBuffer,
+			indexBufferMemory);
+
+		CopyBuffer(stagingBuffer, indexBuffer, bufferSize);
 
 		vkDestroyBuffer(device, stagingBuffer, nullptr);
 		vkFreeMemory(device, stagingBufferMemory, nullptr);
@@ -973,8 +1008,9 @@ namespace Raytracing
 		VkBuffer vertexBuffers[] = {vertexBuffer};
 		VkDeviceSize offsets[] = {0};
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+		vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
-		vkCmdDraw(commandBuffer, static_cast<uint32_t>(triangle_vertices.size()), 1, 0, 0);
+		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(mesh_indices.size()), 1, 0, 0, 0);
 
 		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffers[currentFrame]);
 

@@ -109,6 +109,8 @@ namespace Raytracing
 		void CreateCommandBuffers();
 		void CreateSyncObjects();
 		void CreateVertexBuffer();
+		void CreateIndexBuffer();
+
 		void CreateDescriptorPool();
 		void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer,
 		                  VkDeviceMemory& bufferMemory);
@@ -166,6 +168,10 @@ namespace Raytracing
 		VkBuffer vertexBuffer;
 		VkDeviceMemory vertexBufferMemory;
 
-		std::vector<Vertex> triangle_vertices = Primitives::TRIANGLE;
+		VkBuffer indexBuffer;
+		VkDeviceMemory indexBufferMemory;
+
+		std::vector<Vertex> mesh_vertices = Primitives::RECTANGLE_VERTICES;
+		std::vector<uint16_t> mesh_indices = Primitives::RECTANGLE_INDICES;
 	};
 }
