@@ -110,11 +110,15 @@ namespace Raytracing
 		void CreateSyncObjects();
 		void CreateVertexBuffer();
 		void CreateDescriptorPool();
+		void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer,
+		                  VkDeviceMemory& bufferMemory);
 
 		void RecreateSwapChain();
 		void CleanupSwapChain() const;
 
 		void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) const;
+
+		void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
 		static VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 		static VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
