@@ -3,6 +3,7 @@
 #define GLFW_INCLUDE_VULKAN
 
 #include <optional>
+#include "glm/glm.hpp"
 
 #include "vulkan/vulkan.h"
 #include "renderer/mesh.h"
@@ -25,6 +26,13 @@ namespace Raytracing
 		std::optional<uint32_t> presentFamily;
 
 		[[nodiscard]] bool IsComplete() const { return graphicsFamily.has_value(); }
+	};
+
+	struct UniformBufferObject
+	{
+		glm::mat4 model;
+		glm::mat4 view;
+		glm::mat4 proj;
 	};
 
 	class VulkanRenderer : public Renderer
@@ -51,7 +59,8 @@ namespace Raytracing
 		VkSurfaceKHR GetSurface() const { return surface; }
 		VkPhysicalDevice GetPhysicalDevice() const { return physicalDevice; }
 		uint32_t GetQueueFamilyIndex() const;
-		VkDescriptorPool GetDescriptorPool() const { return g_DescriptorPool; }
+		VkDescriptorPool GetDescriptorPool() const { return descriptorPool; }
+		VkDescriptorPool GetGUIDescriptorPool() const { return gui_descriptionPool; }
 		VkQueue GetGraphicsQueue() const { return graphicsQueue; }
 		VkQueue GetPresentQueue() const { return presentQueue; }
 		VkRenderPass GetRenderPass() const { return renderPass; }
@@ -100,9 +109,16 @@ namespace Raytracing
 		void CreateVertexBuffer(VkDevice device, const std::vector<Vertex>& vertexData);
 		void CreateIndexBuffer(const VkDevice device, const std::vector<uint16_t> mesh_indices);
 
+		void CreateGUIDescriptorPool();
 		void CreateDescriptorPool();
+		void CreateDescriptorSets();
+
 		void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer,
 		                  VkDeviceMemory& bufferMemory) const;
+
+		void CreateDescriptorSetLayout();
+
+		void CreateUniformBuffers();
 
 		void RecreateSwapChain();
 		void CleanupSwapChain() const;
@@ -110,6 +126,8 @@ namespace Raytracing
 		void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) const;
 
 		void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) const;
+
+		void UpdateUniformBuffer(uint32_t currentImage) const;
 
 		static VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 		static VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
@@ -138,8 +156,9 @@ namespace Raytracing
 		VkExtent2D swapChainExtent;
 
 		VkRenderPass renderPass;
-		VkPipelineLayout pipelineLayout;
 		VkPipeline graphicsPipeline;
+		VkDescriptorSetLayout descriptorSetLayout;
+		VkPipelineLayout pipelineLayout;
 
 		VkCommandPool commandPool;
 
@@ -151,7 +170,10 @@ namespace Raytracing
 		std::vector<VkFramebuffer> swapChainFramebuffers;
 		std::vector<VkImageView> swapChainImageViews;
 
-		VkDescriptorPool g_DescriptorPool = VK_NULL_HANDLE;
+		VkDescriptorPool gui_descriptionPool = VK_NULL_HANDLE;
+		VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
+		std::vector<VkDescriptorSet> descriptorSets;
+
 		VkAllocationCallbacks* g_Allocator = nullptr;
 
 		VkBuffer vertexBuffer;
@@ -159,6 +181,10 @@ namespace Raytracing
 
 		VkBuffer indexBuffer;
 		VkDeviceMemory indexBufferMemory;
+
+		std::vector<VkBuffer> uniformBuffers;
+		std::vector<VkDeviceMemory> uniformBuffersMemory;
+		std::vector<void*> uniformBuffersMapped;
 
 		std::vector<Vertex> mesh_vertices = Primitives::RECTANGLE_VERTICES;
 		std::vector<uint16_t> mesh_indices = Primitives::RECTANGLE_INDICES;

@@ -13,7 +13,7 @@ struct Vertex
 
 	static VkVertexInputBindingDescription GetBindingDescription()
 	{
-		VkVertexInputBindingDescription bindingDescription;
+		VkVertexInputBindingDescription bindingDescription{};
 
 		bindingDescription.binding = 0;
 		bindingDescription.stride = sizeof(Vertex);
