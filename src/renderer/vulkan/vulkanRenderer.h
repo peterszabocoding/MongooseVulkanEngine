@@ -4,13 +4,9 @@
 
 #include <optional>
 
-#include "imgui.h"
-#include "backends/imgui_impl_glfw.h"
-#include "backends/imgui_impl_vulkan.h"
-#include "renderer/mesh.h"
-
-#include "renderer/renderer.h"
 #include "vulkan/vulkan.h"
+#include "renderer/mesh.h"
+#include "renderer/renderer.h"
 
 namespace Raytracing
 {
@@ -35,13 +31,13 @@ namespace Raytracing
 	{
 	public:
 		VulkanRenderer() = default;
-		virtual ~VulkanRenderer() override;
+		~VulkanRenderer() override;
 
 		virtual void Init(int width, int height) override;
 
-		virtual void ProcessPixel(unsigned int pixelCount, vec3 pixelColor) override;
-		virtual void OnRenderBegin(const Camera& camera) override;
-		virtual void OnRenderFinished(const Camera& camera) override;
+		virtual void ProcessPixel(unsigned int pixelCount, vec3 pixelColor) override {}
+		virtual void OnRenderBegin(const Camera& camera) override {}
+		virtual void OnRenderFinished(const Camera& camera) override {}
 
 		virtual void IdleWait() override;
 		virtual void Resize(int width, int height) override;
@@ -50,42 +46,28 @@ namespace Raytracing
 		int GetViewportWidth() const { return viewportWidth; }
 		int GetViewportHeight() const { return viewportHeight; }
 
-		[[nodiscard]] VkInstance GetInstance() const { return instance; }
-		[[nodiscard]] VkDevice GetDevice() const { return device; }
-		[[nodiscard]] VkSurfaceKHR GetSurface() const { return surface; }
-		[[nodiscard]] VkPhysicalDevice GetPhysicalDevice() const { return physicalDevice; }
-		[[nodiscard]] uint32_t GetQueueFamilyIndex() const { return FindQueueFamilies(physicalDevice).graphicsFamily.value(); }
-		[[nodiscard]] VkDescriptorPool GetDescriptorPool() const { return g_DescriptorPool; }
-		[[nodiscard]] VkQueue GetGraphicsQueue() const { return graphicsQueue; }
-		[[nodiscard]] VkQueue GetPresentQueue() const { return presentQueue; }
-		[[nodiscard]] VkRenderPass GetRenderPass() const { return renderPass; }
+		VkInstance GetInstance() const { return instance; }
+		VkDevice GetDevice() const { return device; }
+		VkSurfaceKHR GetSurface() const { return surface; }
+		VkPhysicalDevice GetPhysicalDevice() const { return physicalDevice; }
+		uint32_t GetQueueFamilyIndex() const;
+		VkDescriptorPool GetDescriptorPool() const { return g_DescriptorPool; }
+		VkQueue GetGraphicsQueue() const { return graphicsQueue; }
+		VkQueue GetPresentQueue() const { return presentQueue; }
+		VkRenderPass GetRenderPass() const { return renderPass; }
 
-		[[nodiscard]] VkAllocationCallbacks* GetAllocationCallbackPointer() const { return g_Allocator; }
+		VkAllocationCallbacks* GetAllocationCallbackPointer() const { return g_Allocator; }
 
-		[[nodiscard]] VkSemaphore GetImageAvailableSemaphore() const { return imageAvailableSemaphores[currentFrame]; }
-		[[nodiscard]] VkSemaphore GetRenderFinishedSemaphore() const { return renderFinishedSemaphores[currentFrame]; }
+		VkSemaphore GetImageAvailableSemaphore() const { return imageAvailableSemaphores[currentFrame]; }
+		VkSemaphore GetRenderFinishedSemaphore() const { return renderFinishedSemaphores[currentFrame]; }
 
-		[[nodiscard]] VkSwapchainKHR GetCurrentSwapchain() const { return swapChain; }
+		VkSwapchainKHR GetCurrentSwapchain() const { return swapChain; }
 
 		VkCommandBuffer GetCurrentCommandBuffer() { return commandBuffers[currentFrame]; }
 
-		void CreateSurface();
+		VkSurfaceKHR CreateSurface() const;
 
 	public:
-		static std::string GetVkResultString(const VkResult vulkan_result);
-		static std::vector<VkExtensionProperties> GetAvailableExtensions();
-		static std::vector<VkLayerProperties> GetSupportedValidationLayers();
-		static bool CheckIfExtensionSupported(const char* ext);
-		static bool CheckIfValidationLayerSupported(const char* layer);
-		static inline VkDebugUtilsMessengerCreateInfoEXT CreateDebugMessengerCreateInfo();
-		static void CheckVkResult(VkResult err);
-
-		std::vector<VkExtensionProperties> GetSupportedDeviceExtensions() const;
-
-		inline bool CheckDeviceExtensionSupport(std::vector<std::string> deviceExtensions) const;
-		inline bool IsDeviceSuitable(VkPhysicalDevice physicalDevice) const;
-
-		inline QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice physicalDevice) const;
 		inline VkPhysicalDevice PickPhysicalDevice() const;
 		inline VkDevice CreateLogicalDevice();
 		inline VkQueue GetDeviceQueue() const;
@@ -96,31 +78,38 @@ namespace Raytracing
 	private:
 		void InitVulkan();
 
-		void CreateVkInstance(
+		static VkInstance CreateVkInstance(
 			const std::vector<const char*>& deviceExtensions,
 			const std::vector<const char*>& validationLayers);
 
 		void CreateSwapChain();
 		void CreateImageViews();
-		void CreateGraphicsPipeline();
-		void CreateRenderPass();
+
+		VkImageView CreateImageView(VkImage image) const;
+
+		VkPipeline CreateGraphicsPipeline(VkDevice device);
+		VkRenderPass CreateRenderPass(VkDevice device) const;
+
 		void CreateFramebuffers();
+		static VkFramebuffer CreateFramebuffer(VkDevice device, VkImageView imageView, VkRenderPass renderPass, uint32_t width,
+		                                       uint32_t height);
+
 		void CreateCommandPool();
 		void CreateCommandBuffers();
 		void CreateSyncObjects();
-		void CreateVertexBuffer();
-		void CreateIndexBuffer();
+		void CreateVertexBuffer(VkDevice device, const std::vector<Vertex>& vertexData);
+		void CreateIndexBuffer(const VkDevice device, const std::vector<uint16_t> mesh_indices);
 
 		void CreateDescriptorPool();
 		void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer,
-		                  VkDeviceMemory& bufferMemory);
+		                  VkDeviceMemory& bufferMemory) const;
 
 		void RecreateSwapChain();
 		void CleanupSwapChain() const;
 
 		void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) const;
 
-		void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+		void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) const;
 
 		static VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 		static VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);

@@ -1,5 +1,7 @@
 ﻿#include "imgui_vulkan.h"
 
+#include "renderer/vulkan/vulkan_utils.h"
+
 #define APP_USE_UNLIMITED_FRAME_RATE
 
 namespace Raytracing
@@ -60,7 +62,7 @@ namespace Raytracing
 		init_info.MinImageCount = 2;
 		init_info.ImageCount = 2;
 		init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-		init_info.CheckVkResultFn = VulkanRenderer::CheckVkResult;
+		init_info.CheckVkResultFn = VulkanUtils::CheckVkResult;
 
 		ImGui_ImplVulkan_Init(&init_info);
 	}
@@ -72,8 +74,8 @@ namespace Raytracing
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 
-        if(show_demo_window)
-            ImGui::ShowDemoWindow(&show_demo_window);
+		if (show_demo_window)
+			ImGui::ShowDemoWindow(&show_demo_window);
 
 		ImGui::Begin("Demo window");
 		ImGui::Text("Demo text");
