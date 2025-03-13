@@ -52,20 +52,14 @@ namespace Raytracing
 		VkPhysicalDevice GetPhysicalDevice() const { return physicalDevice; }
 		uint32_t GetQueueFamilyIndex() const;
 		VkDescriptorPool GetDescriptorPool() const { return descriptorPool; }
-		VkDescriptorPool GetGUIDescriptorPool() const { return gui_descriptionPool; }
+		VkDescriptorPool GetGuiDescriptorPool() const { return gui_descriptionPool; }
 		VkQueue GetGraphicsQueue() const { return graphicsQueue; }
 		VkQueue GetPresentQueue() const { return presentQueue; }
 		VkRenderPass GetRenderPass() const { return renderPass; }
-
-		VkAllocationCallbacks* GetAllocationCallbackPointer() const { return g_Allocator; }
-
 		VkSemaphore GetImageAvailableSemaphore() const { return imageAvailableSemaphores[currentFrame]; }
 		VkSemaphore GetRenderFinishedSemaphore() const { return renderFinishedSemaphores[currentFrame]; }
-
 		VkSwapchainKHR GetCurrentSwapchain() const { return swapChain; }
-
-		VkCommandBuffer GetCurrentCommandBuffer() { return commandBuffers[currentFrame]; }
-
+		VkCommandBuffer GetCurrentCommandBuffer() const { return commandBuffers[currentFrame]; }
 		VkSurfaceKHR CreateSurface() const;
 
 	public:
@@ -95,27 +89,18 @@ namespace Raytracing
 		void CreateCommandPool();
 		void CreateCommandBuffers();
 		void CreateSyncObjects();
-		void CreateVertexBuffer(VkDevice device, const std::vector<Vertex>& vertexData);
-		void CreateIndexBuffer(const VkDevice device, const std::vector<uint16_t> mesh_indices);
-
+		void CreateVertexBuffer(VkDevice device, VkPhysicalDevice physicalDevice, const std::vector<Vertex>& vertexData);
+		void CreateIndexBuffer(VkDevice device, VkPhysicalDevice physicalDevice, std::vector<uint16_t> mesh_indices);
 		void CreateGUIDescriptorPool();
 		void CreateDescriptorPool();
 		void CreateDescriptorSets();
 
-		void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer,
-		                  VkDeviceMemory& bufferMemory) const;
-
 		VkDescriptorSetLayout CreateDescriptorSetLayout() const;
 
 		void CreateUniformBuffers();
-
 		void RecreateSwapChain();
 		void CleanupSwapChain() const;
-
 		void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) const;
-
-		void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) const;
-
 		void UpdateUniformBuffer(uint32_t currentImage) const;
 
 		static VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
@@ -125,9 +110,7 @@ namespace Raytracing
 	private:
 		int viewportWidth, viewportHeight;
 		uint32_t currentFrame = 0;
-
 		bool framebufferResized = false;
-
 
 		// Vulkan
 		VkDevice device;
@@ -143,13 +126,9 @@ namespace Raytracing
 		std::vector<VkImage> swapChainImages;
 		VkFormat swapChainImageFormat;
 		VkExtent2D swapChainExtent;
-
 		VkRenderPass renderPass;
-
 		VkDescriptorSetLayout descriptorSetLayout;
-
 		VulkanPipeline* graphicsPipeline;
-
 		VkCommandPool commandPool;
 
 		std::vector<VkCommandBuffer> commandBuffers;
@@ -163,8 +142,6 @@ namespace Raytracing
 		VkDescriptorPool gui_descriptionPool = VK_NULL_HANDLE;
 		VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
 		std::vector<VkDescriptorSet> descriptorSets;
-
-		VkAllocationCallbacks* g_Allocator = nullptr;
 
 		VkBuffer vertexBuffer;
 		VkDeviceMemory vertexBufferMemory;

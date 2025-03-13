@@ -71,21 +71,21 @@ namespace Raytracing
 		uint32_t glfw_extension_count = 0;
 		const char** glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extension_count);
 
-		std::vector<const char*> glfw_extension_list;
+		std::vector<const char*> device_extensions;
 		std::vector<const char*> validation_layer_list;
 
 		for (size_t i = 0; i < glfw_extension_count; i++)
-			glfw_extension_list.push_back(glfw_extensions[i]);
+			device_extensions.push_back(glfw_extensions[i]);
 
-		glfw_extension_list.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
-		glfw_extension_list.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+		device_extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+		device_extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 
 		if (ENABLE_VALIDATION_LAYERS)
 		{
-			glfw_extension_list.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+			device_extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 		}
 
-		instance = CreateVkInstance(glfw_extension_list, validation_layer_list);
+		instance = CreateVkInstance(device_extensions, validation_layer_list);
 		surface = CreateSurface();
 		physicalDevice = PickPhysicalDevice();
 		device = CreateLogicalDevice();
@@ -95,14 +95,12 @@ namespace Raytracing
 
 		renderPass = CreateRenderPass(device);
 		descriptorSetLayout = CreateDescriptorSetLayout();
-
-
 		graphicsPipeline = new VulkanPipeline(device, renderPass, descriptorSetLayout, "shader/spv/vert.spv", "shader/spv/frag.spv");
 
 		CreateFramebuffers();
 		CreateCommandPool();
-		CreateVertexBuffer(device, mesh_vertices);
-		CreateIndexBuffer(device, mesh_indices);
+		CreateVertexBuffer(device, physicalDevice, mesh_vertices);
+		CreateIndexBuffer(device, physicalDevice, mesh_indices);
 		CreateUniformBuffers();
 		CreateDescriptorPool();
 		CreateGUIDescriptorPool();
@@ -129,7 +127,7 @@ namespace Raytracing
 
 		if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
 		{
-			throw std::runtime_error("failed to acquire swap chain image!");
+			throw std::runtime_error("Failed to acquire swap chain image.");
 		}
 
 		vkResetFences(device, 1, &inFlightFences[currentFrame]);
@@ -608,61 +606,66 @@ namespace Raytracing
 		}
 	}
 
-	void VulkanRenderer::CreateVertexBuffer(const VkDevice device, const std::vector<Vertex>& vertexData)
+	void VulkanRenderer::CreateVertexBuffer(const VkDevice device, const VkPhysicalDevice physicalDevice,
+	                                        const std::vector<Vertex>& vertexData)
 	{
 		const VkDeviceSize bufferSize = sizeof(vertexData[0]) * vertexData.size();
 		VkBuffer staging_buffer;
 		VkDeviceMemory staging_buffer_memory;
-		CreateBuffer(
+		VulkanUtils::CreateBuffer(
+			device,
+			physicalDevice,
 			bufferSize,
-			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			staging_buffer, staging_buffer_memory);
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, staging_buffer,
+			staging_buffer_memory);
 
 		void* data;
 		vkMapMemory(device, staging_buffer_memory, 0, bufferSize, 0, &data);
 		memcpy(data, vertexData.data(), bufferSize);
 		vkUnmapMemory(device, staging_buffer_memory);
 
-		CreateBuffer(
+		VulkanUtils::CreateBuffer(
+			device,
+			physicalDevice,
 			bufferSize,
 			VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-			vertexBuffer,
-			vertexBufferMemory);
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
 
-		CopyBuffer(staging_buffer, vertexBuffer, bufferSize);
+		VulkanUtils::CopyBuffer(device, commandPool, graphicsQueue, staging_buffer, vertexBuffer, bufferSize);
 
 		vkDestroyBuffer(device, staging_buffer, nullptr);
 		vkFreeMemory(device, staging_buffer_memory, nullptr);
 	}
 
-	void VulkanRenderer::CreateIndexBuffer(const VkDevice device, const std::vector<uint16_t> mesh_indices)
+	void VulkanRenderer::CreateIndexBuffer(const VkDevice device, const VkPhysicalDevice physicalDevice,
+	                                       const std::vector<uint16_t> mesh_indices)
 	{
 		const VkDeviceSize buffer_size = sizeof(mesh_indices[0]) * mesh_indices.size();
 
 		VkBuffer staging_buffer;
 		VkDeviceMemory stagingBufferMemory;
-		CreateBuffer(
+		VulkanUtils::CreateBuffer(
+			device,
+			physicalDevice,
 			buffer_size,
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			staging_buffer,
-			stagingBufferMemory);
+			staging_buffer, stagingBufferMemory);
 
 		void* data;
 		vkMapMemory(device, stagingBufferMemory, 0, buffer_size, 0, &data);
 		memcpy(data, mesh_indices.data(), buffer_size);
 		vkUnmapMemory(device, stagingBufferMemory);
 
-		CreateBuffer(
+		VulkanUtils::CreateBuffer(
+			device,
+			physicalDevice,
 			buffer_size,
 			VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-			indexBuffer,
-			indexBufferMemory);
+			indexBuffer, indexBufferMemory);
 
-		CopyBuffer(staging_buffer, indexBuffer, buffer_size);
+		VulkanUtils::CopyBuffer(device, commandPool, graphicsQueue, staging_buffer, indexBuffer, buffer_size);
 
 		vkDestroyBuffer(device, staging_buffer, nullptr);
 		vkFreeMemory(device, stagingBufferMemory, nullptr);
@@ -689,7 +692,7 @@ namespace Raytracing
 		pool_info.poolSizeCount = static_cast<uint32_t>(IM_ARRAYSIZE(pool_sizes));
 		pool_info.pPoolSizes = pool_sizes;
 
-		const VkResult err = vkCreateDescriptorPool(device, &pool_info, g_Allocator, &gui_descriptionPool);
+		const VkResult err = vkCreateDescriptorPool(device, &pool_info, nullptr, &gui_descriptionPool);
 		VulkanUtils::CheckVkResult(err);
 	}
 
@@ -749,40 +752,6 @@ namespace Raytracing
 		}
 	}
 
-	void VulkanRenderer::CreateBuffer(
-		const VkDeviceSize size,
-		const VkBufferUsageFlags usage,
-		const VkMemoryPropertyFlags properties,
-		VkBuffer& buffer,
-		VkDeviceMemory& bufferMemory) const
-	{
-		VkBufferCreateInfo buffer_info{};
-		buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		buffer_info.size = size;
-		buffer_info.usage = usage;
-		buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		if (vkCreateBuffer(device, &buffer_info, nullptr, &buffer) != VK_SUCCESS)
-		{
-			throw std::runtime_error("failed to create buffer!");
-		}
-
-		VkMemoryRequirements mem_requirements;
-		vkGetBufferMemoryRequirements(device, buffer, &mem_requirements);
-
-		VkMemoryAllocateInfo alloc_info{};
-		alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		alloc_info.allocationSize = mem_requirements.size;
-		alloc_info.memoryTypeIndex = VulkanUtils::FindMemoryType(physicalDevice, mem_requirements.memoryTypeBits, properties);
-
-		if (vkAllocateMemory(device, &alloc_info, nullptr, &bufferMemory) != VK_SUCCESS)
-		{
-			throw std::runtime_error("failed to allocate buffer memory!");
-		}
-
-		vkBindBufferMemory(device, buffer, bufferMemory, 0);
-	}
-
 	VkDescriptorSetLayout VulkanRenderer::CreateDescriptorSetLayout() const
 	{
 		VkDescriptorSetLayout descriptorSetLayout;
@@ -817,11 +786,12 @@ namespace Raytracing
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 		{
-			CreateBuffer(buffer_size,
-			             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-			             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			             uniformBuffers[i],
-			             uniformBuffersMemory[i]);
+			VulkanUtils::CreateBuffer(device,
+			                          physicalDevice,
+			                          buffer_size,
+			                          VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffers[i],
+			                          uniformBuffersMemory[i]);
 
 			vkMapMemory(device, uniformBuffersMemory[i], 0, buffer_size, 0, &uniformBuffersMapped[i]);
 		}
@@ -870,10 +840,10 @@ namespace Raytracing
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS)
-		{
-			throw std::runtime_error("failed to begin recording command buffer!");
-		}
+		VulkanUtils::CheckVkResult(
+			vkBeginCommandBuffer(commandBuffer, &beginInfo),
+			"Failed to begin recording command buffer."
+		);
 
 		VkRenderPassBeginInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -906,58 +876,27 @@ namespace Raytracing
 
 		VkBuffer vertexBuffers[] = {vertexBuffer};
 		VkDeviceSize offsets[] = {0};
+
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 		vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline->GetPipelineLayout(), 0, 1,
+		vkCmdBindDescriptorSets(commandBuffer,
+		                        VK_PIPELINE_BIND_POINT_GRAPHICS,
+		                        graphicsPipeline->GetPipelineLayout(), 0, 1,
 		                        &descriptorSets[currentFrame], 0,
 		                        nullptr);
 		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(mesh_indices.size()), 1, 0, 0, 0);
 
+		// Render ImGui
 		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffers[currentFrame]);
 
 		vkCmdEndRenderPass(commandBuffer);
 
-		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
-		{
-			throw std::runtime_error("failed to record command buffer!");
-		}
-	}
-
-	void VulkanRenderer::CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) const
-	{
-		VkCommandBufferAllocateInfo alloc_info{};
-		alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		alloc_info.commandPool = commandPool;
-		alloc_info.commandBufferCount = 1;
-
-		VkCommandBuffer command_buffer;
-		vkAllocateCommandBuffers(device, &alloc_info, &command_buffer);
-
-		VkCommandBufferBeginInfo begin_info{};
-		begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-		vkBeginCommandBuffer(command_buffer, &begin_info);
-
-		VkBufferCopy copy_region;
-		copy_region.srcOffset = 0; // Optional
-		copy_region.dstOffset = 0; // Optional
-		copy_region.size = size;
-		vkCmdCopyBuffer(command_buffer, srcBuffer, dstBuffer, 1, &copy_region);
-
-		vkEndCommandBuffer(command_buffer);
-
-		VkSubmitInfo submit_info{};
-		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submit_info.commandBufferCount = 1;
-		submit_info.pCommandBuffers = &command_buffer;
-
-		vkQueueSubmit(graphicsQueue, 1, &submit_info, VK_NULL_HANDLE);
-		vkQueueWaitIdle(graphicsQueue);
-
-		vkFreeCommandBuffers(device, commandPool, 1, &command_buffer);
+		// End command buffer
+		VulkanUtils::CheckVkResult(
+			vkEndCommandBuffer(commandBuffer),
+			"Failed to record command buffer."
+		);
 	}
 
 	void VulkanRenderer::UpdateUniformBuffer(const uint32_t currentImage) const

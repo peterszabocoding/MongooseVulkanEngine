@@ -55,7 +55,7 @@ namespace Raytracing
 		init_info.Device = renderer->GetDevice();
 		init_info.QueueFamily = renderer->GetQueueFamilyIndex();
 		init_info.Queue = renderer->GetPresentQueue();
-		init_info.DescriptorPool = renderer->GetGUIDescriptorPool();
+		init_info.DescriptorPool = renderer->GetGuiDescriptorPool();
 		init_info.RenderPass = renderer->GetRenderPass();
 		init_info.MinImageCount = 2;
 		init_info.ImageCount = 2;

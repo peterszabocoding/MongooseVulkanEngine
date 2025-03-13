@@ -234,4 +234,82 @@ namespace Raytracing::VulkanUtils
 
 		throw std::runtime_error("failed to find suitable memory type!");
 	}
+
+	static void CreateBuffer(
+		const VkDevice device,
+		const VkPhysicalDevice physicalDevice,
+		const VkDeviceSize size,
+		const VkBufferUsageFlags usage,
+		const VkMemoryPropertyFlags properties,
+		VkBuffer& buffer,
+		VkDeviceMemory& bufferMemory)
+	{
+		VkBufferCreateInfo buffer_info{};
+		buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		buffer_info.size = size;
+		buffer_info.usage = usage;
+		buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		CheckVkResult(
+			vkCreateBuffer(device, &buffer_info, nullptr, &buffer),
+			"Failed to create buffer."
+		);
+
+		VkMemoryRequirements mem_requirements;
+		vkGetBufferMemoryRequirements(device, buffer, &mem_requirements);
+
+		VkMemoryAllocateInfo alloc_info{};
+		alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		alloc_info.allocationSize = mem_requirements.size;
+		alloc_info.memoryTypeIndex = FindMemoryType(physicalDevice, mem_requirements.memoryTypeBits, properties);
+
+		CheckVkResult(
+			vkAllocateMemory(device, &alloc_info, nullptr, &bufferMemory),
+			"Failed to allocate buffer memory."
+		);
+
+		vkBindBufferMemory(device, buffer, bufferMemory, 0);
+	}
+
+	static void CopyBuffer(
+		VkDevice device,
+		VkCommandPool commandPool,
+		const VkQueue queue,
+		const VkBuffer srcBuffer,
+		const VkBuffer dstBuffer,
+		const VkDeviceSize size)
+	{
+		VkCommandBufferAllocateInfo alloc_info{};
+		alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		alloc_info.commandPool = commandPool;
+		alloc_info.commandBufferCount = 1;
+
+		VkCommandBuffer command_buffer;
+		vkAllocateCommandBuffers(device, &alloc_info, &command_buffer);
+
+		VkCommandBufferBeginInfo begin_info{};
+		begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+		vkBeginCommandBuffer(command_buffer, &begin_info);
+
+		VkBufferCopy copy_region;
+		copy_region.srcOffset = 0; // Optional
+		copy_region.dstOffset = 0; // Optional
+		copy_region.size = size;
+		vkCmdCopyBuffer(command_buffer, srcBuffer, dstBuffer, 1, &copy_region);
+
+		vkEndCommandBuffer(command_buffer);
+
+		VkSubmitInfo submit_info{};
+		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submit_info.commandBufferCount = 1;
+		submit_info.pCommandBuffers = &command_buffer;
+
+		vkQueueSubmit(queue, 1, &submit_info, VK_NULL_HANDLE);
+		vkQueueWaitIdle(queue);
+
+		vkFreeCommandBuffers(device, commandPool, 1, &command_buffer);
+	}
 }
