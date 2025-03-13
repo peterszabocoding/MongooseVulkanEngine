@@ -1,12 +1,23 @@
 #pragma once
+
 #include <iostream>
 #include <stdexcept>
 #include <string>
 #include <set>
+#include <vector>
+#include <optional>
 #include <vulkan/vulkan_core.h>
 
 namespace Raytracing::VulkanUtils
 {
+	struct QueueFamilyIndices
+	{
+		std::optional<uint32_t> graphicsFamily;
+		std::optional<uint32_t> presentFamily;
+
+		bool IsComplete() const { return graphicsFamily.has_value(); }
+	};
+
 	static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 		VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -175,14 +186,10 @@ namespace Raytracing::VulkanUtils
 			vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, surface, &presentSupport);
 
 			if (presentSupport)
-			{
 				indices.presentFamily = i;
-			}
 
 			if (indices.IsComplete())
-			{
 				break;
-			}
 
 			i++;
 		}
@@ -194,6 +201,22 @@ namespace Raytracing::VulkanUtils
 	{
 		const QueueFamilyIndices indices = FindQueueFamilies(physicalDevice, surface);
 		return indices.IsComplete();
+	}
+
+	static VkShaderModule CreateShaderModule(const VkDevice device, const std::vector<char>& code)
+	{
+		VkShaderModuleCreateInfo create_info{};
+		create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+		create_info.codeSize = code.size();
+		create_info.pCode = reinterpret_cast<const uint32_t*>(code.data());
+
+		VkShaderModule shader_module;
+		CheckVkResult(
+			vkCreateShaderModule(device, &create_info, nullptr, &shader_module),
+			"Failed to create shader module."
+		);
+
+		return shader_module;
 	}
 
 	static uint32_t FindMemoryType(const VkPhysicalDevice physicalDevice, const uint32_t typeFilter, const VkMemoryPropertyFlags properties)

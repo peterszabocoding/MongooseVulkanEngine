@@ -1,7 +1,6 @@
 #pragma once
 
 #include <fstream>
-#include <iostream>
 #include <stdexcept>
 #include <vector>
 
@@ -9,11 +8,11 @@ namespace Raytracing
 {
 	namespace FileSystem
 	{
-		static std::vector<char> ReadFile(const std::string& filename)
+		static std::vector<char> ReadFile(const std::string& filepath)
 		{
-			std::ifstream file(filename, std::ios::ate | std::ios::binary);
+			std::ifstream file(filepath, std::ios::ate | std::ios::binary);
 
-			if (!file.is_open()) throw std::runtime_error("failed to open file!");
+			if (!file.is_open()) throw std::runtime_error("Failed to open file: " + filepath);
 
 			const size_t file_size = file.tellg();
 			std::vector<char> buffer(file_size);

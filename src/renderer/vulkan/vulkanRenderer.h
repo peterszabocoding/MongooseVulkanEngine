@@ -2,7 +2,6 @@
 
 #define GLFW_INCLUDE_VULKAN
 
-#include <optional>
 #include "glm/glm.hpp"
 
 #include "vulkan/vulkan.h"
@@ -11,6 +10,7 @@
 
 namespace Raytracing
 {
+	class VulkanPipeline;
 	constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
 	struct SwapChainSupportDetails
@@ -18,14 +18,6 @@ namespace Raytracing
 		VkSurfaceCapabilitiesKHR capabilities;
 		std::vector<VkSurfaceFormatKHR> formats;
 		std::vector<VkPresentModeKHR> presentModes;
-	};
-
-	struct QueueFamilyIndices
-	{
-		std::optional<uint32_t> graphicsFamily;
-		std::optional<uint32_t> presentFamily;
-
-		[[nodiscard]] bool IsComplete() const { return graphicsFamily.has_value(); }
 	};
 
 	struct UniformBufferObject
@@ -80,7 +72,6 @@ namespace Raytracing
 		inline VkPhysicalDevice PickPhysicalDevice() const;
 		inline VkDevice CreateLogicalDevice();
 		inline VkQueue GetDeviceQueue() const;
-		inline VkShaderModule CreateShaderModule(const std::vector<char>& code) const;
 		inline SwapChainSupportDetails QuerySwapChainSupport() const;
 		inline VkQueue GetDevicePresentQueue() const;
 
@@ -95,8 +86,6 @@ namespace Raytracing
 		void CreateImageViews();
 
 		VkImageView CreateImageView(VkImage image) const;
-
-		VkPipeline CreateGraphicsPipeline(VkDevice device);
 		VkRenderPass CreateRenderPass(VkDevice device) const;
 
 		void CreateFramebuffers();
@@ -116,7 +105,7 @@ namespace Raytracing
 		void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer,
 		                  VkDeviceMemory& bufferMemory) const;
 
-		void CreateDescriptorSetLayout();
+		VkDescriptorSetLayout CreateDescriptorSetLayout() const;
 
 		void CreateUniformBuffers();
 
@@ -156,9 +145,10 @@ namespace Raytracing
 		VkExtent2D swapChainExtent;
 
 		VkRenderPass renderPass;
-		VkPipeline graphicsPipeline;
+
 		VkDescriptorSetLayout descriptorSetLayout;
-		VkPipelineLayout pipelineLayout;
+
+		VulkanPipeline* graphicsPipeline;
 
 		VkCommandPool commandPool;
 

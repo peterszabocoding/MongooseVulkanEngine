@@ -6,8 +6,6 @@
 
 namespace Raytracing
 {
-	static bool show_demo_window = true;
-
 	ImGuiVulkan::ImGuiVulkan() = default;
 
 	ImGuiVulkan::~ImGuiVulkan()
@@ -69,16 +67,15 @@ namespace Raytracing
 
 	void ImGuiVulkan::DrawUi()
 	{
+		const auto io = ImGui::GetIO();
+
 		// Start the Dear ImGui frame
 		ImGui_ImplVulkan_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 
-		if (show_demo_window)
-			ImGui::ShowDemoWindow(&show_demo_window);
-
-		ImGui::Begin("Demo window");
-		ImGui::Text("Demo text");
+		ImGui::Begin("Performance");
+		ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 		ImGui::End();
 
 		// Rendering

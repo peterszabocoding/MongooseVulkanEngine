@@ -76,6 +76,7 @@ set ( SOURCE_ONE_WEEKEND
   ./src/renderer/camera.cpp
 
   ./src/renderer/vulkan/vulkanRenderer.cpp
+  ./src/renderer/vulkan/vulkan_pipeline.cpp
 )
 
 set ( SOURCE_ONE_WEEKEND_APPLE
