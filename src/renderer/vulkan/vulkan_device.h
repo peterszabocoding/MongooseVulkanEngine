@@ -2,6 +2,7 @@
 #include <vector>
 #include <vulkan/vulkan_core.h>
 
+#include "vulkan_vertex_buffer.h"
 #include "renderer/mesh.h"
 
 #define GLFW_INCLUDE_VULKAN
@@ -10,6 +11,7 @@
 namespace Raytracing
 {
 	class VulkanPipeline;
+	class VulkanVertexBuffer;
 
 	constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -84,7 +86,6 @@ namespace Raytracing
 		void CreateCommandPool();
 		void CreateCommandBuffers();
 		void CreateSyncObjects();
-		void CreateVertexBuffer(VkDevice device, VkPhysicalDevice physicalDevice, const std::vector<Vertex>& vertexData);
 		void CreateIndexBuffer(VkDevice device, VkPhysicalDevice physicalDevice, std::vector<uint16_t> mesh_indices);
 		void CreateGUIDescriptorPool();
 		void CreateDescriptorPool();
@@ -137,9 +138,7 @@ namespace Raytracing
 		VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
 		std::vector<VkDescriptorSet> descriptorSets;
 
-
-		VkBuffer vertexBuffer;
-		VkDeviceMemory vertexBufferMemory;
+		VulkanVertexBuffer* vertexBuffer;
 
 		VkBuffer indexBuffer;
 		VkDeviceMemory indexBufferMemory;

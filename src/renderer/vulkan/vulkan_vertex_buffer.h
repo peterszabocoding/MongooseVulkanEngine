@@ -1,4 +1,5 @@
 #pragma once
+
 #include <vulkan/vulkan_core.h>
 #include <vector>
 
@@ -9,17 +10,26 @@ namespace Raytracing
 	class VulkanVertexBuffer
 	{
 	public:
-		VulkanVertexBuffer(VkDevice device, const std::vector<Vertex>& vertices);
+		VulkanVertexBuffer(
+			VkDevice device, 
+			VkPhysicalDevice physicalDevice, 
+			VkCommandPool commandPool,
+			VkQueue queue,
+			const std::vector<Vertex>& vertices);
 		~VulkanVertexBuffer();
 
 		void Bind(VkCommandBuffer commandBuffer);
 		void Draw(VkCommandBuffer commandBuffer);
 
 	private:
-		void CreateVertexBuffers(const std::vector<Vertex>& vertices);
+		void CreateVertexBuffers(
+			VkCommandPool commandPool,
+			VkQueue queue,
+			const std::vector<Vertex>& vertices);
 
 	private:
 		VkDevice device;
+		VkPhysicalDevice physicalDevice;
 		VkBuffer vertexBuffer;
 		VkDeviceMemory vertexBufferMemory;
 		uint32_t vertexCount;

@@ -38,10 +38,6 @@ namespace Raytracing
 		vkDestroyBuffer(device, indexBuffer, nullptr);
 		vkFreeMemory(device, indexBufferMemory, nullptr);
 
-		vkDestroyBuffer(device, vertexBuffer, nullptr);
-		vkFreeMemory(device, vertexBufferMemory, nullptr);
-		vkDestroyBuffer(device, vertexBuffer, nullptr);
-
 		delete graphicsPipeline;
 		vkDestroyRenderPass(device, renderPass, nullptr);
 
@@ -95,7 +91,10 @@ namespace Raytracing
 
 		CreateFramebuffers();
 		CreateCommandPool();
-		CreateVertexBuffer(device, physicalDevice, mesh_vertices);
+
+		vertexBuffer = new VulkanVertexBuffer(device, physicalDevice, commandPool, graphicsQueue, mesh_vertices);
+
+
 		CreateIndexBuffer(device, physicalDevice, mesh_indices);
 		CreateUniformBuffers();
 		CreateDescriptorPool();
@@ -584,37 +583,6 @@ namespace Raytracing
 		}
 	}
 
-	void VulkanDevice::CreateVertexBuffer(const VkDevice device, const VkPhysicalDevice physicalDevice,
-	                                      const std::vector<Vertex>& vertexData)
-	{
-		const VkDeviceSize bufferSize = sizeof(vertexData[0]) * vertexData.size();
-		VkBuffer staging_buffer;
-		VkDeviceMemory staging_buffer_memory;
-		VulkanUtils::CreateBuffer(
-			device,
-			physicalDevice,
-			bufferSize,
-			VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, staging_buffer,
-			staging_buffer_memory);
-
-		void* data;
-		vkMapMemory(device, staging_buffer_memory, 0, bufferSize, 0, &data);
-		memcpy(data, vertexData.data(), bufferSize);
-		vkUnmapMemory(device, staging_buffer_memory);
-
-		VulkanUtils::CreateBuffer(
-			device,
-			physicalDevice,
-			bufferSize,
-			VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
-
-		VulkanUtils::CopyBuffer(device, commandPool, graphicsQueue, staging_buffer, vertexBuffer, bufferSize);
-
-		vkDestroyBuffer(device, staging_buffer, nullptr);
-		vkFreeMemory(device, staging_buffer_memory, nullptr);
-	}
-
 	void VulkanDevice::CreateIndexBuffer(const VkDevice device, const VkPhysicalDevice physicalDevice,
 	                                     const std::vector<uint16_t> mesh_indices)
 	{
@@ -852,10 +820,7 @@ namespace Raytracing
 		scissor.extent = swapChainExtent;
 		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-		VkBuffer vertexBuffers[] = {vertexBuffer};
-		VkDeviceSize offsets[] = {0};
-
-		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+		vertexBuffer->Bind(commandBuffer);
 		vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
 		vkCmdBindDescriptorSets(commandBuffer,

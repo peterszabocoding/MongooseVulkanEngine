@@ -78,6 +78,7 @@ set ( SOURCE_ONE_WEEKEND
   ./src/renderer/vulkan/vulkan_pipeline.cpp
   ./src/renderer/vulkan/vulkan_device.cpp
   ./src/renderer/vulkan/vulkan_vertex_buffer.cpp
+  ./src/renderer/vulkan/vulkan_vertex_buffer.cpp
   ./src/renderer/vulkan/imgui_vulkan.cpp
 )
 
