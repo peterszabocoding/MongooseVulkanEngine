@@ -38,9 +38,9 @@ namespace Raytracing
 		// Check for WSI support
 		VkBool32 res;
 		vkGetPhysicalDeviceSurfaceSupportKHR(
-			renderer->GetPhysicalDevice(),
-			renderer->GetQueueFamilyIndex(),
-			renderer->GetSurface(),
+			renderer->GetVulkanDevice()->GetPhysicalDevice(),
+			renderer->GetVulkanDevice()->GetQueueFamilyIndex(),
+			renderer->GetVulkanDevice()->GetSurface(),
 			&res);
 
 		if (res != VK_TRUE)
@@ -50,13 +50,13 @@ namespace Raytracing
 		ImGui_ImplGlfw_InitForVulkan(glfwWindow, true);
 
 		ImGui_ImplVulkan_InitInfo init_info = {};
-		init_info.Instance = renderer->GetInstance();
-		init_info.PhysicalDevice = renderer->GetPhysicalDevice();
-		init_info.Device = renderer->GetDevice();
-		init_info.QueueFamily = renderer->GetQueueFamilyIndex();
-		init_info.Queue = renderer->GetPresentQueue();
-		init_info.DescriptorPool = renderer->GetGuiDescriptorPool();
-		init_info.RenderPass = renderer->GetRenderPass();
+		init_info.Instance = renderer->GetVulkanDevice()->GetInstance();
+		init_info.PhysicalDevice = renderer->GetVulkanDevice()->GetPhysicalDevice();
+		init_info.Device = renderer->GetVulkanDevice()->GetDevice();
+		init_info.QueueFamily = renderer->GetVulkanDevice()->GetQueueFamilyIndex();
+		init_info.Queue = renderer->GetVulkanDevice()->GetPresentQueue();
+		init_info.DescriptorPool = renderer->GetVulkanDevice()->GetGuiDescriptorPool();
+		init_info.RenderPass = renderer->GetVulkanDevice()->GetRenderPass();
 		init_info.MinImageCount = 2;
 		init_info.ImageCount = 2;
 		init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;

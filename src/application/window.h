@@ -3,9 +3,9 @@
 #include <functional>
 
 #include "application.h"
-#include "imgui_vulkan.h"
-#include "renderer/renderer.h"
 #include "GLFW/glfw3.h"
+#include "renderer/renderer.h"
+#include "renderer/vulkan/imgui_vulkan.h"
 
 namespace Raytracing
 {

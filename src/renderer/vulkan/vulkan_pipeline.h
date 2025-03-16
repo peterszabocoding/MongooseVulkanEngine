@@ -4,12 +4,12 @@
 
 namespace Raytracing
 {
+	class VulkanDevice;
+
 	class VulkanPipeline
 	{
 	public:
-		VulkanPipeline(const VkDevice device,
-		               const VkRenderPass renderPass,
-		               const VkDescriptorSetLayout descriptorSetLayout,
+		VulkanPipeline(VulkanDevice* vulkanDevice,
 		               const std::string& vertexShaderPath,
 		               const std::string& fragmentShaderPath);
 
@@ -26,7 +26,7 @@ namespace Raytracing
 			const std::string& fragmentShaderPath);
 
 	private:
-		VkDevice device;
+		VulkanDevice* vulkanDevice;
 		VkPipeline pipeline;
 		VkPipelineLayout pipelineLayout;
 	};

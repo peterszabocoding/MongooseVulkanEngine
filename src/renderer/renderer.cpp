@@ -2,9 +2,15 @@
 #include "util/timer.h"
 
 #include "math/vec3.h"
+#include "platform/windows/windowsApplication.h"
 
 namespace Raytracing
 {
+	Renderer* Renderer::Create()
+	{
+		return new VulkanRenderer();
+	}
+
 	void Renderer::Render(const Camera& camera, const std::vector<Hitable*>& scene)
 	{
 		Timer timer("Render");

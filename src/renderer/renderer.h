@@ -14,6 +14,8 @@ namespace Raytracing
 	class Renderer
 	{
 	public:
+		static Renderer* Create();
+
 		virtual ~Renderer() = default;
 		virtual void Render(const Camera& camera, const std::vector<Hitable*>& scene);
 

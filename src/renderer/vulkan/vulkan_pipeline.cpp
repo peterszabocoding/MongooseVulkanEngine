@@ -4,23 +4,23 @@
 #include "renderer/mesh.h"
 #include "util/filesystem.h"
 
+#include "vulkan_device.h"
+
 namespace Raytracing
 {
 	VulkanPipeline::VulkanPipeline(
-		const VkDevice device,
-		const VkRenderPass renderPass,
-		const VkDescriptorSetLayout descriptorSetLayout,
+		VulkanDevice* device,
 		const std::string& vertexShaderPath,
 		const std::string& fragmentShaderPath)
 	{
-		this->device = device;
-		CreateGraphicsPipeline(renderPass, descriptorSetLayout, vertexShaderPath, fragmentShaderPath);
+		vulkanDevice = device;
+		CreateGraphicsPipeline(vulkanDevice->GetRenderPass(), vulkanDevice->GetDescriptorSetLayout(), vertexShaderPath, fragmentShaderPath);
 	}
 
 	VulkanPipeline::~VulkanPipeline()
 	{
-		vkDestroyPipeline(device, pipeline, nullptr);
-		vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+		vkDestroyPipeline(vulkanDevice->GetDevice(), pipeline, nullptr);
+		vkDestroyPipelineLayout(vulkanDevice->GetDevice(), pipelineLayout, nullptr);
 	}
 
 	void VulkanPipeline::CreateGraphicsPipeline(
@@ -32,8 +32,8 @@ namespace Raytracing
 		auto vert_shader_code = FileSystem::ReadFile(vertexShaderPath);
 		auto frag_shader_code = FileSystem::ReadFile(fragmentShaderPath);
 
-		VkShaderModule vert_shader_module = VulkanUtils::CreateShaderModule(device, vert_shader_code);
-		VkShaderModule frag_shader_module = VulkanUtils::CreateShaderModule(device, frag_shader_code);
+		VkShaderModule vert_shader_module = VulkanUtils::CreateShaderModule(vulkanDevice->GetDevice(), vert_shader_code);
+		VkShaderModule frag_shader_module = VulkanUtils::CreateShaderModule(vulkanDevice->GetDevice(), frag_shader_code);
 
 		VkPipelineShaderStageCreateInfo vert_shader_stage_info{};
 		vert_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -118,7 +118,7 @@ namespace Raytracing
 		pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
 
 		VulkanUtils::CheckVkResult(
-			vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout),
+			vkCreatePipelineLayout(vulkanDevice->GetDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout),
 			"Failed to create pipeline layout."
 		);
 
@@ -138,11 +138,11 @@ namespace Raytracing
 		pipeline_info.subpass = 0;
 
 		VulkanUtils::CheckVkResult(
-			vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &pipeline),
+			vkCreateGraphicsPipelines(vulkanDevice->GetDevice(), VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &pipeline),
 			"Failed to create graphics pipeline."
 		);
 
-		vkDestroyShaderModule(device, frag_shader_module, nullptr);
-		vkDestroyShaderModule(device, vert_shader_module, nullptr);
+		vkDestroyShaderModule(vulkanDevice->GetDevice(), frag_shader_module, nullptr);
+		vkDestroyShaderModule(vulkanDevice->GetDevice(), vert_shader_module, nullptr);
 	}
 }

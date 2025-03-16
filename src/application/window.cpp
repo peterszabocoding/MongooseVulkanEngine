@@ -22,7 +22,7 @@ namespace Raytracing
 	{
 		applicationInfo = std::move(appInfo);
 		windowParams = params;
-		renderer = new VulkanRenderer();
+		renderer = Renderer::Create();
 		imGuiVulkan = new ImGuiVulkan();
 	}
 
