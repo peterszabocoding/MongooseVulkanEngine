@@ -2,7 +2,6 @@
 #include <vector>
 #include <vulkan/vulkan_core.h>
 
-#include "vulkan_vertex_buffer.h"
 #include "renderer/mesh.h"
 
 #define GLFW_INCLUDE_VULKAN
@@ -12,6 +11,7 @@ namespace Raytracing
 {
 	class VulkanPipeline;
 	class VulkanVertexBuffer;
+	class VulkanIndexBuffer;
 
 	constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -58,6 +58,7 @@ namespace Raytracing
 		VkSwapchainKHR GetCurrentSwapchain() const { return swapChain; }
 		VkCommandBuffer GetCurrentCommandBuffer() const { return commandBuffers[currentFrame]; }
 		VkSurfaceKHR CreateSurface(GLFWwindow* glfwWindow) const;
+		VkCommandPool GetCommandPool() const { return commandPool; }
 
 		VkDescriptorSetLayout GetDescriptorSetLayout() const { return descriptorSetLayout; }
 
@@ -73,6 +74,10 @@ namespace Raytracing
 			const std::vector<const char*>& deviceExtensions,
 			const std::vector<const char*>& validationLayers);
 
+		static void SetViewportAndScissor(VkCommandBuffer commandBuffer, VkExtent2D extent);
+		static VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
+		static VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
+
 		void CreateSwapChain();
 		void CreateImageViews();
 
@@ -86,21 +91,19 @@ namespace Raytracing
 		void CreateCommandPool();
 		void CreateCommandBuffers();
 		void CreateSyncObjects();
-		void CreateIndexBuffer(VkDevice device, VkPhysicalDevice physicalDevice, std::vector<uint16_t> mesh_indices);
 		void CreateGUIDescriptorPool();
 		void CreateDescriptorPool();
 		void CreateDescriptorSets();
-
 		VkDescriptorSetLayout CreateDescriptorSetLayout() const;
-
 		void CreateUniformBuffers();
+
 		void RecreateSwapChain();
 		void CleanupSwapChain() const;
 		void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) const;
 		void UpdateUniformBuffer(uint32_t currentImage) const;
+		VkResult SubmitDrawCommands(VkSemaphore* signalSemaphores) const;
+		VkResult PresentFrame(uint32_t imageIndex, const VkSemaphore* signalSemaphores) const;
 
-		static VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
-		static VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
 		VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) const;
 
 	private:
@@ -121,9 +124,9 @@ namespace Raytracing
 		std::vector<VkImage> swapChainImages;
 		VkFormat swapChainImageFormat;
 		VkExtent2D swapChainExtent;
+
 		VkRenderPass renderPass;
 		VkDescriptorSetLayout descriptorSetLayout;
-		VulkanPipeline* graphicsPipeline;
 		VkCommandPool commandPool;
 
 		std::vector<VkCommandBuffer> commandBuffers;
@@ -138,10 +141,9 @@ namespace Raytracing
 		VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
 		std::vector<VkDescriptorSet> descriptorSets;
 
+		VulkanPipeline* graphicsPipeline;
 		VulkanVertexBuffer* vertexBuffer;
-
-		VkBuffer indexBuffer;
-		VkDeviceMemory indexBufferMemory;
+		VulkanIndexBuffer* indexBuffer;
 
 		std::vector<VkBuffer> uniformBuffers;
 		std::vector<VkDeviceMemory> uniformBuffersMemory;

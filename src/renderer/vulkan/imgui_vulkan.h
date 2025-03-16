@@ -18,7 +18,7 @@ namespace Raytracing
 		void DrawUi();
 
 	private:
-		void SetupImGui(const int width, const int height);
+		void SetupImGui(const int width, const int height) const;
 
 	private:
 		uint32_t g_MinImageCount = 2;

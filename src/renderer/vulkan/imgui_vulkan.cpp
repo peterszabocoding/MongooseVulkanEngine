@@ -24,7 +24,7 @@ namespace Raytracing
 
 	void ImGuiVulkan::Resize(const int width, const int height) {}
 
-	void ImGuiVulkan::SetupImGui(const int width, const int height)
+	void ImGuiVulkan::SetupImGui(const int width, const int height) const
 	{
 		IMGUI_CHECKVERSION();
 		ImGui::CreateContext();

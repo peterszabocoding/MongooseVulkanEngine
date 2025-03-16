@@ -5,31 +5,29 @@
 
 #include "renderer/mesh.h"
 
+
 namespace Raytracing
 {
+	class VulkanDevice;
+
 	class VulkanVertexBuffer
 	{
 	public:
 		VulkanVertexBuffer(
-			VkDevice device, 
-			VkPhysicalDevice physicalDevice, 
-			VkCommandPool commandPool,
-			VkQueue queue,
+			VulkanDevice* device,
 			const std::vector<Vertex>& vertices);
 		~VulkanVertexBuffer();
 
-		void Bind(VkCommandBuffer commandBuffer);
-		void Draw(VkCommandBuffer commandBuffer);
+		void Bind(VkCommandBuffer commandBuffer) const;
 
 	private:
-		void CreateVertexBuffers(
+		void CreateVertexBuffer(
 			VkCommandPool commandPool,
 			VkQueue queue,
 			const std::vector<Vertex>& vertices);
 
 	private:
-		VkDevice device;
-		VkPhysicalDevice physicalDevice;
+		VulkanDevice* vulkanDevice;
 		VkBuffer vertexBuffer;
 		VkDeviceMemory vertexBufferMemory;
 		uint32_t vertexCount;
