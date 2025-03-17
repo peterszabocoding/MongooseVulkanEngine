@@ -8,8 +8,10 @@ namespace Raytracing {
     class VulkanImage {
     public:
         VulkanImage(VulkanDevice *device, const std::string &image_path);
-
         ~VulkanImage();
+
+        VkImageView GetImageView() const { return textureImageView; }
+        VkSampler GetSampler() const { return textureSampler; }
 
     private:
         void CreateImage(const std::string &image_path);
