@@ -12,6 +12,7 @@ namespace Raytracing
 	class VulkanPipeline;
 	class VulkanVertexBuffer;
 	class VulkanIndexBuffer;
+	class VulkanImage;
 
 	constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -81,7 +82,6 @@ namespace Raytracing
 		void CreateSwapChain();
 		void CreateImageViews();
 
-		VkImageView CreateImageView(VkImage image) const;
 		VkRenderPass CreateRenderPass(VkDevice device) const;
 
 		void CreateFramebuffers();
@@ -144,6 +144,7 @@ namespace Raytracing
 		VulkanPipeline* graphicsPipeline;
 		VulkanVertexBuffer* vertexBuffer;
 		VulkanIndexBuffer* indexBuffer;
+		VulkanImage* vulkanImage;
 
 		std::vector<VkBuffer> uniformBuffers;
 		std::vector<VkDeviceMemory> uniformBuffersMemory;

@@ -20,3 +20,6 @@ cmake_install.cmake
 *.vcxproj.filters
 shader/spv/
 *.user
+.cmake/
+.idea/
+Testing/

@@ -59,7 +59,6 @@ add_library(
 
 # Source
 set ( EXTERNAL
-  #src/external/stb_image.h
   ${imgui_SOURCE_DIR}/backends/imgui_impl_vulkan.cpp
   ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
 )
@@ -79,6 +78,7 @@ set ( SOURCE_ONE_WEEKEND
   ./src/renderer/vulkan/vulkan_device.cpp
   ./src/renderer/vulkan/vulkan_index_buffer.cpp
   ./src/renderer/vulkan/vulkan_vertex_buffer.cpp
+  ./src/renderer/vulkan/vulkan_image.cpp
   ./src/renderer/vulkan/imgui_vulkan.cpp
 )
 
@@ -93,6 +93,7 @@ set ( SOURCE_ONE_WEEKEND_WINDOWS
 )
 
 include_directories("src/")
+include_directories("vendor/")
 
 # Specific compiler flags below. We're not going to add options for all possible compilers, but if
 # you're new to CMake (like we are), the following may be a helpful example if you're using a

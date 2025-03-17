@@ -9,6 +9,7 @@
 #include "vulkan_pipeline.h"
 #include "vulkan_vertex_buffer.h"
 #include "vulkan_index_buffer.h"
+#include "vulkan_image.h";
 
 #define GLM_FORCE_RADIANS
 #include <backends/imgui_impl_vulkan.h>
@@ -17,6 +18,8 @@
 
 #include "GLFW/glfw3.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image/stb_image.h>
 
 namespace Raytracing
 {
@@ -94,6 +97,7 @@ namespace Raytracing
 		CreateFramebuffers();
 		CreateCommandPool();
 
+		vulkanImage = new VulkanImage(this, "textures/texture.jpg");
 		vertexBuffer = new VulkanVertexBuffer(this, mesh_vertices);
 		indexBuffer = new VulkanIndexBuffer(this, mesh_indices);
 
@@ -246,6 +250,8 @@ namespace Raytracing
 		queue_create_info.pQueuePriorities = &queue_priority;
 
 		VkPhysicalDeviceFeatures deviceFeatures{};
+		deviceFeatures.samplerAnisotropy = VK_TRUE;
+
 		VkDeviceCreateInfo createInfo{};
 		createInfo.pQueueCreateInfos = &queue_create_info;
 		createInfo.queueCreateInfoCount = 1;
@@ -450,36 +456,7 @@ namespace Raytracing
 	{
 		swapChainImageViews.resize(swapChainImages.size());
 		for (size_t i = 0; i < swapChainImages.size(); i++)
-			swapChainImageViews[i] = CreateImageView(swapChainImages[i]);
-	}
-
-	VkImageView VulkanDevice::CreateImageView(const VkImage image) const
-	{
-		VkImageViewCreateInfo create_info{};
-		create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		create_info.image = image;
-
-		create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		create_info.format = swapChainImageFormat;
-
-		create_info.components.r = VK_COMPONENT_SWIZZLE_R;
-		create_info.components.g = VK_COMPONENT_SWIZZLE_G;
-		create_info.components.b = VK_COMPONENT_SWIZZLE_B;
-		create_info.components.a = VK_COMPONENT_SWIZZLE_A;
-
-		create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		create_info.subresourceRange.baseMipLevel = 0;
-		create_info.subresourceRange.levelCount = 1;
-		create_info.subresourceRange.baseArrayLayer = 0;
-		create_info.subresourceRange.layerCount = 1;
-
-		VkImageView image_view;
-		if (vkCreateImageView(device, &create_info, nullptr, &image_view) != VK_SUCCESS)
-		{
-			throw std::runtime_error("failed to create image views!");
-		}
-
-		return image_view;
+			swapChainImageViews[i] = VulkanUtils::CreateImageView(device, swapChainImages[i], swapChainImageFormat);
 	}
 
 	VkRenderPass VulkanDevice::CreateRenderPass(const VkDevice device) const

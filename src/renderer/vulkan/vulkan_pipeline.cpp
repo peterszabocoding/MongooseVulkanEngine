@@ -49,8 +49,8 @@ namespace Raytracing
 
 		VkPipelineShaderStageCreateInfo shader_stages[] = {vert_shader_stage_info, frag_shader_stage_info};
 
-		auto binding_description = Vertex::GetBindingDescription();
-		auto attribute_descriptions = Vertex::GetAttributeDescriptions();
+		auto binding_description = VulkanVertex::GetBindingDescription();
+		auto attribute_descriptions = VulkanVertex::GetAttributeDescriptions();
 
 		VkPipelineVertexInputStateCreateInfo vertex_input_info{};
 		vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;

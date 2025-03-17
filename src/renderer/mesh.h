@@ -10,7 +10,10 @@ struct Vertex
 {
 	glm::vec2 pos;
 	glm::vec3 color;
+};
 
+struct VulkanVertex : Vertex
+{
 	static VkVertexInputBindingDescription GetBindingDescription()
 	{
 		VkVertexInputBindingDescription bindingDescription{};
