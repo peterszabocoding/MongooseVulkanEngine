@@ -90,7 +90,6 @@ namespace Raytracing
 		renderPass = CreateRenderPass(device);
 		descriptorSetLayout = CreateDescriptorSetLayout();
 		graphicsPipeline = new VulkanPipeline(this, "shader/spv/vert.spv", "shader/spv/frag.spv");
-
 		CreateFramebuffers();
 		CreateCommandPool();
 

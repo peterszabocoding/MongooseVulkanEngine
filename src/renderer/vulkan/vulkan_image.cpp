@@ -11,6 +11,7 @@ namespace Raytracing {
         this->device = device;
         CreateImage(image_path);
         CreateTextureImageView();
+        CreateTextureSampler();
     }
 
     VulkanImage::~VulkanImage() {
@@ -179,7 +180,6 @@ namespace Raytracing {
     void VulkanImage::CreateTextureSampler() {
         VkPhysicalDeviceProperties properties{};
         vkGetPhysicalDeviceProperties(device->GetPhysicalDevice(), &properties);
-
 
         VkSamplerCreateInfo samplerInfo{};
         samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
