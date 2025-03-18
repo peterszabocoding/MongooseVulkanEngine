@@ -13,6 +13,7 @@ namespace Raytracing
 	class VulkanVertexBuffer;
 	class VulkanIndexBuffer;
 	class VulkanImage;
+	class VulkanShader;
 
 	constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -61,8 +62,6 @@ namespace Raytracing
 		VkSurfaceKHR CreateSurface(GLFWwindow* glfwWindow) const;
 		VkCommandPool GetCommandPool() const { return commandPool; }
 
-		VkDescriptorSetLayout GetDescriptorSetLayout() const { return descriptorSetLayout; }
-
 	public:
 		inline VkPhysicalDevice PickPhysicalDevice() const;
 		inline VkDevice CreateLogicalDevice();
@@ -94,7 +93,6 @@ namespace Raytracing
 		void CreateGUIDescriptorPool();
 		void CreateDescriptorPool();
 		void CreateDescriptorSets();
-		VkDescriptorSetLayout CreateDescriptorSetLayout() const;
 		void CreateUniformBuffers();
 
 		void RecreateSwapChain();
@@ -126,7 +124,6 @@ namespace Raytracing
 		VkExtent2D swapChainExtent;
 
 		VkRenderPass renderPass;
-		VkDescriptorSetLayout descriptorSetLayout;
 		VkCommandPool commandPool;
 
 		std::vector<VkCommandBuffer> commandBuffers;
@@ -141,6 +138,7 @@ namespace Raytracing
 		VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
 		std::vector<VkDescriptorSet> descriptorSets;
 
+		VulkanShader* shader;
 		VulkanPipeline* graphicsPipeline;
 		VulkanVertexBuffer* vertexBuffer;
 		VulkanIndexBuffer* indexBuffer;

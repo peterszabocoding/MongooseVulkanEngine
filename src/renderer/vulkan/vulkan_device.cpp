@@ -16,6 +16,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "vulkan_shader.h"
 #include "GLFW/glfw3.h"
 
 namespace Raytracing
@@ -37,10 +38,13 @@ namespace Raytracing
 		}
 
 		vkDestroyDescriptorPool(device, descriptorPool, nullptr);
-		vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
 
-
+		delete shader;
 		delete graphicsPipeline;
+		delete vertexBuffer;
+		delete indexBuffer;
+		delete vulkanImage;
+
 		vkDestroyRenderPass(device, renderPass, nullptr);
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
@@ -88,11 +92,13 @@ namespace Raytracing
 		CreateImageViews();
 
 		renderPass = CreateRenderPass(device);
-		descriptorSetLayout = CreateDescriptorSetLayout();
-		graphicsPipeline = new VulkanPipeline(this, "shader/spv/vert.spv", "shader/spv/frag.spv");
 		CreateFramebuffers();
 		CreateCommandPool();
 
+		shader = new VulkanShader(this, "BaseShader", "shader/spv/vert.spv", "shader/spv/frag.spv");
+		shader->Load();
+
+		graphicsPipeline = new VulkanPipeline(this, shader);
 		vulkanImage = new VulkanImage(this, "textures/texture.jpg");
 		vertexBuffer = new VulkanVertexBuffer(this, mesh_vertices);
 		indexBuffer = new VulkanIndexBuffer(this, mesh_indices);
@@ -624,7 +630,7 @@ namespace Raytracing
 
 	void VulkanDevice::CreateDescriptorSets()
 	{
-		std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
+		std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, shader->GetDescriptorSetLayouts()[0]);
 		VkDescriptorSetAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 		allocInfo.descriptorPool = descriptorPool;
@@ -672,39 +678,6 @@ namespace Raytracing
 		}
 	}
 
-	VkDescriptorSetLayout VulkanDevice::CreateDescriptorSetLayout() const
-	{
-		VkDescriptorSetLayout descriptorSetLayout;
-
-		VkDescriptorSetLayoutBinding uboLayoutBinding{};
-		uboLayoutBinding.binding = 0;
-		uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		uboLayoutBinding.descriptorCount = 1;
-		uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-		uboLayoutBinding.pImmutableSamplers = nullptr; // Optional
-
-		VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-		samplerLayoutBinding.binding = 1;
-		samplerLayoutBinding.descriptorCount = 1;
-		samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		samplerLayoutBinding.pImmutableSamplers = nullptr;
-		samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-		std::array<VkDescriptorSetLayoutBinding, 2> bindings = {uboLayoutBinding, samplerLayoutBinding};
-
-		VkDescriptorSetLayoutCreateInfo layoutInfo{};
-		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-		layoutInfo.pBindings = bindings.data();
-
-		VulkanUtils::CheckVkResult(
-			vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout),
-			"Failed to create descriptor set layout."
-		);
-
-		return descriptorSetLayout;
-	}
-
 	void VulkanDevice::CreateUniformBuffers()
 	{
 		const VkDeviceSize buffer_size = sizeof(UniformBufferObject);
@@ -719,7 +692,8 @@ namespace Raytracing
 			                          physicalDevice,
 			                          buffer_size,
 			                          VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-			                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffers[i],
+			                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			                          uniformBuffers[i],
 			                          uniformBuffersMemory[i]);
 
 			vkMapMemory(device, uniformBuffersMemory[i], 0, buffer_size, 0, &uniformBuffersMapped[i]);
