@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <vulkan/vulkan_core.h>
+#include "vulkan_shader.h"
 
 namespace Raytracing
 {
@@ -17,20 +18,18 @@ namespace Raytracing
 
 		VkPipeline GetPipeline() const { return pipeline; }
 		VkPipelineLayout GetPipelineLayout() const { return pipelineLayout; }
-		VkDescriptorSetLayout GetDescriptorSetLayout() const { return descriptorSetLayout; }
+		VulkanShader* GetShader() const { return shader; }
+
 
 	private:
-		void CreateDescriptorSetLayout();
 		void CreateGraphicsPipeline(
-			const VkRenderPass renderPass,
 			const std::string& vertexShaderPath,
 			const std::string& fragmentShaderPath);
 
 	private:
 		VulkanDevice* vulkanDevice;
+		VulkanShader* shader;
 		VkPipeline pipeline;
 		VkPipelineLayout pipelineLayout;
-
-		VkDescriptorSetLayout descriptorSetLayout;
 	};
 }

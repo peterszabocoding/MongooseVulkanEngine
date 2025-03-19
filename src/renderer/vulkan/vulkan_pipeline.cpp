@@ -14,70 +14,23 @@ namespace Raytracing
 		const std::string& fragmentShaderPath)
 	{
 		vulkanDevice = device;
-		CreateDescriptorSetLayout();
-		CreateGraphicsPipeline(vulkanDevice->GetRenderPass(), vertexShaderPath, fragmentShaderPath);
+		CreateGraphicsPipeline(vertexShaderPath, fragmentShaderPath);
 	}
 
 	VulkanPipeline::~VulkanPipeline()
 	{
-		vkDestroyDescriptorSetLayout(vulkanDevice->GetDevice(), descriptorSetLayout, nullptr);
+		delete shader;
 		vkDestroyPipeline(vulkanDevice->GetDevice(), pipeline, nullptr);
 		vkDestroyPipelineLayout(vulkanDevice->GetDevice(), pipelineLayout, nullptr);
 	}
 
-	void VulkanPipeline::CreateDescriptorSetLayout()
-	{
-		VkDescriptorSetLayoutBinding uboLayoutBinding{};
-		uboLayoutBinding.binding = 0;
-		uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		uboLayoutBinding.descriptorCount = 1;
-		uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-		uboLayoutBinding.pImmutableSamplers = nullptr; // Optional
 
-		VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-		samplerLayoutBinding.binding = 1;
-		samplerLayoutBinding.descriptorCount = 1;
-		samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		samplerLayoutBinding.pImmutableSamplers = nullptr;
-		samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-		std::array<VkDescriptorSetLayoutBinding, 2> bindings = {uboLayoutBinding, samplerLayoutBinding};
-
-		VkDescriptorSetLayoutCreateInfo layoutInfo{};
-		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-		layoutInfo.pBindings = bindings.data();
-
-		VulkanUtils::CheckVkResult(
-			vkCreateDescriptorSetLayout(vulkanDevice->GetDevice(), &layoutInfo, nullptr, &descriptorSetLayout),
-			"Failed to create descriptor set layout."
-		);
-	}
 
 	void VulkanPipeline::CreateGraphicsPipeline(
-		const VkRenderPass renderPass,
 		const std::string& vertexShaderPath,
 		const std::string& fragmentShaderPath)
 	{
-		auto vert_shader_code = FileSystem::ReadFile(vertexShaderPath);
-		auto frag_shader_code = FileSystem::ReadFile(fragmentShaderPath);
-
-		VkShaderModule vert_shader_module = VulkanUtils::CreateShaderModule(vulkanDevice->GetDevice(), vert_shader_code);
-		VkShaderModule frag_shader_module = VulkanUtils::CreateShaderModule(vulkanDevice->GetDevice(), frag_shader_code);
-
-		VkPipelineShaderStageCreateInfo vert_shader_stage_info{};
-		vert_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		vert_shader_stage_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
-		vert_shader_stage_info.module = vert_shader_module;
-		vert_shader_stage_info.pName = "main";
-
-		VkPipelineShaderStageCreateInfo frag_shader_stage_info{};
-		frag_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		frag_shader_stage_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		frag_shader_stage_info.module = frag_shader_module;
-		frag_shader_stage_info.pName = "main";
-
-		VkPipelineShaderStageCreateInfo shader_stages[] = {vert_shader_stage_info, frag_shader_stage_info};
+		shader = new VulkanShader(vulkanDevice, vertexShaderPath, fragmentShaderPath);
 
 		auto binding_description = VulkanVertex::GetBindingDescription();
 		auto attribute_descriptions = VulkanVertex::GetAttributeDescriptions();
@@ -145,7 +98,7 @@ namespace Raytracing
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipelineLayoutInfo.setLayoutCount = 1;
-		pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+		pipelineLayoutInfo.pSetLayouts = &shader->GetDescriptorSetLayout();
 
 		VulkanUtils::CheckVkResult(
 			vkCreatePipelineLayout(vulkanDevice->GetDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout),
@@ -155,7 +108,7 @@ namespace Raytracing
 		VkGraphicsPipelineCreateInfo pipeline_info{};
 		pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 		pipeline_info.stageCount = 2;
-		pipeline_info.pStages = shader_stages;
+		pipeline_info.pStages = shader->GetPipelineShaderStageCreateInfos().data();
 		pipeline_info.pVertexInputState = &vertex_input_info;
 		pipeline_info.pInputAssemblyState = &input_assembly;
 		pipeline_info.pViewportState = &viewport_state;
@@ -164,15 +117,12 @@ namespace Raytracing
 		pipeline_info.pColorBlendState = &color_blending;
 		pipeline_info.pDynamicState = &dynamicState;
 		pipeline_info.layout = pipelineLayout;
-		pipeline_info.renderPass = renderPass;
+		pipeline_info.renderPass = vulkanDevice->GetRenderPass();
 		pipeline_info.subpass = 0;
 
 		VulkanUtils::CheckVkResult(
 			vkCreateGraphicsPipelines(vulkanDevice->GetDevice(), VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &pipeline),
 			"Failed to create graphics pipeline."
 		);
-
-		vkDestroyShaderModule(vulkanDevice->GetDevice(), frag_shader_module, nullptr);
-		vkDestroyShaderModule(vulkanDevice->GetDevice(), vert_shader_module, nullptr);
 	}
 }

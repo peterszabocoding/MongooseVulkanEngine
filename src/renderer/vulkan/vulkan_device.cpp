@@ -621,7 +621,7 @@ namespace Raytracing
 
 	void VulkanDevice::CreateDescriptorSets()
 	{
-		std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, graphicsPipeline->GetDescriptorSetLayout());
+		std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, graphicsPipeline->GetShader()->GetDescriptorSetLayout());
 
 		VkDescriptorSetAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
