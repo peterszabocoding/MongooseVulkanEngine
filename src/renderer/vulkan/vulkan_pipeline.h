@@ -17,11 +17,12 @@ namespace Raytracing
 
 		VkPipeline GetPipeline() const { return pipeline; }
 		VkPipelineLayout GetPipelineLayout() const { return pipelineLayout; }
+		VkDescriptorSetLayout GetDescriptorSetLayout() const { return descriptorSetLayout; }
 
 	private:
+		void CreateDescriptorSetLayout();
 		void CreateGraphicsPipeline(
 			const VkRenderPass renderPass,
-			const VkDescriptorSetLayout descriptorSetLayout,
 			const std::string& vertexShaderPath,
 			const std::string& fragmentShaderPath);
 
@@ -29,5 +30,7 @@ namespace Raytracing
 		VulkanDevice* vulkanDevice;
 		VkPipeline pipeline;
 		VkPipelineLayout pipelineLayout;
+
+		VkDescriptorSetLayout descriptorSetLayout;
 	};
 }
