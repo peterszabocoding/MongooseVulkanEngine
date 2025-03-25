@@ -88,6 +88,8 @@ set ( SOURCE_ONE_WEEKEND
   ./src/renderer/vulkan/vulkan_index_buffer.cpp
   ./src/renderer/vulkan/vulkan_vertex_buffer.cpp
   ./src/renderer/vulkan/vulkan_image.cpp
+  ./src/renderer/vulkan/vulkan_texture_image.cpp
+  ./src/renderer/vulkan/vulkan_depth_image.cpp
   ./src/renderer/vulkan/vulkan_shader.cpp
   ./src/renderer/vulkan/imgui_vulkan.cpp
 )

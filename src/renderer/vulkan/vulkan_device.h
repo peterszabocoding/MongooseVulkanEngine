@@ -5,6 +5,7 @@
 #include "renderer/mesh.h"
 
 #define GLFW_INCLUDE_VULKAN
+#include "vulkan_depth_image.h"
 #include "GLFW/glfw3.h"
 
 namespace Raytracing
@@ -12,7 +13,8 @@ namespace Raytracing
 	class VulkanPipeline;
 	class VulkanVertexBuffer;
 	class VulkanIndexBuffer;
-	class VulkanImage;
+	class VulkanTextureImage;
+	class VulkanDepthImage;
 
 	constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -83,7 +85,7 @@ namespace Raytracing
 		VkRenderPass CreateRenderPass(VkDevice device) const;
 
 		void CreateFramebuffers();
-		static VkFramebuffer CreateFramebuffer(VkDevice device, VkImageView imageView, VkRenderPass renderPass, uint32_t width,
+		static VkFramebuffer CreateFramebuffer(VkDevice device, VkImageView imageView, const VkImageView depthImageView, VkRenderPass renderPass, uint32_t width,
 		                                       uint32_t height);
 
 		void CreateCommandPool();
@@ -141,7 +143,8 @@ namespace Raytracing
 		VulkanPipeline* graphicsPipeline;
 		VulkanVertexBuffer* vertexBuffer;
 		VulkanIndexBuffer* indexBuffer;
-		VulkanImage* vulkanImage;
+		VulkanTextureImage* vulkanImage;
+		VulkanDepthImage* vulkanDepthImage;
 
 		std::vector<VkBuffer> uniformBuffers;
 		std::vector<VkDeviceMemory> uniformBuffersMemory;
