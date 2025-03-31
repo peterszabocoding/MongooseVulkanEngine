@@ -12,11 +12,7 @@
 #include "vulkan_image.h";
 #include "vulkan_depth_image.h"
 
-#define GLM_FORCE_RADIANS
 #include <backends/imgui_impl_vulkan.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-
 #include "vulkan_texture_image.h"
 #include "GLFW/glfw3.h"
 
@@ -31,12 +27,6 @@ namespace Raytracing
 	VulkanDevice::~VulkanDevice()
 	{
 		CleanupSwapChain();
-
-		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-		{
-			vkDestroyBuffer(device, uniformBuffers[i], nullptr);
-			vkFreeMemory(device, uniformBuffersMemory[i], nullptr);
-		}
 
 		vkDestroyDescriptorPool(device, descriptorPool, nullptr);
 
@@ -93,7 +83,7 @@ namespace Raytracing
 		CreateImageViews();
 
 		renderPass = CreateRenderPass(device);
-		graphicsPipeline = new VulkanPipeline(this, "shader/spv/vert.spv", "shader/spv/frag.spv");
+		graphicsPipeline = new VulkanPipeline(this);
 
 		vulkanDepthImage = new VulkanDepthImage(this, swapChainExtent.width, swapChainExtent.height);
 		CreateFramebuffers();
@@ -103,12 +93,14 @@ namespace Raytracing
 		vertexBuffer = new VulkanVertexBuffer(this, mesh_vertices);
 		indexBuffer = new VulkanIndexBuffer(this, mesh_indices);
 
-		CreateUniformBuffers();
 		CreateDescriptorPool();
 		CreateGUIDescriptorPool();
-		CreateDescriptorSets();
+
 		CreateCommandBuffers();
 		CreateSyncObjects();
+
+		graphicsPipeline->Load("shader/spv/vert.spv", "shader/spv/frag.spv");
+		graphicsPipeline->GetShader()->SetImage(vulkanImage);
 	}
 
 	VkResult VulkanDevice::SubmitDrawCommands(VkSemaphore* signalSemaphores) const
@@ -176,8 +168,7 @@ namespace Raytracing
 		vkResetCommandBuffer(commandBuffers[currentFrame], /*VkCommandBufferResetFlagBits*/ 0);
 
 		RecordCommandBuffer(commandBuffers[currentFrame], imageIndex);
-
-		UpdateUniformBuffer(currentFrame);
+		UpdateUniformBuffer();
 
 		VkSemaphore* signalSemaphores = {(&renderFinishedSemaphores[currentFrame])};
 
@@ -326,7 +317,7 @@ namespace Raytracing
 	{
 		VkInstanceCreateInfo createInfo;
 
-		VkApplicationInfo* vkApplicationInfo = new VkApplicationInfo();
+		auto* vkApplicationInfo = new VkApplicationInfo();
 		vkApplicationInfo->sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 		vkApplicationInfo->pApplicationName = APPLICATION_NAME.c_str();
 		vkApplicationInfo->pEngineName = "No Engine";
@@ -358,6 +349,7 @@ namespace Raytracing
 			createInfo.enabledExtensionCount = 0;
 		}
 
+		// ReSharper disable once CppRedundantBooleanExpressionArgument
 		if (ENABLE_VALIDATION_LAYERS && !validationLayers.empty())
 		{
 			std::clog << "Validation layer enabled" << std::endl;
@@ -477,7 +469,6 @@ namespace Raytracing
 		color_attachment_ref.attachment = 0;
 		color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-
 		VkAttachmentDescription depthAttachment{};
 		depthAttachment.format = VK_FORMAT_D24_UNORM_S8_UINT;
 		depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -491,7 +482,6 @@ namespace Raytracing
 		VkAttachmentReference depthAttachmentRef{};
 		depthAttachmentRef.attachment = 1;
 		depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
 
 		VkSubpassDescription subpass{};
 		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
@@ -653,78 +643,6 @@ namespace Raytracing
 		}
 	}
 
-	void VulkanDevice::CreateDescriptorSets()
-	{
-		std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, graphicsPipeline->GetShader()->GetDescriptorSetLayout());
-
-		VkDescriptorSetAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		allocInfo.descriptorPool = descriptorPool;
-		allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-		allocInfo.pSetLayouts = layouts.data();
-
-		descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
-
-		if (vkAllocateDescriptorSets(device, &allocInfo, descriptorSets.data()) != VK_SUCCESS)
-		{
-			throw std::runtime_error("failed to allocate descriptor sets!");
-		}
-
-		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-		{
-			VkDescriptorBufferInfo bufferInfo{};
-			bufferInfo.buffer = uniformBuffers[i];
-			bufferInfo.offset = 0;
-			bufferInfo.range = sizeof(UniformBufferObject);
-
-			VkDescriptorImageInfo imageInfo{};
-			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			imageInfo.imageView = vulkanImage->GetImageView();
-			imageInfo.sampler = vulkanImage->GetSampler();
-
-			std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
-
-			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[0].dstSet = descriptorSets[i];
-			descriptorWrites[0].dstBinding = 0;
-			descriptorWrites[0].dstArrayElement = 0;
-			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].pBufferInfo = &bufferInfo;
-
-			descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[1].dstSet = descriptorSets[i];
-			descriptorWrites[1].dstBinding = 1;
-			descriptorWrites[1].dstArrayElement = 0;
-			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			descriptorWrites[1].descriptorCount = 1;
-			descriptorWrites[1].pImageInfo = &imageInfo;
-
-			vkUpdateDescriptorSets(device, descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
-		}
-	}
-
-	void VulkanDevice::CreateUniformBuffers()
-	{
-		const VkDeviceSize buffer_size = sizeof(UniformBufferObject);
-
-		uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-		uniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
-		uniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
-
-		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-		{
-			VulkanUtils::CreateBuffer(device,
-			                          physicalDevice,
-			                          buffer_size,
-			                          VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-			                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffers[i],
-			                          uniformBuffersMemory[i]);
-
-			vkMapMemory(device, uniformBuffersMemory[i], 0, buffer_size, 0, &uniformBuffersMapped[i]);
-		}
-	}
-
 	void VulkanDevice::RecreateSwapChain()
 	{
 		vkDeviceWaitIdle(device);
@@ -798,8 +716,6 @@ namespace Raytracing
 		renderPassInfo.renderArea.offset = {0, 0};
 		renderPassInfo.renderArea.extent = swapChainExtent;
 
-		VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
-
 		std::array<VkClearValue, 2> clearValues{};
 		clearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
 		clearValues[1].depthStencil = {1.0f, 0};
@@ -818,7 +734,7 @@ namespace Raytracing
 		vkCmdBindDescriptorSets(commandBuffer,
 		                        VK_PIPELINE_BIND_POINT_GRAPHICS,
 		                        graphicsPipeline->GetPipelineLayout(), 0, 1,
-		                        &descriptorSets[currentFrame], 0,
+		                        &graphicsPipeline->GetShader()->GetDescriptorSet(), 0,
 		                        nullptr);
 
 		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(mesh_indices.size()), 1, 0, 0, 0);
@@ -833,7 +749,7 @@ namespace Raytracing
 		VulkanUtils::CheckVkResult(result, "Failed to record command buffer.");
 	}
 
-	void VulkanDevice::UpdateUniformBuffer(const uint32_t currentImage) const
+	void VulkanDevice::UpdateUniformBuffer() const
 	{
 		static auto start_time = std::chrono::high_resolution_clock::now();
 		const auto current_time = std::chrono::high_resolution_clock::now();
@@ -842,10 +758,10 @@ namespace Raytracing
 		UniformBufferObject ubo{};
 		ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 		ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 10.0f);
+		ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / static_cast<float>(swapChainExtent.height), 0.1f, 10.0f);
 		ubo.proj[1][1] *= -1;
 
-		memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
+		graphicsPipeline->GetShader()->UpdateUniformBuffer(ubo);
 	}
 
 	VkSurfaceFormatKHR VulkanDevice::ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)

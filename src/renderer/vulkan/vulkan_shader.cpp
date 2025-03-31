@@ -1,24 +1,34 @@
 #include "vulkan_shader.h"
-
 #include "vulkan_utils.h"
-#include "util/filesystem.h"
 #include "vulkan_device.h"
+#include "vulkan_image.h"
+#include "util/filesystem.h"
 
-namespace Raytracing {
+namespace Raytracing
+{
     VulkanShader::VulkanShader(VulkanDevice *device, const std::string &vertexShaderPath,
-        const std::string &fragmentShaderPath) {
+                               const std::string &fragmentShaderPath)
+    {
         vulkanDevice = device;
         CreateDescriptorSetLayout();
+        CreateDescriptorSet();
+        CreateUniformBuffer();
+
         Load(vertexShaderPath, fragmentShaderPath);
     }
 
-    VulkanShader::~VulkanShader() {
+    VulkanShader::~VulkanShader()
+    {
+        vkDestroyBuffer(vulkanDevice->GetDevice(), uniformBuffer, nullptr);
+        vkFreeMemory(vulkanDevice->GetDevice(), uniformBufferMemory, nullptr);
+
         vkDestroyDescriptorSetLayout(vulkanDevice->GetDevice(), descriptorSetLayout, nullptr);
         vkDestroyShaderModule(vulkanDevice->GetDevice(), vertexShaderModule, nullptr);
         vkDestroyShaderModule(vulkanDevice->GetDevice(), fragmentShaderModule, nullptr);
     }
 
-    void VulkanShader::Load(const std::string &vertexShaderPath, const std::string &fragmentShaderPath) {
+    void VulkanShader::Load(const std::string &vertexShaderPath, const std::string &fragmentShaderPath)
+    {
         pipelineShaderStageCreateInfos.clear();
 
         const auto vert_shader_code = FileSystem::ReadFile(vertexShaderPath);
@@ -40,6 +50,44 @@ namespace Raytracing {
         frag_shader_stage_create_info.module = fragmentShaderModule;
         frag_shader_stage_create_info.pName = "main";
         pipelineShaderStageCreateInfos.push_back(frag_shader_stage_create_info);
+    }
+
+    void VulkanShader::SetImage(const VulkanImage *vulkanImage) const
+    {
+        VkDescriptorBufferInfo bufferInfo{};
+        bufferInfo.buffer = uniformBuffer;
+        bufferInfo.offset = 0;
+        bufferInfo.range = sizeof(UniformBufferObject);
+
+        VkDescriptorImageInfo imageInfo{};
+        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imageInfo.imageView = vulkanImage->GetImageView();
+        imageInfo.sampler = vulkanImage->GetSampler();
+
+        std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+
+        descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites[0].dstSet = descriptorSet;
+        descriptorWrites[0].dstBinding = 0;
+        descriptorWrites[0].dstArrayElement = 0;
+        descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        descriptorWrites[0].descriptorCount = 1;
+        descriptorWrites[0].pBufferInfo = &bufferInfo;
+
+        descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites[1].dstSet = descriptorSet;
+        descriptorWrites[1].dstBinding = 1;
+        descriptorWrites[1].dstArrayElement = 0;
+        descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        descriptorWrites[1].descriptorCount = 1;
+        descriptorWrites[1].pImageInfo = &imageInfo;
+
+        vkUpdateDescriptorSets(vulkanDevice->GetDevice(), descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
+    }
+
+    void VulkanShader::UpdateUniformBuffer(const UniformBufferObject &ubo) const
+    {
+        memcpy(uniformBufferMapped, &ubo, sizeof(ubo));
     }
 
     void VulkanShader::CreateDescriptorSetLayout()
@@ -69,5 +117,31 @@ namespace Raytracing {
             vkCreateDescriptorSetLayout(vulkanDevice->GetDevice(), &layoutInfo, nullptr, &descriptorSetLayout),
             "Failed to create descriptor set layout."
         );
+    }
+
+    void VulkanShader::CreateDescriptorSet()
+    {
+        VkDescriptorSetAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        allocInfo.descriptorPool = vulkanDevice->GetDescriptorPool();
+        allocInfo.descriptorSetCount = 1;
+        allocInfo.pSetLayouts = &descriptorSetLayout;
+
+        if (vkAllocateDescriptorSets(vulkanDevice->GetDevice(), &allocInfo, &descriptorSet) != VK_SUCCESS)
+            throw std::runtime_error("failed to allocate descriptor sets!");
+    }
+
+    void VulkanShader::CreateUniformBuffer()
+    {
+        const VkDeviceSize buffer_size = sizeof(UniformBufferObject);
+        VulkanUtils::CreateBuffer(vulkanDevice->GetDevice(),
+                                  vulkanDevice->GetPhysicalDevice(),
+                                  buffer_size,
+                                  VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                                  uniformBuffer,
+                                  uniformBufferMemory);
+
+        vkMapMemory(vulkanDevice->GetDevice(), uniformBufferMemory, 0, buffer_size, 0, &uniformBufferMapped);
     }
 }

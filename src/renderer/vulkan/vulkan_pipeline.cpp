@@ -8,14 +8,7 @@
 
 namespace Raytracing
 {
-	VulkanPipeline::VulkanPipeline(
-		VulkanDevice* device,
-		const std::string& vertexShaderPath,
-		const std::string& fragmentShaderPath)
-	{
-		vulkanDevice = device;
-		CreateGraphicsPipeline(vertexShaderPath, fragmentShaderPath);
-	}
+	VulkanPipeline::VulkanPipeline(VulkanDevice* device): vulkanDevice(device) {}
 
 	VulkanPipeline::~VulkanPipeline()
 	{
@@ -24,9 +17,7 @@ namespace Raytracing
 		vkDestroyPipelineLayout(vulkanDevice->GetDevice(), pipelineLayout, nullptr);
 	}
 
-
-
-	void VulkanPipeline::CreateGraphicsPipeline(
+	void VulkanPipeline::Load(
 		const std::string& vertexShaderPath,
 		const std::string& fragmentShaderPath)
 	{

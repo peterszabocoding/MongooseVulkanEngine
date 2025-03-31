@@ -10,26 +10,20 @@ namespace Raytracing
 	class VulkanPipeline
 	{
 	public:
-		VulkanPipeline(VulkanDevice* vulkanDevice,
-		               const std::string& vertexShaderPath,
-		               const std::string& fragmentShaderPath);
-
+		explicit VulkanPipeline(VulkanDevice* vulkanDevice);
 		~VulkanPipeline();
 
 		VkPipeline GetPipeline() const { return pipeline; }
 		VkPipelineLayout GetPipelineLayout() const { return pipelineLayout; }
 		VulkanShader* GetShader() const { return shader; }
-
-
-	private:
-		void CreateGraphicsPipeline(
+		void Load(
 			const std::string& vertexShaderPath,
 			const std::string& fragmentShaderPath);
 
 	private:
 		VulkanDevice* vulkanDevice;
 		VulkanShader* shader;
-		VkPipeline pipeline;
-		VkPipelineLayout pipelineLayout;
+		VkPipeline pipeline{};
+		VkPipelineLayout pipelineLayout{};
 	};
 }

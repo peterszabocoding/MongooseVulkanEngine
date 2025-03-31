@@ -1,7 +1,6 @@
 #pragma once
 #include <vector>
 #include <vulkan/vulkan_core.h>
-
 #include "renderer/mesh.h"
 
 #define GLFW_INCLUDE_VULKAN
@@ -16,7 +15,7 @@ namespace Raytracing
 	class VulkanTextureImage;
 	class VulkanDepthImage;
 
-	constexpr int MAX_FRAMES_IN_FLIGHT = 2;
+	constexpr int MAX_FRAMES_IN_FLIGHT = 1;
 
 	struct SwapChainSupportDetails
 	{
@@ -25,20 +24,13 @@ namespace Raytracing
 		std::vector<VkPresentModeKHR> presentModes;
 	};
 
-	struct UniformBufferObject
-	{
-		glm::mat4 model;
-		glm::mat4 view;
-		glm::mat4 proj;
-	};
-
 	class VulkanDevice
 	{
 	public:
 		VulkanDevice() = default;
 		~VulkanDevice();
 
-		void Init(const int width, const int height, GLFWwindow* glfwWindow);
+		void Init(int width, int height, GLFWwindow* glfwWindow);
 
 		int GetViewportWidth() const { return viewportWidth; }
 		int GetViewportHeight() const { return viewportHeight; }
@@ -93,13 +85,11 @@ namespace Raytracing
 		void CreateSyncObjects();
 		void CreateGUIDescriptorPool();
 		void CreateDescriptorPool();
-		void CreateDescriptorSets();
-		void CreateUniformBuffers();
 
 		void RecreateSwapChain();
 		void CleanupSwapChain() const;
 		void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) const;
-		void UpdateUniformBuffer(uint32_t currentImage) const;
+		void UpdateUniformBuffer() const;
 		VkResult SubmitDrawCommands(VkSemaphore* signalSemaphores) const;
 		VkResult PresentFrame(uint32_t imageIndex, const VkSemaphore* signalSemaphores) const;
 
@@ -125,7 +115,6 @@ namespace Raytracing
 		VkExtent2D swapChainExtent;
 
 		VkRenderPass renderPass;
-
 		VkCommandPool commandPool;
 
 		std::vector<VkCommandBuffer> commandBuffers;
@@ -138,17 +127,12 @@ namespace Raytracing
 
 		VkDescriptorPool gui_descriptionPool = VK_NULL_HANDLE;
 		VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
-		std::vector<VkDescriptorSet> descriptorSets;
 
 		VulkanPipeline* graphicsPipeline;
 		VulkanVertexBuffer* vertexBuffer;
 		VulkanIndexBuffer* indexBuffer;
 		VulkanTextureImage* vulkanImage;
 		VulkanDepthImage* vulkanDepthImage;
-
-		std::vector<VkBuffer> uniformBuffers;
-		std::vector<VkDeviceMemory> uniformBuffersMemory;
-		std::vector<void*> uniformBuffersMapped;
 
 		std::vector<Vertex> mesh_vertices = Primitives::RECTANGLE_VERTICES;
 		std::vector<uint16_t> mesh_indices = Primitives::RECTANGLE_INDICES;
