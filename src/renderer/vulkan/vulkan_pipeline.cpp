@@ -8,7 +8,7 @@
 
 namespace Raytracing
 {
-	VulkanPipeline::VulkanPipeline(VulkanDevice* device): vulkanDevice(device) {}
+	VulkanPipeline::VulkanPipeline(VulkanDevice* device): vulkanDevice(device), shader(nullptr) {}
 
 	VulkanPipeline::~VulkanPipeline()
 	{

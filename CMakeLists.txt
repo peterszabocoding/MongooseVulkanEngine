@@ -81,6 +81,7 @@ set ( SOURCE_ONE_WEEKEND
   ./src/renderer/shader.cpp
   ./src/renderer/renderer.cpp
   ./src/renderer/camera.cpp
+  ./src/renderer/mesh.cpp
 
   ./src/renderer/vulkan/vulkanRenderer.cpp
   ./src/renderer/vulkan/vulkan_pipeline.cpp

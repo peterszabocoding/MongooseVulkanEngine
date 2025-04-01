@@ -8,7 +8,8 @@ namespace Raytracing
 	VulkanIndexBuffer::VulkanIndexBuffer(VulkanDevice* device, const std::vector<uint16_t>& mesh_indices)
 	{
 		vulkanDevice = device;
-		CreateIndexBuffer(mesh_indices);
+		indices = mesh_indices;
+		CreateIndexBuffer();
 	}
 
 	VulkanIndexBuffer::~VulkanIndexBuffer()
@@ -22,9 +23,14 @@ namespace Raytracing
 		vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT16);
 	}
 
-	void VulkanIndexBuffer::CreateIndexBuffer(const std::vector<uint16_t>& mesh_indices)
+	uint32_t VulkanIndexBuffer::GetIndexCount() const
 	{
-		const VkDeviceSize buffer_size = sizeof(mesh_indices[0]) * mesh_indices.size();
+		return indices.size();
+	}
+
+	void VulkanIndexBuffer::CreateIndexBuffer()
+	{
+		const VkDeviceSize buffer_size = sizeof(indices[0]) * indices.size();
 
 		VkBuffer staging_buffer;
 		VkDeviceMemory stagingBufferMemory;
@@ -38,7 +44,7 @@ namespace Raytracing
 
 		void* data;
 		vkMapMemory(vulkanDevice->GetDevice(), stagingBufferMemory, 0, buffer_size, 0, &data);
-		memcpy(data, mesh_indices.data(), buffer_size);
+		memcpy(data, indices.data(), buffer_size);
 		vkUnmapMemory(vulkanDevice->GetDevice(), stagingBufferMemory);
 
 		VulkanUtils::CreateBuffer(

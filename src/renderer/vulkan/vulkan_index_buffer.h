@@ -3,23 +3,22 @@
 
 namespace Raytracing
 {
-	class VulkanIndexBuffer
-	{
-	public:
-		VulkanIndexBuffer(
-			VulkanDevice* device,
-			const std::vector<uint16_t>& mesh_indices);
-		~VulkanIndexBuffer();
+    class VulkanIndexBuffer {
+    public:
+        VulkanIndexBuffer(VulkanDevice* device, const std::vector<uint16_t>& mesh_indices);
+        ~VulkanIndexBuffer();
 
-		void Bind(VkCommandBuffer commandBuffer) const;
-		static void Draw(VkCommandBuffer commandBuffer);
+        void Bind(VkCommandBuffer commandBuffer) const;
+        uint32_t GetIndexCount() const;
 
-	private:
-		void CreateIndexBuffer(const std::vector<uint16_t>& mesh_indices);
+    private:
+        void CreateIndexBuffer();
 
-	private:
-		VulkanDevice* vulkanDevice;
-		VkBuffer indexBuffer;
-		VkDeviceMemory indexBufferMemory;
-	};
+    private:
+        VulkanDevice* vulkanDevice;
+        VkBuffer indexBuffer;
+        VkDeviceMemory indexBufferMemory;
+
+        std::vector<uint16_t> indices;
+    };
 }
