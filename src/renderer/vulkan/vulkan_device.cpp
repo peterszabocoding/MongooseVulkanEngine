@@ -637,6 +637,8 @@ namespace Raytracing
         CreateImageViews();
 
         vulkanDepthImage->Resize(swapChainExtent.width, swapChainExtent.height);
+        viewportWidth = swapChainExtent.width;
+        viewportHeight = swapChainExtent.height;
 
         CreateFramebuffers();
     }
