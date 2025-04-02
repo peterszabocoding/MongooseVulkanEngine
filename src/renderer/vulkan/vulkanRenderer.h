@@ -2,6 +2,7 @@
 
 #include "renderer/renderer.h"
 #include "vulkan_device.h"
+#include "vulkan_texture_image.h"
 
 namespace Raytracing
 {

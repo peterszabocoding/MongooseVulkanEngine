@@ -7,8 +7,7 @@
 #include "util/Core.h"
 #include "vulkan_utils.h"
 #include "vulkan_pipeline.h"
-#include "vulkan_image.h";
-#include "vulkan_depth_image.h"
+#include "vulkan_swapchain.h"
 
 #include <backends/imgui_impl_vulkan.h>
 #include "GLFW/glfw3.h"
@@ -25,12 +24,9 @@ namespace Raytracing
 
     VulkanDevice::~VulkanDevice()
     {
-        CleanupSwapChain();
+        delete vulkanSwapChain;
 
         vkDestroyDescriptorPool(device, descriptorPool, nullptr);
-
-        delete vulkanDepthImage;
-
         vkDestroyRenderPass(device, renderPass, nullptr);
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
@@ -74,15 +70,10 @@ namespace Raytracing
         physicalDevice = PickPhysicalDevice();
         device = CreateLogicalDevice();
 
-        CreateSwapChain();
-        CreateImageViews();
-
+        vulkanSwapChain = new VulkanSwapchain(this, viewportWidth, viewportHeight);
         renderPass = CreateRenderPass(device);
 
-        vulkanDepthImage = new VulkanDepthImage(this, swapChainExtent.width, swapChainExtent.height);
-        CreateFramebuffers();
         CreateCommandPool();
-
 
         CreateDescriptorPool();
         CreateGUIDescriptorPool();
@@ -119,9 +110,8 @@ namespace Raytracing
         presentInfo.waitSemaphoreCount = 1;
         presentInfo.pWaitSemaphores = signalSemaphores;
 
-        const VkSwapchainKHR swap_chains[] = {swapChain};
         presentInfo.swapchainCount = 1;
-        presentInfo.pSwapchains = swap_chains;
+        presentInfo.pSwapchains = &vulkanSwapChain->GetSwapChain();
 
         presentInfo.pImageIndices = &imageIndex;
 
@@ -137,7 +127,7 @@ namespace Raytracing
 
         result = vkAcquireNextImageKHR(
             device,
-            swapChain,
+            vulkanSwapChain->GetSwapChain(),
             UINT64_MAX,
             imageAvailableSemaphores[currentFrame],
             VK_NULL_HANDLE,
@@ -145,7 +135,7 @@ namespace Raytracing
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR)
         {
-            RecreateSwapChain();
+            vulkanSwapChain->RecreateSwapChain();
             return;
         }
 
@@ -169,7 +159,7 @@ namespace Raytracing
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized)
         {
             framebufferResized = false;
-            RecreateSwapChain();
+            vulkanSwapChain->RecreateSwapChain();
         } else if (result != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to present swap chain image." + ' | ' + result);
@@ -260,34 +250,6 @@ namespace Raytracing
         return graphics_queue;
     }
 
-    SwapChainSupportDetails VulkanDevice::QuerySwapChainSupport() const
-    {
-        SwapChainSupportDetails details;
-
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &details.capabilities);
-
-        uint32_t format_count;
-        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &format_count, nullptr);
-
-        if (format_count != 0)
-        {
-            details.formats.resize(format_count);
-            vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &format_count, details.formats.data());
-        }
-
-        uint32_t present_mode_count;
-        vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &present_mode_count, nullptr);
-
-        if (present_mode_count != 0)
-        {
-            details.presentModes.resize(present_mode_count);
-            vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &present_mode_count,
-                                                      details.presentModes.data());
-        }
-
-        return details;
-    }
-
     VkQueue VulkanDevice::GetDevicePresentQueue() const
     {
         VkQueue presentQueue;
@@ -342,7 +304,7 @@ namespace Raytracing
                 std::clog << layer << std::endl;
 
 
-            auto debugCreateInfo = Raytracing::VulkanUtils::CreateDebugMessengerCreateInfo();
+            auto debugCreateInfo = VulkanUtils::CreateDebugMessengerCreateInfo();
 
             createInfo.enabledLayerCount = validationLayers.size();
             createInfo.ppEnabledLayerNames = validationLayers.data();
@@ -359,7 +321,7 @@ namespace Raytracing
         if (result != VK_SUCCESS)
         {
             std::string message = "ERROR: Instance creation failed with result '";
-            message += Raytracing::VulkanUtils::GetVkResultString(result);
+            message += VulkanUtils::GetVkResultString(result);
             message += "'.";
             throw std::runtime_error(message);
         }
@@ -367,80 +329,10 @@ namespace Raytracing
         return instance;
     }
 
-    void VulkanDevice::CreateSwapChain()
-    {
-        const SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport();
-        const VkSurfaceFormatKHR surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupport.formats);
-        const VkPresentModeKHR presentMode = ChooseSwapPresentMode(swapChainSupport.presentModes);
-        const VkExtent2D extent = ChooseSwapExtent(swapChainSupport.capabilities);
-
-        uint32_t image_count = swapChainSupport.capabilities.minImageCount + 1;
-        if (swapChainSupport.capabilities.maxImageCount > 0 && image_count > swapChainSupport.capabilities.
-            maxImageCount)
-        {
-            image_count = swapChainSupport.capabilities.maxImageCount;
-        }
-
-        VkSwapchainCreateInfoKHR createInfo{};
-        createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        createInfo.surface = surface;
-
-        createInfo.minImageCount = image_count;
-        createInfo.imageFormat = surfaceFormat.format;
-        createInfo.imageColorSpace = surfaceFormat.colorSpace;
-        createInfo.imageExtent = extent;
-        createInfo.imageArrayLayers = 1;
-        createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-
-        const VulkanUtils::QueueFamilyIndices indices = VulkanUtils::FindQueueFamilies(physicalDevice, surface);
-        const uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
-
-        if (indices.graphicsFamily != indices.presentFamily)
-        {
-            createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-            createInfo.queueFamilyIndexCount = 2;
-            createInfo.pQueueFamilyIndices = queueFamilyIndices;
-        } else
-        {
-            createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        }
-
-        createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
-        createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-        createInfo.presentMode = presentMode;
-        createInfo.clipped = VK_TRUE;
-
-        createInfo.oldSwapchain = VK_NULL_HANDLE;
-
-        if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain) != VK_SUCCESS)
-        {
-            throw std::runtime_error("failed to create swap chain!");
-        }
-
-        VkResult err = vkGetSwapchainImagesKHR(device, swapChain, &image_count, nullptr);
-        VulkanUtils::CheckVkResult(err);
-
-        swapChainImages.resize(image_count);
-
-        err = vkGetSwapchainImagesKHR(device, swapChain, &image_count, swapChainImages.data());
-        VulkanUtils::CheckVkResult(err);
-
-        swapChainImageFormat = surfaceFormat.format;
-        swapChainExtent = extent;
-    }
-
-    void VulkanDevice::CreateImageViews()
-    {
-        swapChainImageViews.resize(swapChainImages.size());
-        for (size_t i = 0; i < swapChainImages.size(); i++)
-            swapChainImageViews[i] = VulkanUtils::CreateImageView(device, swapChainImages[i], swapChainImageFormat,
-                                                                  VK_IMAGE_ASPECT_COLOR_BIT);
-    }
-
     VkRenderPass VulkanDevice::CreateRenderPass(const VkDevice device) const
     {
         VkAttachmentDescription color_attachment{};
-        color_attachment.format = swapChainImageFormat;
+        color_attachment.format = vulkanSwapChain->GetImageFormat();
         color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
         color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
         color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -498,49 +390,6 @@ namespace Raytracing
         );
 
         return renderPass;
-    }
-
-    void VulkanDevice::CreateFramebuffers()
-    {
-        swapChainFramebuffers.resize(swapChainImageViews.size());
-        for (size_t i = 0; i < swapChainImageViews.size(); i++)
-        {
-            swapChainFramebuffers[i] = CreateFramebuffer(
-                device,
-                swapChainImageViews[i],
-                vulkanDepthImage->GetImageView(),
-                renderPass,
-                swapChainExtent.width, swapChainExtent.height);
-        }
-    }
-
-    VkFramebuffer VulkanDevice::CreateFramebuffer(
-        const VkDevice device,
-        const VkImageView imageView,
-        const VkImageView depthImageView,
-        const VkRenderPass renderPass, const uint32_t width, const uint32_t height)
-    {
-        std::array<VkImageView, 2> attachments = {
-            imageView,
-            depthImageView
-        };
-
-        VkFramebufferCreateInfo framebuffer_info{};
-        framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        framebuffer_info.renderPass = renderPass;
-        framebuffer_info.attachmentCount = static_cast<uint32_t>(attachments.size());
-        framebuffer_info.pAttachments = attachments.data();
-        framebuffer_info.width = width;
-        framebuffer_info.height = height;
-        framebuffer_info.layers = 1;
-
-        VkFramebuffer framebuffer;
-        VulkanUtils::CheckVkResult(
-            vkCreateFramebuffer(device, &framebuffer_info, nullptr, &framebuffer),
-            "failed to create framebuffer!"
-        );
-
-        return framebuffer;
     }
 
     void VulkanDevice::CreateCommandPool()
@@ -626,7 +475,7 @@ namespace Raytracing
             throw std::runtime_error("failed to create descriptor pool!");
         }
     }
-
+/*
     void VulkanDevice::RecreateSwapChain()
     {
         vkDeviceWaitIdle(device);
@@ -653,7 +502,7 @@ namespace Raytracing
 
         vkDestroySwapchainKHR(device, swapChain, nullptr);
     }
-
+    */
     void VulkanDevice::CreateCommandBuffers()
     {
         commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
@@ -698,9 +547,9 @@ namespace Raytracing
         VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderPassInfo.renderPass = renderPass;
-        renderPassInfo.framebuffer = swapChainFramebuffers[imageIndex];
+        renderPassInfo.framebuffer = vulkanSwapChain->GetSwapChainFramebuffers()[imageIndex];
         renderPassInfo.renderArea.offset = {0, 0};
-        renderPassInfo.renderArea.extent = swapChainExtent;
+        renderPassInfo.renderArea.extent = vulkanSwapChain->GetExtent();
 
         std::array<VkClearValue, 2> clearValues{};
         clearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
@@ -711,7 +560,7 @@ namespace Raytracing
 
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        SetViewportAndScissor(commandBuffer, swapChainExtent);
+        SetViewportAndScissor(commandBuffer, vulkanSwapChain->GetExtent());
 
         mesh->Bind(commandBuffer);
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->GetPipeline());
@@ -730,53 +579,6 @@ namespace Raytracing
         // End command buffer
         result = vkEndCommandBuffer(commandBuffer);
         VulkanUtils::CheckVkResult(result, "Failed to record command buffer.");
-    }
-
-    VkSurfaceFormatKHR VulkanDevice::ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
-    {
-        for (const auto& available_format: availableFormats)
-        {
-            // Switch from VK_FORMAT_B8G8R8A8_SRGB because of ImGui
-            if (available_format.format == VK_FORMAT_R8G8B8A8_UNORM
-                && available_format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
-            {
-                return available_format;
-            }
-        }
-        return availableFormats[0];
-    }
-
-    VkPresentModeKHR VulkanDevice::ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes)
-    {
-        for (const auto& availablePresentMode: availablePresentModes)
-        {
-            if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR || availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR)
-                return availablePresentMode;
-        }
-
-        return VK_PRESENT_MODE_FIFO_KHR;
-    }
-
-    VkExtent2D VulkanDevice::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) const
-    {
-        if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) return capabilities.currentExtent;
-
-        VkExtent2D actual_extent = {
-            static_cast<uint32_t>(viewportWidth),
-            static_cast<uint32_t>(viewportHeight)
-        };
-
-        actual_extent.width = std::clamp(
-            actual_extent.width,
-            capabilities.minImageExtent.width,
-            capabilities.maxImageExtent.width);
-
-        actual_extent.height = std::clamp(
-            actual_extent.height,
-            capabilities.minImageExtent.height,
-            capabilities.maxImageExtent.height);
-
-        return actual_extent;
     }
 
     uint32_t VulkanDevice::GetQueueFamilyIndex() const
