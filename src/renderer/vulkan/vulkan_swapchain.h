@@ -11,6 +11,8 @@ namespace Raytracing
 
         void RecreateSwapChain();
         void CleanupSwapChain() const;
+        int GetViewportWidth() const { return viewportWidth; }
+        int GetViewportHeight() const { return viewportHeight; }
 
         VkSwapchainKHR& GetSwapChain() { return swapChain; }
         VkExtent2D& GetExtent() { return swapChainExtent; }

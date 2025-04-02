@@ -26,9 +26,6 @@ namespace Raytracing
 
         void Init(int width, int height, GLFWwindow* glfwWindow);
 
-        int GetViewportWidth() const { return viewportWidth; }
-        int GetViewportHeight() const { return viewportHeight; }
-
         void Draw(VulkanPipeline* pipeline, Mesh* mesh);
         void ResizeFramebuffer() { framebufferResized = true; }
 
@@ -47,6 +44,7 @@ namespace Raytracing
         VkCommandBuffer GetCurrentCommandBuffer() const { return commandBuffers[currentFrame]; }
         VkSurfaceKHR CreateSurface(GLFWwindow* glfwWindow) const;
         VkCommandPool GetCommandPool() const { return commandPool; }
+        VulkanSwapchain* GetSwapchain() { return vulkanSwapChain; }
 
     public:
         inline VkPhysicalDevice PickPhysicalDevice() const;
