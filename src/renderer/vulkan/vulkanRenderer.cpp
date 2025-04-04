@@ -16,8 +16,7 @@ namespace Raytracing
 
     void VulkanRenderer::Init(const int width, const int height)
     {
-        vulkanDevice = new VulkanDevice();
-        vulkanDevice->Init(width, height, glfwWindow);
+        vulkanDevice = new VulkanDevice(width, height, glfwWindow);
 
         mesh = new Mesh(vulkanDevice, Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
         vulkanImage = new VulkanTextureImage(vulkanDevice, "textures/texture.jpg");

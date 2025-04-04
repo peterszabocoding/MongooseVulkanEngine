@@ -6,35 +6,30 @@
 #include "vulkan_device.h"
 #include "vulkan_utils.h"
 
-namespace Raytracing
-{
+namespace Raytracing {
     VulkanSwapchain::VulkanSwapchain(VulkanDevice* vulkanDevice, int width, int height): vulkanDevice(vulkanDevice),
                                                                                          viewportWidth(width),
-                                                                                         viewportHeight(height)
-    {
+                                                                                         viewportHeight(height) {
         vulkanDepthImage = new VulkanDepthImage(vulkanDevice, width, height);
         CreateSwapChain();
         CreateImageViews();
         CreateFramebuffers();
     }
 
-    VulkanSwapchain::~VulkanSwapchain()
-    {
+    VulkanSwapchain::~VulkanSwapchain() {
         CleanupSwapChain();
         delete vulkanDepthImage;
     }
 
-    void VulkanSwapchain::CreateSwapChain()
-    {
-        const SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport();
+    void VulkanSwapchain::CreateSwapChain() {
+        const SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(vulkanDevice->GetPhysicalDevice(), vulkanDevice->GetSurface());
         const VkSurfaceFormatKHR surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupport.formats);
         const VkPresentModeKHR presentMode = ChooseSwapPresentMode(swapChainSupport.presentModes);
         const VkExtent2D extent = ChooseSwapExtent(swapChainSupport.capabilities);
 
         uint32_t image_count = swapChainSupport.capabilities.minImageCount + 1;
         if (swapChainSupport.capabilities.maxImageCount > 0 && image_count > swapChainSupport.capabilities.
-            maxImageCount)
-        {
+            maxImageCount) {
             image_count = swapChainSupport.capabilities.maxImageCount;
         }
 
@@ -53,13 +48,11 @@ namespace Raytracing
             vulkanDevice->GetPhysicalDevice(), vulkanDevice->GetSurface());
         const uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
 
-        if (indices.graphicsFamily != indices.presentFamily)
-        {
+        if (indices.graphicsFamily != indices.presentFamily) {
             createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
             createInfo.queueFamilyIndexCount = 2;
             createInfo.pQueueFamilyIndices = queueFamilyIndices;
-        } else
-        {
+        } else {
             createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
         }
 
@@ -70,8 +63,7 @@ namespace Raytracing
 
         createInfo.oldSwapchain = VK_NULL_HANDLE;
 
-        if (vkCreateSwapchainKHR(vulkanDevice->GetDevice(), &createInfo, nullptr, &swapChain) != VK_SUCCESS)
-        {
+        if (vkCreateSwapchainKHR(vulkanDevice->GetDevice(), &createInfo, nullptr, &swapChain) != VK_SUCCESS) {
             throw std::runtime_error("failed to create swap chain!");
         }
 
@@ -87,8 +79,7 @@ namespace Raytracing
         swapChainExtent = extent;
     }
 
-    void VulkanSwapchain::RecreateSwapChain()
-    {
+    void VulkanSwapchain::RecreateSwapChain() {
         vkDeviceWaitIdle(vulkanDevice->GetDevice());
 
         CleanupSwapChain();
@@ -103,8 +94,7 @@ namespace Raytracing
         CreateFramebuffers();
     }
 
-    VkExtent2D VulkanSwapchain::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) const
-    {
+    VkExtent2D VulkanSwapchain::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) const {
         if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) return capabilities.currentExtent;
 
         VkExtent2D actual_extent = {
@@ -125,24 +115,25 @@ namespace Raytracing
         return actual_extent;
     }
 
-    VkSurfaceFormatKHR VulkanSwapchain::ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
-    {
-        for (const auto& available_format: availableFormats)
-        {
-            // Switch from VK_FORMAT_B8G8R8A8_SRGB because of ImGui
+    VkFormat VulkanSwapchain::GetImageFormat(VulkanDevice* device) {
+        const SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(device->GetPhysicalDevice(), device->GetSurface());
+        const VkSurfaceFormatKHR surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupport.formats);
+
+        return surfaceFormat.format;
+    }
+
+    VkSurfaceFormatKHR VulkanSwapchain::ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
+        for (const auto& available_format: availableFormats) {
             if (available_format.format == VK_FORMAT_R8G8B8A8_UNORM
-                && available_format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
-            {
+                && available_format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
                 return available_format;
             }
         }
         return availableFormats[0];
     }
 
-    VkPresentModeKHR VulkanSwapchain::ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes)
-    {
-        for (const auto& availablePresentMode: availablePresentModes)
-        {
+    VkPresentModeKHR VulkanSwapchain::ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) {
+        for (const auto& availablePresentMode: availablePresentModes) {
             if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR || availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR)
                 return availablePresentMode;
         }
@@ -150,38 +141,31 @@ namespace Raytracing
         return VK_PRESENT_MODE_FIFO_KHR;
     }
 
-    SwapChainSupportDetails VulkanSwapchain::QuerySwapChainSupport() const
-    {
+    SwapChainSupportDetails VulkanSwapchain::QuerySwapChainSupport(VkPhysicalDevice physical_device, VkSurfaceKHR surface) {
         SwapChainSupportDetails details;
 
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vulkanDevice->GetPhysicalDevice(), vulkanDevice->GetSurface(), &details.capabilities);
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_device, surface, &details.capabilities);
 
         uint32_t format_count;
-        vkGetPhysicalDeviceSurfaceFormatsKHR(vulkanDevice->GetPhysicalDevice(), vulkanDevice->GetSurface(), &format_count, nullptr);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &format_count, nullptr);
 
-        if (format_count != 0)
-        {
+        if (format_count != 0) {
             details.formats.resize(format_count);
-            vkGetPhysicalDeviceSurfaceFormatsKHR(vulkanDevice->GetPhysicalDevice(), vulkanDevice->GetSurface(), &format_count,
-                                                 details.formats.data());
+            vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &format_count, details.formats.data());
         }
 
         uint32_t present_mode_count;
-        vkGetPhysicalDeviceSurfacePresentModesKHR(vulkanDevice->GetPhysicalDevice(), vulkanDevice->GetSurface(), &present_mode_count,
-                                                  nullptr);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &present_mode_count, nullptr);
 
-        if (present_mode_count != 0)
-        {
+        if (present_mode_count != 0) {
             details.presentModes.resize(present_mode_count);
-            vkGetPhysicalDeviceSurfacePresentModesKHR(vulkanDevice->GetPhysicalDevice(), vulkanDevice->GetSurface(), &present_mode_count,
-                                                      details.presentModes.data());
+            vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &present_mode_count, details.presentModes.data());
         }
 
         return details;
     }
 
-    void VulkanSwapchain::CleanupSwapChain() const
-    {
+    void VulkanSwapchain::CleanupSwapChain() const {
         for (const auto framebuffer: swapChainFramebuffers)
             vkDestroyFramebuffer(vulkanDevice->GetDevice(), framebuffer, nullptr);
 
@@ -191,19 +175,16 @@ namespace Raytracing
         vkDestroySwapchainKHR(vulkanDevice->GetDevice(), swapChain, nullptr);
     }
 
-    void VulkanSwapchain::CreateImageViews()
-    {
+    void VulkanSwapchain::CreateImageViews() {
         swapChainImageViews.resize(swapChainImages.size());
         for (size_t i = 0; i < swapChainImages.size(); i++)
             swapChainImageViews[i] = VulkanUtils::CreateImageView(vulkanDevice->GetDevice(), swapChainImages[i], swapChainImageFormat,
                                                                   VK_IMAGE_ASPECT_COLOR_BIT);
     }
 
-    void VulkanSwapchain::CreateFramebuffers()
-    {
+    void VulkanSwapchain::CreateFramebuffers() {
         swapChainFramebuffers.resize(swapChainImageViews.size());
-        for (size_t i = 0; i < swapChainImageViews.size(); i++)
-        {
+        for (size_t i = 0; i < swapChainImageViews.size(); i++) {
             std::array<VkImageView, 2> attachments = {
                 swapChainImageViews[i],
                 vulkanDepthImage->GetImageView()

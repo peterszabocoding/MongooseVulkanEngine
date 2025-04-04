@@ -3,12 +3,14 @@
 #include <vulkan/vulkan_core.h>
 
 #define GLFW_INCLUDE_VULKAN
+#include "vulkan_renderpass.h"
 #include "GLFW/glfw3.h"
 
 namespace Raytracing
 {
     class VulkanPipeline;
     class VulkanSwapchain;
+    class VulkanRenderPass;
     class Mesh;
 
     constexpr int MAX_FRAMES_IN_FLIGHT = 1;
@@ -21,10 +23,8 @@ namespace Raytracing
 
     class VulkanDevice {
     public:
-        VulkanDevice() = default;
+        VulkanDevice(int width, int height, GLFWwindow* glfwWindow);
         ~VulkanDevice();
-
-        void Init(int width, int height, GLFWwindow* glfwWindow);
 
         void Draw(VulkanPipeline* pipeline, Mesh* mesh);
         void ResizeFramebuffer() { framebufferResized = true; }
@@ -38,7 +38,7 @@ namespace Raytracing
         VkDescriptorPool GetGuiDescriptorPool() const { return gui_descriptionPool; }
         VkQueue GetGraphicsQueue() const { return graphicsQueue; }
         VkQueue GetPresentQueue() const { return presentQueue; }
-        VkRenderPass GetRenderPass() const { return renderPass; }
+        VkRenderPass GetRenderPass() const { return vulkanRenderPass->Get(); }
         VkSemaphore GetImageAvailableSemaphore() const { return imageAvailableSemaphores[currentFrame]; }
         VkSemaphore GetRenderFinishedSemaphore() const { return renderFinishedSemaphores[currentFrame]; }
         VkCommandBuffer GetCurrentCommandBuffer() const { return commandBuffers[currentFrame]; }
@@ -58,7 +58,8 @@ namespace Raytracing
             const std::vector<const char*>& validationLayers);
 
         static void SetViewportAndScissor(VkCommandBuffer commandBuffer, VkExtent2D extent);
-        VkRenderPass CreateRenderPass(VkDevice device) const;
+
+        void Init(int width, int height, GLFWwindow* glfwWindow);
 
         void CreateCommandPool();
         void CreateCommandBuffers();
@@ -84,7 +85,7 @@ namespace Raytracing
         VkSurfaceKHR surface;
         VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 
-        VkRenderPass renderPass;
+        //VkRenderPass renderPass;
         VkCommandPool commandPool;
 
         std::vector<VkCommandBuffer> commandBuffers;
@@ -96,5 +97,6 @@ namespace Raytracing
         VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
 
         VulkanSwapchain* vulkanSwapChain;
+        VulkanRenderPass* vulkanRenderPass;
     };
 }
