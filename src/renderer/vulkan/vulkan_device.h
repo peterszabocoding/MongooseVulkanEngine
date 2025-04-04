@@ -6,8 +6,7 @@
 #include "vulkan_renderpass.h"
 #include "GLFW/glfw3.h"
 
-namespace Raytracing
-{
+namespace Raytracing {
     class VulkanPipeline;
     class VulkanSwapchain;
     class VulkanRenderPass;
@@ -24,69 +23,88 @@ namespace Raytracing
     class VulkanDevice {
     public:
         VulkanDevice(int width, int height, GLFWwindow* glfwWindow);
+
         ~VulkanDevice();
 
-        void Draw(VulkanPipeline* pipeline, Mesh* mesh);
+        void DrawMesh(const VulkanPipeline* pipeline, const Mesh* mesh) const;
+
+        void Draw(const VulkanPipeline* pipeline, const Mesh* mesh);
+
         void ResizeFramebuffer() { framebufferResized = true; }
 
-        VkInstance GetInstance() const { return instance; }
-        VkDevice GetDevice() const { return device; }
-        VkSurfaceKHR GetSurface() const { return surface; }
-        VkPhysicalDevice GetPhysicalDevice() const { return physicalDevice; }
-        uint32_t GetQueueFamilyIndex() const;
-        VkDescriptorPool GetDescriptorPool() const { return descriptorPool; }
-        VkDescriptorPool GetGuiDescriptorPool() const { return gui_descriptionPool; }
-        VkQueue GetGraphicsQueue() const { return graphicsQueue; }
-        VkQueue GetPresentQueue() const { return presentQueue; }
-        VkRenderPass GetRenderPass() const { return vulkanRenderPass->Get(); }
-        VkSemaphore GetImageAvailableSemaphore() const { return imageAvailableSemaphores[currentFrame]; }
-        VkSemaphore GetRenderFinishedSemaphore() const { return renderFinishedSemaphores[currentFrame]; }
-        VkCommandBuffer GetCurrentCommandBuffer() const { return commandBuffers[currentFrame]; }
         VkSurfaceKHR CreateSurface(GLFWwindow* glfwWindow) const;
-        VkCommandPool GetCommandPool() const { return commandPool; }
-        VulkanSwapchain* GetSwapchain() { return vulkanSwapChain; }
+
+        [[nodiscard]] VkInstance GetInstance() const { return instance; }
+        [[nodiscard]] VkDevice GetDevice() const { return device; }
+        [[nodiscard]] VkSurfaceKHR GetSurface() const { return surface; }
+        [[nodiscard]] VkPhysicalDevice GetPhysicalDevice() const { return physicalDevice; }
+
+        [[nodiscard]] uint32_t GetQueueFamilyIndex() const;
+
+        [[nodiscard]] VkDescriptorPool GetDescriptorPool() const { return descriptorPool; }
+        [[nodiscard]] VkDescriptorPool GetGuiDescriptorPool() const { return gui_descriptionPool; }
+        [[nodiscard]] VkQueue GetGraphicsQueue() const { return graphicsQueue; }
+        [[nodiscard]] VkQueue GetPresentQueue() const { return presentQueue; }
+        [[nodiscard]] VkRenderPass GetRenderPass() const { return vulkanRenderPass->Get(); }
+        [[nodiscard]] VkSemaphore GetImageAvailableSemaphore() const { return imageAvailableSemaphores[currentFrame]; }
+        [[nodiscard]] VkSemaphore GetRenderFinishedSemaphore() const { return renderFinishedSemaphores[currentFrame]; }
+        [[nodiscard]] VkCommandBuffer GetCurrentCommandBuffer() const { return commandBuffers[currentFrame]; }
+        [[nodiscard]] VkCommandPool GetCommandPool() const { return commandPool; }
+        [[nodiscard]] VulkanSwapchain* GetSwapchain() const { return vulkanSwapChain; }
 
     public:
-        inline VkPhysicalDevice PickPhysicalDevice() const;
+        [[nodiscard]] inline VkPhysicalDevice PickPhysicalDevice() const;
+
         inline VkDevice CreateLogicalDevice();
-        inline VkQueue GetDeviceQueue() const;
-        inline VkQueue GetDevicePresentQueue() const;
+
+        [[nodiscard]] inline VkQueue GetDeviceQueue() const;
+
+        [[nodiscard]] inline VkQueue GetDevicePresentQueue() const;
 
     private:
         static VkInstance CreateVkInstance(
-            const std::vector<const char*>& deviceExtensions,
-            const std::vector<const char*>& validationLayers);
+            const std::vector<const char *>& deviceExtensions,
+            const std::vector<const char *>& validationLayers);
 
-        static void SetViewportAndScissor(VkCommandBuffer commandBuffer, VkExtent2D extent);
 
         void Init(int width, int height, GLFWwindow* glfwWindow);
 
         void CreateCommandPool();
+
         void CreateCommandBuffers();
+
         void CreateSyncObjects();
+
         void CreateGUIDescriptorPool();
+
         void CreateDescriptorPool();
 
-        void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, VulkanPipeline* pipeline, Mesh* mesh) const;
+        bool SetupNextFrame();
+
+        void BeginRenderPass() const;
+
+        void SetViewportAndScissor() const;
+
         VkResult SubmitDrawCommands(VkSemaphore* signalSemaphores) const;
+
         VkResult PresentFrame(uint32_t imageIndex, const VkSemaphore* signalSemaphores) const;
 
     private:
-        int viewportWidth, viewportHeight;
-        uint32_t currentFrame = 0;
+        int viewportWidth{}, viewportHeight{};
         bool framebufferResized = false;
+        uint32_t currentFrame = 0;
+        uint32_t currentImageIndex = 0;
 
-        VkDevice device;
-        VkInstance instance;
+        VkDevice device{};
+        VkInstance instance{};
 
-        VkQueue graphicsQueue;
-        VkQueue presentQueue;
+        VkQueue graphicsQueue{};
+        VkQueue presentQueue{};
 
-        VkSurfaceKHR surface;
+        VkSurfaceKHR surface{};
         VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 
-        //VkRenderPass renderPass;
-        VkCommandPool commandPool;
+        VkCommandPool commandPool{};
 
         std::vector<VkCommandBuffer> commandBuffers;
         std::vector<VkSemaphore> imageAvailableSemaphores;
@@ -96,7 +114,7 @@ namespace Raytracing
         VkDescriptorPool gui_descriptionPool = VK_NULL_HANDLE;
         VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
 
-        VulkanSwapchain* vulkanSwapChain;
-        VulkanRenderPass* vulkanRenderPass;
+        VulkanSwapchain* vulkanSwapChain{};
+        VulkanRenderPass* vulkanRenderPass{};
     };
 }

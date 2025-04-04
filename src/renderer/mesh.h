@@ -78,7 +78,7 @@ namespace Raytracing
         ~Mesh();
 
         void Bind(VkCommandBuffer commandBuffer) const;
-        uint32_t GetIndexCount() const;
+        [[nodiscard]] uint32_t GetIndexCount() const;
 
     private:
         VulkanVertexBuffer* vertexBuffer;

@@ -45,6 +45,54 @@ namespace Raytracing {
         vkDestroyInstance(instance, nullptr);
     }
 
+    void VulkanDevice::DrawMesh(const VulkanPipeline* pipeline, const Mesh* mesh) const {
+        mesh->Bind(commandBuffers[currentFrame]);
+        vkCmdBindPipeline(commandBuffers[currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->GetPipeline());
+        vkCmdBindDescriptorSets(commandBuffers[currentFrame],
+                                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                pipeline->GetPipelineLayout(), 0, 1,
+                                &pipeline->GetShader()->GetDescriptorSet(), 0,
+                                nullptr);
+        vkCmdDrawIndexed(commandBuffers[currentFrame], mesh->GetIndexCount(), 1, 0, 0, 0);
+    }
+
+    void VulkanDevice::Draw(const VulkanPipeline* pipeline, const Mesh* mesh) {
+        if (!SetupNextFrame()) return;
+
+        // Begin render pass
+        BeginRenderPass();
+        SetViewportAndScissor();
+
+        // Draw
+        DrawMesh(pipeline, mesh);
+        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffers[currentFrame]);
+
+        // End render pass
+        vkCmdEndRenderPass(commandBuffers[currentFrame]);
+
+        // End command buffer
+        VkResult result = vkEndCommandBuffer(commandBuffers[currentFrame]);
+        VulkanUtils::CheckVkResult(result, "Failed to record command buffer.");
+
+        VkSemaphore* signalSemaphores = {(&renderFinishedSemaphores[currentFrame])};
+
+        // Submit commands
+        VulkanUtils::CheckVkResult(
+            SubmitDrawCommands(signalSemaphores),
+            "Failed to submit draw command buffer.");
+
+        // Present frame
+        result = PresentFrame(currentImageIndex, signalSemaphores);
+        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
+            framebufferResized = false;
+            vulkanSwapChain->RecreateSwapChain();
+        } else if (result != VK_SUCCESS) {
+            throw std::runtime_error("Failed to present swap chain image." + ' | ' + result);
+        }
+
+        currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+    }
+
     void VulkanDevice::Init(const int width, const int height, GLFWwindow* glfwWindow) {
         viewportWidth = width;
         viewportHeight = height;
@@ -112,23 +160,20 @@ namespace Raytracing {
         return vkQueuePresentKHR(presentQueue, &presentInfo);
     }
 
-    void VulkanDevice::Draw(VulkanPipeline* pipeline, Mesh* mesh) {
+    bool VulkanDevice::SetupNextFrame() {
         vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
-        VkResult result;
-        uint32_t imageIndex;
-
-        result = vkAcquireNextImageKHR(
+        VkResult result = vkAcquireNextImageKHR(
             device,
             vulkanSwapChain->GetSwapChain(),
             UINT64_MAX,
             imageAvailableSemaphores[currentFrame],
             VK_NULL_HANDLE,
-            &imageIndex);
+            &currentImageIndex);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR) {
             vulkanSwapChain->RecreateSwapChain();
-            return;
+            return false;
         }
 
         if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
@@ -137,54 +182,36 @@ namespace Raytracing {
         vkResetFences(device, 1, &inFlightFences[currentFrame]);
         vkResetCommandBuffer(commandBuffers[currentFrame], /*VkCommandBufferResetFlagBits*/ 0);
 
-        RecordCommandBuffer(commandBuffers[currentFrame], imageIndex, pipeline, mesh);
-
-        VkSemaphore* signalSemaphores = {(&renderFinishedSemaphores[currentFrame])};
-
-        // Submit commands
-        VulkanUtils::CheckVkResult(
-            SubmitDrawCommands(signalSemaphores),
-            "Failed to submit draw command buffer.");
-
-        // Present frame
-        result = PresentFrame(imageIndex, signalSemaphores);
-        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
-            framebufferResized = false;
-            vulkanSwapChain->RecreateSwapChain();
-        } else if (result != VK_SUCCESS) {
-            throw std::runtime_error("Failed to present swap chain image." + ' | ' + result);
-        }
-
-        currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+        return true;
     }
 
-    void VulkanDevice::SetViewportAndScissor(VkCommandBuffer commandBuffer, VkExtent2D extent) {
+    void VulkanDevice::SetViewportAndScissor() const {
         VkViewport viewport{};
         viewport.x = 0.0f;
         viewport.y = 0.0f;
-        viewport.width = static_cast<float>(extent.width);
-        viewport.height = static_cast<float>(extent.height);
+        viewport.width = static_cast<float>(vulkanSwapChain->GetExtent().width);
+        viewport.height = static_cast<float>(vulkanSwapChain->GetExtent().height);
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
-        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+        vkCmdSetViewport(commandBuffers[currentFrame], 0, 1, &viewport);
 
         VkRect2D scissor{};
         scissor.offset = {0, 0};
-        scissor.extent = extent;
-        vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+        scissor.extent = vulkanSwapChain->GetExtent();
+        vkCmdSetScissor(commandBuffers[currentFrame], 0, 1, &scissor);
     }
 
-    void VulkanDevice::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, VulkanPipeline* pipeline, Mesh* mesh) const {
+    void VulkanDevice::BeginRenderPass() const {
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-        VkResult result = vkBeginCommandBuffer(commandBuffer, &beginInfo);
+        VkResult result = vkBeginCommandBuffer(commandBuffers[currentFrame], &beginInfo);
         VulkanUtils::CheckVkResult(result, "Failed to begin recording command buffer.");
 
         VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderPassInfo.renderPass = vulkanRenderPass->Get();
-        renderPassInfo.framebuffer = vulkanSwapChain->GetSwapChainFramebuffers()[imageIndex];
+        renderPassInfo.framebuffer = vulkanSwapChain->GetSwapChainFramebuffers()[currentImageIndex];
         renderPassInfo.renderArea.offset = {0, 0};
         renderPassInfo.renderArea.extent = vulkanSwapChain->GetExtent();
 
@@ -195,29 +222,8 @@ namespace Raytracing {
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());;
         renderPassInfo.pClearValues = clearValues.data();
 
-        vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-        SetViewportAndScissor(commandBuffer, vulkanSwapChain->GetExtent());
-
-        mesh->Bind(commandBuffer);
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->GetPipeline());
-        vkCmdBindDescriptorSets(commandBuffer,
-                                VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                pipeline->GetPipelineLayout(), 0, 1,
-                                &pipeline->GetShader()->GetDescriptorSet(), 0,
-                                nullptr);
-        vkCmdDrawIndexed(commandBuffer, mesh->GetIndexCount(), 1, 0, 0, 0);
-
-        // Render ImGui
-        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffers[currentFrame]);
-
-        vkCmdEndRenderPass(commandBuffer);
-
-        // End command buffer
-        result = vkEndCommandBuffer(commandBuffer);
-        VulkanUtils::CheckVkResult(result, "Failed to record command buffer.");
+        vkCmdBeginRenderPass(commandBuffers[currentFrame], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
     }
-
 
     VkSurfaceKHR VulkanDevice::CreateSurface(GLFWwindow* glfwWindow) const {
         VkSurfaceKHR surface;

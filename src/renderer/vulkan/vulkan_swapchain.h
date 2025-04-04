@@ -19,6 +19,7 @@ namespace Raytracing {
         VkSwapchainKHR& GetSwapChain() { return swapChain; }
         VkExtent2D& GetExtent() { return swapChainExtent; }
         VkFormat GetImageFormat() { return swapChainImageFormat; }
+
         static VkFormat GetImageFormat(VulkanDevice* device);
 
         std::vector<VkImage> GetSwapChainImages() const { return swapChainImages; }
