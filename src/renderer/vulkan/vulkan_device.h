@@ -28,7 +28,11 @@ namespace Raytracing {
 
         void DrawMesh(const VulkanPipeline* pipeline, const Mesh* mesh) const;
 
-        void Draw(const VulkanPipeline* pipeline, const Mesh* mesh);
+        void DrawImGui() const;
+
+        bool BeginFrame();
+
+        void EndFrame();
 
         void ResizeFramebuffer() { framebufferResized = true; }
 

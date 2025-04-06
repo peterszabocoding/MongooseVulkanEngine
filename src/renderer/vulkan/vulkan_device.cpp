@@ -56,17 +56,20 @@ namespace Raytracing {
         vkCmdDrawIndexed(commandBuffers[currentFrame], mesh->GetIndexCount(), 1, 0, 0, 0);
     }
 
-    void VulkanDevice::Draw(const VulkanPipeline* pipeline, const Mesh* mesh) {
-        if (!SetupNextFrame()) return;
+    void VulkanDevice::DrawImGui() const {
+        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffers[currentFrame]);
+    }
 
-        // Begin render pass
+    bool VulkanDevice::BeginFrame() {
+        if (!SetupNextFrame())
+            return false;
+
         BeginRenderPass();
         SetViewportAndScissor();
+        return true;
+    }
 
-        // Draw
-        DrawMesh(pipeline, mesh);
-        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffers[currentFrame]);
-
+    void VulkanDevice::EndFrame() {
         // End render pass
         vkCmdEndRenderPass(commandBuffers[currentFrame]);
 
