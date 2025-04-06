@@ -72,7 +72,7 @@ namespace Raytracing
         render_pass_info.dependencyCount = 1;
         render_pass_info.pDependencies = &dependency;
 
-        VK_CHECK(
+        VK_CHECK_MSG(
             vkCreateRenderPass(device->GetDevice(), &render_pass_info, nullptr, &renderPass),
             "Failed to create render pass.");
     }

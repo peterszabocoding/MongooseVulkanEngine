@@ -67,11 +67,11 @@ namespace Raytracing {
             throw std::runtime_error("failed to create swap chain!");
         }
 
-        VK_CHECK(vkGetSwapchainImagesKHR(vulkanDevice->GetDevice(), swapChain, &image_count, nullptr), "");
+        VK_CHECK(vkGetSwapchainImagesKHR(vulkanDevice->GetDevice(), swapChain, &image_count, nullptr));
 
         swapChainImages.resize(image_count);
 
-        VK_CHECK(vkGetSwapchainImagesKHR(vulkanDevice->GetDevice(), swapChain, &image_count, swapChainImages.data()), "");
+        VK_CHECK(vkGetSwapchainImagesKHR(vulkanDevice->GetDevice(), swapChain, &image_count, swapChainImages.data()));
 
         swapChainImageFormat = surfaceFormat.format;
         swapChainExtent = extent;
@@ -197,7 +197,7 @@ namespace Raytracing {
             framebuffer_info.height = swapChainExtent.height;
             framebuffer_info.layers = 1;
 
-            VK_CHECK(vkCreateFramebuffer(vulkanDevice->GetDevice(), &framebuffer_info, nullptr, &swapChainFramebuffers[i]),
+            VK_CHECK_MSG(vkCreateFramebuffer(vulkanDevice->GetDevice(), &framebuffer_info, nullptr, &swapChainFramebuffers[i]),
                 "Failed to create framebuffer.");
         }
     }

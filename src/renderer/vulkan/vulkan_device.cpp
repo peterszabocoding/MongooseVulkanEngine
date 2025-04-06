@@ -78,12 +78,12 @@ namespace Raytracing {
 
         // End command buffer
         VkResult result = vkEndCommandBuffer(commandBuffers[currentFrame]);
-        VK_CHECK(result, "Failed to record command buffer.");
+        VK_CHECK_MSG(result, "Failed to record command buffer.");
 
         VkSemaphore* signalSemaphores = {(&renderFinishedSemaphores[currentFrame])};
 
         // Submit commands
-        VK_CHECK(SubmitDrawCommands(signalSemaphores), "Failed to submit draw command buffer.");
+        VK_CHECK_MSG(SubmitDrawCommands(signalSemaphores), "Failed to submit draw command buffer.");
 
         // Present frame
         result = PresentFrame(currentImageIndex, signalSemaphores);
@@ -215,7 +215,7 @@ namespace Raytracing {
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-        VK_CHECK(
+        VK_CHECK_MSG(
             vkBeginCommandBuffer(commandBuffers[currentFrame], &beginInfo),
             "Failed to begin recording command buffer.");
 
@@ -238,7 +238,7 @@ namespace Raytracing {
 
     VkSurfaceKHR VulkanDevice::CreateSurface(GLFWwindow* glfwWindow) const {
         VkSurfaceKHR surface;
-        VK_CHECK(glfwCreateWindowSurface(instance, glfwWindow, nullptr, &surface), "Failed to create window surface.");
+        VK_CHECK_MSG(glfwCreateWindowSurface(instance, glfwWindow, nullptr, &surface), "Failed to create window surface.");
 
         return surface;
     }
@@ -432,7 +432,7 @@ namespace Raytracing {
         pool_info.poolSizeCount = static_cast<uint32_t>(IM_ARRAYSIZE(pool_sizes));
         pool_info.pPoolSizes = pool_sizes;
 
-        VK_CHECK(vkCreateDescriptorPool(device, &pool_info, nullptr, &gui_descriptionPool), "");
+        VK_CHECK(vkCreateDescriptorPool(device, &pool_info, nullptr, &gui_descriptionPool));
     }
 
     void VulkanDevice::CreateDescriptorPool() {

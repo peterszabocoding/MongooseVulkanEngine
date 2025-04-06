@@ -12,6 +12,7 @@ set ( CMAKE_CXX_STANDARD_REQUIRED ON )
 set ( CMAKE_CXX_EXTENSIONS        OFF )
 
 
+# Setup project dependencies
 message(STATUS "Looking for Vulkan...")
 find_package(Vulkan REQUIRED)
 
@@ -49,11 +50,6 @@ FetchContent_Declare(
 message(STATUS "Fetching GLFW...")
 FetchContent_MakeAvailable(glfw)
 
-set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
-
 message(STATUS "Fetching GLM...")
 FetchContent_MakeAvailable(glm)
 
@@ -65,6 +61,11 @@ FetchContent_MakeAvailable(fmt)
 
 message(STATUS "Fetching vma...")
 FetchContent_MakeAvailable(vma)
+
+set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
 
 set(IMGUI_INCLUDE_DIR ${imgui_SOURCE_DIR}/)
 file(GLOB IMGUI_SOURCES ${imgui_SOURCE_DIR}/*.cpp ${imgui_SOURCE_DIR}/*.h)
@@ -184,4 +185,3 @@ target_link_libraries (inOneWeekend PRIVATE glm)
 target_link_libraries (inOneWeekend PRIVATE imgui)
 target_link_libraries (inOneWeekend PRIVATE fmt)
 target_link_libraries(inOneWeekend PRIVATE vma)
-

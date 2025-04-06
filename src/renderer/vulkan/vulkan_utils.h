@@ -8,8 +8,7 @@
 #include <optional>
 #include <vulkan/vulkan_core.h>
 
-
-#define VK_CHECK(x,msg)                                                     \
+#define VK_CHECK_MSG(x,msg)                                                     \
 do                                                                          \
     {                                                                       \
         VkResult err = x;                                                   \
@@ -226,7 +225,7 @@ namespace Raytracing::VulkanUtils
 
         VkShaderModule shader_module;
 
-        VK_CHECK(
+        VK_CHECK_MSG(
             vkCreateShaderModule(device, &create_info, nullptr, &shader_module),
             "Failed to create shader module.");
 
