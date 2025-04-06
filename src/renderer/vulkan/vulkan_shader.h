@@ -2,12 +2,13 @@
 
 #include <string>
 #include <vector>
-#include <array>
+#include <vulkan/vulkan.h>
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <vulkan/vulkan.h>
+
+#include "vulkan_buffer.h"
 
 namespace Raytracing {
     class VulkanDevice;
@@ -49,8 +50,8 @@ namespace Raytracing {
         VkDescriptorSetLayout descriptorSetLayout{};
         VkDescriptorSet descriptorSet{};
 
-        VkBuffer uniformBuffer{};
-        VkDeviceMemory uniformBufferMemory{};
+        VulkanBuffer* uniformBuffer;
+
         void* uniformBufferMapped{};
     };
 }

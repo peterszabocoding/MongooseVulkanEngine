@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <stb_image/stb_image.h>
 
+#include "vulkan_buffer.h"
 #include "vulkan_utils.h"
 #include "vulkan_device.h"
 
@@ -25,22 +26,17 @@ namespace Raytracing
         if (!pixels)
             throw std::runtime_error("Failed to load texture image.");
 
-        VkBuffer staging_buffer;
-        VkDeviceMemory staging_buffer_memory;
-
-        VulkanUtils::CreateBuffer(
-            device->GetDevice(),
-            device->GetPhysicalDevice(),
+        const auto stagingBuffer = VulkanBuffer(
+            device,
             imageSize,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            staging_buffer,
-            staging_buffer_memory);
+            VMA_MEMORY_USAGE_CPU_ONLY);
 
         void *data;
-        vkMapMemory(device->GetDevice(), staging_buffer_memory, 0, imageSize, 0, &data);
-        memcpy(data, pixels, imageSize);
-        vkUnmapMemory(device->GetDevice(), staging_buffer_memory);
+        vkMapMemory(device->GetDevice(), stagingBuffer.GetBufferMemory(), 0, stagingBuffer.GetBufferSize(), 0, &data);
+        memcpy(data, pixels, stagingBuffer.GetBufferSize());
+        vkUnmapMemory(device->GetDevice(), stagingBuffer.GetBufferMemory());
 
         stbi_image_free(pixels);
 
@@ -56,12 +52,9 @@ namespace Raytracing
             );
 
         TransitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-        CopyBufferToImage(staging_buffer, textureImage, static_cast<uint32_t>(tex_width), static_cast<uint32_t>(tex_height));
+        CopyBufferToImage(stagingBuffer.GetBuffer(), textureImage, static_cast<uint32_t>(tex_width), static_cast<uint32_t>(tex_height));
         TransitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-        vkDestroyBuffer(device->GetDevice(), staging_buffer, nullptr);
-        vkFreeMemory(device->GetDevice(), staging_buffer_memory, nullptr);
     }
 }
 

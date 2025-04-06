@@ -1,4 +1,7 @@
 #include "vulkan_shader.h"
+
+#include <array>
+
 #include "vulkan_utils.h"
 #include "vulkan_device.h"
 #include "vulkan_image.h"
@@ -6,8 +9,8 @@
 
 namespace Raytracing
 {
-    VulkanShader::VulkanShader(VulkanDevice *device, const std::string &vertexShaderPath,
-                               const std::string &fragmentShaderPath)
+    VulkanShader::VulkanShader(VulkanDevice* device, const std::string& vertexShaderPath,
+                               const std::string& fragmentShaderPath)
     {
         vulkanDevice = device;
         CreateDescriptorSetLayout();
@@ -19,15 +22,14 @@ namespace Raytracing
 
     VulkanShader::~VulkanShader()
     {
-        vkDestroyBuffer(vulkanDevice->GetDevice(), uniformBuffer, nullptr);
-        vkFreeMemory(vulkanDevice->GetDevice(), uniformBufferMemory, nullptr);
+        delete uniformBuffer;
 
         vkDestroyDescriptorSetLayout(vulkanDevice->GetDevice(), descriptorSetLayout, nullptr);
         vkDestroyShaderModule(vulkanDevice->GetDevice(), vertexShaderModule, nullptr);
         vkDestroyShaderModule(vulkanDevice->GetDevice(), fragmentShaderModule, nullptr);
     }
 
-    void VulkanShader::Load(const std::string &vertexShaderPath, const std::string &fragmentShaderPath)
+    void VulkanShader::Load(const std::string& vertexShaderPath, const std::string& fragmentShaderPath)
     {
         pipelineShaderStageCreateInfos.clear();
 
@@ -52,10 +54,10 @@ namespace Raytracing
         pipelineShaderStageCreateInfos.push_back(frag_shader_stage_create_info);
     }
 
-    void VulkanShader::SetImage(const VulkanImage *vulkanImage) const
+    void VulkanShader::SetImage(const VulkanImage* vulkanImage) const
     {
         VkDescriptorBufferInfo bufferInfo{};
-        bufferInfo.buffer = uniformBuffer;
+        bufferInfo.buffer = uniformBuffer->GetBuffer();
         bufferInfo.offset = 0;
         bufferInfo.range = sizeof(UniformBufferObject);
 
@@ -85,7 +87,7 @@ namespace Raytracing
         vkUpdateDescriptorSets(vulkanDevice->GetDevice(), descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
     }
 
-    void VulkanShader::UpdateUniformBuffer(const UniformBufferObject &ubo) const
+    void VulkanShader::UpdateUniformBuffer(const UniformBufferObject& ubo) const
     {
         memcpy(uniformBufferMapped, &ubo, sizeof(ubo));
     }
@@ -113,10 +115,8 @@ namespace Raytracing
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
         layoutInfo.pBindings = bindings.data();
 
-        VulkanUtils::CheckVkResult(
-            vkCreateDescriptorSetLayout(vulkanDevice->GetDevice(), &layoutInfo, nullptr, &descriptorSetLayout),
-            "Failed to create descriptor set layout."
-        );
+        VK_CHECK(vkCreateDescriptorSetLayout(vulkanDevice->GetDevice(), &layoutInfo, nullptr, &descriptorSetLayout),
+                 "Failed to create descriptor set layout.");
     }
 
     void VulkanShader::CreateDescriptorSet()
@@ -134,14 +134,14 @@ namespace Raytracing
     void VulkanShader::CreateUniformBuffer()
     {
         const VkDeviceSize buffer_size = sizeof(UniformBufferObject);
-        VulkanUtils::CreateBuffer(vulkanDevice->GetDevice(),
-                                  vulkanDevice->GetPhysicalDevice(),
-                                  buffer_size,
-                                  VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                  uniformBuffer,
-                                  uniformBufferMemory);
 
-        vkMapMemory(vulkanDevice->GetDevice(), uniformBufferMemory, 0, buffer_size, 0, &uniformBufferMapped);
+        uniformBuffer = new VulkanBuffer(
+            vulkanDevice,
+            sizeof(UniformBufferObject),
+            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            VMA_MEMORY_USAGE_CPU_TO_GPU);
+
+        vkMapMemory(vulkanDevice->GetDevice(), uniformBuffer->GetBufferMemory(), 0, buffer_size, 0, &uniformBufferMapped);
     }
 }

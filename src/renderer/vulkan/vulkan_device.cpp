@@ -15,6 +15,9 @@
 
 #include "renderer/mesh.h"
 
+#define VMA_IMPLEMENTATION
+#include "vma/vk_mem_alloc.h"
+
 namespace Raytracing {
 #ifdef NDEBUG
     constexpr bool ENABLE_VALIDATION_LAYERS = true;
@@ -75,14 +78,12 @@ namespace Raytracing {
 
         // End command buffer
         VkResult result = vkEndCommandBuffer(commandBuffers[currentFrame]);
-        VulkanUtils::CheckVkResult(result, "Failed to record command buffer.");
+        VK_CHECK(result, "Failed to record command buffer.");
 
         VkSemaphore* signalSemaphores = {(&renderFinishedSemaphores[currentFrame])};
 
         // Submit commands
-        VulkanUtils::CheckVkResult(
-            SubmitDrawCommands(signalSemaphores),
-            "Failed to submit draw command buffer.");
+        VK_CHECK(SubmitDrawCommands(signalSemaphores), "Failed to submit draw command buffer.");
 
         // Present frame
         result = PresentFrame(currentImageIndex, signalSemaphores);
@@ -130,6 +131,12 @@ namespace Raytracing {
         CreateGUIDescriptorPool();
         CreateCommandBuffers();
         CreateSyncObjects();
+
+        VmaAllocatorCreateInfo allocatorInfo = {};
+        allocatorInfo.physicalDevice = physicalDevice;
+        allocatorInfo.device = device;
+        allocatorInfo.instance = instance;
+        vmaCreateAllocator(&allocatorInfo, &vmaAllocator);
     }
 
     VkResult VulkanDevice::SubmitDrawCommands(VkSemaphore* signalSemaphores) const {
@@ -208,8 +215,9 @@ namespace Raytracing {
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-        VkResult result = vkBeginCommandBuffer(commandBuffers[currentFrame], &beginInfo);
-        VulkanUtils::CheckVkResult(result, "Failed to begin recording command buffer.");
+        VK_CHECK(
+            vkBeginCommandBuffer(commandBuffers[currentFrame], &beginInfo),
+            "Failed to begin recording command buffer.");
 
         VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -230,10 +238,7 @@ namespace Raytracing {
 
     VkSurfaceKHR VulkanDevice::CreateSurface(GLFWwindow* glfwWindow) const {
         VkSurfaceKHR surface;
-        VulkanUtils::CheckVkResult(
-            glfwCreateWindowSurface(instance, glfwWindow, nullptr, &surface),
-            "Failed to create window surface."
-        );
+        VK_CHECK(glfwCreateWindowSurface(instance, glfwWindow, nullptr, &surface), "Failed to create window surface.");
 
         return surface;
     }
@@ -427,8 +432,7 @@ namespace Raytracing {
         pool_info.poolSizeCount = static_cast<uint32_t>(IM_ARRAYSIZE(pool_sizes));
         pool_info.pPoolSizes = pool_sizes;
 
-        const VkResult err = vkCreateDescriptorPool(device, &pool_info, nullptr, &gui_descriptionPool);
-        VulkanUtils::CheckVkResult(err);
+        VK_CHECK(vkCreateDescriptorPool(device, &pool_info, nullptr, &gui_descriptionPool), "");
     }
 
     void VulkanDevice::CreateDescriptorPool() {

@@ -5,17 +5,21 @@
 
 #include "vulkan_utils.h"
 
-namespace Raytracing {
-    VulkanRenderPass::VulkanRenderPass(VulkanDevice* device, VkFormat imageFormat) {
+namespace Raytracing
+{
+    VulkanRenderPass::VulkanRenderPass(VulkanDevice* device, VkFormat imageFormat)
+    {
         this->device = device;
         CreateRenderPass(imageFormat);
     }
 
-    VulkanRenderPass::~VulkanRenderPass() {
+    VulkanRenderPass::~VulkanRenderPass()
+    {
         vkDestroyRenderPass(device->GetDevice(), renderPass, nullptr);
     }
 
-    void VulkanRenderPass::CreateRenderPass(VkFormat imageFormat) {
+    void VulkanRenderPass::CreateRenderPass(VkFormat imageFormat)
+    {
         VkAttachmentDescription color_attachment{};
         color_attachment.format = imageFormat;
         color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -68,9 +72,8 @@ namespace Raytracing {
         render_pass_info.dependencyCount = 1;
         render_pass_info.pDependencies = &dependency;
 
-        VulkanUtils::CheckVkResult(
+        VK_CHECK(
             vkCreateRenderPass(device->GetDevice(), &render_pass_info, nullptr, &renderPass),
-            "Failed to create render pass."
-        );
+            "Failed to create render pass.");
     }
 }

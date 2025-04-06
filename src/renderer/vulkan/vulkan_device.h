@@ -1,9 +1,12 @@
 #pragma once
 #include <vector>
 #include <vulkan/vulkan_core.h>
+#include "vulkan_renderpass.h"
 
 #define GLFW_INCLUDE_VULKAN
-#include "vulkan_renderpass.h"
+
+#include <vma/vk_mem_alloc.h>
+
 #include "GLFW/glfw3.h"
 
 namespace Raytracing {
@@ -37,6 +40,8 @@ namespace Raytracing {
         void ResizeFramebuffer() { framebufferResized = true; }
 
         VkSurfaceKHR CreateSurface(GLFWwindow* glfwWindow) const;
+
+        VmaAllocator GetVmaAllocator() const { return vmaAllocator; };
 
         [[nodiscard]] VkInstance GetInstance() const { return instance; }
         [[nodiscard]] VkDevice GetDevice() const { return device; }
@@ -120,5 +125,7 @@ namespace Raytracing {
 
         VulkanSwapchain* vulkanSwapChain{};
         VulkanRenderPass* vulkanRenderPass{};
+
+        VmaAllocator vmaAllocator;
     };
 }

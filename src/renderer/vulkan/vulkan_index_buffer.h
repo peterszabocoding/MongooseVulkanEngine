@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "vulkan_buffer.h"
 #include "vulkan_device.h"
 
 namespace Raytracing
@@ -16,8 +17,7 @@ namespace Raytracing
 
     private:
         VulkanDevice* vulkanDevice;
-        VkBuffer indexBuffer;
-        VkDeviceMemory indexBufferMemory;
+        VulkanBuffer* indexBuffer;
 
         std::vector<uint16_t> indices;
     };

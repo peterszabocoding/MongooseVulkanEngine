@@ -3,6 +3,8 @@
 #include <vulkan/vulkan_core.h>
 #include <vector>
 
+#include "vulkan_buffer.h"
+
 namespace Raytracing
 {
     class VulkanDevice;
@@ -20,8 +22,7 @@ namespace Raytracing
 
     private:
         VulkanDevice* vulkanDevice;
-        VkBuffer vertexBuffer;
-        VkDeviceMemory vertexBufferMemory;
+        VulkanBuffer* vertexBuffer;
 
         std::vector<Vertex> vertices;
     };

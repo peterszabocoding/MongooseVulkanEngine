@@ -8,7 +8,32 @@
 #include <optional>
 #include <vulkan/vulkan_core.h>
 
-namespace Raytracing::VulkanUtils {
+
+#define VK_CHECK(x,msg)                                                     \
+do                                                                          \
+    {                                                                       \
+        VkResult err = x;                                                   \
+        if (err)                                                            \
+        {                                                                   \
+            std::cout << msg << std::endl;                                  \
+            std::cout <<"Detected Vulkan error: " << err << std::endl;      \
+            abort();                                                        \
+        }                                                                   \
+} while (0)
+
+#define VK_CHECK(x)                                                         \
+do                                                                          \
+    {                                                                       \
+        VkResult err = x;                                                   \
+        if (err)                                                            \
+        {                                                                   \
+            std::cout <<"Detected Vulkan error: " << err << std::endl;      \
+            abort();                                                        \
+        }                                                                   \
+} while (0)
+
+namespace Raytracing::VulkanUtils
+{
     struct QueueFamilyIndices {
         std::optional<uint32_t> graphicsFamily;
         std::optional<uint32_t> presentFamily;
@@ -19,14 +44,17 @@ namespace Raytracing::VulkanUtils {
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
         VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
         VkDebugUtilsMessageTypeFlagsEXT messageType,
-        const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
-        void *pUserData) {
+        const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+        void* pUserData)
+    {
         std::cerr << "validation layer: " << pCallbackData->pMessage << '\n';
         return VK_FALSE;
     }
 
-    static std::string GetVkResultString(const VkResult vulkan_result) {
-        switch (vulkan_result) {
+    static std::string GetVkResultString(const VkResult vulkan_result)
+    {
+        switch (vulkan_result)
+        {
             case VK_SUCCESS:
                 return "SUCCESS";
             case VK_ERROR_OUT_OF_HOST_MEMORY:
@@ -46,7 +74,8 @@ namespace Raytracing::VulkanUtils {
         }
     }
 
-    static std::vector<VkExtensionProperties> GetAvailableExtensions() {
+    static std::vector<VkExtensionProperties> GetAvailableExtensions()
+    {
         // List Vulkan available extensions
         uint32_t extension_count = 0;
         vkEnumerateInstanceExtensionProperties(nullptr, &extension_count, nullptr);
@@ -54,21 +83,24 @@ namespace Raytracing::VulkanUtils {
         vkEnumerateInstanceExtensionProperties(nullptr, &extension_count, available_extensions.data());
 
         std::cout << "available extensions:\n";
-        for (const auto &extension: available_extensions)
+        for (const auto& extension: available_extensions)
             std::cout << '\t' << extension.extensionName << '\n';
 
         return available_extensions;
     }
 
-    static bool CheckIfExtensionSupported(const char *ext) {
+    static bool CheckIfExtensionSupported(const char* ext)
+    {
         const auto available_extensions = VulkanUtils::GetAvailableExtensions();
-        for (const auto &extension: available_extensions) {
+        for (const auto& extension: available_extensions)
+        {
             if (strcmp(extension.extensionName, ext) == 0) return true;
         }
         return false;
     }
 
-    static std::vector<VkExtensionProperties> GetSupportedDeviceExtensions(const VkPhysicalDevice physicalDevice) {
+    static std::vector<VkExtensionProperties> GetSupportedDeviceExtensions(const VkPhysicalDevice physicalDevice)
+    {
         uint32_t extension_count;
         vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extension_count, nullptr);
 
@@ -81,7 +113,8 @@ namespace Raytracing::VulkanUtils {
         return available_extensions;
     }
 
-    static std::vector<VkLayerProperties> GetSupportedValidationLayers() {
+    static std::vector<VkLayerProperties> GetSupportedValidationLayers()
+    {
         uint32_t layer_count;
         vkEnumerateInstanceLayerProperties(&layer_count, nullptr);
 
@@ -89,20 +122,23 @@ namespace Raytracing::VulkanUtils {
         vkEnumerateInstanceLayerProperties(&layer_count, available_layers.data());
 
         std::cout << "available validation layers:\n";
-        for (const auto &layer: available_layers) std::cout << '\t' << layer.layerName << '\n';
+        for (const auto& layer: available_layers) std::cout << '\t' << layer.layerName << '\n';
 
         return available_layers;
     }
 
-    static bool CheckIfValidationLayerSupported(const char *layer) {
+    static bool CheckIfValidationLayerSupported(const char* layer)
+    {
         const auto validation_layers = GetSupportedValidationLayers();
-        for (const auto &lay: validation_layers) {
+        for (const auto& lay: validation_layers)
+        {
             if (strcmp(lay.layerName, layer) == 0) return true;
         }
         return false;
     }
 
-    static bool CheckDeviceExtensionSupport(const VkPhysicalDevice physicalDevice, std::vector<std::string> &deviceExtensions) {
+    static bool CheckDeviceExtensionSupport(const VkPhysicalDevice physicalDevice, std::vector<std::string>& deviceExtensions)
+    {
         uint32_t extension_count;
         vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extension_count, nullptr);
 
@@ -111,24 +147,16 @@ namespace Raytracing::VulkanUtils {
 
         std::set required_extensions(deviceExtensions.begin(), deviceExtensions.end());
 
-        for (const auto &[extensionName, specVersion]: available_extensions) {
+        for (const auto& [extensionName, specVersion]: available_extensions)
+        {
             required_extensions.erase(extensionName);
         }
 
         return required_extensions.empty();
     }
 
-    static void CheckVkResult(const VkResult err) {
-        if (err == VK_SUCCESS) return;
-        throw std::runtime_error("[vulkan] Error: VkResult = " + err);
-    }
-
-    static void CheckVkResult(const VkResult result, const char *error_msg) {
-        if (result == VK_SUCCESS) return;
-        throw std::runtime_error(error_msg + ' | ' + result);
-    }
-
-    static VkDebugUtilsMessengerCreateInfoEXT CreateDebugMessengerCreateInfo() {
+    static VkDebugUtilsMessengerCreateInfoEXT CreateDebugMessengerCreateInfo()
+    {
         VkDebugUtilsMessengerCreateInfoEXT createInfo = {};
 
         createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
@@ -147,7 +175,8 @@ namespace Raytracing::VulkanUtils {
         return createInfo;
     }
 
-    static QueueFamilyIndices FindQueueFamilies(const VkPhysicalDevice physicalDevice, const VkSurfaceKHR surface) {
+    static QueueFamilyIndices FindQueueFamilies(const VkPhysicalDevice physicalDevice, const VkSurfaceKHR surface)
+    {
         QueueFamilyIndices indices;
 
         uint32_t queue_family_count = 0;
@@ -157,8 +186,10 @@ namespace Raytracing::VulkanUtils {
         vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queue_family_count, queue_families.data());
 
         int i = 0;
-        for (const auto &queueFamily: queue_families) {
-            if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+        for (const auto& queueFamily: queue_families)
+        {
+            if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+            {
                 indices.graphicsFamily = i;
             }
 
@@ -177,7 +208,8 @@ namespace Raytracing::VulkanUtils {
         return indices;
     }
 
-    static bool IsDeviceSuitable(const VkPhysicalDevice physicalDevice, const VkSurfaceKHR surface) {
+    static bool IsDeviceSuitable(const VkPhysicalDevice physicalDevice, const VkSurfaceKHR surface)
+    {
         const QueueFamilyIndices indices = FindQueueFamilies(physicalDevice, surface);
         VkPhysicalDeviceFeatures supportedFeatures;
         vkGetPhysicalDeviceFeatures(physicalDevice, &supportedFeatures);
@@ -185,28 +217,32 @@ namespace Raytracing::VulkanUtils {
         return indices.IsComplete() && supportedFeatures.samplerAnisotropy;;
     }
 
-    static VkShaderModule CreateShaderModule(const VkDevice device, const std::vector<char> &code) {
+    static VkShaderModule CreateShaderModule(const VkDevice device, const std::vector<char>& code)
+    {
         VkShaderModuleCreateInfo create_info{};
         create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
         create_info.codeSize = code.size();
-        create_info.pCode = reinterpret_cast<const uint32_t *>(code.data());
+        create_info.pCode = reinterpret_cast<const uint32_t*>(code.data());
 
         VkShaderModule shader_module;
-        CheckVkResult(
+
+        VK_CHECK(
             vkCreateShaderModule(device, &create_info, nullptr, &shader_module),
-            "Failed to create shader module."
-        );
+            "Failed to create shader module.");
 
         return shader_module;
     }
 
     static uint32_t FindMemoryType(const VkPhysicalDevice physicalDevice, const uint32_t typeFilter,
-                                   const VkMemoryPropertyFlags properties) {
+                                   const VkMemoryPropertyFlags properties)
+    {
         VkPhysicalDeviceMemoryProperties mem_properties;
         vkGetPhysicalDeviceMemoryProperties(physicalDevice, &mem_properties);
 
-        for (uint32_t i = 0; i < mem_properties.memoryTypeCount; i++) {
-            if ((typeFilter & (1 << i)) && (mem_properties.memoryTypes[i].propertyFlags & properties) == properties) {
+        for (uint32_t i = 0; i < mem_properties.memoryTypeCount; i++)
+        {
+            if ((typeFilter & (1 << i)) && (mem_properties.memoryTypes[i].propertyFlags & properties) == properties)
+            {
                 return i;
             }
         }
@@ -214,42 +250,8 @@ namespace Raytracing::VulkanUtils {
         throw std::runtime_error("failed to find suitable memory type!");
     }
 
-    static void CreateBuffer(
-        const VkDevice device,
-        const VkPhysicalDevice physicalDevice,
-        const VkDeviceSize size,
-        const VkBufferUsageFlags usage,
-        const VkMemoryPropertyFlags properties,
-        VkBuffer &buffer,
-        VkDeviceMemory &bufferMemory) {
-        VkBufferCreateInfo buffer_info{};
-        buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-        buffer_info.size = size;
-        buffer_info.usage = usage;
-        buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-        CheckVkResult(
-            vkCreateBuffer(device, &buffer_info, nullptr, &buffer),
-            "Failed to create buffer."
-        );
-
-        VkMemoryRequirements mem_requirements;
-        vkGetBufferMemoryRequirements(device, buffer, &mem_requirements);
-
-        VkMemoryAllocateInfo alloc_info{};
-        alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-        alloc_info.allocationSize = mem_requirements.size;
-        alloc_info.memoryTypeIndex = FindMemoryType(physicalDevice, mem_requirements.memoryTypeBits, properties);
-
-        CheckVkResult(
-            vkAllocateMemory(device, &alloc_info, nullptr, &bufferMemory),
-            "Failed to allocate buffer memory."
-        );
-
-        vkBindBufferMemory(device, buffer, bufferMemory, 0);
-    }
-
-    static VkCommandBuffer BeginSingleTimeCommands(const VkDevice device, const VkCommandPool commandPool) {
+    static VkCommandBuffer BeginSingleTimeCommands(const VkDevice device, const VkCommandPool commandPool)
+    {
         VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -269,7 +271,8 @@ namespace Raytracing::VulkanUtils {
     }
 
     static void EndSingleTimeCommands(const VkDevice device, const VkCommandPool commandPool, const VkQueue submitQueue,
-                                      const VkCommandBuffer commandBuffer) {
+                                      const VkCommandBuffer commandBuffer)
+    {
         vkEndCommandBuffer(commandBuffer);
 
         VkSubmitInfo submitInfo{};
@@ -283,25 +286,8 @@ namespace Raytracing::VulkanUtils {
         vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
     }
 
-    static void CopyBuffer(
-        const VkDevice device,
-        const VkCommandPool commandPool,
-        const VkQueue queue,
-        const VkBuffer srcBuffer,
-        const VkBuffer dstBuffer,
-        const VkDeviceSize size) {
-        auto command_buffer = BeginSingleTimeCommands(device, commandPool);
-
-        VkBufferCopy copy_region;
-        copy_region.srcOffset = 0; // Optional
-        copy_region.dstOffset = 0; // Optional
-        copy_region.size = size;
-        vkCmdCopyBuffer(command_buffer, srcBuffer, dstBuffer, 1, &copy_region);
-
-        EndSingleTimeCommands(device, commandPool, queue, command_buffer);
-    }
-
-    static VkImageView CreateImageView(const VkDevice device, const VkImage image, const VkFormat format, VkImageAspectFlags aspectFlags) {
+    static VkImageView CreateImageView(const VkDevice device, const VkImage image, const VkFormat format, VkImageAspectFlags aspectFlags)
+    {
         VkImageViewCreateInfo viewInfo{};
         viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         viewInfo.image = image;
@@ -314,7 +300,8 @@ namespace Raytracing::VulkanUtils {
         viewInfo.subresourceRange.layerCount = 1;
 
         VkImageView imageView;
-        if (vkCreateImageView(device, &viewInfo, nullptr, &imageView) != VK_SUCCESS) {
+        if (vkCreateImageView(device, &viewInfo, nullptr, &imageView) != VK_SUCCESS)
+        {
             throw std::runtime_error("failed to create texture image view!");
         }
 

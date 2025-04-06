@@ -15,7 +15,6 @@ set ( CMAKE_CXX_EXTENSIONS        OFF )
 message(STATUS "Looking for Vulkan...")
 find_package(Vulkan REQUIRED)
 
-
 include(FetchContent)
 FetchContent_Declare(
   glfw
@@ -41,6 +40,12 @@ FetchContent_Declare(
         GIT_TAG 11.1.4
 )
 
+FetchContent_Declare(
+        vma
+        GIT_REPOSITORY https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
+        GIT_TAG v3.2.1
+)
+
 message(STATUS "Fetching GLFW...")
 FetchContent_MakeAvailable(glfw)
 
@@ -58,6 +63,9 @@ FetchContent_MakeAvailable(imgui)
 message(STATUS "Fetching fmt...")
 FetchContent_MakeAvailable(fmt)
 
+message(STATUS "Fetching vma...")
+FetchContent_MakeAvailable(vma)
+
 set(IMGUI_INCLUDE_DIR ${imgui_SOURCE_DIR}/)
 file(GLOB IMGUI_SOURCES ${imgui_SOURCE_DIR}/*.cpp ${imgui_SOURCE_DIR}/*.h)
 
@@ -65,6 +73,8 @@ add_library(
     imgui STATIC 
     ${IMGUI_SOURCES}
 )
+
+add_library(vma INTERFACE)
 
 # Source
 set ( EXTERNAL
@@ -94,6 +104,7 @@ set ( SOURCE_ONE_WEEKEND
   ./src/renderer/vulkan/vulkan_shader.cpp
   ./src/renderer/vulkan/vulkan_swapchain.cpp
   ./src/renderer/vulkan/vulkan_renderpass.cpp
+  ./src/renderer/vulkan/vulkan_buffer.cpp
   ./src/renderer/vulkan/imgui_vulkan.cpp
 )
 
@@ -172,4 +183,5 @@ target_link_libraries (inOneWeekend PRIVATE glfw)
 target_link_libraries (inOneWeekend PRIVATE glm)
 target_link_libraries (inOneWeekend PRIVATE imgui)
 target_link_libraries (inOneWeekend PRIVATE fmt)
+target_link_libraries(inOneWeekend PRIVATE vma)
 

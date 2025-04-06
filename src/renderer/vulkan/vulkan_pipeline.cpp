@@ -91,10 +91,9 @@ namespace Raytracing
 		pipelineLayoutInfo.setLayoutCount = 1;
 		pipelineLayoutInfo.pSetLayouts = &shader->GetDescriptorSetLayout();
 
-		VulkanUtils::CheckVkResult(
+		VK_CHECK(
 			vkCreatePipelineLayout(vulkanDevice->GetDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout),
-			"Failed to create pipeline layout."
-		);
+			"Failed to create pipeline layout.");
 
 		VkPipelineDepthStencilStateCreateInfo depthStencil{};
 		depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
@@ -124,9 +123,8 @@ namespace Raytracing
 		pipeline_info.subpass = 0;
 		pipeline_info.pDepthStencilState = &depthStencil;
 
-		VulkanUtils::CheckVkResult(
+		VK_CHECK(
 			vkCreateGraphicsPipelines(vulkanDevice->GetDevice(), VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &pipeline),
-			"Failed to create graphics pipeline."
-		);
+			"Failed to create graphics pipeline.");
 	}
 }
