@@ -21,21 +21,21 @@ namespace Raytracing
     {
         assert(vertices.size() >= 3 && "Vertex count must be at least 3");
 
+        auto bufferSize = sizeof(vertices[0]) * vertices.size();
+
         const auto stagingBuffer = VulkanBuffer(
             vulkanDevice,
-            sizeof(vertices[0]) * vertices.size(),
+            bufferSize,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
             VMA_MEMORY_USAGE_CPU_ONLY);
 
-        void* data;
-        vkMapMemory(vulkanDevice->GetDevice(), stagingBuffer.GetBufferMemory(), 0, stagingBuffer.GetBufferSize(), 0, &data);
-        memcpy(data, vertices.data(), stagingBuffer.GetBufferSize());
-        vkUnmapMemory(vulkanDevice->GetDevice(), stagingBuffer.GetBufferMemory());
+        void* data = stagingBuffer.GetMappedData();
+        memcpy(data, vertices.data(), bufferSize);
 
         vertexBuffer = new VulkanBuffer(
             vulkanDevice,
-            stagingBuffer.GetBufferSize(),
+            bufferSize,
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             VMA_MEMORY_USAGE_GPU_ONLY);
@@ -45,21 +45,20 @@ namespace Raytracing
 
     void VulkanMesh::CreateIndexBuffer()
     {
+        auto bufferSize = sizeof(indices[0]) * indices.size();
         const auto stagingBuffer = VulkanBuffer(
             vulkanDevice,
-            sizeof(indices[0]) * indices.size(),
+            bufferSize,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
             VMA_MEMORY_USAGE_CPU_ONLY);
 
-        void* data;
-        vkMapMemory(vulkanDevice->GetDevice(), stagingBuffer.GetBufferMemory(), 0, stagingBuffer.GetBufferSize(), 0, &data);
-        memcpy(data, indices.data(), stagingBuffer.GetBufferSize());
-        vkUnmapMemory(vulkanDevice->GetDevice(), stagingBuffer.GetBufferMemory());
+        void* data = stagingBuffer.GetMappedData();
+        memcpy(data, indices.data(), bufferSize);
 
         indexBuffer = new VulkanBuffer(
             vulkanDevice,
-            sizeof(indices[0]) * indices.size(),
+            bufferSize,
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             VMA_MEMORY_USAGE_GPU_ONLY);

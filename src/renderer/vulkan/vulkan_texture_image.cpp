@@ -33,10 +33,8 @@ namespace Raytracing
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
             VMA_MEMORY_USAGE_CPU_ONLY);
 
-        void *data;
-        vkMapMemory(device->GetDevice(), stagingBuffer.GetBufferMemory(), 0, stagingBuffer.GetBufferSize(), 0, &data);
+        void *data = stagingBuffer.GetMappedData();
         memcpy(data, pixels, stagingBuffer.GetBufferSize());
-        vkUnmapMemory(device->GetDevice(), stagingBuffer.GetBufferMemory());
 
         stbi_image_free(pixels);
 

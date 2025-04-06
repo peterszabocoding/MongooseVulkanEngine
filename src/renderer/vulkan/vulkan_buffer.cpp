@@ -56,6 +56,8 @@ namespace Raytracing
     void VulkanBuffer::CreateBuffer(const VkDeviceSize size, const VkBufferUsageFlags usage, const VkMemoryPropertyFlags properties,
                                     VmaMemoryUsage memoryUsage)
     {
+        std::cout << "Allocate buffer: " << size << std::endl;
+
         VkBufferCreateInfo bufferInfo{};
         bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
         bufferInfo.size = size;

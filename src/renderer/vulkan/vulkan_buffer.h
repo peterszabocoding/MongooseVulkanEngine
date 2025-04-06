@@ -22,6 +22,7 @@ namespace Raytracing
         VkBuffer GetBuffer() const { return allocatedBuffer.buffer; }
         VkDeviceMemory GetBufferMemory() const { return allocatedBuffer.info.deviceMemory; }
         VkDeviceSize GetBufferSize() const { return allocatedBuffer.info.size; }
+        void* GetMappedData() const { return allocatedBuffer.info.pMappedData; }
 
         static void CopyBuffer(const VulkanDevice* vulkanDevice, VkQueue queue, const VulkanBuffer* src, const VulkanBuffer* dst);
 

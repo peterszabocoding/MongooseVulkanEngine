@@ -89,7 +89,7 @@ namespace Raytracing
 
     void VulkanShader::UpdateUniformBuffer(const UniformBufferObject& ubo) const
     {
-        memcpy(uniformBufferMapped, &ubo, sizeof(ubo));
+        memcpy(uniformBuffer->GetMappedData(), &ubo, sizeof(ubo));
     }
 
     void VulkanShader::CreateDescriptorSetLayout()
@@ -133,8 +133,6 @@ namespace Raytracing
 
     void VulkanShader::CreateUniformBuffer()
     {
-        const VkDeviceSize buffer_size = sizeof(UniformBufferObject);
-
         uniformBuffer = new VulkanBuffer(
             vulkanDevice,
             sizeof(UniformBufferObject),
@@ -142,6 +140,5 @@ namespace Raytracing
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
             VMA_MEMORY_USAGE_CPU_TO_GPU);
 
-        vkMapMemory(vulkanDevice->GetDevice(), uniformBuffer->GetBufferMemory(), 0, buffer_size, 0, &uniformBufferMapped);
     }
 }

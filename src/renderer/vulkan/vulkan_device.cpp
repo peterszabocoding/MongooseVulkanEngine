@@ -333,7 +333,7 @@ namespace Raytracing {
             APPLICATION_VERSION.minor,
             APPLICATION_VERSION.patch);
 
-        vkApplicationInfo->apiVersion = VK_API_VERSION_1_0;
+        vkApplicationInfo->apiVersion = VK_API_VERSION_1_3;
 
         createInfo.pApplicationInfo = vkApplicationInfo;
 
