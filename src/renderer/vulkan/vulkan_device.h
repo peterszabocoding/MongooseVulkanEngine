@@ -13,7 +13,7 @@ namespace Raytracing {
     class VulkanPipeline;
     class VulkanSwapchain;
     class VulkanRenderPass;
-    class Mesh;
+    class VulkanMesh;
 
     constexpr int MAX_FRAMES_IN_FLIGHT = 1;
 
@@ -29,7 +29,7 @@ namespace Raytracing {
 
         ~VulkanDevice();
 
-        void DrawMesh(const VulkanPipeline* pipeline, const Mesh* mesh) const;
+        void DrawMesh(const VulkanPipeline* pipeline, const VulkanMesh* mesh) const;
 
         void DrawImGui() const;
 

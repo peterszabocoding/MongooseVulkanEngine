@@ -1,10 +1,9 @@
 ﻿#pragma once
 
 #include <array>
-#include <glm/glm.hpp>
 #include <vector>
-#include "vulkan/vulkan_vertex_buffer.h"
-#include "vulkan/vulkan_index_buffer.h"
+#include <glm/glm.hpp>
+#include <vulkan/vulkan_core.h>
 
 namespace Raytracing
 {
@@ -68,14 +67,17 @@ namespace Raytracing
 
     class Mesh {
     public:
-        Mesh(VulkanDevice* device, const std::vector<Vertex>& vertices, const std::vector<uint16_t>& indices);
-        ~Mesh();
+        Mesh(const std::vector<Vertex>& vertices, const std::vector<uint16_t>& indices)
+        {
+            this->vertices = vertices;
+            this->indices = indices;
+        }
+        virtual ~Mesh() {};
 
-        void Bind(VkCommandBuffer commandBuffer) const;
-        [[nodiscard]] uint32_t GetIndexCount() const;
+       uint32_t GetIndexCount() const { return indices.size(); };
 
-    private:
-        VulkanVertexBuffer* vertexBuffer;
-        VulkanIndexBuffer* indexBuffer;
+    protected:
+        std::vector<Vertex> vertices;
+        std::vector<uint16_t> indices;
     };
 }

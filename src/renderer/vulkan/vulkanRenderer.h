@@ -2,6 +2,7 @@
 
 #include "renderer/renderer.h"
 #include "vulkan_device.h"
+#include "vulkan_mesh.h"
 #include "vulkan_texture_image.h"
 
 namespace Raytracing
@@ -28,6 +29,6 @@ namespace Raytracing
 		VulkanDevice* vulkanDevice;
 		VulkanPipeline* graphicsPipeline;
 		VulkanTextureImage* vulkanImage;
-		Mesh* mesh;
+		VulkanMesh* mesh;
 	};
 }

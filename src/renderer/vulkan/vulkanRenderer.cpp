@@ -1,9 +1,7 @@
 #include "vulkanRenderer.h"
-
 #include "vulkan_pipeline.h"
 #include "vulkan_swapchain.h"
 #include "vulkan_texture_image.h"
-#include "renderer/mesh.h"
 
 namespace Raytracing {
     VulkanRenderer::~VulkanRenderer() {
@@ -15,7 +13,7 @@ namespace Raytracing {
     void VulkanRenderer::Init(const int width, const int height) {
         vulkanDevice = new VulkanDevice(width, height, glfwWindow);
 
-        mesh = new Mesh(vulkanDevice, Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
+        mesh = new VulkanMesh(vulkanDevice, Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
         vulkanImage = new VulkanTextureImage(vulkanDevice, "textures/texture.jpg");
 
         graphicsPipeline = new VulkanPipeline(vulkanDevice);

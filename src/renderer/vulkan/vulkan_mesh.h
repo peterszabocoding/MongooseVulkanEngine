@@ -1,29 +1,26 @@
 #pragma once
 
-#include <vulkan/vulkan_core.h>
-#include <vector>
-
+#include "renderer/mesh.h"
 #include "vulkan_buffer.h"
 
 namespace Raytracing
 {
     class VulkanDevice;
-    class Vertex;
 
-    class VulkanVertexBuffer {
+    class VulkanMesh : public Mesh {
     public:
-        VulkanVertexBuffer(VulkanDevice* device, const std::vector<Vertex>& vertices);
-        ~VulkanVertexBuffer();
+        VulkanMesh(VulkanDevice* vulkanDevice, const std::vector<Vertex>& vertices, const std::vector<uint16_t>& indices);
+        ~VulkanMesh() override;
 
         void Bind(VkCommandBuffer commandBuffer) const;
 
     private:
         void CreateVertexBuffer();
+        void CreateIndexBuffer();
 
     private:
         VulkanDevice* vulkanDevice;
         VulkanBuffer* vertexBuffer;
-
-        std::vector<Vertex> vertices;
+        VulkanBuffer* indexBuffer;
     };
 }

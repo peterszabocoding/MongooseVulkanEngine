@@ -2,18 +2,15 @@
 
 #include <chrono>
 #include <iostream>
+#include <backends/imgui_impl_vulkan.h>
 
 #include "util/Core.h"
+#include "vulkan_mesh.h"
 #include "vulkan_utils.h"
 #include "vulkan_pipeline.h"
 #include "vulkan_swapchain.h"
-
-#include <backends/imgui_impl_vulkan.h>
-
 #include "vulkan_renderpass.h"
 #include "GLFW/glfw3.h"
-
-#include "renderer/mesh.h"
 
 #define VMA_IMPLEMENTATION
 #include "vma/vk_mem_alloc.h"
@@ -48,7 +45,7 @@ namespace Raytracing {
         vkDestroyInstance(instance, nullptr);
     }
 
-    void VulkanDevice::DrawMesh(const VulkanPipeline* pipeline, const Mesh* mesh) const {
+    void VulkanDevice::DrawMesh(const VulkanPipeline* pipeline, const VulkanMesh* mesh) const {
         mesh->Bind(commandBuffers[currentFrame]);
         vkCmdBindPipeline(commandBuffers[currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->GetPipeline());
         vkCmdBindDescriptorSets(commandBuffers[currentFrame],

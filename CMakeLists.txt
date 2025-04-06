@@ -2,14 +2,14 @@
 # CMake Build Configuration for the Ray Tracing Weekend Series
 #---------------------------------------------------------------------------------------------------
 
-cmake_minimum_required ( VERSION 3.30.2 )
+cmake_minimum_required(VERSION 3.30.2)
 
-project ( RTWeekend LANGUAGES C CXX )
+project(RTWeekend LANGUAGES C CXX)
 
 # Set to C++17
-set ( CMAKE_CXX_STANDARD          17 )
-set ( CMAKE_CXX_STANDARD_REQUIRED ON )
-set ( CMAKE_CXX_EXTENSIONS        OFF )
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 
 # Setup project dependencies
@@ -18,21 +18,21 @@ find_package(Vulkan REQUIRED)
 
 include(FetchContent)
 FetchContent_Declare(
-  glfw
-  GIT_REPOSITORY https://github.com/glfw/glfw.git
-  GIT_TAG 3.4
+        glfw
+        GIT_REPOSITORY https://github.com/glfw/glfw.git
+        GIT_TAG 3.4
 )
 
 FetchContent_Declare(
-  glm
-  GIT_REPOSITORY https://github.com/g-truc/glm
-  GIT_TAG 1.0.1
+        glm
+        GIT_REPOSITORY https://github.com/g-truc/glm
+        GIT_TAG 1.0.1
 )
 
 FetchContent_Declare(
-  imgui
-  GIT_REPOSITORY https://github.com/ocornut/imgui
-  GIT_TAG v1.91.8
+        imgui
+        GIT_REPOSITORY https://github.com/ocornut/imgui
+        GIT_TAG v1.91.8
 )
 
 FetchContent_Declare(
@@ -62,50 +62,47 @@ set(IMGUI_INCLUDE_DIR ${imgui_SOURCE_DIR}/)
 file(GLOB IMGUI_SOURCES ${imgui_SOURCE_DIR}/*.cpp ${imgui_SOURCE_DIR}/*.h)
 
 add_library(
-    imgui STATIC 
-    ${IMGUI_SOURCES}
+        imgui STATIC
+        ${IMGUI_SOURCES}
 )
 
 # Source
-set ( EXTERNAL
-  ${imgui_SOURCE_DIR}/backends/imgui_impl_vulkan.cpp
-  ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
+set(EXTERNAL
+        ${imgui_SOURCE_DIR}/backends/imgui_impl_vulkan.cpp
+        ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
 )
 
-set ( SOURCE_ONE_WEEKEND
-  ./src/main.cpp
+set(SOURCE_ONE_WEEKEND
+        ./src/main.cpp
 
-  ./src/application/window.cpp
-  ./src/application/application.cpp
+        ./src/application/window.cpp
+        ./src/application/application.cpp
 
-  ./src/renderer/shader.cpp
-  ./src/renderer/renderer.cpp
-  ./src/renderer/camera.cpp
-  ./src/renderer/mesh.cpp
-
-  ./src/renderer/vulkan/vulkanRenderer.cpp
-  ./src/renderer/vulkan/vulkan_pipeline.cpp
-  ./src/renderer/vulkan/vulkan_device.cpp
-  ./src/renderer/vulkan/vulkan_index_buffer.cpp
-  ./src/renderer/vulkan/vulkan_vertex_buffer.cpp
-  ./src/renderer/vulkan/vulkan_image.cpp
-  ./src/renderer/vulkan/vulkan_texture_image.cpp
-  ./src/renderer/vulkan/vulkan_depth_image.cpp
-  ./src/renderer/vulkan/vulkan_shader.cpp
-  ./src/renderer/vulkan/vulkan_swapchain.cpp
-  ./src/renderer/vulkan/vulkan_renderpass.cpp
-  ./src/renderer/vulkan/vulkan_buffer.cpp
-  ./src/renderer/vulkan/imgui_vulkan.cpp
+        ./src/renderer/shader.cpp
+        ./src/renderer/renderer.cpp
+        ./src/renderer/camera.cpp
+        ./src/renderer/vulkan/vulkanRenderer.cpp
+        ./src/renderer/vulkan/vulkan_pipeline.cpp
+        ./src/renderer/vulkan/vulkan_device.cpp
+        ./src/renderer/vulkan/vulkan_image.cpp
+        ./src/renderer/vulkan/vulkan_texture_image.cpp
+        ./src/renderer/vulkan/vulkan_depth_image.cpp
+        ./src/renderer/vulkan/vulkan_shader.cpp
+        ./src/renderer/vulkan/vulkan_swapchain.cpp
+        ./src/renderer/vulkan/vulkan_renderpass.cpp
+        ./src/renderer/vulkan/vulkan_buffer.cpp
+        ./src/renderer/vulkan/vulkan_mesh.cpp
+        ./src/renderer/vulkan/imgui_vulkan.cpp
 )
 
-set ( SOURCE_ONE_WEEKEND_APPLE
-  ./src/platform/macos/macosApplication.cpp
-  ./src/platform/macos/macosWindow.cpp
+set(SOURCE_ONE_WEEKEND_APPLE
+        ./src/platform/macos/macosApplication.cpp
+        ./src/platform/macos/macosWindow.cpp
 )
 
-set ( SOURCE_ONE_WEEKEND_WINDOWS
-  ./src/platform/windows/windowsApplication.cpp
-  ./src/platform/windows/windowsWindow.cpp
+set(SOURCE_ONE_WEEKEND_WINDOWS
+        ./src/platform/windows/windowsApplication.cpp
+        ./src/platform/windows/windowsWindow.cpp
 )
 
 include_directories("src/")
@@ -115,9 +112,9 @@ include_directories("vendor/")
 # you're new to CMake (like we are), the following may be a helpful example if you're using a
 # different compiler or want to set different compiler options.
 
-message (STATUS "Compiler ID: " ${CMAKE_CXX_COMPILER_ID})
-message (STATUS "Release flags: " ${CMAKE_CXX_FLAGS_RELEASE})
-message (STATUS "Debug flags: " ${CMAKE_CXX_FLAGS_DEBUG})
+message(STATUS "Compiler ID: " ${CMAKE_CXX_COMPILER_ID})
+message(STATUS "Release flags: " ${CMAKE_CXX_FLAGS_RELEASE})
+message(STATUS "Debug flags: " ${CMAKE_CXX_FLAGS_DEBUG})
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # /wd #### - Disable warning
@@ -136,28 +133,28 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     add_compile_options(-Wreorder) # Data member will be initialized after [other] data member
     add_compile_options(-Wsometimes-uninitialized) # Variable improperly initialized
     add_compile_options(-Wunused-variable) # Variable is defined but unused
-    elseif (CMAKE_CXX_COMPILER_ID MATCHES "AppleClang")
+elseif (CMAKE_CXX_COMPILER_ID MATCHES "AppleClang")
     add_compile_options(-Wnon-virtual-dtor) # Class has virtual functions, but its destructor is not virtual
     add_compile_options(-Wreorder) # Data member will be initialized after [other] data member
     add_compile_options(-Wsometimes-uninitialized) # Variable improperly initialized
     add_compile_options(-Wunused-variable) # Variable is defined but unused
-endif()
+endif ()
 
 # Global definitions
 add_compile_definitions(NDEBUG)
 
 FILE(GLOB_RECURSE HEADERS "src/**.h")
 
-if(APPLE)
+if (APPLE)
     add_compile_definitions(PLATFORM_MACOS)
-    
-    add_executable(inOneWeekend ${EXTERNAL} ${HEADERS} ${SOURCE_ONE_WEEKEND} ${SOURCE_ONE_WEEKEND_APPLE})
-endif(APPLE)
 
-if(WIN32)
-  add_compile_definitions(PLATFORM_WINDOWS)
-  add_executable(inOneWeekend ${EXTERNAL} ${HEADERS} ${SOURCE_ONE_WEEKEND} ${SOURCE_ONE_WEEKEND_WINDOWS})
-endif(WIN32)
+    add_executable(inOneWeekend ${EXTERNAL} ${HEADERS} ${SOURCE_ONE_WEEKEND} ${SOURCE_ONE_WEEKEND_APPLE})
+endif (APPLE)
+
+if (WIN32)
+    add_compile_definitions(PLATFORM_WINDOWS)
+    add_executable(inOneWeekend ${EXTERNAL} ${HEADERS} ${SOURCE_ONE_WEEKEND} ${SOURCE_ONE_WEEKEND_WINDOWS})
+endif (WIN32)
 
 
 set_target_properties(glfw PROPERTIES FOLDER "Dependencies")
@@ -169,7 +166,7 @@ target_include_directories(inOneWeekend PRIVATE ${Vulkan_INCLUDE_DIRS})
 target_include_directories(inOneWeekend PRIVATE ${IMGUI_INCLUDE_DIR})
 
 target_link_libraries(inOneWeekend PRIVATE ${Vulkan_LIBRARIES})
-target_link_libraries (inOneWeekend PRIVATE glfw)
-target_link_libraries (inOneWeekend PRIVATE glm)
-target_link_libraries (inOneWeekend PRIVATE imgui)
-target_link_libraries (inOneWeekend PRIVATE fmt)
+target_link_libraries(inOneWeekend PRIVATE glfw)
+target_link_libraries(inOneWeekend PRIVATE glm)
+target_link_libraries(inOneWeekend PRIVATE imgui)
+target_link_libraries(inOneWeekend PRIVATE fmt)
