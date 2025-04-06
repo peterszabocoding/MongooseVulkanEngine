@@ -41,12 +41,6 @@ FetchContent_Declare(
         GIT_TAG 11.1.4
 )
 
-FetchContent_Declare(
-        vma
-        GIT_REPOSITORY https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
-        GIT_TAG v3.2.1
-)
-
 message(STATUS "Fetching GLFW...")
 FetchContent_MakeAvailable(glfw)
 
@@ -58,9 +52,6 @@ FetchContent_MakeAvailable(imgui)
 
 message(STATUS "Fetching fmt...")
 FetchContent_MakeAvailable(fmt)
-
-message(STATUS "Fetching vma...")
-FetchContent_MakeAvailable(vma)
 
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
@@ -74,8 +65,6 @@ add_library(
     imgui STATIC 
     ${IMGUI_SOURCES}
 )
-
-add_library(vma INTERFACE)
 
 # Source
 set ( EXTERNAL
@@ -184,4 +173,3 @@ target_link_libraries (inOneWeekend PRIVATE glfw)
 target_link_libraries (inOneWeekend PRIVATE glm)
 target_link_libraries (inOneWeekend PRIVATE imgui)
 target_link_libraries (inOneWeekend PRIVATE fmt)
-target_link_libraries(inOneWeekend PRIVATE vma)
