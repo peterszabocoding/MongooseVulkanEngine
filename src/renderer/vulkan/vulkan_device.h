@@ -61,6 +61,8 @@ namespace Raytracing {
         [[nodiscard]] VkCommandPool GetCommandPool() const { return commandPool; }
         [[nodiscard]] VulkanSwapchain* GetSwapchain() const { return vulkanSwapChain; }
 
+        VkSampleCountFlagBits GetMaxMSAASampleCount() const;
+
     public:
         [[nodiscard]] inline VkPhysicalDevice PickPhysicalDevice() const;
 

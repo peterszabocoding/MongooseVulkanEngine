@@ -16,8 +16,16 @@ namespace Raytracing {
         mesh = new VulkanMesh(vulkanDevice, Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
         vulkanImage = new VulkanTextureImage(vulkanDevice, "textures/texture.jpg");
 
-        graphicsPipeline = new VulkanPipeline(vulkanDevice);
-        graphicsPipeline->Load("shader/spv/vert.spv", "shader/spv/frag.spv");
+        auto builder = PipelineBuilder();
+        builder.SetShaders("shader/spv/vert.spv", "shader/spv/frag.spv");
+        builder.SetCullMode(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
+        builder.SetPolygonMode(VK_POLYGON_MODE_FILL);
+        builder.EnableDepthTest();
+        builder.DisableBlending();
+        builder.SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+        builder.SetMultisampling(VK_SAMPLE_COUNT_1_BIT);
+
+        graphicsPipeline = builder.build(vulkanDevice);
         graphicsPipeline->GetShader()->SetImage(vulkanImage);
     }
 
