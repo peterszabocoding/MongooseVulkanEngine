@@ -7,8 +7,6 @@ namespace Raytracing
 
     class VulkanImage {
     public:
-        explicit VulkanImage(VulkanDevice* device);
-
         VulkanImage(VulkanDevice* device, VkImage image, VkDeviceMemory memory, VkImageView imageView, VkSampler sampler)
             : device(device), image(image), imageMemory(memory), imageView(imageView), sampler(sampler) {}
 
@@ -16,16 +14,6 @@ namespace Raytracing
 
         VkImageView GetImageView() const { return imageView; }
         VkSampler GetSampler() const { return sampler; }
-
-    protected:
-        void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
-                         VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory) const;
-
-    protected:
-        void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
-        void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
-        void CreateTextureImageView(VkFormat, VkImageAspectFlags aspectFlags);
-        void CreateTextureSampler();
 
     protected:
         VulkanDevice* device;
@@ -71,14 +59,14 @@ namespace Raytracing
         }
 
     protected:
-        VkDeviceMemory AllocateImageMemory(VulkanDevice* device, VkImage image, VkMemoryPropertyFlags properties);
+        VkDeviceMemory AllocateImageMemory(const VulkanDevice* device, VkImage image, VkMemoryPropertyFlags properties);
 
-        VkImage CreateImage(VulkanDevice* device, VkImageUsageFlags usage);
-        VkImageView CreateImageView(VulkanDevice* device, VkImageAspectFlags aspectFlags);
-        VkSampler CreateSampler(VulkanDevice* device);
+        VkImage CreateImage(const VulkanDevice* device, VkImageUsageFlags usage) const;
+        VkImageView CreateImageView(const VulkanDevice* device, VkImageAspectFlags aspectFlags) const;
+        VkSampler CreateSampler(const VulkanDevice* device) const;
 
-        void TransitionImageLayout(VulkanDevice* device, VkImageLayout oldLayout, VkImageLayout newLayout);
-        void CopyBufferToImage(VulkanDevice* device, VkBuffer buffer);
+        void TransitionImageLayout(const VulkanDevice* device, VkImageLayout oldLayout, VkImageLayout newLayout) const;
+        void CopyBufferToImage(const VulkanDevice* device, VkBuffer buffer) const;
 
     protected:
         unsigned char* data;
@@ -100,6 +88,14 @@ namespace Raytracing
     public:
         VulkanTextureImageBuilder() = default;
         ~VulkanTextureImageBuilder() override = default;
+
+        virtual VulkanImage* Build(VulkanDevice* device) override;
+    };
+
+    class VulkanDepthImageBuilder : public VulkanImageBuilder {
+        public:
+        VulkanDepthImageBuilder() = default;
+        ~VulkanDepthImageBuilder() override = default;
 
         virtual VulkanImage* Build(VulkanDevice* device) override;
     };

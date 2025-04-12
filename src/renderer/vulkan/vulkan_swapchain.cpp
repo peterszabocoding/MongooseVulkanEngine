@@ -7,10 +7,12 @@
 #include "vulkan_utils.h"
 
 namespace Raytracing {
+
+
     VulkanSwapchain::VulkanSwapchain(VulkanDevice* vulkanDevice, int width, int height): vulkanDevice(vulkanDevice),
                                                                                          viewportWidth(width),
                                                                                          viewportHeight(height) {
-        vulkanDepthImage = new VulkanDepthImage(vulkanDevice, width, height);
+        CreateDepthImage(width, height);
         CreateSwapChain();
         CreateImageViews();
         CreateFramebuffers();
@@ -77,6 +79,16 @@ namespace Raytracing {
         swapChainExtent = extent;
     }
 
+    void VulkanSwapchain::CreateDepthImage(int width, int height)
+    {
+        delete vulkanDepthImage;
+
+        VulkanDepthImageBuilder builder;
+        builder.SetResolution(width, height);
+
+        vulkanDepthImage = builder.Build(vulkanDevice);
+    }
+
     void VulkanSwapchain::RecreateSwapChain() {
         vkDeviceWaitIdle(vulkanDevice->GetDevice());
 
@@ -85,7 +97,8 @@ namespace Raytracing {
         CreateSwapChain();
         CreateImageViews();
 
-        vulkanDepthImage->Resize(swapChainExtent.width, swapChainExtent.height);
+        CreateDepthImage(swapChainExtent.width, swapChainExtent.height);
+
         viewportWidth = swapChainExtent.width;
         viewportHeight = swapChainExtent.height;
 

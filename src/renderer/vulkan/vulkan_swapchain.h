@@ -1,10 +1,12 @@
 #pragma once
-#include "vulkan_depth_image.h"
+
 #include "vulkan_device.h"
+#include "vulkan_image.h"
 
 namespace Raytracing {
     class VulkanSwapchain {
     public:
+        void CreateDepthImage(int width, int height);
         VulkanSwapchain(VulkanDevice* vulkanDevice, int width, int height);
 
         ~VulkanSwapchain();
@@ -45,7 +47,7 @@ namespace Raytracing {
         int viewportWidth, viewportHeight;
 
         VulkanDevice* vulkanDevice;
-        VulkanDepthImage* vulkanDepthImage;
+        VulkanImage* vulkanDepthImage = nullptr;
 
         VkSwapchainKHR swapChain;
         std::vector<VkImage> swapChainImages;
