@@ -1,7 +1,7 @@
 #include "application.h"
 
 #ifdef PLATFORM_MACOS
-#include "platform/macos/macosApplication.h"
+#include "platform/macos/macos_application.h"
 #endif
 
 #ifdef PLATFORM_WINDOWS

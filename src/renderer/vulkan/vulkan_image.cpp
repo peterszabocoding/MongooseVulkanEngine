@@ -26,7 +26,7 @@ namespace Raytracing
 
         VkDeviceMemory imageMemory;
 
-        VK_CHECK(vkAllocateMemory(device->GetDevice(), &allocInfo, nullptr, &imageMemory), "Failed to allocate image memory.");
+        VK_CHECK_MSG(vkAllocateMemory(device->GetDevice(), &allocInfo, nullptr, &imageMemory), "Failed to allocate image memory.");
 
         vkBindImageMemory(device->GetDevice(), image, imageMemory, 0);
 
@@ -51,10 +51,8 @@ namespace Raytracing
         imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
         VkImage image;
-        if (vkCreateImage(device->GetDevice(), &imageInfo, nullptr, &image) != VK_SUCCESS)
-        {
-            throw std::runtime_error("Failed to create image.");
-        }
+
+        VK_CHECK_MSG(vkCreateImage(device->GetDevice(), &imageInfo, nullptr, &image), "Failed to create image.");
 
         return image;
     }
