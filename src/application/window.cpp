@@ -23,14 +23,13 @@ namespace Raytracing
 		applicationInfo = std::move(appInfo);
 		windowParams = params;
 		renderer = Renderer::Create();
-		imGuiVulkan = new ImGuiVulkan();
+		imGuiVulkan = CreateRef<ImGuiVulkan>();
 	}
 
 	Window::~Window()
 	{
 		glfwDestroyWindow(window);
 		glfwTerminate();
-		delete renderer;
 	}
 
 	void Window::OnCreate()
@@ -48,7 +47,8 @@ namespace Raytracing
 
 		renderer->SetGLFWwindow(window);
 		renderer->Init(width, height);
-		imGuiVulkan->Init(window, dynamic_cast<VulkanRenderer*>(renderer), width, height);
+
+		imGuiVulkan->Init(window, CAST_REF(VulkanRenderer, renderer), width, height);
 	}
 
 	void Window::OnUpdate()

@@ -8,6 +8,7 @@
 #include <vma/vk_mem_alloc.h>
 
 #include "GLFW/glfw3.h"
+#include "util/core.h"
 
 namespace Raytracing {
     class VulkanPipeline;
@@ -29,7 +30,7 @@ namespace Raytracing {
 
         ~VulkanDevice();
 
-        void DrawMesh(const VulkanPipeline* pipeline, const VulkanMesh* mesh) const;
+        void DrawMesh(Ref<VulkanPipeline> pipeline, const VulkanMesh* mesh) const;
 
         void DrawImGui() const;
 
@@ -59,7 +60,7 @@ namespace Raytracing {
         [[nodiscard]] VkSemaphore GetRenderFinishedSemaphore() const { return renderFinishedSemaphores[currentFrame]; }
         [[nodiscard]] VkCommandBuffer GetCurrentCommandBuffer() const { return commandBuffers[currentFrame]; }
         [[nodiscard]] VkCommandPool GetCommandPool() const { return commandPool; }
-        [[nodiscard]] VulkanSwapchain* GetSwapchain() const { return vulkanSwapChain; }
+        [[nodiscard]] Ref<VulkanSwapchain> GetSwapchain() const { return vulkanSwapChain; }
 
         VkSampleCountFlagBits GetMaxMSAASampleCount() const;
 
@@ -125,8 +126,8 @@ namespace Raytracing {
         VkDescriptorPool gui_descriptionPool = VK_NULL_HANDLE;
         VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
 
-        VulkanSwapchain* vulkanSwapChain{};
-        VulkanRenderPass* vulkanRenderPass{};
+        Ref<VulkanSwapchain> vulkanSwapChain{};
+        Ref<VulkanRenderPass> vulkanRenderPass{};
 
         VmaAllocator vmaAllocator;
     };

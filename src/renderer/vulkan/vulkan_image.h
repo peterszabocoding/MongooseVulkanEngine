@@ -1,6 +1,8 @@
 #pragma once
 #include <vulkan/vulkan_core.h>
 
+#include "util/core.h"
+
 namespace Raytracing
 {
     class VulkanDevice;
@@ -28,7 +30,7 @@ namespace Raytracing
         VulkanImageBuilder() = default;
         virtual ~VulkanImageBuilder() = default;
 
-        virtual VulkanImage* Build(VulkanDevice* device) = 0;
+        virtual Ref<VulkanImage> Build(VulkanDevice* device) = 0;
 
         void SetData(unsigned char* data, uint64_t size)
         {
@@ -89,7 +91,7 @@ namespace Raytracing
         VulkanTextureImageBuilder() = default;
         ~VulkanTextureImageBuilder() override = default;
 
-        virtual VulkanImage* Build(VulkanDevice* device) override;
+        virtual Ref<VulkanImage> Build(VulkanDevice* device) override;
     };
 
     class VulkanDepthImageBuilder : public VulkanImageBuilder {
@@ -97,6 +99,6 @@ namespace Raytracing
         VulkanDepthImageBuilder() = default;
         ~VulkanDepthImageBuilder() override = default;
 
-        virtual VulkanImage* Build(VulkanDevice* device) override;
+        virtual Ref<VulkanImage> Build(VulkanDevice* device) override;
     };
 }

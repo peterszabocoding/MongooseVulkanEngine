@@ -3,16 +3,15 @@
 #include "vulkan_device.h"
 #include "vulkan_image.h"
 
-namespace Raytracing {
+namespace Raytracing
+{
     class VulkanSwapchain {
     public:
         void CreateDepthImage(int width, int height);
         VulkanSwapchain(VulkanDevice* vulkanDevice, int width, int height);
-
         ~VulkanSwapchain();
 
         void RecreateSwapChain();
-
         void CleanupSwapChain() const;
 
         int GetViewportWidth() const { return viewportWidth; }
@@ -47,7 +46,7 @@ namespace Raytracing {
         int viewportWidth, viewportHeight;
 
         VulkanDevice* vulkanDevice;
-        VulkanImage* vulkanDepthImage = nullptr;
+        Ref<VulkanImage> vulkanDepthImage;
 
         VkSwapchainKHR swapChain;
         std::vector<VkImage> swapChainImages;

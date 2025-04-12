@@ -9,7 +9,7 @@ namespace Raytracing
 		ImGuiVulkan();
 		~ImGuiVulkan();
 
-		void Init(GLFWwindow* glfwWindow, VulkanRenderer* renderer, int width, int height);
+		void Init(GLFWwindow* glfwWindow, Ref<VulkanRenderer> renderer, int width, int height);
 		void Resize(int width, int height);
 		void DrawUi();
 
@@ -17,7 +17,7 @@ namespace Raytracing
 		void SetupImGui(int width, int height) const;
 
 	private:
-		VulkanRenderer* renderer = nullptr;
+		Ref<VulkanRenderer> renderer = nullptr;
 		GLFWwindow* glfwWindow = nullptr;
 	};
 }

@@ -3,11 +3,6 @@
 
 namespace Raytracing
 {
-	WindowsApplication::~WindowsApplication()
-	{
-		delete window;
-	}
-
 	void WindowsApplication::OnCreate()
 	{
 		std::cout << "Windows Application OnCreate" << '\n';
@@ -17,7 +12,7 @@ namespace Raytracing
 		params.width = applicationInfo.windowWidth;
 		params.height = applicationInfo.windowHeight;
 
-		window = new WindowsWindow(applicationInfo, params);
+		window = CreateScope<WindowsWindow>(applicationInfo, params);
 		window->SetOnWindowCloseCallback([&]()
 		{
 			isRunning = false;
@@ -29,10 +24,6 @@ namespace Raytracing
 	void WindowsApplication::Run()
 	{
 		std::cout << "Windows Application Run" << '\n';
-
-		while (isRunning)
-		{
-			window->OnUpdate();
-		}
+		while (isRunning) window->OnUpdate();
 	}
 }

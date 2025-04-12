@@ -9,22 +9,22 @@
 
 namespace Raytracing
 {
-    VulkanPipeline::VulkanPipeline(VulkanDevice* vulkanDevice, VulkanShader* shader, VkPipeline pipeline, VkPipelineLayout pipelineLayout)
+    VulkanPipeline::VulkanPipeline(VulkanDevice* vulkanDevice, Ref<VulkanShader> shader, VkPipeline pipeline,
+                                   VkPipelineLayout pipelineLayout)
         : vulkanDevice(vulkanDevice), shader(shader), pipeline(pipeline), pipelineLayout(pipelineLayout)
     {}
 
     VulkanPipeline::~VulkanPipeline()
     {
-        delete shader;
         vkDestroyPipeline(vulkanDevice->GetDevice(), pipeline, nullptr);
         vkDestroyPipelineLayout(vulkanDevice->GetDevice(), pipelineLayout, nullptr);
     }
 
     PipelineBuilder::PipelineBuilder() { clear(); }
 
-    VulkanPipeline* PipelineBuilder::build(VulkanDevice* vulkanDevice) const
+    Ref<VulkanPipeline> PipelineBuilder::build(VulkanDevice* vulkanDevice) const
     {
-        auto* shader = new VulkanShader(vulkanDevice, vertexShaderPath, fragmentShaderPath);
+        Ref<VulkanShader> shader = CreateRef<VulkanShader>(vulkanDevice, vertexShaderPath, fragmentShaderPath);
 
         auto binding_description = VulkanVertex::GetBindingDescription();
         auto attribute_descriptions = VulkanVertex::GetAttributeDescriptions();
@@ -90,7 +90,7 @@ namespace Raytracing
             vkCreateGraphicsPipelines(vulkanDevice->GetDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline),
             "Failed to create graphics pipeline.");
 
-        return new VulkanPipeline(vulkanDevice, shader, pipeline, pipelineLayout);
+        return CreateRef<VulkanPipeline>(vulkanDevice, shader, pipeline, pipelineLayout);
     }
 
     void PipelineBuilder::SetShaders(const std::string& vertexShaderPath,

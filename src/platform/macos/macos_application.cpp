@@ -15,7 +15,7 @@ namespace Raytracing
 		params.width = applicationInfo.windowWidth;
 		params.height = applicationInfo.windowHeight;
 
-		window = new MacOSWindow(applicationInfo, params);
+		window = CreateScope<MacOSWindow>(applicationInfo, params);
 		window->SetOnWindowCloseCallback([&]()
 		{
 			isRunning = false;
@@ -31,8 +31,7 @@ namespace Raytracing
 	void MacOSApplication::Run()
 	{
 		std::cout << "MacOSVulkanApplication Application Run" << '\n';
-		while (isRunning) 
-			window->OnUpdate();
+		while (isRunning) window->OnUpdate();
 	}
 	
 }

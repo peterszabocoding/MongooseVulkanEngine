@@ -8,13 +8,14 @@
 #include "camera.h"
 #include "math/hitable.h"
 #include "GLFW/glfw3.h"
+#include "util/core.h"
 
 namespace Raytracing
 {
 	class Renderer
 	{
 	public:
-		static Renderer* Create();
+		static Ref<Renderer> Create();
 
 		virtual ~Renderer() = default;
 		virtual void Render(const Camera& camera, const std::vector<Hitable*>& scene);

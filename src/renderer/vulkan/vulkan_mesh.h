@@ -2,6 +2,7 @@
 
 #include "renderer/mesh.h"
 #include "vulkan_buffer.h"
+#include "util/core.h"
 
 namespace Raytracing
 {
@@ -10,7 +11,7 @@ namespace Raytracing
     class VulkanMesh : public Mesh {
     public:
         VulkanMesh(VulkanDevice* vulkanDevice, const std::vector<Vertex>& vertices, const std::vector<uint16_t>& indices);
-        ~VulkanMesh() override;
+        ~VulkanMesh() override = default;
 
         void Bind(VkCommandBuffer commandBuffer) const;
 
@@ -20,7 +21,7 @@ namespace Raytracing
 
     private:
         VulkanDevice* vulkanDevice;
-        VulkanBuffer* vertexBuffer;
-        VulkanBuffer* indexBuffer;
+        Scope<VulkanBuffer> vertexBuffer;
+        Scope<VulkanBuffer> indexBuffer;
     };
 }

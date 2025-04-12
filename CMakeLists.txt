@@ -78,7 +78,6 @@ set(SOURCE_ONE_WEEKEND
         ./src/application/window.cpp
         ./src/application/application.cpp
 
-        ./src/renderer/shader.cpp
         ./src/renderer/renderer.cpp
         ./src/renderer/camera.cpp
         ./src/renderer/vulkan/vulkan_renderer.cpp

@@ -9,13 +9,14 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "vulkan_buffer.h"
+#include "util/core.h"
 
-namespace Raytracing {
+namespace Raytracing
+{
     class VulkanDevice;
     class VulkanImage;
 
-    struct UniformBufferObject
-    {
+    struct UniformBufferObject {
         glm::mat4 model;
         glm::mat4 view;
         glm::mat4 proj;
@@ -23,12 +24,12 @@ namespace Raytracing {
 
     class VulkanShader {
     public:
-        VulkanShader(VulkanDevice *device, const std::string &vertexShaderPath, const std::string &fragmentShaderPath);
+        VulkanShader(VulkanDevice* device, const std::string& vertexShaderPath, const std::string& fragmentShaderPath);
         ~VulkanShader();
 
-        void Load(const std::string &vertexShaderPath, const std::string &fragmentShaderPath);
-        void SetImage(const VulkanImage* vulkanImage) const;
-        void UpdateUniformBuffer(const UniformBufferObject &ubo) const;
+        void Load(const std::string& vertexShaderPath, const std::string& fragmentShaderPath);
+        void SetImage(Ref<VulkanImage> vulkanImage) const;
+        void UpdateUniformBuffer(const UniformBufferObject& ubo) const;
 
         std::vector<VkPipelineShaderStageCreateInfo>& GetPipelineShaderStageCreateInfos() { return pipelineShaderStageCreateInfos; };
         VkDescriptorSetLayout& GetDescriptorSetLayout() { return descriptorSetLayout; }

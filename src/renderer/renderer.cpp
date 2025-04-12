@@ -6,9 +6,9 @@
 
 namespace Raytracing
 {
-	Renderer* Renderer::Create()
+	Ref<Renderer> Renderer::Create()
 	{
-		return new VulkanRenderer();
+		return CreateRef<VulkanRenderer>();
 	}
 
 	void Renderer::Render(const Camera& camera, const std::vector<Hitable*>& scene)
@@ -18,23 +18,23 @@ namespace Raytracing
 
 		OnRenderBegin(camera);
 
-		double viewport_height = 2.0;
-		double viewport_width = viewport_height * camera.AspectRatio();
+		const double viewport_height = 2.0;
+		const double viewport_width = viewport_height * camera.AspectRatio();
 
 		std::cout << "viewport: w: " << viewport_width << " h: " << viewport_height << std::endl;
 
 		// Calculate the vectors across the horizontal and down the vertical viewport edges.
-		vec3 viewport_u = vec3(viewport_width, 0, 0);
-		vec3 viewport_v = vec3(0, viewport_height, 0);
+		const vec3 viewport_u = vec3(viewport_width, 0, 0);
+		const vec3 viewport_v = vec3(0, viewport_height, 0);
 
 		// Calculate the horizontal and vertical delta vectors from pixel to pixel.
-		vec3 pixel_delta_u = viewport_u / camera.Width();
-		vec3 pixel_delta_v = viewport_v / camera.Height();
+		const vec3 pixel_delta_u = viewport_u / camera.Width();
+		const vec3 pixel_delta_v = viewport_v / camera.Height();
 
 		// Calculate the location of the upper left pixel.
-		vec3 viewport_upper_left = camera.Position()
+		const vec3 viewport_upper_left = camera.Position()
 			- vec3(0, 0, camera.FocalLength()) - viewport_u / 2 - viewport_v / 2;
-		vec3 pixel00_loc = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
+		const vec3 pixel00_loc = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
 
 		// Render
 		for (int y = 0; y < camera.Height(); y++)
@@ -46,16 +46,16 @@ namespace Raytracing
 				Ray ray = Ray(camera.Position(), ray_direction);
 
 				vec3 pixelColor = GetSkyColor(ray);
-				for (auto hitable : scene)
+				for (const auto hitable : scene)
 				{
 					HitRecord hitRecord;
-					bool wasHit = hitable->Hit(ray, 0.01, 100.0, hitRecord);
+					const bool wasHit = hitable->Hit(ray, 0.01, 100.0, hitRecord);
 					if (!wasHit) continue;
 
 					pixelColor = RayColor(ray, hitRecord.normal);
 				}
 
-				unsigned int pixelCount = x + y * camera.Width();
+				const unsigned int pixelCount = x + y * camera.Width();
 				ProcessPixel(pixelCount, pixelColor);
 			}
 		}
@@ -72,8 +72,8 @@ namespace Raytracing
 
 	vec3 Renderer::GetSkyColor(const Ray& r)
 	{
-		vec3 unit_direction = normalize(r.direction());
-		auto a = 0.5 * (unit_direction.y() + 1.0);
+		const vec3 unit_direction = normalize(r.direction());
+		const auto a = 0.5 * (unit_direction.y() + 1.0);
 		return (1.0 - a) * vec3(1.0, 1.0, 1.0) + a * vec3(0.5, 0.7, 1.0);
 	}
 }

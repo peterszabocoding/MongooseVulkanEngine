@@ -54,7 +54,7 @@ namespace Raytracing
         pipelineShaderStageCreateInfos.push_back(frag_shader_stage_create_info);
     }
 
-    void VulkanShader::SetImage(const VulkanImage* vulkanImage) const
+    void VulkanShader::SetImage(Ref<VulkanImage> vulkanImage) const
     {
         VkDescriptorBufferInfo bufferInfo{};
         bufferInfo.buffer = uniformBuffer->GetBuffer();
@@ -116,7 +116,7 @@ namespace Raytracing
         layoutInfo.pBindings = bindings.data();
 
         VK_CHECK_MSG(vkCreateDescriptorSetLayout(vulkanDevice->GetDevice(), &layoutInfo, nullptr, &descriptorSetLayout),
-                 "Failed to create descriptor set layout.");
+                     "Failed to create descriptor set layout.");
     }
 
     void VulkanShader::CreateDescriptorSet()
@@ -139,6 +139,5 @@ namespace Raytracing
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
             VMA_MEMORY_USAGE_CPU_TO_GPU);
-
     }
 }

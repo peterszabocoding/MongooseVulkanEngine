@@ -19,7 +19,7 @@ namespace Raytracing
         ImGui::DestroyContext();
     }
 
-    void ImGuiVulkan::Init(GLFWwindow* window, VulkanRenderer* vulkanRenderer, const int width, const int height)
+    void ImGuiVulkan::Init(GLFWwindow* window, Ref<VulkanRenderer> vulkanRenderer, const int width, const int height)
     {
         renderer = vulkanRenderer;
         glfwWindow = window;

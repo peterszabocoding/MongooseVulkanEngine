@@ -18,6 +18,6 @@ namespace Raytracing
 
 	private:
 		bool isRunning;
-		MacOSWindow* window;
+		Scope<MacOSWindow> window;
 	};
 }

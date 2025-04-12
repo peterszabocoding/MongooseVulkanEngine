@@ -12,15 +12,12 @@
 namespace Raytracing {
     VulkanRenderer::~VulkanRenderer() {
         delete vulkanDevice;
-        delete graphicsPipeline;
-        delete vulkanImage;
     }
 
     void VulkanRenderer::Init(const int width, const int height) {
         vulkanDevice = new VulkanDevice(width, height, glfwWindow);
 
         mesh = new VulkanMesh(vulkanDevice, Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
-
 
         std::string image_path = "textures/texture.jpg";
 

@@ -37,7 +37,7 @@ namespace Raytracing
 		GLFWwindow* window;
 		OnWindowCloseCallback windowCloseCallback;
 
-		Renderer* renderer = nullptr;
-		ImGuiVulkan* imGuiVulkan = nullptr;
+		Ref<Renderer> renderer;
+		Ref<ImGuiVulkan> imGuiVulkan;
 	};
 }

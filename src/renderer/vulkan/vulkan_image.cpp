@@ -183,7 +183,7 @@ namespace Raytracing
         VulkanUtils::EndSingleTimeCommands(device->GetDevice(), device->GetCommandPool(), device->GetGraphicsQueue(), commandBuffer);
     }
 
-    VulkanImage* VulkanTextureImageBuilder::Build(VulkanDevice* device)
+    Ref<VulkanImage> VulkanTextureImageBuilder::Build(VulkanDevice* device)
     {
         const auto stagingBuffer = VulkanBuffer(device, size,
                                                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -203,10 +203,10 @@ namespace Raytracing
         imageView = CreateImageView(device, VK_IMAGE_ASPECT_COLOR_BIT);
         sampler = CreateSampler(device);
 
-        return new VulkanImage(device, image, imageMemory, imageView, sampler);
+        return CreateRef<VulkanImage>(device, image, imageMemory, imageView, sampler);
     }
 
-    VulkanImage* VulkanDepthImageBuilder::Build(VulkanDevice* device)
+    Ref<VulkanImage> VulkanDepthImageBuilder::Build(VulkanDevice* device)
     {
         format = VK_FORMAT_D24_UNORM_S8_UINT;
         tiling = VK_IMAGE_TILING_OPTIMAL;
@@ -218,6 +218,6 @@ namespace Raytracing
         imageView = CreateImageView(device, VK_IMAGE_ASPECT_DEPTH_BIT);
         sampler = CreateSampler(device);
 
-        return new VulkanImage(device, image, imageMemory, imageView, sampler);
+        return CreateRef<VulkanImage>(device, image, imageMemory, imageView, sampler);
     }
 }

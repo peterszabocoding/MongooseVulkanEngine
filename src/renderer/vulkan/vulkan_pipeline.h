@@ -9,16 +9,16 @@ namespace Raytracing
 
     class VulkanPipeline {
     public:
-        explicit VulkanPipeline(VulkanDevice* vulkanDevice, VulkanShader* shader, VkPipeline pipeline, VkPipelineLayout pipelineLayout);
+        explicit VulkanPipeline(VulkanDevice* vulkanDevice, Ref<VulkanShader> shader, VkPipeline pipeline, VkPipelineLayout pipelineLayout);
         ~VulkanPipeline();
 
         VkPipeline GetPipeline() const { return pipeline; }
         VkPipelineLayout GetPipelineLayout() const { return pipelineLayout; }
-        VulkanShader* GetShader() const { return shader; }
+        Ref<VulkanShader> GetShader() const { return shader; }
 
     private:
         VulkanDevice* vulkanDevice;
-        VulkanShader* shader;
+        Ref<VulkanShader> shader;
         VkPipeline pipeline{};
         VkPipelineLayout pipelineLayout{};
     };
@@ -27,7 +27,7 @@ namespace Raytracing
     public:
         PipelineBuilder();
         ~PipelineBuilder() = default;
-        VulkanPipeline* build(VulkanDevice* vulkanDevice) const;
+        Ref<VulkanPipeline> build(VulkanDevice* vulkanDevice) const;
 
     public:
         void SetShaders(const std::string& vertexShaderPath, const std::string& fragmentShaderPath);
