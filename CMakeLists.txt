@@ -81,7 +81,7 @@ set(SOURCE_ONE_WEEKEND
         ./src/renderer/shader.cpp
         ./src/renderer/renderer.cpp
         ./src/renderer/camera.cpp
-        ./src/renderer/vulkan/vulkanRenderer.cpp
+        ./src/renderer/vulkan/vulkan_renderer.cpp
         ./src/renderer/vulkan/vulkan_pipeline.cpp
         ./src/renderer/vulkan/vulkan_device.cpp
         ./src/renderer/vulkan/vulkan_image.cpp
@@ -94,13 +94,13 @@ set(SOURCE_ONE_WEEKEND
 )
 
 set(SOURCE_ONE_WEEKEND_APPLE
-        ./src/platform/macos/macosApplication.cpp
-        ./src/platform/macos/macosWindow.cpp
+        src/platform/macos/macos_application.cpp
+        src/platform/macos/macos_window.cpp
 )
 
 set(SOURCE_ONE_WEEKEND_WINDOWS
-        ./src/platform/windows/windowsApplication.cpp
-        ./src/platform/windows/windowsWindow.cpp
+        src/platform/windows/windows_application.cpp
+        src/platform/windows/windows_window.cpp
 )
 
 include_directories("src/")

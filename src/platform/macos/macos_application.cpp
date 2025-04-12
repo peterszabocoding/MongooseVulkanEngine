@@ -1,4 +1,4 @@
-#include "macosApplication.h"
+#include "macos_application.h"
 #include <iostream>
 
 namespace Raytracing

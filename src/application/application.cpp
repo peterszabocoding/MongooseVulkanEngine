@@ -5,7 +5,7 @@
 #endif
 
 #ifdef PLATFORM_WINDOWS
-#include "platform/windows/windowsApplication.h"
+#include "platform/windows/windows_application.h"
 #endif
 
 namespace Raytracing

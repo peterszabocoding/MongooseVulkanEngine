@@ -1,21 +1,23 @@
 #pragma once
 
 #include "application/application.h"
-#include "windowsWindow.h"
+#include "macos_window.h"
 
 namespace Raytracing
 {
-	class WindowsApplication : public Application
+	class MacOSApplication : public Application
 	{
 	public:
-		WindowsApplication() = default;
-		~WindowsApplication() override;
+		MacOSApplication();
+		~MacOSApplication() override = default;
 
 		virtual void OnCreate() override;
 		virtual void Run() override;
 
+		void CreateWindow();
+
 	private:
 		bool isRunning;
-		WindowsWindow* window;
+		MacOSWindow* window;
 	};
 }

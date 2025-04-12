@@ -2,7 +2,7 @@
 #include "util/timer.h"
 
 #include "math/vec3.h"
-#include "platform/windows/windowsApplication.h"
+#include "platform/windows/windows_application.h"
 
 namespace Raytracing
 {

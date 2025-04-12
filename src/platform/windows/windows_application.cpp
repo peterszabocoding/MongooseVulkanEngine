@@ -1,4 +1,4 @@
-#include "windowsApplication.h"
+#include "windows_application.h"
 #include <iostream>
 
 namespace Raytracing

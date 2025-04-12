@@ -1,7 +1,7 @@
 #pragma once
 
 #include <string>
-#include "util/Core.h"
+#include "util/core.h"
 
 class Window;
 

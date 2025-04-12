@@ -1,4 +1,4 @@
-#include "windowsWindow.h"
+#include "windows_window.h"
 
 namespace Raytracing
 {

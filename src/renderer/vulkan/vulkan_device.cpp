@@ -4,7 +4,7 @@
 #include <iostream>
 #include <backends/imgui_impl_vulkan.h>
 
-#include "util/Core.h"
+#include "util/core.h"
 #include "vulkan_mesh.h"
 #include "vulkan_utils.h"
 #include "vulkan_pipeline.h"

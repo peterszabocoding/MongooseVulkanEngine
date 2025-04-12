@@ -1,7 +1,7 @@
 #pragma once
 
 #include "application/window.h"
-#include "renderer/vulkan/vulkanRenderer.h"
+#include "renderer/vulkan/vulkan_renderer.h"
 
 class AppInfo;
 

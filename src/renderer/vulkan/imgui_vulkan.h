@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "renderer/vulkan/vulkanRenderer.h"
+#include "renderer/vulkan/vulkan_renderer.h"
 
 namespace Raytracing
 {
