@@ -67,8 +67,8 @@ namespace Raytracing
         VkImageView CreateImageView(const VulkanDevice* device, VkImageAspectFlags aspectFlags) const;
         VkSampler CreateSampler(const VulkanDevice* device) const;
 
-        void TransitionImageLayout(const VulkanDevice* device, VkImageLayout oldLayout, VkImageLayout newLayout) const;
-        void CopyBufferToImage(const VulkanDevice* device, VkBuffer buffer) const;
+        void TransitionImageLayout(VkCommandBuffer commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout) const;
+        void CopyBufferToImage(VkCommandBuffer commandBuffer, VkBuffer buffer) const;
 
     protected:
         unsigned char* data;

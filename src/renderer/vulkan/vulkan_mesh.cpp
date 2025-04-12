@@ -26,13 +26,17 @@ namespace Raytracing
 
         memcpy(stagingBuffer.GetMappedData(), vertices.data(), bufferSize);
 
+        VkBufferUsageFlags vertexBufferUsageBits =
+                VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+        
         vertexBuffer = CreateScope<VulkanBuffer>(vulkanDevice,
-            bufferSize,
-            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            VMA_MEMORY_USAGE_GPU_ONLY);
+                                                 bufferSize,
+                                                 vertexBufferUsageBits,
+                                                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                                 VMA_MEMORY_USAGE_GPU_ONLY);
 
-        VulkanBuffer::CopyBuffer(vulkanDevice, vulkanDevice->GetGraphicsQueue(), &stagingBuffer, vertexBuffer.get());
+        VulkanBuffer::CopyBuffer(vulkanDevice, &stagingBuffer, vertexBuffer.get());
     }
 
     void VulkanMesh::CreateIndexBuffer()
@@ -47,13 +51,17 @@ namespace Raytracing
 
         memcpy(stagingBuffer.GetMappedData(), indices.data(), bufferSize);
 
-        indexBuffer = CreateScope<VulkanBuffer>(vulkanDevice,
-            bufferSize,
-            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            VMA_MEMORY_USAGE_GPU_ONLY);
+        VkBufferUsageFlags indexBufferUsageBits =
+                VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 
-        VulkanBuffer::CopyBuffer(vulkanDevice, vulkanDevice->GetGraphicsQueue(), &stagingBuffer, indexBuffer.get());
+        indexBuffer = CreateScope<VulkanBuffer>(vulkanDevice,
+                                                bufferSize,
+                                                indexBufferUsageBits,
+                                                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                                VMA_MEMORY_USAGE_GPU_ONLY);
+
+        VulkanBuffer::CopyBuffer(vulkanDevice, &stagingBuffer, indexBuffer.get());
     }
 
     void VulkanMesh::Bind(VkCommandBuffer commandBuffer) const

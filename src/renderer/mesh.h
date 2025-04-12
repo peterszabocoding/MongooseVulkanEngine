@@ -9,6 +9,7 @@ namespace Raytracing
 {
     struct Vertex {
         glm::vec3 pos;
+        glm::vec3 normal;
         glm::vec3 color;
         glm::vec2 texCoord;
     };
@@ -58,10 +59,10 @@ namespace Raytracing
         };
 
         const std::vector<Vertex> RECTANGLE_VERTICES = {
-            {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-            {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-            {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-            {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
+            {{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, -1.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+            {{1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, -1.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+            {{1.0f, 1.0f, 0.0f}, {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+            {{-1.0f, 1.0f, 0.0f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
         };
     }
 
@@ -72,9 +73,10 @@ namespace Raytracing
             this->vertices = vertices;
             this->indices = indices;
         }
+
         virtual ~Mesh() {};
 
-       uint32_t GetIndexCount() const { return indices.size(); };
+        uint32_t GetIndexCount() const { return indices.size(); };
 
     protected:
         std::vector<Vertex> vertices;

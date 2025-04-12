@@ -17,40 +17,15 @@ namespace Raytracing
         vmaDestroyBuffer(vulkanDevice->GetVmaAllocator(), allocatedBuffer.buffer, allocatedBuffer.allocation);
     }
 
-    void VulkanBuffer::CopyBuffer(const VulkanDevice* vulkanDevice, const VkQueue queue, const VulkanBuffer* src, const VulkanBuffer* dst)
+    void VulkanBuffer::CopyBuffer(const VulkanDevice* vulkanDevice, const VulkanBuffer* src, const VulkanBuffer* dst)
     {
-        VkCommandBufferAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        allocInfo.commandPool = vulkanDevice->GetCommandPool();
-        allocInfo.commandBufferCount = 1;
-
-        VkCommandBuffer commandBuffer;
-        vkAllocateCommandBuffers(vulkanDevice->GetDevice(), &allocInfo, &commandBuffer);
-
-        VkCommandBufferBeginInfo beginInfo{};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-        vkBeginCommandBuffer(commandBuffer, &beginInfo);
-
-        VkBufferCopy copy_region;
-        copy_region.srcOffset = 0; // Optional
-        copy_region.dstOffset = 0; // Optional
-        copy_region.size = src->GetBufferSize();
-        vkCmdCopyBuffer(commandBuffer, src->GetBuffer(), dst->GetBuffer(), 1, &copy_region);
-
-        vkEndCommandBuffer(commandBuffer);
-
-        VkSubmitInfo submitInfo{};
-        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &commandBuffer;
-
-        vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
-        vkQueueWaitIdle(queue);
-
-        vkFreeCommandBuffers(vulkanDevice->GetDevice(), vulkanDevice->GetCommandPool(), 1, &commandBuffer);
+        vulkanDevice->ImmediateSubmit([&](VkCommandBuffer commandBuffer) {
+            VkBufferCopy copy_region;
+            copy_region.srcOffset = 0; // Optional
+            copy_region.dstOffset = 0; // Optional
+            copy_region.size = src->GetBufferSize();
+            vkCmdCopyBuffer(commandBuffer, src->GetBuffer(), dst->GetBuffer(), 1, &copy_region);
+        });
     }
 
     void VulkanBuffer::CreateBuffer(const VkDeviceSize size, const VkBufferUsageFlags usage, const VkMemoryPropertyFlags properties,
@@ -73,5 +48,11 @@ namespace Raytracing
             &allocatedBuffer.buffer,
             &allocatedBuffer.allocation,
             &allocatedBuffer.info));
+
+        VkBufferDeviceAddressInfo deviceAdressInfo{};
+        deviceAdressInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+        deviceAdressInfo.buffer = allocatedBuffer.buffer;
+
+        allocatedBuffer.address = vkGetBufferDeviceAddress(vulkanDevice->GetDevice(), &deviceAdressInfo);
     }
 }

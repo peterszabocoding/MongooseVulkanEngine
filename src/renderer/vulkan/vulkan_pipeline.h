@@ -41,6 +41,8 @@ namespace Raytracing
         void EnableDepthTest();
         void DisableDepthTest();
 
+        void AddPushConstant();
+
     public:
         std::string vertexShaderPath;
         std::string fragmentShaderPath;
@@ -51,6 +53,8 @@ namespace Raytracing
         VkPipelineDepthStencilStateCreateInfo depthStencil{};
         VkPipelineRenderingCreateInfo renderInfo{};
         VkFormat colorAttachmentformat;
+
+        std::vector<VkPushConstantRange> pushConstantRanges;
 
     private:
         void clear();

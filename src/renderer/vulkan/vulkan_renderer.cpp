@@ -14,6 +14,11 @@ namespace Raytracing {
         vulkanDevice = new VulkanDevice(width, height, glfwWindow);
 
         mesh = new VulkanMesh(vulkanDevice, Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
+        mesh2 = new VulkanMesh(vulkanDevice, Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
+
+        transform.m_Position = glm::vec3(0.0f, 0.0f, 0.0f);
+        transform2.m_Position = glm::vec3(0.0f, 0.0f, 0.5f);
+        transform2.m_Scale = glm::vec3(0.5f, 0.5f, 0.5f);
 
         const ImageResource imageResource = ResourceManager::LoadImage("textures/texture.jpg");
 
@@ -36,34 +41,39 @@ namespace Raytracing {
         builder.DisableBlending();
         builder.SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
         builder.SetMultisampling(VK_SAMPLE_COUNT_1_BIT);
+        builder.AddPushConstant();
 
         graphicsPipeline = builder.build(vulkanDevice);
         graphicsPipeline->GetShader()->SetImage(vulkanImage);
     }
 
     void VulkanRenderer::DrawFrame() {
-        static auto start_time = std::chrono::high_resolution_clock::now();
-        const auto current_time = std::chrono::high_resolution_clock::now();
-        const float time = std::chrono::duration<float>(current_time - start_time).count();
-
-        UniformBufferObject ubo{};
-        const float aspectRatio = vulkanDevice->GetSwapchain()->GetViewportWidth() / static_cast<float>(vulkanDevice->GetSwapchain()->
-                                GetViewportHeight());
-
-        glm::mat4 transform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-        transform = glm::rotate(transform, time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        transform = glm::scale(transform, glm::vec3(1.0f));
-
-        ubo.model = transform;
-        ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        ubo.proj = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 10.0f);
-        ubo.proj[1][1] *= -1;
-
         const bool result = vulkanDevice->BeginFrame();
         if (!result) return;
 
-        graphicsPipeline->GetShader()->UpdateUniformBuffer(ubo);
-        vulkanDevice->DrawMesh(graphicsPipeline, mesh);
+        float time = glfwGetTime();
+        float deltaTime = time - lastFrameTime;
+        lastFrameTime = time;
+
+        const float aspectRatio = vulkanDevice->GetSwapchain()->GetViewportWidth() / static_cast<float>(vulkanDevice->GetSwapchain()->
+                                      GetViewportHeight());
+
+        transform.m_Rotation += deltaTime * 90.0f * glm::vec3(0.0f, 0.0f, 1.0f);
+        transform2.m_Rotation += deltaTime * 90.0f * glm::vec3(0.0f, 0.0f, 1.0f);
+
+        glm::mat4 view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        glm::mat4 proj = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 10.0f);
+        proj[1][1] *= -1;
+
+        SimplePushConstantData push1;
+        push1.transform = proj * view * transform.GetTransform();
+
+        SimplePushConstantData push2;
+        push2.transform = proj * view * transform2.GetTransform();
+
+        vulkanDevice->DrawMesh(graphicsPipeline, mesh, push1);
+        vulkanDevice->DrawMesh(graphicsPipeline, mesh2, push2);
+
         vulkanDevice->DrawImGui();
 
         vulkanDevice->EndFrame();

@@ -1,8 +1,11 @@
 #pragma once
 
+#include <glm/vec3.hpp>
+
 #include "renderer/renderer.h"
 #include "vulkan_device.h"
 #include "vulkan_image.h"
+#include "renderer/components.h"
 
 namespace Raytracing
 {
@@ -29,5 +32,11 @@ namespace Raytracing
 		Ref<VulkanPipeline> graphicsPipeline;
 		Ref<VulkanImage> vulkanImage;
 		VulkanMesh* mesh;
+		VulkanMesh* mesh2;
+		Transform transform;
+		Transform transform2;
+
+		float lastFrameTime = 0.0f;
+
 	};
 }

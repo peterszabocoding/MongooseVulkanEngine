@@ -5,12 +5,15 @@
 
 #define GLFW_INCLUDE_VULKAN
 
+#include <functional>
 #include <vma/vk_mem_alloc.h>
 
 #include "GLFW/glfw3.h"
 #include "util/core.h"
 
-namespace Raytracing {
+namespace Raytracing
+{
+    struct SimplePushConstantData;
     class VulkanPipeline;
     class VulkanSwapchain;
     class VulkanRenderPass;
@@ -30,7 +33,7 @@ namespace Raytracing {
 
         ~VulkanDevice();
 
-        void DrawMesh(Ref<VulkanPipeline> pipeline, const VulkanMesh* mesh) const;
+        void DrawMesh(Ref<VulkanPipeline> pipeline, const VulkanMesh* mesh, SimplePushConstantData pushConstantData) const;
 
         void DrawImGui() const;
 
@@ -39,6 +42,8 @@ namespace Raytracing {
         void EndFrame();
 
         void ResizeFramebuffer() { framebufferResized = true; }
+
+        void ImmediateSubmit(std::function<void (VkCommandBuffer commandBuffer)>&& function) const;
 
         VkSurfaceKHR CreateSurface(GLFWwindow* glfwWindow) const;
 
@@ -56,9 +61,6 @@ namespace Raytracing {
         [[nodiscard]] VkQueue GetGraphicsQueue() const { return graphicsQueue; }
         [[nodiscard]] VkQueue GetPresentQueue() const { return presentQueue; }
         [[nodiscard]] VkRenderPass GetRenderPass() const { return vulkanRenderPass->Get(); }
-        [[nodiscard]] VkSemaphore GetImageAvailableSemaphore() const { return imageAvailableSemaphores[currentFrame]; }
-        [[nodiscard]] VkSemaphore GetRenderFinishedSemaphore() const { return renderFinishedSemaphores[currentFrame]; }
-        [[nodiscard]] VkCommandBuffer GetCurrentCommandBuffer() const { return commandBuffers[currentFrame]; }
         [[nodiscard]] VkCommandPool GetCommandPool() const { return commandPool; }
         [[nodiscard]] Ref<VulkanSwapchain> GetSwapchain() const { return vulkanSwapChain; }
 
@@ -75,8 +77,8 @@ namespace Raytracing {
 
     private:
         static VkInstance CreateVkInstance(
-            const std::vector<const char *>& deviceExtensions,
-            const std::vector<const char *>& validationLayers);
+            const std::vector<const char*>& deviceExtensions,
+            const std::vector<const char*>& validationLayers);
 
 
         void Init(int width, int height, GLFWwindow* glfwWindow);

@@ -14,7 +14,8 @@ namespace Raytracing
         vkFreeMemory(device->GetDevice(), imageMemory, nullptr);
     }
 
-    VkDeviceMemory VulkanImageBuilder::AllocateImageMemory(const VulkanDevice* device, const VkImage image, const VkMemoryPropertyFlags properties)
+    VkDeviceMemory VulkanImageBuilder::AllocateImageMemory(const VulkanDevice* device, const VkImage image,
+                                                           const VkMemoryPropertyFlags properties)
     {
         VkMemoryRequirements memRequirements;
         vkGetImageMemoryRequirements(device->GetDevice(), image, &memRequirements);
@@ -108,10 +109,9 @@ namespace Raytracing
         return sampler;
     }
 
-    void VulkanImageBuilder::TransitionImageLayout(const VulkanDevice* device, const VkImageLayout oldLayout, const VkImageLayout newLayout) const
+    void VulkanImageBuilder::TransitionImageLayout(VkCommandBuffer commandBuffer, const VkImageLayout oldLayout,
+                                                   const VkImageLayout newLayout) const
     {
-        const VkCommandBuffer commandBuffer = VulkanUtils::BeginSingleTimeCommands(device->GetDevice(), device->GetCommandPool());
-
         VkImageMemoryBarrier barrier{};
         barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
         barrier.oldLayout = oldLayout;
@@ -150,14 +150,10 @@ namespace Raytracing
         }
 
         vkCmdPipelineBarrier(commandBuffer, 0, 0, 0, 0, nullptr, 0, nullptr, 1, &barrier);
-
-        VulkanUtils::EndSingleTimeCommands(device->GetDevice(), device->GetCommandPool(), device->GetGraphicsQueue(), commandBuffer);
     }
 
-    void VulkanImageBuilder::CopyBufferToImage(const VulkanDevice* device, const VkBuffer buffer) const
+    void VulkanImageBuilder::CopyBufferToImage(VkCommandBuffer commandBuffer, const VkBuffer buffer) const
     {
-        const VkCommandBuffer commandBuffer = VulkanUtils::BeginSingleTimeCommands(device->GetDevice(), device->GetCommandPool());
-
         VkBufferImageCopy region{};
         region.bufferOffset = 0;
         region.bufferRowLength = 0;
@@ -179,8 +175,6 @@ namespace Raytracing
             1,
             &region
         );
-
-        VulkanUtils::EndSingleTimeCommands(device->GetDevice(), device->GetCommandPool(), device->GetGraphicsQueue(), commandBuffer);
     }
 
     Ref<VulkanImage> VulkanTextureImageBuilder::Build(VulkanDevice* device)
@@ -196,9 +190,17 @@ namespace Raytracing
         image = CreateImage(device, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
         imageMemory = AllocateImageMemory(device, image, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-        TransitionImageLayout(device, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-        CopyBufferToImage(device, stagingBuffer.GetBuffer());
-        TransitionImageLayout(device, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        device->ImmediateSubmit([&](VkCommandBuffer cmd) {
+            TransitionImageLayout(cmd, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        });
+
+        device->ImmediateSubmit([&](VkCommandBuffer cmd) {
+            CopyBufferToImage(cmd, stagingBuffer.GetBuffer());
+        });
+
+        device->ImmediateSubmit([&](VkCommandBuffer cmd) {
+            TransitionImageLayout(cmd, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        });
 
         imageView = CreateImageView(device, VK_IMAGE_ASPECT_COLOR_BIT);
         sampler = CreateSampler(device);

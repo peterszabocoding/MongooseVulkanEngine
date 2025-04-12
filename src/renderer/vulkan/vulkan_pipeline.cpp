@@ -62,6 +62,8 @@ namespace Raytracing
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 1;
         pipelineLayoutInfo.pSetLayouts = &shader->GetDescriptorSetLayout();
+        pipelineLayoutInfo.pushConstantRangeCount = pushConstantRanges.size();
+        pipelineLayoutInfo.pPushConstantRanges = pushConstantRanges.data();
 
         VkPipelineLayout pipelineLayout{};
         VK_CHECK_MSG(
@@ -163,6 +165,16 @@ namespace Raytracing
         depthStencil.back = {};
         depthStencil.minDepthBounds = 0.0f;
         depthStencil.maxDepthBounds = 1.0f;
+    }
+
+    void PipelineBuilder::AddPushConstant()
+    {
+        VkPushConstantRange pushConstantRange{};
+        pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+        pushConstantRange.offset = 0;
+        pushConstantRange.size = sizeof(SimplePushConstantData);
+
+        pushConstantRanges.push_back(pushConstantRange);
     }
 
     void PipelineBuilder::EnableDepthTest()
