@@ -1,13 +1,9 @@
 #include "vulkan_renderer.h"
-
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image/stb_image.h>
-
 #include "vulkan_mesh.h"
 #include "vulkan_pipeline.h"
 #include "vulkan_swapchain.h"
 #include "renderer/mesh.h"
-
+#include "resource/resource_manager.h"
 
 namespace Raytracing {
     VulkanRenderer::~VulkanRenderer() {
@@ -19,25 +15,18 @@ namespace Raytracing {
 
         mesh = new VulkanMesh(vulkanDevice, Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
 
-        std::string image_path = "textures/texture.jpg";
-
-        int tex_width, tex_height, tex_channels;
-        stbi_uc *pixels = stbi_load(image_path.c_str(), &tex_width, &tex_height, &tex_channels, STBI_rgb_alpha);
-        VkDeviceSize imageSize = tex_width * tex_height * 4;
-
-        if (!pixels)
-            throw std::runtime_error("Failed to load texture image.");
+        const ImageResource imageResource = ResourceManager::LoadImage("textures/texture.jpg");
 
         VulkanTextureImageBuilder textureImageBuilder;
-        textureImageBuilder.SetData(pixels, imageSize);
-        textureImageBuilder.SetResolution(tex_width, tex_height);
+        textureImageBuilder.SetData(imageResource.data, imageResource.size);
+        textureImageBuilder.SetResolution(imageResource.width, imageResource.height);
         textureImageBuilder.SetFormat(VK_FORMAT_R8G8B8A8_SRGB);
         textureImageBuilder.SetFilter(VK_FILTER_LINEAR, VK_FILTER_LINEAR);
         textureImageBuilder.SetTiling(VK_IMAGE_TILING_OPTIMAL);
 
         vulkanImage = textureImageBuilder.Build(vulkanDevice);
 
-        stbi_image_free(pixels);
+        ResourceManager::ReleaseImage(imageResource);
 
         auto builder = PipelineBuilder();
         builder.SetShaders("shader/spv/vert.spv", "shader/spv/frag.spv");
@@ -58,7 +47,7 @@ namespace Raytracing {
         const float time = std::chrono::duration<float>(current_time - start_time).count();
 
         UniformBufferObject ubo{};
-        float aspectRatio = vulkanDevice->GetSwapchain()->GetViewportWidth() / static_cast<float>(vulkanDevice->GetSwapchain()->
+        const float aspectRatio = vulkanDevice->GetSwapchain()->GetViewportWidth() / static_cast<float>(vulkanDevice->GetSwapchain()->
                                 GetViewportHeight());
 
         glm::mat4 transform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));

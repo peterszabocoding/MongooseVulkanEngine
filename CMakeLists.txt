@@ -90,6 +90,8 @@ set(SOURCE_ONE_WEEKEND
         ./src/renderer/vulkan/vulkan_buffer.cpp
         ./src/renderer/vulkan/vulkan_mesh.cpp
         ./src/renderer/vulkan/imgui_vulkan.cpp
+
+        ./src/resource/resource_manager.cpp
 )
 
 set(SOURCE_ONE_WEEKEND_APPLE
