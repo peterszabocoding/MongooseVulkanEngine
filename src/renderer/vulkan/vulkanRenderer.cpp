@@ -1,7 +1,13 @@
 #include "vulkanRenderer.h"
+
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image/stb_image.h>
+
+#include "vulkan_mesh.h"
 #include "vulkan_pipeline.h"
 #include "vulkan_swapchain.h"
-#include "vulkan_texture_image.h"
+#include "renderer/mesh.h"
+
 
 namespace Raytracing {
     VulkanRenderer::~VulkanRenderer() {
@@ -14,7 +20,27 @@ namespace Raytracing {
         vulkanDevice = new VulkanDevice(width, height, glfwWindow);
 
         mesh = new VulkanMesh(vulkanDevice, Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
-        vulkanImage = new VulkanTextureImage(vulkanDevice, "textures/texture.jpg");
+
+
+        std::string image_path = "textures/texture.jpg";
+
+        int tex_width, tex_height, tex_channels;
+        stbi_uc *pixels = stbi_load(image_path.c_str(), &tex_width, &tex_height, &tex_channels, STBI_rgb_alpha);
+        VkDeviceSize imageSize = tex_width * tex_height * 4;
+
+        if (!pixels)
+            throw std::runtime_error("Failed to load texture image.");
+
+        VulkanTextureImageBuilder textureImageBuilder;
+        textureImageBuilder.SetData(pixels, imageSize);
+        textureImageBuilder.SetResolution(tex_width, tex_height);
+        textureImageBuilder.SetFormat(VK_FORMAT_R8G8B8A8_SRGB);
+        textureImageBuilder.SetFilter(VK_FILTER_LINEAR, VK_FILTER_LINEAR);
+        textureImageBuilder.SetTiling(VK_IMAGE_TILING_OPTIMAL);
+
+        vulkanImage = textureImageBuilder.Build(vulkanDevice);
+
+        stbi_image_free(pixels);
 
         auto builder = PipelineBuilder();
         builder.SetShaders("shader/spv/vert.spv", "shader/spv/frag.spv");

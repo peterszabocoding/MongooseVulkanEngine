@@ -15,7 +15,7 @@ do                                                                          \
         if (err)                                                            \
         {                                                                   \
             std::cout << msg << std::endl;                                  \
-            std::cout <<"Detected Vulkan error: " << err << std::endl;      \
+            std::cout <<"Detected Vulkan error: " << VulkanUtils::GetVkResultString(err) << std::endl;      \
             abort();                                                        \
         }                                                                   \
 } while (0)
@@ -26,7 +26,7 @@ do                                                                          \
         VkResult err = x;                                                   \
         if (err)                                                            \
         {                                                                   \
-            std::cout <<"Detected Vulkan error: " << err << std::endl;      \
+            std::cout <<"Detected Vulkan error: " << VulkanUtils::GetVkResultString(err) << std::endl;      \
             abort();                                                        \
         }                                                                   \
 } while (0)
@@ -55,19 +55,21 @@ namespace Raytracing::VulkanUtils
         switch (vulkan_result)
         {
             case VK_SUCCESS:
-                return "SUCCESS";
+                return "VK_SUCCESS";
             case VK_ERROR_OUT_OF_HOST_MEMORY:
-                return "OUT OF HOST MEMORY";
+                return "VK_ERROR_OUT_OF_HOST_MEMORY";
             case VK_ERROR_OUT_OF_DEVICE_MEMORY:
-                return "OUT OF DEVICE MEMORY";
+                return "VK_ERROR_OUT_OF_DEVICE_MEMORY";
             case VK_ERROR_INITIALIZATION_FAILED:
-                return "INITIALIZATION FAILED";
+                return "VK_ERROR_INITIALIZATION_FAILED";
+            case VK_ERROR_DEVICE_LOST:
+                return "VK_ERROR_DEVICE_LOST";
             case VK_ERROR_LAYER_NOT_PRESENT:
-                return "LAYER NOT PRESENT";
+                return "VK_ERROR_LAYER_NOT_PRESENT";
             case VK_ERROR_EXTENSION_NOT_PRESENT:
-                return "EXTENSION NOT PRESENT";
+                return "VK_ERROR_EXTENSION_NOT_PRESENT";
             case VK_ERROR_INCOMPATIBLE_DRIVER:
-                return "INCOMPATIBLE DRIVER";
+                return "VK_ERROR_INCOMPATIBLE_DRIVER";
             default:
                 return "UNKNOWN RESULT '" + std::to_string(vulkan_result);
         }

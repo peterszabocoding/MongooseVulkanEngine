@@ -2,8 +2,7 @@
 
 #include "renderer/renderer.h"
 #include "vulkan_device.h"
-#include "vulkan_mesh.h"
-#include "vulkan_texture_image.h"
+#include "vulkan_image.h"
 
 namespace Raytracing
 {
@@ -28,7 +27,7 @@ namespace Raytracing
 	private:
 		VulkanDevice* vulkanDevice;
 		VulkanPipeline* graphicsPipeline;
-		VulkanTextureImage* vulkanImage;
+		VulkanImage* vulkanImage;
 		VulkanMesh* mesh;
 	};
 }
