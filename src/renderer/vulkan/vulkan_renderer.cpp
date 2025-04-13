@@ -13,22 +13,17 @@ namespace Raytracing {
     void VulkanRenderer::Init(const int width, const int height) {
         vulkanDevice = new VulkanDevice(width, height, glfwWindow);
 
-        mesh = new VulkanMesh(vulkanDevice, Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
-        mesh2 = new VulkanMesh(vulkanDevice, Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
+        mesh = ResourceManager::LoadMesh(vulkanDevice, "resources/models/viking_room.obj");
 
         transform.m_Position = glm::vec3(0.0f, 0.0f, -1.0f);
-        transform.m_Rotation = glm::vec3(0.0f, 0.0f, 0.0f);
+        transform.m_Rotation = glm::vec3(-90.0f, 0.0f, 0.0f);
 
-        transform2.m_Position = glm::vec3(0.0f, 1.0f, 0.0f);
-        transform2.m_Rotation = glm::vec3(0.0f, 0.0f, 0.0f);
-        transform2.m_Scale = glm::vec3(0.5f, 0.5f, 0.5f);
-
-        const ImageResource imageResource = ResourceManager::LoadImage("textures/texture.jpg");
+        const ImageResource imageResource = ResourceManager::LoadImage("resources/textures/viking_room.png");
 
         VulkanTextureImageBuilder textureImageBuilder;
         textureImageBuilder.SetData(imageResource.data, imageResource.size);
         textureImageBuilder.SetResolution(imageResource.width, imageResource.height);
-        textureImageBuilder.SetFormat(VK_FORMAT_R8G8B8A8_SRGB);
+        textureImageBuilder.SetFormat(VK_FORMAT_R8G8B8A8_UNORM);
         textureImageBuilder.SetFilter(VK_FILTER_LINEAR, VK_FILTER_LINEAR);
         textureImageBuilder.SetTiling(VK_IMAGE_TILING_OPTIMAL);
 
@@ -38,7 +33,7 @@ namespace Raytracing {
 
         auto builder = PipelineBuilder();
         builder.SetShaders("shader/spv/vert.spv", "shader/spv/frag.spv");
-        builder.SetCullMode(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE);
+        builder.SetCullMode(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
         builder.SetPolygonMode(VK_POLYGON_MODE_FILL);
         builder.EnableDepthTest();
         builder.DisableBlending();
@@ -47,19 +42,13 @@ namespace Raytracing {
         builder.AddPushConstant();
 
         graphicsPipeline = builder.build(vulkanDevice);
-        graphicsPipeline->GetShader()->SetImage(vulkanImage);
     }
 
     void VulkanRenderer::DrawFrame(float deltaTime, Ref<Camera> camera) {
         const bool result = vulkanDevice->BeginFrame();
         if (!result) return;
 
-        //transform.m_Rotation += deltaTime * 90.0f * glm::vec3(0.0f, 1.0f, 0.0f);
-        transform2.m_Rotation += deltaTime * 90.0f * glm::vec3(0.0f, 1.0f, 0.0f);
-
-        vulkanDevice->DrawMesh(graphicsPipeline, camera, mesh, transform);
-        vulkanDevice->DrawMesh(graphicsPipeline, camera, mesh2, transform2);
-
+        vulkanDevice->DrawMesh(graphicsPipeline, camera, mesh, transform, vulkanImage);
         vulkanDevice->DrawImGui();
 
         vulkanDevice->EndFrame();

@@ -49,10 +49,13 @@ namespace Raytracing
         vkDestroyInstance(instance, nullptr);
     }
 
-    void VulkanDevice::DrawMesh(Ref<VulkanPipeline> pipeline, Ref<Camera> camera, const VulkanMesh* mesh, const Transform& transform) const
+    void VulkanDevice::DrawMesh(Ref<VulkanPipeline> pipeline, Ref<Camera> camera, const VulkanMesh* mesh, const Transform& transform,
+                                const Ref<VulkanImage> texture) const
     {
         SimplePushConstantData pushConstantData;
         pushConstantData.transform = camera->GetProjection() * camera->GetView() * transform.GetTransform();
+
+        pipeline->GetShader()->SetImage(texture);
 
         mesh->Bind(commandBuffers[currentFrame]);
         vkCmdBindPipeline(commandBuffers[currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->GetPipeline());
@@ -62,12 +65,12 @@ namespace Raytracing
                                 &pipeline->GetShader()->GetDescriptorSet(), 0,
                                 nullptr);
         vkCmdPushConstants(
-                commandBuffers[currentFrame],
-                pipeline->GetPipelineLayout(),
-                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                0,
-                sizeof(SimplePushConstantData),
-                &pushConstantData);
+            commandBuffers[currentFrame],
+            pipeline->GetPipelineLayout(),
+            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+            0,
+            sizeof(SimplePushConstantData),
+            &pushConstantData);
 
         vkCmdDrawIndexed(commandBuffers[currentFrame], mesh->GetIndexCount(), 1, 0, 0, 0);
     }

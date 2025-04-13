@@ -10,7 +10,7 @@ namespace Raytracing
 
     class VulkanMesh : public Mesh {
     public:
-        VulkanMesh(VulkanDevice* vulkanDevice, const std::vector<Vertex>& vertices, const std::vector<uint16_t>& indices);
+        VulkanMesh(VulkanDevice* vulkanDevice, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices);
         ~VulkanMesh() override = default;
 
         void Bind(VkCommandBuffer commandBuffer) const;

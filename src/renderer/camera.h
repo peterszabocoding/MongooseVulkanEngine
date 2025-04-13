@@ -76,6 +76,7 @@ namespace Raytracing
         void CalculateProjection()
         {
             projection = glm::perspective(glm::radians(focalLength), aspectRatio, nearPlane, farPlane);
+            projection[1][1] *= -1;
         }
 
         void CalculateView()

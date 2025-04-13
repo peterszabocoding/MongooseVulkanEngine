@@ -54,7 +54,7 @@ namespace Raytracing
 
     class Mesh {
     public:
-        Mesh(const std::vector<Vertex>& vertices, const std::vector<uint16_t>& indices)
+        Mesh(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices)
         {
             this->vertices = vertices;
             this->indices = indices;
@@ -66,12 +66,12 @@ namespace Raytracing
 
     protected:
         std::vector<Vertex> vertices;
-        std::vector<uint16_t> indices;
+        std::vector<uint32_t> indices;
     };
 
     namespace Primitives
     {
-        const std::vector<uint16_t> RECTANGLE_INDICES = {
+        const std::vector<uint32_t> RECTANGLE_INDICES = {
             0, 1, 2, 2, 3, 0
         };
 

@@ -31,8 +31,6 @@ namespace Raytracing
 		Ref<VulkanImage> vulkanImage;
 
 		VulkanMesh* mesh;
-		VulkanMesh* mesh2;
 		Transform transform;
-		Transform transform2;
 	};
 }
