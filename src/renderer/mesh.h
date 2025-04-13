@@ -2,8 +2,15 @@
 
 #include <array>
 #include <vector>
+
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/hash.hpp>
+
 #include <vulkan/vulkan_core.h>
+
+#include <util/utils.h>
 
 namespace Raytracing
 {
@@ -12,6 +19,11 @@ namespace Raytracing
         glm::vec3 normal;
         glm::vec3 color;
         glm::vec2 texCoord;
+
+        bool operator==(const Vertex& other) const
+        {
+            return pos == other.pos && normal == other.normal && color == other.color && texCoord == other.texCoord;
+        }
     };
 
     struct VulkanVertex : Vertex {
@@ -81,8 +93,16 @@ namespace Raytracing
             {{1.0f, 1.0f, 0.0f}, {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
             {{-1.0f, 1.0f, 0.0f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
         };
-
     }
+}
 
-
+namespace std {
+    template <>
+    struct hash<Raytracing::Vertex> {
+        size_t operator()(Raytracing::Vertex const &vertex) const {
+            size_t seed = 0;
+            hashCombine(seed, vertex.pos, vertex.color, vertex.normal, vertex.texCoord);
+            return seed;
+        }
+    };
 }
