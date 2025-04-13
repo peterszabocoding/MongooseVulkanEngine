@@ -1,36 +1,106 @@
 #pragma once
 
-#include "math/vec3.h"
+#include <complex>
+#include <glm/glm.hpp>
+#include "glm/gtc/matrix_transform.hpp"
 
-namespace Raytracing {
+#include "components.h"
 
+namespace Raytracing
+{
     class Camera {
+    public:
+        Camera()
+        {
+            CalculateProjection();
+            Update();
+        };
+        ~Camera() = default;
 
-        public:
-            Camera();
-            ~Camera();
+        void Update()
+        {
+            forwardVector = transform.GetForwardDirection();
+            rightVector = glm::normalize(glm::cross(forwardVector, glm::vec3(0.0f, 1.0f, 0.0f)));
+            upVector = glm::normalize(glm::cross(rightVector, forwardVector));
 
-            void SetResolution(unsigned int width, unsigned int height);
+            CalculateView();
+        }
 
-            const unsigned int Width() const { return viewportWidth; }
-            const unsigned int Height() const { return viewportHeight; }
+        void SetResolution(unsigned int width, unsigned int height)
+        {
+            viewportWidth = width;
+            viewportHeight = height;
+            aspectRatio = static_cast<float>(viewportWidth) / viewportHeight;
+            CalculateProjection();
+        }
 
-            const double FocalLength() const { return focalLength; }
-            const double AspectRatio() const { return aspectRatio; }
+        void SetFocalLength(float focalLength)
+        {
+            this->focalLength = focalLength;
+            CalculateView();
+        }
 
-            const vec3 Position() const { return position; }
-            const vec3 Direction() const { return direction; }
+        void SetTransform(Transform& transform)
+        {
+            this->transform = transform;
+        }
 
-        private:
-            double focalLength = 1.0;
-            double aspectRatio = 0.0;
+        void SetNearPlane(float nearPlane)
+        {
+            this->nearPlane = nearPlane;
+            CalculateView();
+        }
 
-            unsigned int viewportWidth = 1;
-            unsigned int viewportHeight = 1;
+        void SetFarPlane(float farPlane)
+        {
+            this->farPlane = farPlane;
+            CalculateView();
+        }
 
-            vec3 position = vec3(0.0, 0.0, 0.0);
-            vec3 direction = vec3(0.0, 0.0, -1.0);
+        glm::mat4 GetProjection() const { return projection; }
+        glm::mat4 GetView() const { return view; }
 
+        glm::vec3 GetForwardVector() const { return forwardVector; }
+        glm::vec3 GetRightVector() const { return rightVector; }
+        glm::vec3 GetUpVector() const { return upVector; }
+
+        unsigned int Width() const { return viewportWidth; }
+        unsigned int Height() const { return viewportHeight; }
+
+        double FocalLength() const { return focalLength; }
+        double AspectRatio() const { return aspectRatio; }
+
+        Transform& GetTransform() { return transform; }
+
+    private:
+        void CalculateProjection()
+        {
+            projection = glm::perspective(glm::radians(focalLength), aspectRatio, nearPlane, farPlane);
+            projection[1][1] *= -1;
+        }
+
+        void CalculateView()
+        {
+            view = glm::lookAt(transform.m_Position, transform.m_Position + forwardVector, upVector);
+        }
+
+    private:
+        float focalLength = 45.0;
+        float aspectRatio = 1.0;
+
+        unsigned int viewportWidth = 1;
+        unsigned int viewportHeight = 1;
+
+        float nearPlane = 0.1f;
+        float farPlane = 10.0f;
+
+        Transform transform;
+
+        glm::mat4 projection = glm::mat4(1.0f);
+        glm::mat4 view = glm::mat4(1.0f);
+
+        glm::vec3 forwardVector;
+        glm::vec3 upVector;
+        glm::vec3 rightVector;
     };
-
 }

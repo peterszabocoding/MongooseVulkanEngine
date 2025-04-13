@@ -18,9 +18,8 @@ namespace Raytracing
 		window->Resize(currentWidth, currentHeight);
 	}
 
-	Window::Window(AppInfo appInfo, const WindowParams params)
+	Window::Window(const WindowParams params)
 	{
-		applicationInfo = std::move(appInfo);
 		windowParams = params;
 		renderer = Renderer::Create();
 		imGuiVulkan = CreateRef<ImGuiVulkan>();
@@ -28,7 +27,7 @@ namespace Raytracing
 
 	Window::~Window()
 	{
-		glfwDestroyWindow(window);
+		glfwDestroyWindow(glfwWindow);
 		glfwTerminate();
 	}
 
@@ -38,22 +37,28 @@ namespace Raytracing
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-		window = glfwCreateWindow(windowParams.width, windowParams.height, windowParams.title, nullptr, nullptr);
+		glfwWindow = glfwCreateWindow(windowParams.width, windowParams.height, windowParams.title, nullptr, nullptr);
 
 		int width, height;
-		glfwSetWindowUserPointer(window, this);
-		glfwGetFramebufferSize(window, &width, &height);
-		glfwSetFramebufferSizeCallback(window, FramebufferResizeCallback);
+		glfwSetWindowUserPointer(glfwWindow, this);
+		glfwGetFramebufferSize(glfwWindow, &width, &height);
+		glfwSetFramebufferSizeCallback(glfwWindow, FramebufferResizeCallback);
 
-		renderer->SetGLFWwindow(window);
+		renderer->SetGLFWwindow(glfwWindow);
 		renderer->Init(width, height);
 
-		imGuiVulkan->Init(window, CAST_REF(VulkanRenderer, renderer), width, height);
+		imGuiVulkan->Init(glfwWindow, CAST_REF(VulkanRenderer, renderer), width, height);
+
+		camera = CreateRef<Camera>();
+		camera->SetResolution(width, height);
+		camera->GetTransform().m_Position = glm::vec3(0.0f, 0.0f, 2.0f);
+
+		cameraController.SetCamera(camera);
 	}
 
-	void Window::OnUpdate()
+	void Window::OnUpdate(float deltaTime)
 	{
-		if (glfwWindowShouldClose(window))
+		if (glfwWindowShouldClose(glfwWindow))
 		{
 			windowCloseCallback();
 			renderer->IdleWait();
@@ -61,21 +66,25 @@ namespace Raytracing
 		}
 
 		glfwPollEvents();
+
+		cameraController.Update(deltaTime);
+
 		imGuiVulkan->DrawUi();
-		renderer->DrawFrame();
+		renderer->DrawFrame(deltaTime, camera);
 	}
 
 	void Window::Resize(int width, int height)
 	{
 		if (width == 0 || height == 0)
 		{
-			glfwGetFramebufferSize(window, &width, &height);
+			glfwGetFramebufferSize(glfwWindow, &width, &height);
 			glfwWaitEvents();
 		}
 		else
 		{
 			renderer->Resize(width, height);
 			imGuiVulkan->Resize(width, height);
+			camera->SetResolution(width, height);
 		}
 	}
 

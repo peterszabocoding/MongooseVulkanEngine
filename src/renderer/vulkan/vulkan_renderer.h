@@ -1,7 +1,5 @@
 #pragma once
 
-#include <glm/vec3.hpp>
-
 #include "renderer/renderer.h"
 #include "vulkan_device.h"
 #include "vulkan_image.h"
@@ -23,7 +21,7 @@ namespace Raytracing
 
 		virtual void IdleWait() override;
 		virtual void Resize(int width, int height) override;
-		virtual void DrawFrame() override;
+		virtual void DrawFrame(float deltaTime, Ref<Camera> camera) override;
 
 		VulkanDevice* GetVulkanDevice() const { return vulkanDevice; }
 
@@ -31,12 +29,10 @@ namespace Raytracing
 		VulkanDevice* vulkanDevice;
 		Ref<VulkanPipeline> graphicsPipeline;
 		Ref<VulkanImage> vulkanImage;
+
 		VulkanMesh* mesh;
 		VulkanMesh* mesh2;
 		Transform transform;
 		Transform transform2;
-
-		float lastFrameTime = 0.0f;
-
 	};
 }

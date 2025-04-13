@@ -2,42 +2,44 @@
 
 #include <functional>
 
-#include "application.h"
 #include "GLFW/glfw3.h"
+#include "input/camera_controller.h"
 #include "renderer/renderer.h"
 #include "renderer/vulkan/imgui_vulkan.h"
 
 namespace Raytracing
 {
-	typedef std::function<void()> OnWindowCloseCallback;
+    typedef std::function<void()> OnWindowCloseCallback;
 
-	struct WindowParams
-	{
-		const char* title;
-		unsigned int width;
-		unsigned int height;
-	};
+    struct WindowParams {
+        const char* title;
+        unsigned int width;
+        unsigned int height;
+    };
 
-	class Window
-	{
-	public:
-		Window(AppInfo appInfo, const WindowParams params);
-		virtual ~Window();
+    class Window {
+    public:
+        Window(WindowParams params);
+        ~Window();
 
-		virtual void OnCreate();
-		virtual void OnUpdate();
-		virtual void Resize(int width, int height);
+        void OnCreate();
+        void OnUpdate(float deltaTime);
+        void Resize(int width, int height);
 
-		virtual void SetOnWindowCloseCallback(OnWindowCloseCallback callback);
+        void SetOnWindowCloseCallback(OnWindowCloseCallback callback);
 
-	protected:
-		AppInfo applicationInfo;
-		WindowParams windowParams;
+        void* GetNativeWindow() const { return glfwWindow; }
 
-		GLFWwindow* window;
-		OnWindowCloseCallback windowCloseCallback;
+    protected:
+        WindowParams windowParams;
 
-		Ref<Renderer> renderer;
-		Ref<ImGuiVulkan> imGuiVulkan;
-	};
+        GLFWwindow* glfwWindow = nullptr;
+        OnWindowCloseCallback windowCloseCallback;
+
+        Ref<Renderer> renderer;
+        Ref<ImGuiVulkan> imGuiVulkan;
+
+        CameraController cameraController;
+        Ref<Camera> camera;
+    };
 }

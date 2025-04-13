@@ -52,20 +52,6 @@ namespace Raytracing
         }
     };
 
-    namespace Primitives
-    {
-        const std::vector<uint16_t> RECTANGLE_INDICES = {
-            0, 1, 2, 2, 3, 0
-        };
-
-        const std::vector<Vertex> RECTANGLE_VERTICES = {
-            {{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, -1.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-            {{1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, -1.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-            {{1.0f, 1.0f, 0.0f}, {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-            {{-1.0f, 1.0f, 0.0f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
-        };
-    }
-
     class Mesh {
     public:
         Mesh(const std::vector<Vertex>& vertices, const std::vector<uint16_t>& indices)
@@ -82,4 +68,21 @@ namespace Raytracing
         std::vector<Vertex> vertices;
         std::vector<uint16_t> indices;
     };
+
+    namespace Primitives
+    {
+        const std::vector<uint16_t> RECTANGLE_INDICES = {
+            0, 1, 2, 2, 3, 0
+        };
+
+        const std::vector<Vertex> RECTANGLE_VERTICES = {
+            {{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, -1.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+            {{1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, -1.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+            {{1.0f, 1.0f, 0.0f}, {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+            {{-1.0f, 1.0f, 0.0f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
+        };
+
+    }
+
+
 }

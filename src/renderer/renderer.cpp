@@ -2,7 +2,7 @@
 #include "util/timer.h"
 
 #include "math/vec3.h"
-#include "platform/windows/windows_application.h"
+#include "vulkan/vulkan_renderer.h"
 
 namespace Raytracing
 {
@@ -14,6 +14,7 @@ namespace Raytracing
 	void Renderer::Render(const Camera& camera, const std::vector<Hitable*>& scene)
 	{
 		Timer timer("Render");
+		/*
 		if (camera.Width() == 0 || camera.Height() == 0) return;
 
 		OnRenderBegin(camera);
@@ -59,7 +60,7 @@ namespace Raytracing
 				ProcessPixel(pixelCount, pixelColor);
 			}
 		}
-
+		*/
 		OnRenderFinished(camera);
 	}
 

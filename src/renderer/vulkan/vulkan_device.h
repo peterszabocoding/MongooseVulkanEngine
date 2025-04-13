@@ -5,10 +5,12 @@
 
 #define GLFW_INCLUDE_VULKAN
 
+#include <complex.h>
 #include <functional>
 #include <vma/vk_mem_alloc.h>
 
 #include "GLFW/glfw3.h"
+#include "renderer/camera.h"
 #include "util/core.h"
 
 namespace Raytracing
@@ -33,7 +35,7 @@ namespace Raytracing
 
         ~VulkanDevice();
 
-        void DrawMesh(Ref<VulkanPipeline> pipeline, const VulkanMesh* mesh, SimplePushConstantData pushConstantData) const;
+        void DrawMesh(Ref<VulkanPipeline> pipeline, Ref<Camera> camera, const VulkanMesh* mesh, const Transform& transform) const;
 
         void DrawImGui() const;
 

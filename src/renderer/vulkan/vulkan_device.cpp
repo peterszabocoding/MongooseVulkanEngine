@@ -13,6 +13,9 @@
 #include "GLFW/glfw3.h"
 
 #define VMA_IMPLEMENTATION
+#include <renderer/components.h>
+
+#include "renderer/camera.h"
 #include "vma/vk_mem_alloc.h"
 
 namespace Raytracing
@@ -46,8 +49,11 @@ namespace Raytracing
         vkDestroyInstance(instance, nullptr);
     }
 
-    void VulkanDevice::DrawMesh(Ref<VulkanPipeline> pipeline, const VulkanMesh* mesh, SimplePushConstantData pushConstantData) const
+    void VulkanDevice::DrawMesh(Ref<VulkanPipeline> pipeline, Ref<Camera> camera, const VulkanMesh* mesh, const Transform& transform) const
     {
+        SimplePushConstantData pushConstantData;
+        pushConstantData.transform = camera->GetProjection() * camera->GetView() * transform.GetTransform();
+
         mesh->Bind(commandBuffers[currentFrame]);
         vkCmdBindPipeline(commandBuffers[currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->GetPipeline());
         vkCmdBindDescriptorSets(commandBuffers[currentFrame],

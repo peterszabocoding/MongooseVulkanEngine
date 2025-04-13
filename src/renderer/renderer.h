@@ -24,7 +24,7 @@ namespace Raytracing
 		virtual void Resize(int width, int height);
 
 		virtual void IdleWait() {}
-		virtual void DrawFrame() {}
+		virtual void DrawFrame(float deltaTime, Ref<Camera> camera) {}
 
 		virtual void SetGLFWwindow(GLFWwindow* window) { glfwWindow = window; }
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "resource\resource.h"
+#include "resource/resource.h"
 
 namespace Raytracing {
     class ResourceManager {

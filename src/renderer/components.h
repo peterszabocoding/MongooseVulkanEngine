@@ -19,4 +19,9 @@ struct Transform {
             * toMat4(glm::quat(radians(m_Rotation)))
             * scale(glm::mat4(1.0f), m_Scale);
     }
+
+    glm::vec3 GetForwardDirection() const
+    {
+        return GetTransform() * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
+    }
 };

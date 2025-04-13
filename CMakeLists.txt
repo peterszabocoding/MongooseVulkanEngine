@@ -92,16 +92,15 @@ set(SOURCE_ONE_WEEKEND
         ./src/renderer/vulkan/imgui_vulkan.cpp
 
         ./src/resource/resource_manager.cpp
+
+        ./src/input/camera_controller.cpp
+        ./src/input/input.cpp
 )
 
 set(SOURCE_ONE_WEEKEND_APPLE
-        src/platform/macos/macos_application.cpp
-        src/platform/macos/macos_window.cpp
 )
 
 set(SOURCE_ONE_WEEKEND_WINDOWS
-        src/platform/windows/windows_application.cpp
-        src/platform/windows/windows_window.cpp
 )
 
 include_directories("src/")
