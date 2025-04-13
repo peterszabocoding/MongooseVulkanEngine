@@ -19,7 +19,7 @@ namespace Raytracing {
         transform.m_Position = glm::vec3(0.0f, 0.0f, -1.0f);
         transform.m_Rotation = glm::vec3(0.0f, 0.0f, 0.0f);
 
-        transform2.m_Position = glm::vec3(0.0f, 0.0f, 0.0f);
+        transform2.m_Position = glm::vec3(0.0f, 1.0f, 0.0f);
         transform2.m_Rotation = glm::vec3(0.0f, 0.0f, 0.0f);
         transform2.m_Scale = glm::vec3(0.5f, 0.5f, 0.5f);
 
@@ -38,7 +38,7 @@ namespace Raytracing {
 
         auto builder = PipelineBuilder();
         builder.SetShaders("shader/spv/vert.spv", "shader/spv/frag.spv");
-        builder.SetCullMode(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
+        builder.SetCullMode(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE);
         builder.SetPolygonMode(VK_POLYGON_MODE_FILL);
         builder.EnableDepthTest();
         builder.DisableBlending();

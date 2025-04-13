@@ -23,7 +23,7 @@ namespace Raytracing
         float turnSpeed = 0.1f;
 
         float moveTransitionEffect = 0.5f;
-        float maxSpeed = 0.1f;
+        float maxSpeed = 5.0f;
         float cameraDrag = 0.975f;
 
         glm::vec3 velocity = glm::vec3(0.0f, 0.0f, 0.0f);

@@ -154,6 +154,7 @@ if (WIN32)
     add_executable(inOneWeekend ${EXTERNAL} ${HEADERS} ${SOURCE_ONE_WEEKEND} ${SOURCE_ONE_WEEKEND_WINDOWS})
 endif (WIN32)
 
+target_compile_definitions(inOneWeekend PRIVATE GLFW_INCLUDE_NONE GLM_FORCE_DEPTH_ZERO_TO_ONE GLM_FORCE_XYZW_ONLY GLM_FORCE_QUAT_DATA_XYZW GLM_FORCE_QUAT_CTOR_XYZW)
 
 set_target_properties(glfw PROPERTIES FOLDER "Dependencies")
 set_target_properties(glm PROPERTIES FOLDER "Dependencies")
