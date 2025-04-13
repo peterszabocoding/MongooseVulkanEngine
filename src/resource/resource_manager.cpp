@@ -38,7 +38,7 @@ namespace Raytracing
         stbi_image_free(image.data);
     }
 
-    VulkanMesh* ResourceManager::LoadMesh(VulkanDevice* device, const std::string& meshPath)
+    Ref<VulkanMesh> ResourceManager::LoadMesh(VulkanDevice* device, const std::string& meshPath)
     {
         std::vector<Vertex> vertices;
         std::vector<uint32_t> indices;
@@ -72,9 +72,9 @@ namespace Raytracing
                 };
 
                 vertex.normal = {
-                    attrib.vertices[3 * index.vertex_index + 0],
-                    attrib.vertices[3 * index.vertex_index + 1],
-                    attrib.vertices[3 * index.vertex_index + 2]
+                    attrib.normals[3 * index.normal_index + 0],
+                    attrib.normals[3 * index.normal_index + 1],
+                    attrib.normals[3 * index.normal_index + 2]
                 };
 
                 vertex.color = {1.0f, 1.0f, 1.0f};
@@ -88,6 +88,23 @@ namespace Raytracing
             }
         }
 
-        return new VulkanMesh(device, vertices, indices);
+        return CreateRef<VulkanMesh>(device, vertices, indices);
+    }
+
+    Ref<VulkanImage> ResourceManager::LoadTexture(VulkanDevice* device, std::string textureImagePath) {
+        const ImageResource imageResource = LoadImage(textureImagePath);
+
+        VulkanTextureImageBuilder textureImageBuilder;
+        textureImageBuilder.SetData(imageResource.data, imageResource.size);
+        textureImageBuilder.SetResolution(imageResource.width, imageResource.height);
+        textureImageBuilder.SetFormat(VK_FORMAT_R8G8B8A8_UNORM);
+        textureImageBuilder.SetFilter(VK_FILTER_LINEAR, VK_FILTER_LINEAR);
+        textureImageBuilder.SetTiling(VK_IMAGE_TILING_OPTIMAL);
+
+        Ref<VulkanImage> texture = textureImageBuilder.Build(device);
+
+        ReleaseImage(imageResource);
+
+        return texture;
     }
 }

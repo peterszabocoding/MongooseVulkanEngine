@@ -28,9 +28,14 @@ namespace Raytracing
 	private:
 		VulkanDevice* vulkanDevice;
 		Ref<VulkanPipeline> graphicsPipeline;
-		Ref<VulkanImage> vulkanImage;
 
-		VulkanMesh* mesh;
+		Ref<VulkanMesh> mesh;
+		Ref<VulkanMesh> cube;
+
 		Transform transform;
+		Transform cubeTransform;
+
+		Ref<VulkanImage> texture;
+		Ref<VulkanImage> checkerTexture;
 	};
 }

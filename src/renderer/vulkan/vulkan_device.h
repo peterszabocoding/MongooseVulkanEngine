@@ -37,7 +37,7 @@ namespace Raytracing
 
         ~VulkanDevice();
 
-        void DrawMesh(Ref<VulkanPipeline> pipeline, Ref<Camera> camera, const VulkanMesh* mesh, const Transform& transform, Ref<VulkanImage> texture) const;
+        void DrawMesh(Ref<VulkanPipeline> pipeline, Ref<Camera> camera, Ref<VulkanMesh> mesh, const Transform& transform, Ref<VulkanImage> texture) const;
 
         void DrawImGui() const;
 

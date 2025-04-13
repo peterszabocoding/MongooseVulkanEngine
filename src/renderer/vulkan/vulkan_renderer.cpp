@@ -14,22 +14,16 @@ namespace Raytracing {
         vulkanDevice = new VulkanDevice(width, height, glfwWindow);
 
         mesh = ResourceManager::LoadMesh(vulkanDevice, "resources/models/viking_room.obj");
+        cube = ResourceManager::LoadMesh(vulkanDevice, "resources/models/cube.obj");
+
+        texture = ResourceManager::LoadTexture(vulkanDevice, "resources/textures/viking_room.png");
+        checkerTexture = ResourceManager::LoadTexture(vulkanDevice, "resources/textures/checker.png");
 
         transform.m_Position = glm::vec3(0.0f, 0.0f, -1.0f);
-        transform.m_Rotation = glm::vec3(-90.0f, 0.0f, 0.0f);
+        transform.m_Rotation = glm::vec3(0.0f, 0.0f, 0.0f);
 
-        const ImageResource imageResource = ResourceManager::LoadImage("resources/textures/viking_room.png");
-
-        VulkanTextureImageBuilder textureImageBuilder;
-        textureImageBuilder.SetData(imageResource.data, imageResource.size);
-        textureImageBuilder.SetResolution(imageResource.width, imageResource.height);
-        textureImageBuilder.SetFormat(VK_FORMAT_R8G8B8A8_UNORM);
-        textureImageBuilder.SetFilter(VK_FILTER_LINEAR, VK_FILTER_LINEAR);
-        textureImageBuilder.SetTiling(VK_IMAGE_TILING_OPTIMAL);
-
-        vulkanImage = textureImageBuilder.Build(vulkanDevice);
-
-        ResourceManager::ReleaseImage(imageResource);
+        cubeTransform.m_Position = glm::vec3(1.0f, 1.5f, -2.0f);
+        cubeTransform.m_Scale = glm::vec3(0.25f, 0.25f, 0.25f);
 
         auto builder = PipelineBuilder();
         builder.SetShaders("shader/spv/vert.spv", "shader/spv/frag.spv");
@@ -48,7 +42,8 @@ namespace Raytracing {
         const bool result = vulkanDevice->BeginFrame();
         if (!result) return;
 
-        vulkanDevice->DrawMesh(graphicsPipeline, camera, mesh, transform, vulkanImage);
+        vulkanDevice->DrawMesh(graphicsPipeline, camera, mesh, transform, texture);
+        vulkanDevice->DrawMesh(graphicsPipeline, camera, cube, cubeTransform, checkerTexture);
         vulkanDevice->DrawImGui();
 
         vulkanDevice->EndFrame();

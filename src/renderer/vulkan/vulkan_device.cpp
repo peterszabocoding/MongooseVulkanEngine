@@ -49,11 +49,14 @@ namespace Raytracing
         vkDestroyInstance(instance, nullptr);
     }
 
-    void VulkanDevice::DrawMesh(Ref<VulkanPipeline> pipeline, Ref<Camera> camera, const VulkanMesh* mesh, const Transform& transform,
+    void VulkanDevice::DrawMesh(Ref<VulkanPipeline> pipeline, Ref<Camera> camera, const Ref<VulkanMesh> mesh, const Transform& transform,
                                 const Ref<VulkanImage> texture) const
     {
+        const glm::mat4 modelMatrix =  transform.GetTransform();
+
         SimplePushConstantData pushConstantData;
-        pushConstantData.transform = camera->GetProjection() * camera->GetView() * transform.GetTransform();
+        pushConstantData.transform = camera->GetProjection() * camera->GetView() * modelMatrix;
+        pushConstantData.normalMatrix = transform.GetNormalMatrix();
 
         pipeline->GetShader()->SetImage(texture);
 
