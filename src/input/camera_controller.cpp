@@ -18,8 +18,8 @@ namespace Raytracing
             Input::IsKeyPressed(GLFW_KEY_S) ||
             Input::IsKeyPressed(GLFW_KEY_D) ||
             Input::IsKeyPressed(GLFW_KEY_A) ||
-            Input::IsKeyPressed(GLFW_KEY_SPACE) ||
-            Input::IsKeyPressed(GLFW_KEY_LEFT_CONTROL)) && Input::IsMousePressed(GLFW_MOUSE_BUTTON_RIGHT);
+            Input::IsKeyPressed(GLFW_KEY_Q) ||
+            Input::IsKeyPressed(GLFW_KEY_E)) && Input::IsMousePressed(GLFW_MOUSE_BUTTON_RIGHT);
 
         float speed;
         glm::vec3 newVel = {0.0f, 0.0f, 0.0f};
@@ -39,8 +39,8 @@ namespace Raytracing
             if (Input::IsKeyPressed(GLFW_KEY_S)) newVel += -camera->GetForwardVector();
             if (Input::IsKeyPressed(GLFW_KEY_D)) newVel += camera->GetRightVector();
             if (Input::IsKeyPressed(GLFW_KEY_A)) newVel += -camera->GetRightVector();
-            if (Input::IsKeyPressed(GLFW_KEY_SPACE)) newVel += glm::vec3(0.0f, 1.0f, 0.0f);
-            if (Input::IsKeyPressed(GLFW_KEY_LEFT_CONTROL)) newVel += -glm::vec3(0.0f, 1.0f, 0.0f);
+            if (Input::IsKeyPressed(GLFW_KEY_E)) newVel += glm::vec3(0.0f, 1.0f, 0.0f);
+            if (Input::IsKeyPressed(GLFW_KEY_Q)) newVel += -glm::vec3(0.0f, 1.0f, 0.0f);
             if (Input::IsKeyPressed(GLFW_KEY_LEFT_SHIFT)) speed *= 2.0f;
         }
         speed = std::clamp(speed, 0.0f, maxSpeed);

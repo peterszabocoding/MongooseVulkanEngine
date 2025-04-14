@@ -137,7 +137,7 @@ namespace Raytracing
         for (size_t i = 0; i < glfw_extension_count; i++)
             device_extensions.push_back(glfw_extensions[i]);
 
-#ifdef APPLE
+#ifdef PLATFORM_MACOS
             device_extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
 #endif
         device_extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
