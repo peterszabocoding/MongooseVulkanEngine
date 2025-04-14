@@ -34,8 +34,6 @@ namespace Raytracing
 
     VulkanDevice::~VulkanDevice()
     {
-        vkDestroyDescriptorPool(device, descriptorPool, nullptr);
-
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
         {
             vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
@@ -65,9 +63,9 @@ namespace Raytracing
         vkCmdBindPipeline(commandBuffers[currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->GetPipeline());
         vkCmdBindDescriptorSets(commandBuffers[currentFrame],
                                 VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                pipeline->GetPipelineLayout(), 0, 1,
-                                &pipeline->GetShader()->GetDescriptorSet(), 0,
-                                nullptr);
+                                pipeline->GetPipelineLayout(), 0,
+                                1, &pipeline->GetShader()->GetDescriptorSet(),
+                                0, nullptr);
         vkCmdPushConstants(
             commandBuffers[currentFrame],
             pipeline->GetPipelineLayout(),
@@ -339,7 +337,8 @@ namespace Raytracing
         uint32_t device_count = 0;
         vkEnumeratePhysicalDevices(instance, &device_count, nullptr);
 
-        if (device_count == 0) throw std::runtime_error("Failed to find GPUs with Vulkan support!");
+        if (device_count == 0)
+            throw std::runtime_error("Failed to find GPUs with Vulkan support!");
 
         std::vector<VkPhysicalDevice> devices(device_count);
         vkEnumeratePhysicalDevices(instance, &device_count, devices.data());
@@ -353,7 +352,8 @@ namespace Raytracing
             }
         }
 
-        if (physical_device == VK_NULL_HANDLE) throw std::runtime_error("Failed to find a suitable GPU!");
+        if (physical_device == VK_NULL_HANDLE)
+            throw std::runtime_error("Failed to find a suitable GPU!");
 
         return physical_device;
     }
@@ -386,8 +386,7 @@ namespace Raytracing
         createInfo.enabledExtensionCount = static_cast<uint32_t>(device_extensions.size());
         createInfo.ppEnabledExtensionNames = device_extensions.data();
 
-        if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS)
-            throw std::runtime_error("failed to create logical device!");
+        VK_CHECK_MSG(vkCreateDevice(physicalDevice, &createInfo, nullptr, &device), "Failed to create logical device.");
 
         vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
         vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
@@ -489,10 +488,7 @@ namespace Raytracing
         poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
         poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
 
-        if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS)
-        {
-            throw std::runtime_error("failed to create command pool!");
-        }
+        VK_CHECK_MSG(vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool), "Failed to create command pool.");
     }
 
     void VulkanDevice::CreateSyncObjects()
@@ -521,21 +517,6 @@ namespace Raytracing
 
     void VulkanDevice::CreateDescriptorPool()
     {
-        std::array<VkDescriptorPoolSize, 2> poolSizes{};
-        poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-
-        poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-
-        VkDescriptorPoolCreateInfo poolInfo{};
-        poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-        poolInfo.pPoolSizes = poolSizes.data();
-        poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-
-        VK_CHECK_MSG(vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool), "Failed to create descriptor pool.");
-
         globalUniformPool = VulkanDescriptorPool::Builder(this)
                 .SetMaxSets(MAX_FRAMES_IN_FLIGHT)
                 .AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, MAX_FRAMES_IN_FLIGHT)
@@ -564,10 +545,7 @@ namespace Raytracing
         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         allocInfo.commandBufferCount = static_cast<uint32_t>(commandBuffers.size());
 
-        if (vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data()) != VK_SUCCESS)
-        {
-            throw std::runtime_error("failed to allocate command buffers!");
-        }
+        VK_CHECK_MSG(vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data()), "Failed to allocate command buffers.");
     }
 
     uint32_t VulkanDevice::GetQueueFamilyIndex() const

@@ -55,7 +55,6 @@ namespace Raytracing
         [[nodiscard]] VkSurfaceKHR GetSurface() const { return surface; }
         [[nodiscard]] VkPhysicalDevice GetPhysicalDevice() const { return physicalDevice; }
         [[nodiscard]] uint32_t GetQueueFamilyIndex() const;
-        [[nodiscard]] VkDescriptorPool GetDescriptorPool() const { return descriptorPool; }
         [[nodiscard]] VkDescriptorPool GetGuiDescriptorPool() const { return imguiDescriptorPool->GetDescriptorPool(); }
         [[nodiscard]] VulkanDescriptorPool& GetShaderDescriptorPool() const { return *shaderDescriptorPool.get(); }
         [[nodiscard]] VkQueue GetGraphicsQueue() const { return graphicsQueue; }
@@ -116,7 +115,6 @@ namespace Raytracing
 
         VmaAllocator vmaAllocator;
 
-        VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
         Scope<VulkanDescriptorPool> globalUniformPool{};
         Scope<VulkanDescriptorPool> shaderDescriptorPool{};
         Scope<VulkanDescriptorPool> imguiDescriptorPool{};
