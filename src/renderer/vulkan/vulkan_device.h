@@ -5,11 +5,10 @@
 
 #define GLFW_INCLUDE_VULKAN
 
-#include <complex.h>
-#include <complex.h>
 #include <functional>
 #include <vma/vk_mem_alloc.h>
 
+#include "vulkan_descriptor_pool.h"
 #include "vulkan_image.h"
 #include "GLFW/glfw3.h"
 #include "renderer/camera.h"
@@ -34,34 +33,31 @@ namespace Raytracing
     class VulkanDevice {
     public:
         VulkanDevice(int width, int height, GLFWwindow* glfwWindow);
-
         ~VulkanDevice();
 
-        void DrawMesh(Ref<VulkanPipeline> pipeline, Ref<Camera> camera, Ref<VulkanMesh> mesh, const Transform& transform, Ref<VulkanImage> texture) const;
+        void DrawMesh(Ref<VulkanPipeline> pipeline,
+                      Ref<Camera> camera,
+                      Ref<VulkanMesh> mesh,
+                      const Transform& transform,
+                      Ref<VulkanImage> texture) const;
 
         void DrawImGui() const;
-
         bool BeginFrame();
-
         void EndFrame();
-
         void ResizeFramebuffer() { framebufferResized = true; }
-
         void ImmediateSubmit(std::function<void (VkCommandBuffer commandBuffer)>&& function) const;
 
         VkSurfaceKHR CreateSurface(GLFWwindow* glfwWindow) const;
-
         VmaAllocator GetVmaAllocator() const { return vmaAllocator; };
 
         [[nodiscard]] VkInstance GetInstance() const { return instance; }
         [[nodiscard]] VkDevice GetDevice() const { return device; }
         [[nodiscard]] VkSurfaceKHR GetSurface() const { return surface; }
         [[nodiscard]] VkPhysicalDevice GetPhysicalDevice() const { return physicalDevice; }
-
         [[nodiscard]] uint32_t GetQueueFamilyIndex() const;
-
         [[nodiscard]] VkDescriptorPool GetDescriptorPool() const { return descriptorPool; }
-        [[nodiscard]] VkDescriptorPool GetGuiDescriptorPool() const { return gui_descriptionPool; }
+        [[nodiscard]] VkDescriptorPool GetGuiDescriptorPool() const { return imguiDescriptorPool->GetDescriptorPool(); }
+        [[nodiscard]] VulkanDescriptorPool& GetShaderDescriptorPool() const { return *shaderDescriptorPool.get(); }
         [[nodiscard]] VkQueue GetGraphicsQueue() const { return graphicsQueue; }
         [[nodiscard]] VkQueue GetPresentQueue() const { return presentQueue; }
         [[nodiscard]] VkRenderPass GetRenderPass() const { return vulkanRenderPass->Get(); }
@@ -72,11 +68,8 @@ namespace Raytracing
 
     public:
         [[nodiscard]] inline VkPhysicalDevice PickPhysicalDevice() const;
-
-        inline VkDevice CreateLogicalDevice();
-
+        [[nodiscard]] inline VkDevice CreateLogicalDevice();
         [[nodiscard]] inline VkQueue GetDeviceQueue() const;
-
         [[nodiscard]] inline VkQueue GetDevicePresentQueue() const;
 
     private:
@@ -84,27 +77,16 @@ namespace Raytracing
             const std::vector<const char*>& deviceExtensions,
             const std::vector<const char*>& validationLayers);
 
-
         void Init(int width, int height, GLFWwindow* glfwWindow);
-
         void CreateCommandPool();
-
         void CreateCommandBuffers();
-
         void CreateSyncObjects();
-
-        void CreateGUIDescriptorPool();
-
         void CreateDescriptorPool();
-
         bool SetupNextFrame();
-
         void BeginRenderPass() const;
-
         void SetViewportAndScissor() const;
 
         VkResult SubmitDrawCommands(VkSemaphore* signalSemaphores) const;
-
         VkResult PresentFrame(uint32_t imageIndex, const VkSemaphore* signalSemaphores) const;
 
     private:
@@ -129,12 +111,14 @@ namespace Raytracing
         std::vector<VkSemaphore> renderFinishedSemaphores;
         std::vector<VkFence> inFlightFences;
 
-        VkDescriptorPool gui_descriptionPool = VK_NULL_HANDLE;
-        VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
-
         Ref<VulkanSwapchain> vulkanSwapChain{};
         Ref<VulkanRenderPass> vulkanRenderPass{};
 
         VmaAllocator vmaAllocator;
+
+        VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
+        Scope<VulkanDescriptorPool> globalUniformPool{};
+        Scope<VulkanDescriptorPool> shaderDescriptorPool{};
+        Scope<VulkanDescriptorPool> imguiDescriptorPool{};
     };
 }

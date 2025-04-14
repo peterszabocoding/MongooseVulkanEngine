@@ -11,8 +11,10 @@ namespace Raytracing {
     }
 
     void VulkanRenderer::Init(const int width, const int height) {
+        std::cout << "Init Vulkan" << '\n';
         vulkanDevice = new VulkanDevice(width, height, glfwWindow);
 
+        std::cout << "Load Resources" << '\n';
         mesh = ResourceManager::LoadMesh(vulkanDevice, "resources/models/viking_room.obj");
         cube = ResourceManager::LoadMesh(vulkanDevice, "resources/models/cube.obj");
 
@@ -25,6 +27,7 @@ namespace Raytracing {
         cubeTransform.m_Position = glm::vec3(1.0f, 1.5f, -2.0f);
         cubeTransform.m_Scale = glm::vec3(0.25f, 0.25f, 0.25f);
 
+        std::cout << "Build pipeline" << '\n';
         auto builder = PipelineBuilder();
         builder.SetShaders("shader/spv/vert.spv", "shader/spv/frag.spv");
         builder.SetCullMode(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);

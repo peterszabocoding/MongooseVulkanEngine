@@ -15,6 +15,7 @@
 #define VMA_IMPLEMENTATION
 #include <renderer/components.h>
 
+#include "vulkan_descriptor_pool.h"
 #include "renderer/camera.h"
 #include "vma/vk_mem_alloc.h"
 
@@ -52,7 +53,7 @@ namespace Raytracing
     void VulkanDevice::DrawMesh(Ref<VulkanPipeline> pipeline, Ref<Camera> camera, const Ref<VulkanMesh> mesh, const Transform& transform,
                                 const Ref<VulkanImage> texture) const
     {
-        const glm::mat4 modelMatrix =  transform.GetTransform();
+        const glm::mat4 modelMatrix = transform.GetTransform();
 
         SimplePushConstantData pushConstantData;
         pushConstantData.transform = camera->GetProjection() * camera->GetView() * modelMatrix;
@@ -136,7 +137,9 @@ namespace Raytracing
         for (size_t i = 0; i < glfw_extension_count; i++)
             device_extensions.push_back(glfw_extensions[i]);
 
-        device_extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+#ifdef APPLE
+            device_extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+#endif
         device_extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 
         if (ENABLE_VALIDATION_LAYERS)
@@ -144,20 +147,25 @@ namespace Raytracing
             device_extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         }
 
+        std::cout << "Vulkan: create instance" << '\n';
         instance = CreateVkInstance(device_extensions, validation_layer_list);
+        std::cout << "Vulkan: create surface" << '\n';
         surface = CreateSurface(glfwWindow);
+        std::cout << "Vulkan: pick physical device" << '\n';
         physicalDevice = PickPhysicalDevice();
+        std::cout << "Vulkan: create logical device" << '\n';
         device = CreateLogicalDevice();
 
+        std::cout << "Vulkan: create renderpass" << '\n';
         vulkanRenderPass = CreateRef<VulkanRenderPass>(this, VulkanSwapchain::GetImageFormat(this));
         vulkanSwapChain = CreateRef<VulkanSwapchain>(this, viewportWidth, viewportHeight);
 
         CreateCommandPool();
         CreateDescriptorPool();
-        CreateGUIDescriptorPool();
         CreateCommandBuffers();
         CreateSyncObjects();
 
+        std::cout << "Vulkan: VMA init" << '\n';
         VmaAllocatorCreateInfo allocatorInfo = {};
         allocatorInfo.physicalDevice = physicalDevice;
         allocatorInfo.device = device;
@@ -511,35 +519,12 @@ namespace Raytracing
         }
     }
 
-    void VulkanDevice::CreateGUIDescriptorPool()
-    {
-        VkDescriptorPoolSize pool_sizes[] =
-        {
-            {
-                VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                IMGUI_IMPL_VULKAN_MINIMUM_IMAGE_SAMPLER_POOL_SIZE
-            },
-        };
-
-        VkDescriptorPoolCreateInfo pool_info = {};
-        pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-        pool_info.maxSets = 0;
-
-        for (VkDescriptorPoolSize& pool_size: pool_sizes)
-            pool_info.maxSets += pool_size.descriptorCount;
-
-        pool_info.poolSizeCount = static_cast<uint32_t>(IM_ARRAYSIZE(pool_sizes));
-        pool_info.pPoolSizes = pool_sizes;
-
-        VK_CHECK(vkCreateDescriptorPool(device, &pool_info, nullptr, &gui_descriptionPool));
-    }
-
     void VulkanDevice::CreateDescriptorPool()
     {
         std::array<VkDescriptorPoolSize, 2> poolSizes{};
         poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+
         poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
 
@@ -549,10 +534,24 @@ namespace Raytracing
         poolInfo.pPoolSizes = poolSizes.data();
         poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
 
-        if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
-        {
-            throw std::runtime_error("failed to create descriptor pool!");
-        }
+        VK_CHECK_MSG(vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool), "Failed to create descriptor pool.");
+
+        globalUniformPool = VulkanDescriptorPool::Builder(this)
+                .SetMaxSets(MAX_FRAMES_IN_FLIGHT)
+                .AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, MAX_FRAMES_IN_FLIGHT)
+                .Build();
+
+        shaderDescriptorPool = VulkanDescriptorPool::Builder(this)
+                .SetMaxSets(MAX_FRAMES_IN_FLIGHT)
+                .AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 100)
+                .AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100)
+                .Build();
+
+        imguiDescriptorPool = VulkanDescriptorPool::Builder(this)
+                .SetMaxSets(IMGUI_IMPL_VULKAN_MINIMUM_IMAGE_SAMPLER_POOL_SIZE)
+                .AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1)
+                .SetPoolFlags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT)
+                .Build();
     }
 
     void VulkanDevice::CreateCommandBuffers()

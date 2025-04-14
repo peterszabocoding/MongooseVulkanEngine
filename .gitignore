@@ -23,3 +23,4 @@ shader/spv/
 .cmake/
 .idea/
 Testing/
+*.cap

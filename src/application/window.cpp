@@ -33,6 +33,7 @@ namespace Raytracing
 
 	void Window::OnCreate()
 	{
+		std::cout << "Init GLFW" << '\n';
 		glfwInit();
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -44,9 +45,11 @@ namespace Raytracing
 		glfwGetFramebufferSize(glfwWindow, &width, &height);
 		glfwSetFramebufferSizeCallback(glfwWindow, FramebufferResizeCallback);
 
+		std::cout << "Init Renderer" << '\n';
 		renderer->SetGLFWwindow(glfwWindow);
 		renderer->Init(width, height);
 
+		std::cout << "Init ImGui" << '\n';
 		imGuiVulkan->Init(glfwWindow, CAST_REF(VulkanRenderer, renderer), width, height);
 
 		camera = CreateRef<Camera>();

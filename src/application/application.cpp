@@ -41,6 +41,8 @@ namespace Raytracing
 		});
 
 		isRunning = true;
+
+		std::cout << "Application window created" << '\n';
 	}
 
 	void Application::Run()
