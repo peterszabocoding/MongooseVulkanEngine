@@ -70,6 +70,8 @@ namespace Raytracing::VulkanUtils
                 return "VK_ERROR_EXTENSION_NOT_PRESENT";
             case VK_ERROR_INCOMPATIBLE_DRIVER:
                 return "VK_ERROR_INCOMPATIBLE_DRIVER";
+            case VK_ERROR_OUT_OF_POOL_MEMORY:
+                return "VK_ERROR_OUT_OF_POOL_MEMORY";
             default:
                 return "UNKNOWN RESULT '" + std::to_string(vulkan_result);
         }

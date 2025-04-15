@@ -6,7 +6,7 @@
 #include "vulkan_descriptor_writer.h"
 #include "vulkan_utils.h"
 #include "vulkan_device.h"
-#include "vulkan_image.h"
+#include "vulkan_material.h"
 #include "util/filesystem.h"
 
 namespace Raytracing
@@ -16,7 +16,6 @@ namespace Raytracing
     {
         vulkanDevice = device;
         CreateDescriptorSetLayout();
-        CreateDescriptorSet();
         CreateUniformBuffer();
 
         Load(vertexShaderPath, fragmentShaderPath);
@@ -24,7 +23,7 @@ namespace Raytracing
 
     VulkanShader::~VulkanShader()
     {
-        delete uniformBuffer;
+        delete materialParamsBuffer;
 
         vkDestroyShaderModule(vulkanDevice->GetDevice(), vertexShaderModule, nullptr);
         vkDestroyShaderModule(vulkanDevice->GetDevice(), fragmentShaderModule, nullptr);
@@ -55,47 +54,19 @@ namespace Raytracing
         pipelineShaderStageCreateInfos.push_back(frag_shader_stage_create_info);
     }
 
-    void VulkanShader::SetImage(Ref<VulkanImage> vulkanImage)
-    {
-        VkDescriptorBufferInfo bufferInfo{};
-        bufferInfo.buffer = uniformBuffer->GetBuffer();
-        bufferInfo.offset = 0;
-        bufferInfo.range = sizeof(UniformBufferObject);
-
-        VkDescriptorImageInfo imageInfo{};
-        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfo.imageView = vulkanImage->GetImageView();
-        imageInfo.sampler = vulkanImage->GetSampler();
-
-        VulkanDescriptorWriter(*vulkanDescriptorSetLayout.get(), vulkanDevice->GetShaderDescriptorPool())
-                .WriteBuffer(0, &bufferInfo)
-                .WriteImage(1, &imageInfo)
-                .Overwrite(descriptorSet);
-    }
-
-    void VulkanShader::UpdateUniformBuffer(const UniformBufferObject& ubo) const
-    {
-        memcpy(uniformBuffer->GetMappedData(), &ubo, sizeof(ubo));
-    }
-
     void VulkanShader::CreateDescriptorSetLayout()
     {
         vulkanDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice)
-                .AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
+                .AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
                 .AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
                 .Build();
     }
 
-    void VulkanShader::CreateDescriptorSet()
-    {
-        vulkanDevice->GetShaderDescriptorPool().AllocateDescriptor(vulkanDescriptorSetLayout->GetDescriptorSetLayout(), descriptorSet);
-    }
-
     void VulkanShader::CreateUniformBuffer()
     {
-        uniformBuffer = new VulkanBuffer(
+        materialParamsBuffer = new VulkanBuffer(
             vulkanDevice,
-            sizeof(UniformBufferObject),
+            sizeof(MaterialParams),
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
             VMA_MEMORY_USAGE_CPU_TO_GPU);

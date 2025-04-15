@@ -92,6 +92,7 @@ set(SOURCE_ONE_WEEKEND
         ./src/renderer/vulkan/vulkan_descriptor_set_layout.cpp
         ./src/renderer/vulkan/vulkan_descriptor_pool.cpp
         ./src/renderer/vulkan/vulkan_descriptor_writer.cpp
+        ./src/renderer/vulkan/vulkan_material.cpp
         ./src/renderer/vulkan/imgui_vulkan.cpp
 
         ./src/resource/resource_manager.cpp

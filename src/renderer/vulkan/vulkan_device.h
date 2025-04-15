@@ -10,6 +10,7 @@
 
 #include "vulkan_descriptor_pool.h"
 #include "vulkan_image.h"
+#include "vulkan_material.h"
 #include "GLFW/glfw3.h"
 #include "renderer/camera.h"
 #include "util/core.h"
@@ -38,8 +39,7 @@ namespace Raytracing
         void DrawMesh(Ref<VulkanPipeline> pipeline,
                       Ref<Camera> camera,
                       Ref<VulkanMesh> mesh,
-                      const Transform& transform,
-                      Ref<VulkanImage> texture) const;
+                      const Transform& transform, const VulkanMaterial& material) const;
 
         void DrawImGui() const;
         bool BeginFrame();

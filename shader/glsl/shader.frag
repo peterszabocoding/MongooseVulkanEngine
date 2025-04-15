@@ -6,6 +6,10 @@ layout(location = 2) in vec3 fragNormal;
 
 layout(location = 0) out vec4 outColor;
 
+layout(binding = 0) uniform MaterialParams {
+    vec3 tint;
+} materialParams;
+
 layout(binding = 1) uniform sampler2D texSampler;
 
 layout(push_constant) uniform Push {
@@ -20,6 +24,6 @@ void main() {
     vec3 normalWorldSpace = normalize(mat3(push.normalMatrix) * fragNormal);
 
     float diffuseFactor = AMBIENT + clamp(dot(normalWorldSpace, normalize(LIGHT_DIRECTION)), 0.0, 1.0);
-    outColor = diffuseFactor * texture(texSampler, fragTexCoord);
+    outColor = diffuseFactor * vec4(materialParams.tint, 1.0) * texture(texSampler, fragTexCoord);
 
 }

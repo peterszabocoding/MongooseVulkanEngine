@@ -10,6 +10,7 @@
 
 #include "vulkan_buffer.h"
 #include "vulkan_descriptor_set_layout.h"
+#include "vulkan_material.h"
 #include "util/core.h"
 
 namespace Raytracing
@@ -34,16 +35,14 @@ namespace Raytracing
         ~VulkanShader();
 
         void Load(const std::string& vertexShaderPath, const std::string& fragmentShaderPath);
-        void SetImage(Ref<VulkanImage> vulkanImage);
-        void UpdateUniformBuffer(const UniformBufferObject& ubo) const;
 
         std::vector<VkPipelineShaderStageCreateInfo>& GetPipelineShaderStageCreateInfos() { return pipelineShaderStageCreateInfos; };
+        VulkanDescriptorSetLayout& GetVulkanDescriptorSetLayout() { return *vulkanDescriptorSetLayout.get(); }
         VkDescriptorSetLayout& GetDescriptorSetLayout() { return vulkanDescriptorSetLayout->GetDescriptorSetLayout(); }
         VkDescriptorSet& GetDescriptorSet() { return descriptorSet; }
 
     private:
         void CreateDescriptorSetLayout();
-        void CreateDescriptorSet();
         void CreateUniformBuffer();
 
     private:
@@ -57,8 +56,6 @@ namespace Raytracing
         VkDescriptorSet descriptorSet{};
         Scope<VulkanDescriptorSetLayout> vulkanDescriptorSetLayout;
 
-        VulkanBuffer* uniformBuffer;
-
-        void* uniformBufferMapped{};
+        VulkanBuffer* materialParamsBuffer;
     };
 }

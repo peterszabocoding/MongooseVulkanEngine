@@ -3,6 +3,7 @@
 #include "renderer/renderer.h"
 #include "vulkan_device.h"
 #include "vulkan_image.h"
+#include "vulkan_material.h"
 #include "renderer/components.h"
 
 namespace Raytracing
@@ -34,6 +35,9 @@ namespace Raytracing
 
 		Transform transform;
 		Transform cubeTransform;
+
+		VulkanMaterial material{};
+		VulkanMaterial checkerMaterial{};
 
 		Ref<VulkanImage> texture;
 		Ref<VulkanImage> checkerTexture;

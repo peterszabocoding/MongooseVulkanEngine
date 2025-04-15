@@ -1,10 +1,8 @@
 #version 450
 
-layout(binding = 0) uniform UniformBufferObject {
-    mat4 model;
-    mat4 view;
-    mat4 proj;
-} ubo;
+layout(binding = 0) uniform MaterialParams {
+    vec3 tint;
+} materialParams;
 
 layout(push_constant) uniform Push {
   mat4 transform;

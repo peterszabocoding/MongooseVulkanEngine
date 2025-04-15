@@ -49,7 +49,7 @@ namespace Raytracing
     }
 
     void VulkanDevice::DrawMesh(Ref<VulkanPipeline> pipeline, Ref<Camera> camera, const Ref<VulkanMesh> mesh, const Transform& transform,
-                                const Ref<VulkanImage> texture) const
+                                const VulkanMaterial& material) const
     {
         const glm::mat4 modelMatrix = transform.GetTransform();
 
@@ -57,15 +57,15 @@ namespace Raytracing
         pushConstantData.transform = camera->GetProjection() * camera->GetView() * modelMatrix;
         pushConstantData.normalMatrix = transform.GetNormalMatrix();
 
-        pipeline->GetShader()->SetImage(texture);
-
         mesh->Bind(commandBuffers[currentFrame]);
         vkCmdBindPipeline(commandBuffers[currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->GetPipeline());
         vkCmdBindDescriptorSets(commandBuffers[currentFrame],
                                 VK_PIPELINE_BIND_POINT_GRAPHICS,
                                 pipeline->GetPipelineLayout(), 0,
-                                1, &pipeline->GetShader()->GetDescriptorSet(),
+                                1, &material.descriptorSet,
                                 0, nullptr);
+
+
         vkCmdPushConstants(
             commandBuffers[currentFrame],
             pipeline->GetPipelineLayout(),
@@ -143,6 +143,9 @@ namespace Raytracing
         if (ENABLE_VALIDATION_LAYERS)
         {
             device_extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+            //validation_layer_list.push_back("VK_LAYER_LUNARG_crash_diagnostic");
+            //validation_layer_list.push_back("VK_LAYER_KHRONOS_validation");
+            //validation_layer_list.push_back("VK_LAYER_LUNARG_api_dump");
         }
 
         std::cout << "Vulkan: create instance" << '\n';
@@ -523,9 +526,9 @@ namespace Raytracing
                 .Build();
 
         shaderDescriptorPool = VulkanDescriptorPool::Builder(this)
-                .SetMaxSets(MAX_FRAMES_IN_FLIGHT)
-                .AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 100)
-                .AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100)
+                .SetMaxSets(100)
+                .AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, MAX_FRAMES_IN_FLIGHT)
+                .AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, MAX_FRAMES_IN_FLIGHT)
                 .Build();
 
         imguiDescriptorPool = VulkanDescriptorPool::Builder(this)
