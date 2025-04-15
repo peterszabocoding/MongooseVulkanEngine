@@ -527,8 +527,8 @@ namespace Raytracing
 
         shaderDescriptorPool = VulkanDescriptorPool::Builder(this)
                 .SetMaxSets(100)
-                .AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, MAX_FRAMES_IN_FLIGHT)
-                .AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, MAX_FRAMES_IN_FLIGHT)
+                .AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 20)
+                .AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 20)
                 .Build();
 
         imguiDescriptorPool = VulkanDescriptorPool::Builder(this)
