@@ -48,7 +48,7 @@ namespace Raytracing
         vkDestroyInstance(instance, nullptr);
     }
 
-    void VulkanDevice::DrawMesh(Ref<VulkanPipeline> pipeline, Ref<Camera> camera, const Ref<VulkanMesh> mesh, const Transform& transform,
+    void VulkanDevice::DrawMesh(Ref<Camera> camera, const Ref<VulkanMesh> mesh, const Transform& transform,
                                 const VulkanMaterial& material) const
     {
         const glm::mat4 modelMatrix = transform.GetTransform();
@@ -58,17 +58,16 @@ namespace Raytracing
         pushConstantData.normalMatrix = transform.GetNormalMatrix();
 
         mesh->Bind(commandBuffers[currentFrame]);
-        vkCmdBindPipeline(commandBuffers[currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->GetPipeline());
+        vkCmdBindPipeline(commandBuffers[currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, material.pipeline->GetPipeline());
         vkCmdBindDescriptorSets(commandBuffers[currentFrame],
                                 VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                pipeline->GetPipelineLayout(), 0,
+                                material.pipeline->GetPipelineLayout(), 0,
                                 1, &material.descriptorSet,
                                 0, nullptr);
-
-
+        
         vkCmdPushConstants(
             commandBuffers[currentFrame],
-            pipeline->GetPipelineLayout(),
+            material.pipeline->GetPipelineLayout(),
             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
             0,
             sizeof(SimplePushConstantData),

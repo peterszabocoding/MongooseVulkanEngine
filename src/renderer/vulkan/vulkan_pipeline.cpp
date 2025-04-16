@@ -22,7 +22,7 @@ namespace Raytracing
 
     PipelineBuilder::PipelineBuilder() { clear(); }
 
-    Ref<VulkanPipeline> PipelineBuilder::build(VulkanDevice* vulkanDevice) const
+    Ref<VulkanPipeline> PipelineBuilder::Build(VulkanDevice* vulkanDevice) const
     {
         Ref<VulkanShader> shader = CreateRef<VulkanShader>(vulkanDevice, vertexShaderPath, fragmentShaderPath);
 
@@ -95,35 +95,39 @@ namespace Raytracing
         return CreateRef<VulkanPipeline>(vulkanDevice, shader, pipeline, pipelineLayout);
     }
 
-    void PipelineBuilder::SetShaders(const std::string& vertexShaderPath,
+    PipelineBuilder& PipelineBuilder::SetShaders(const std::string& vertexShaderPath,
                                      const std::string& fragmentShaderPath)
     {
         this->vertexShaderPath = vertexShaderPath;
         this->fragmentShaderPath = fragmentShaderPath;
+        return *this;
     }
 
-    void PipelineBuilder::SetInputTopology(VkPrimitiveTopology topology)
+    PipelineBuilder& PipelineBuilder::SetInputTopology(VkPrimitiveTopology topology)
     {
         inputAssembly.topology = topology;
         inputAssembly.primitiveRestartEnable = VK_FALSE;
+        return *this;
     }
 
-    void PipelineBuilder::SetPolygonMode(VkPolygonMode mode)
+    PipelineBuilder& PipelineBuilder::SetPolygonMode(VkPolygonMode mode)
     {
         rasterizer.polygonMode = mode;
         rasterizer.lineWidth = 1.0f;
         rasterizer.depthClampEnable = VK_FALSE;
         rasterizer.depthBiasEnable = VK_FALSE;
         rasterizer.rasterizerDiscardEnable = VK_FALSE;
+        return *this;
     }
 
-    void PipelineBuilder::SetCullMode(VkCullModeFlags cullMode, VkFrontFace frontFace)
+    PipelineBuilder& PipelineBuilder::SetCullMode(VkCullModeFlags cullMode, VkFrontFace frontFace)
     {
         rasterizer.cullMode = cullMode;
         rasterizer.frontFace = frontFace;
+        return *this;
     }
 
-    void PipelineBuilder::SetMultisampling(VkSampleCountFlagBits sampleCountFlagBits)
+    PipelineBuilder& PipelineBuilder::SetMultisampling(VkSampleCountFlagBits sampleCountFlagBits)
     {
         multisampling.sampleShadingEnable = VK_FALSE;
         multisampling.rasterizationSamples = sampleCountFlagBits;
@@ -131,30 +135,34 @@ namespace Raytracing
         multisampling.pSampleMask = nullptr;
         multisampling.alphaToCoverageEnable = VK_FALSE;
         multisampling.alphaToOneEnable = VK_FALSE;
+        return *this;
     }
 
-    void PipelineBuilder::DisableBlending()
+    PipelineBuilder& PipelineBuilder::DisableBlending()
     {
         // default write mask
         colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
                                               VK_COLOR_COMPONENT_A_BIT;
         // no blending
         colorBlendAttachment.blendEnable = VK_FALSE;
+        return *this;
     }
 
-    void PipelineBuilder::SetColorAttachmentFormat(VkFormat format)
+    PipelineBuilder& PipelineBuilder::SetColorAttachmentFormat(VkFormat format)
     {
         colorAttachmentformat = format;
         renderInfo.colorAttachmentCount = 1;
         renderInfo.pColorAttachmentFormats = &colorAttachmentformat;
+        return *this;
     }
 
-    void PipelineBuilder::SetDepthFormat(VkFormat format)
+    PipelineBuilder& PipelineBuilder::SetDepthFormat(VkFormat format)
     {
         renderInfo.depthAttachmentFormat = format;
+        return *this;
     }
 
-    void PipelineBuilder::DisableDepthTest()
+    PipelineBuilder& PipelineBuilder::DisableDepthTest()
     {
         depthStencil.depthTestEnable = VK_FALSE;
         depthStencil.depthWriteEnable = VK_FALSE;
@@ -165,19 +173,21 @@ namespace Raytracing
         depthStencil.back = {};
         depthStencil.minDepthBounds = 0.0f;
         depthStencil.maxDepthBounds = 1.0f;
+        return *this;
     }
 
-    void PipelineBuilder::AddPushConstant()
+    PipelineBuilder& PipelineBuilder::AddPushConstant(VkShaderStageFlags stageFlags, uint32_t offset, uint32_t size)
     {
         VkPushConstantRange pushConstantRange{};
-        pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-        pushConstantRange.offset = 0;
-        pushConstantRange.size = sizeof(SimplePushConstantData);
+        pushConstantRange.stageFlags = stageFlags;
+        pushConstantRange.offset = offset;
+        pushConstantRange.size = size;
 
         pushConstantRanges.push_back(pushConstantRange);
+        return *this;
     }
 
-    void PipelineBuilder::EnableDepthTest()
+    PipelineBuilder& PipelineBuilder::EnableDepthTest()
     {
         depthStencil.depthTestEnable = VK_TRUE;
         depthStencil.depthWriteEnable = VK_TRUE;
@@ -188,6 +198,7 @@ namespace Raytracing
         depthStencil.stencilTestEnable = VK_FALSE;
         depthStencil.front = {}; // Optional
         depthStencil.back = {}; // Optional
+        return *this;
     }
 
     void PipelineBuilder::clear()

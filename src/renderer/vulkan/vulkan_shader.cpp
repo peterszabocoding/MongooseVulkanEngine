@@ -9,11 +9,9 @@
 #include "vulkan_material.h"
 #include "util/filesystem.h"
 
-namespace Raytracing
-{
+namespace Raytracing {
     VulkanShader::VulkanShader(VulkanDevice* device, const std::string& vertexShaderPath,
-                               const std::string& fragmentShaderPath)
-    {
+                               const std::string& fragmentShaderPath) {
         vulkanDevice = device;
         CreateDescriptorSetLayout();
         CreateUniformBuffer();
@@ -21,16 +19,12 @@ namespace Raytracing
         Load(vertexShaderPath, fragmentShaderPath);
     }
 
-    VulkanShader::~VulkanShader()
-    {
-        delete materialParamsBuffer;
-
+    VulkanShader::~VulkanShader() {
         vkDestroyShaderModule(vulkanDevice->GetDevice(), vertexShaderModule, nullptr);
         vkDestroyShaderModule(vulkanDevice->GetDevice(), fragmentShaderModule, nullptr);
     }
 
-    void VulkanShader::Load(const std::string& vertexShaderPath, const std::string& fragmentShaderPath)
-    {
+    void VulkanShader::Load(const std::string& vertexShaderPath, const std::string& fragmentShaderPath) {
         pipelineShaderStageCreateInfos.clear();
 
         const auto vert_shader_code = FileSystem::ReadFile(vertexShaderPath);
@@ -54,21 +48,18 @@ namespace Raytracing
         pipelineShaderStageCreateInfos.push_back(frag_shader_stage_create_info);
     }
 
-    void VulkanShader::CreateDescriptorSetLayout()
-    {
+    void VulkanShader::CreateDescriptorSetLayout() {
         vulkanDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice)
                 .AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
                 .AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
                 .Build();
     }
 
-    void VulkanShader::CreateUniformBuffer()
-    {
-        materialParamsBuffer = new VulkanBuffer(
-            vulkanDevice,
-            sizeof(MaterialParams),
-            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            VMA_MEMORY_USAGE_CPU_TO_GPU);
+    void VulkanShader::CreateUniformBuffer() {
+        materialParamsBuffer = CreateScope<VulkanBuffer>(vulkanDevice,
+                                                         sizeof(MaterialParams),
+                                                         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                                                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                                                         VMA_MEMORY_USAGE_CPU_TO_GPU);
     }
 }

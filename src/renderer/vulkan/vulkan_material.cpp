@@ -3,7 +3,7 @@
 #include "vulkan_buffer.h"
 #include "vulkan_descriptor_writer.h"
 #include "vulkan_device.h"
-#include "vulkan_shader.h"
+#include "vulkan_pipeline.h"
 
 namespace Raytracing
 {
@@ -25,9 +25,9 @@ namespace Raytracing
         return *this;
     }
 
-    VulkanMaterialBuilder& VulkanMaterialBuilder::SetShader(Ref<VulkanShader> shader)
+    VulkanMaterialBuilder& VulkanMaterialBuilder::SetPipeline(Ref<VulkanPipeline> pipeline)
     {
-        this->shader = shader;
+        this->pipeline = pipeline;
         return *this;
     }
 
@@ -51,7 +51,7 @@ namespace Raytracing
         imageInfo.sampler = baseColorTexture->GetSampler();
 
         VkDescriptorSet descriptorSet;
-        VulkanDescriptorWriter(shader->GetVulkanDescriptorSetLayout(), vulkanDevice->GetShaderDescriptorPool())
+        VulkanDescriptorWriter(pipeline->GetShader()->GetVulkanDescriptorSetLayout(), vulkanDevice->GetShaderDescriptorPool())
                 .WriteBuffer(0, &bufferInfo)
                 .WriteImage(1, &imageInfo)
                 .Build(descriptorSet);
@@ -61,7 +61,7 @@ namespace Raytracing
         material.baseColorTexture = baseColorTexture;
         material.params = params;
         material.descriptorSet = descriptorSet;
-        material.shader = shader;
+        material.pipeline = pipeline;
         material.materialBuffer = materialBuffer;
 
         memcpy(materialBuffer->GetMappedData(), &params, sizeof(params));

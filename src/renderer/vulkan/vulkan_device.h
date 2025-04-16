@@ -36,10 +36,10 @@ namespace Raytracing
         VulkanDevice(int width, int height, GLFWwindow* glfwWindow);
         ~VulkanDevice();
 
-        void DrawMesh(Ref<VulkanPipeline> pipeline,
-                      Ref<Camera> camera,
-                      Ref<VulkanMesh> mesh,
-                      const Transform& transform, const VulkanMaterial& material) const;
+        void DrawMesh(
+            Ref<Camera> camera,
+            Ref<VulkanMesh> mesh,
+            const Transform& transform, const VulkanMaterial& material) const;
 
         void DrawImGui() const;
         bool BeginFrame();

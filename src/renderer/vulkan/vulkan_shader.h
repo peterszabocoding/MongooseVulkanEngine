@@ -56,6 +56,6 @@ namespace Raytracing
         VkDescriptorSet descriptorSet{};
         Scope<VulkanDescriptorSetLayout> vulkanDescriptorSetLayout;
 
-        VulkanBuffer* materialParamsBuffer;
+        Scope<VulkanBuffer> materialParamsBuffer;
     };
 }

@@ -12,7 +12,7 @@ namespace Raytracing
 	{
 	public:
 		VulkanRenderer() = default;
-		~VulkanRenderer() override;
+		~VulkanRenderer() override = default;
 
 		virtual void Init(int width, int height) override;
 
@@ -24,10 +24,10 @@ namespace Raytracing
 		virtual void Resize(int width, int height) override;
 		virtual void DrawFrame(float deltaTime, Ref<Camera> camera) override;
 
-		VulkanDevice* GetVulkanDevice() const { return vulkanDevice; }
+		VulkanDevice* GetVulkanDevice() const { return vulkanDevice.get(); }
 
 	private:
-		VulkanDevice* vulkanDevice;
+		Scope<VulkanDevice> vulkanDevice;
 		Ref<VulkanPipeline> graphicsPipeline;
 
 		Ref<VulkanMesh> mesh;

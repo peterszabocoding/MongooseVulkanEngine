@@ -27,21 +27,20 @@ namespace Raytracing
     public:
         PipelineBuilder();
         ~PipelineBuilder() = default;
-        Ref<VulkanPipeline> build(VulkanDevice* vulkanDevice) const;
+        Ref<VulkanPipeline> Build(VulkanDevice* vulkanDevice) const;
 
     public:
-        void SetShaders(const std::string& vertexShaderPath, const std::string& fragmentShaderPath);
-        void SetInputTopology(VkPrimitiveTopology topology);
-        void SetPolygonMode(VkPolygonMode mode);
-        void SetCullMode(VkCullModeFlags cullMode, VkFrontFace frontFace);
-        void SetMultisampling(VkSampleCountFlagBits sampleCountFlagBits = VK_SAMPLE_COUNT_1_BIT);
-        void DisableBlending();
-        void SetColorAttachmentFormat(VkFormat format);
-        void SetDepthFormat(VkFormat format);
-        void EnableDepthTest();
-        void DisableDepthTest();
-
-        void AddPushConstant();
+        PipelineBuilder& SetShaders(const std::string& vertexShaderPath, const std::string& fragmentShaderPath);
+        PipelineBuilder& SetInputTopology(VkPrimitiveTopology topology);
+        PipelineBuilder& SetPolygonMode(VkPolygonMode mode);
+        PipelineBuilder& SetCullMode(VkCullModeFlags cullMode, VkFrontFace frontFace);
+        PipelineBuilder& SetMultisampling(VkSampleCountFlagBits sampleCountFlagBits = VK_SAMPLE_COUNT_1_BIT);
+        PipelineBuilder& DisableBlending();
+        PipelineBuilder& SetColorAttachmentFormat(VkFormat format);
+        PipelineBuilder& SetDepthFormat(VkFormat format);
+        PipelineBuilder& EnableDepthTest();
+        PipelineBuilder& DisableDepthTest();
+        PipelineBuilder& AddPushConstant(VkShaderStageFlags stageFlags, uint32_t offset, uint32_t size);
 
     public:
         std::string vertexShaderPath;

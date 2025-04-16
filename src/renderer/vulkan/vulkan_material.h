@@ -7,7 +7,7 @@
 
 namespace Raytracing
 {
-    class VulkanShader;
+    class VulkanPipeline;
 
     struct MaterialParams {
         glm::vec3 tint = {1.f, 1.f, 1.f};
@@ -19,7 +19,7 @@ namespace Raytracing
         MaterialParams params;
         VkDescriptorSet descriptorSet;
         Ref<VulkanBuffer> materialBuffer;
-        Ref<VulkanShader> shader;
+        Ref<VulkanPipeline> pipeline;
     };
 
     class VulkanMaterialBuilder {
@@ -33,15 +33,14 @@ namespace Raytracing
         VulkanMaterialBuilder& SetIndex(int index);
         VulkanMaterialBuilder& SetBaseColorTexture(const Ref<VulkanImage>& baseColorTexture);
         VulkanMaterialBuilder& SetParams(const MaterialParams& params);
-        VulkanMaterialBuilder& SetShader(Ref<VulkanShader> shader);
+        VulkanMaterialBuilder& SetPipeline(Ref<VulkanPipeline> shader);
         VulkanMaterial Build();
 
     private:
         int index = 0;
         VulkanDevice* vulkanDevice;
         Ref<VulkanImage> baseColorTexture;
-        Ref<VulkanShader> shader;
+        Ref<VulkanPipeline> pipeline;
         MaterialParams params;
-
     };
 }
