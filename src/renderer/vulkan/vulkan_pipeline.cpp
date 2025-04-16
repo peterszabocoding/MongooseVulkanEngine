@@ -5,7 +5,6 @@
 #include "util/filesystem.h"
 
 #include "vulkan_device.h"
-#include "fmt/base.h"
 
 namespace Raytracing
 {

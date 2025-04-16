@@ -10,6 +10,7 @@
 
 #include "renderer/vulkan/vulkan_mesh.h"
 #include "renderer/vulkan/vulkan_device.h"
+#include "util/log.h"
 
 namespace Raytracing
 {
@@ -35,11 +36,14 @@ namespace Raytracing
 
     void ResourceManager::ReleaseImage(const ImageResource& image)
     {
+        LOG_TRACE("Release image data: " + image.path);
         stbi_image_free(image.data);
     }
 
     Ref<VulkanMesh> ResourceManager::LoadMesh(VulkanDevice* device, const std::string& meshPath)
     {
+        LOG_TRACE("Load Mesh: " + meshPath);
+
         std::vector<Vertex> vertices;
         std::vector<uint32_t> indices;
 
@@ -92,6 +96,8 @@ namespace Raytracing
     }
 
     Ref<VulkanImage> ResourceManager::LoadTexture(VulkanDevice* device, std::string textureImagePath) {
+        LOG_TRACE("Load Texture: " + textureImagePath);
+
         const ImageResource imageResource = LoadImage(textureImagePath);
 
         VulkanTextureImageBuilder textureImageBuilder;

@@ -2,6 +2,7 @@
 
 #include "vulkan_device.h"
 #include "vulkan_utils.h"
+#include "util/log.h"
 
 namespace Raytracing
 {
@@ -31,7 +32,7 @@ namespace Raytracing
     void VulkanBuffer::CreateBuffer(const VkDeviceSize size, const VkBufferUsageFlags usage, const VkMemoryPropertyFlags properties,
                                     VmaMemoryUsage memoryUsage)
     {
-        std::cout << "Allocate buffer: " << size << std::endl;
+        LOG_TRACE("Allocate buffer: " + std::to_string(size));
 
         VkBufferCreateInfo bufferInfo{};
         bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;

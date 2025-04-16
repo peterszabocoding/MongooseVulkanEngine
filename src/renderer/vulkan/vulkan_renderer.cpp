@@ -4,14 +4,16 @@
 #include "vulkan_swapchain.h"
 #include "renderer/mesh.h"
 #include "resource/resource_manager.h"
+#include "util/log.h"
 
 namespace Raytracing {
 
     void VulkanRenderer::Init(const int width, const int height) {
-        std::cout << "Init Vulkan" << '\n';
+        LOG_TRACE("VulkanRenderer::Init()");
         vulkanDevice = CreateScope<VulkanDevice>(width, height, glfwWindow);
 
-        std::cout << "Build pipeline" << '\n';
+
+        LOG_TRACE("Build pipeline");
         graphicsPipeline = PipelineBuilder()
                 .SetShaders("shader/spv/vert.spv", "shader/spv/frag.spv")
                 .SetCullMode(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE)
@@ -23,8 +25,6 @@ namespace Raytracing {
                 .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(SimplePushConstantData))
                 .Build(vulkanDevice.get());
 
-
-        std::cout << "Load Resources" << '\n';
         mesh = ResourceManager::LoadMesh(vulkanDevice.get(), "resources/models/viking_room.obj");
         cube = ResourceManager::LoadMesh(vulkanDevice.get(), "resources/models/cube.obj");
 

@@ -1,4 +1,5 @@
 #include "application.h"
+#include "util/log.h"
 
 namespace Raytracing
 {
@@ -26,7 +27,7 @@ namespace Raytracing
 
 	void Application::OnCreate()
 	{
-		std::cout << "Application OnCreate" << '\n';
+		LOG_TRACE("Application OnCreate");
 
 		WindowParams params;
 		params.title = applicationInfo.windowTitle.c_str();
@@ -42,18 +43,18 @@ namespace Raytracing
 
 		isRunning = true;
 
-		std::cout << "Application window created" << '\n';
+		LOG_TRACE("Application window created");
 	}
 
 	void Application::Run()
 	{
-		std::cout << "Windows Application Run" << '\n';
+		LOG_TRACE("Windows Application Run");
 		while (isRunning)
 		{
-			float time = glfwGetTime();
-			float deltaTime = time - lastFrameTime;
-			lastFrameTime = time;
+			const float time = glfwGetTime();
+			const float deltaTime = time - lastFrameTime;
 
+			lastFrameTime = time;
 			window->OnUpdate(deltaTime);
 		}
 	}

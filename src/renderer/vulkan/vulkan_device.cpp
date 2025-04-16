@@ -17,6 +17,7 @@
 
 #include "vulkan_descriptor_pool.h"
 #include "renderer/camera.h"
+#include "util/log.h"
 #include "vma/vk_mem_alloc.h"
 
 namespace Raytracing
@@ -147,16 +148,16 @@ namespace Raytracing
             //validation_layer_list.push_back("VK_LAYER_LUNARG_api_dump");
         }
 
-        std::cout << "Vulkan: create instance" << '\n';
+        LOG_TRACE("Vulkan: create instance");
         instance = CreateVkInstance(device_extensions, validation_layer_list);
-        std::cout << "Vulkan: create surface" << '\n';
+        LOG_TRACE("Vulkan: create surface");
         surface = CreateSurface(glfwWindow);
-        std::cout << "Vulkan: pick physical device" << '\n';
+        LOG_TRACE("Vulkan: pick physical device");
         physicalDevice = PickPhysicalDevice();
-        std::cout << "Vulkan: create logical device" << '\n';
+        LOG_TRACE("Vulkan: create logical device");
         device = CreateLogicalDevice();
 
-        std::cout << "Vulkan: create renderpass" << '\n';
+        LOG_TRACE("Vulkan: create renderpass");
         vulkanRenderPass = CreateRef<VulkanRenderPass>(this, VulkanSwapchain::GetImageFormat(this));
         vulkanSwapChain = CreateRef<VulkanSwapchain>(this, viewportWidth, viewportHeight);
 
@@ -165,7 +166,7 @@ namespace Raytracing
         CreateCommandBuffers();
         CreateSyncObjects();
 
-        std::cout << "Vulkan: VMA init" << '\n';
+        LOG_TRACE("Vulkan: VMA init");
         VmaAllocatorCreateInfo allocatorInfo = {};
         allocatorInfo.physicalDevice = physicalDevice;
         allocatorInfo.device = device;

@@ -36,9 +36,9 @@ FetchContent_Declare(
 )
 
 FetchContent_Declare(
-        fmt
-        GIT_REPOSITORY https://github.com/fmtlib/fmt
-        GIT_TAG 11.1.4
+        spdlog
+        GIT_REPOSITORY https://github.com/gabime/spdlog
+        GIT_TAG v1.15.2
 )
 
 message(STATUS "Fetching GLFW...")
@@ -51,7 +51,7 @@ message(STATUS "Fetching ImGui...")
 FetchContent_MakeAvailable(imgui)
 
 message(STATUS "Fetching fmt...")
-FetchContent_MakeAvailable(fmt)
+FetchContent_MakeAvailable(spdlog)
 
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
@@ -59,6 +59,8 @@ set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
 
 set(IMGUI_INCLUDE_DIR ${imgui_SOURCE_DIR}/)
+set(SPDLOG_INCLUDE_DIR ${spdlog_SOURCE_DIR}/include)
+
 file(GLOB IMGUI_SOURCES ${imgui_SOURCE_DIR}/*.cpp ${imgui_SOURCE_DIR}/*.h)
 
 add_library(
@@ -99,6 +101,8 @@ set(SOURCE_ONE_WEEKEND
 
         ./src/input/camera_controller.cpp
         ./src/input/input.cpp
+
+        ./src/util/log.cpp
 )
 
 set(SOURCE_ONE_WEEKEND_APPLE
@@ -163,13 +167,14 @@ target_compile_definitions(inOneWeekend PRIVATE GLFW_INCLUDE_NONE GLM_FORCE_DEPT
 set_target_properties(glfw PROPERTIES FOLDER "Dependencies")
 set_target_properties(glm PROPERTIES FOLDER "Dependencies")
 set_target_properties(imgui PROPERTIES FOLDER "Dependencies")
-set_target_properties(fmt PROPERTIES FOLDER "Dependencies")
+set_target_properties(spdlog PROPERTIES FOLDER "Dependencies")
 
 target_include_directories(inOneWeekend PRIVATE ${Vulkan_INCLUDE_DIRS})
 target_include_directories(inOneWeekend PRIVATE ${IMGUI_INCLUDE_DIR})
+target_include_directories(inOneWeekend PRIVATE ${SPDLOG_INCLUDE_DIR})
 
 target_link_libraries(inOneWeekend PRIVATE ${Vulkan_LIBRARIES})
 target_link_libraries(inOneWeekend PRIVATE glfw)
 target_link_libraries(inOneWeekend PRIVATE glm)
 target_link_libraries(inOneWeekend PRIVATE imgui)
-target_link_libraries(inOneWeekend PRIVATE fmt)
+target_link_libraries(inOneWeekend PRIVATE spdlog)
