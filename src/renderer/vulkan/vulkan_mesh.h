@@ -2,6 +2,7 @@
 
 #include "renderer/mesh.h"
 #include "vulkan_buffer.h"
+#include "vulkan_material.h"
 #include "util/core.h"
 
 namespace Raytracing
@@ -21,6 +22,8 @@ namespace Raytracing
 
             vertexBuffer = std::move(otherMeshlet.vertexBuffer);
             indexBuffer = std::move(otherMeshlet.indexBuffer);
+
+            this->materialIndex = otherMeshlet.materialIndex;
         }
 
         VulkanMeshlet& operator=(const VulkanMeshlet&) = delete;
@@ -31,6 +34,9 @@ namespace Raytracing
         void CreateIndexBuffer(VulkanDevice* vulkanDevice);
 
         uint32_t GetIndexCount() const { return indices.size(); }
+
+        void SetMaterialIndex(int materialIndex) { this->materialIndex = materialIndex; }
+        int GetMaterialIndex() const { return materialIndex; }
 
     public:
         int materialIndex = -1;
@@ -44,17 +50,18 @@ namespace Raytracing
 
     class VulkanMesh {
     public:
-        VulkanMesh(VulkanDevice* vulkanDevice, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices);
+        VulkanMesh(VulkanDevice* vulkanDevice): vulkanDevice(vulkanDevice) {}
         ~VulkanMesh() = default;
 
-        void SetMaterialIndex(int materialIndex) { this->materialIndex = materialIndex; }
-
+        void AddMeshlet(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices, int materialIndex);
         const std::vector<VulkanMeshlet>& GetMeshlets() const { return meshlets; }
-        int GetMaterialIndex() const { return materialIndex; }
+
+        void SetMaterials(const std::vector<VulkanMaterial>& materials) { this->materials = materials; }
+        const std::vector<VulkanMaterial>& GetMaterials() const { return materials; }
 
     private:
         VulkanDevice* vulkanDevice;
         std::vector<VulkanMeshlet> meshlets;
-        int materialIndex = 0;
+        std::vector<VulkanMaterial> materials;
     };
 }

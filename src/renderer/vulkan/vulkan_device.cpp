@@ -49,8 +49,7 @@ namespace Raytracing
         vkDestroyInstance(instance, nullptr);
     }
 
-    void VulkanDevice::DrawMesh(Ref<Camera> camera, const VulkanMaterial& material, const Ref<VulkanMesh> mesh,
-                                const Transform& transform) const
+    void VulkanDevice::DrawMesh(Ref<Camera> camera, const Ref<VulkanMesh> mesh, const Transform& transform) const
     {
         const glm::mat4 modelMatrix = transform.GetTransform();
 
@@ -60,6 +59,8 @@ namespace Raytracing
 
         for (auto& meshlet: mesh->GetMeshlets())
         {
+            auto material = mesh->GetMaterials()[meshlet.GetMaterialIndex()];
+
             vkCmdBindPipeline(commandBuffers[currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, material.pipeline->GetPipeline());
             vkCmdBindDescriptorSets(commandBuffers[currentFrame],
                                     VK_PIPELINE_BIND_POINT_GRAPHICS,

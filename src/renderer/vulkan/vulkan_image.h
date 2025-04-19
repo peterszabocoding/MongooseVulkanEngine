@@ -1,6 +1,7 @@
 #pragma once
 #include <vulkan/vulkan_core.h>
 
+#include "resource/resource.h"
 #include "util/core.h"
 
 namespace Raytracing
@@ -9,11 +10,12 @@ namespace Raytracing
 
     class VulkanImage {
     public:
-        VulkanImage(VulkanDevice* device, VkImage image, VkDeviceMemory memory, VkImageView imageView, VkSampler sampler)
+        VulkanImage(VulkanDevice* device, const VkImage image, const VkDeviceMemory memory, const VkImageView imageView, const VkSampler sampler)
             : device(device), image(image), imageMemory(memory), imageView(imageView), sampler(sampler) {}
 
         virtual ~VulkanImage();
 
+        void SetImageResource(const ImageResource& imageResource) { this->imageResource = imageResource; };
         VkImageView GetImageView() const { return imageView; }
         VkSampler GetSampler() const { return sampler; }
 
@@ -23,6 +25,7 @@ namespace Raytracing
         VkDeviceMemory imageMemory{};
         VkImageView imageView{};
         VkSampler sampler{};
+        ImageResource imageResource{};
     };
 
     class VulkanImageBuilder {
@@ -32,30 +35,30 @@ namespace Raytracing
 
         virtual Ref<VulkanImage> Build(VulkanDevice* device) = 0;
 
-        void SetData(unsigned char* data, uint64_t size)
+        void SetData(unsigned char* data, const uint64_t size)
         {
             this->data = data;
             this->size = size;
         }
 
-        void SetResolution(uint32_t width, uint32_t height)
+        void SetResolution(const uint32_t width, const uint32_t height)
         {
             this->width = width;
             this->height = height;
         }
 
-        void SetFormat(VkFormat format)
+        void SetFormat(const VkFormat format)
         {
             this->format = format;
         }
 
-        void SetFilter(VkFilter minFilter, VkFilter magFilter)
+        void SetFilter(const VkFilter minFilter, const VkFilter magFilter)
         {
             this->minFilter = minFilter;
             this->magFilter = magFilter;
         }
 
-        void SetTiling(VkImageTiling tiling)
+        void SetTiling(const VkImageTiling tiling)
         {
             this->tiling = tiling;
         }

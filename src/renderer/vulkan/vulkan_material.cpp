@@ -20,6 +20,36 @@ namespace Raytracing
         return *this;
     }
 
+    VulkanMaterialBuilder& VulkanMaterialBuilder::SetBaseColorTexture(const Ref<VulkanImage>& baseColorTexture)
+    {
+        this->baseColorTexture = baseColorTexture;
+        return *this;
+    }
+
+    VulkanMaterialBuilder& VulkanMaterialBuilder::SetNormalMapPath(const std::string& normalMapPath)
+    {
+        this->normalMapPath = normalMapPath;
+        return *this;
+    }
+
+    VulkanMaterialBuilder& VulkanMaterialBuilder::SetNormalMapTexture(const Ref<VulkanImage>& normalMapTexture)
+    {
+        this->normalMapTexture = normalMapTexture;
+        return *this;
+    }
+
+    VulkanMaterialBuilder& VulkanMaterialBuilder::SetMetallicRoughnessPath(const std::string& metallicRoughnessPath)
+    {
+        this->metallicRoughnessPath = metallicRoughnessPath;
+        return *this;
+    }
+
+    VulkanMaterialBuilder& VulkanMaterialBuilder::SetMetallicRoughnessTexture(const Ref<VulkanImage>& metallicRoughnessTexture)
+    {
+        this->metallicRoughnessTexture = metallicRoughnessTexture;
+        return *this;
+    }
+
     VulkanMaterialBuilder& VulkanMaterialBuilder::SetParams(const MaterialParams& params)
     {
         this->params = params;
@@ -34,7 +64,14 @@ namespace Raytracing
 
     VulkanMaterial VulkanMaterialBuilder::Build()
     {
-        baseColorTexture = ResourceManager::LoadTexture(vulkanDevice, baseColorPath);
+        if (baseColorTexture == nullptr && !baseColorPath.empty())
+            baseColorTexture = ResourceManager::LoadTexture(vulkanDevice, baseColorPath);
+
+        if (normalMapTexture == nullptr && !normalMapPath.empty())
+            normalMapTexture = ResourceManager::LoadTexture(vulkanDevice, normalMapPath);
+
+        if (metallicRoughnessTexture == nullptr && !metallicRoughnessPath.empty())
+            metallicRoughnessTexture = ResourceManager::LoadTexture(vulkanDevice, metallicRoughnessPath);
 
         Ref<VulkanBuffer> materialBuffer = CreateRef<VulkanBuffer>(
             vulkanDevice,
@@ -48,20 +85,37 @@ namespace Raytracing
         bufferInfo.offset = 0;
         bufferInfo.range = sizeof(MaterialParams);
 
-        VkDescriptorImageInfo imageInfo{};
-        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfo.imageView = baseColorTexture->GetImageView();
-        imageInfo.sampler = baseColorTexture->GetSampler();
+        VkDescriptorImageInfo baseColorImageInfo{};
+        baseColorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        baseColorImageInfo.imageView = baseColorTexture->GetImageView();
+        baseColorImageInfo.sampler = baseColorTexture->GetSampler();
 
         VkDescriptorSet descriptorSet;
-        VulkanDescriptorWriter(pipeline->GetShader()->GetVulkanDescriptorSetLayout(), vulkanDevice->GetShaderDescriptorPool())
+
+        if (normalMapTexture != nullptr)
+        {
+            VkDescriptorImageInfo normalMapImageInfo{};
+            normalMapImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            normalMapImageInfo.imageView = normalMapTexture->GetImageView();
+            normalMapImageInfo.sampler = normalMapTexture->GetSampler();
+
+            VulkanDescriptorWriter(pipeline->GetShader()->GetVulkanDescriptorSetLayout(), vulkanDevice->GetShaderDescriptorPool())
                 .WriteBuffer(0, &bufferInfo)
-                .WriteImage(1, &imageInfo)
+                .WriteImage(1, &baseColorImageInfo)
+                .WriteImage(2, &normalMapImageInfo)
                 .Build(descriptorSet);
+        } else
+        {
+            VulkanDescriptorWriter(pipeline->GetShader()->GetVulkanDescriptorSetLayout(), vulkanDevice->GetShaderDescriptorPool())
+                .WriteBuffer(0, &bufferInfo)
+                .WriteImage(1, &baseColorImageInfo)
+                .Build(descriptorSet);
+        }
 
         VulkanMaterial material;
         material.index = 0;
         material.baseColorTexture = baseColorTexture;
+        material.normalMapTexture = normalMapTexture;
         material.params = params;
         material.descriptorSet = descriptorSet;
         material.pipeline = pipeline;

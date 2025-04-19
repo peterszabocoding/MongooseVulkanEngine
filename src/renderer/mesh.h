@@ -88,7 +88,8 @@ namespace Raytracing
 namespace std {
     template <>
     struct hash<Raytracing::Vertex> {
-        size_t operator()(Raytracing::Vertex const &vertex) const {
+        size_t operator()(Raytracing::Vertex const &vertex) const noexcept
+        {
             size_t seed = 0;
             hashCombine(seed, vertex.pos, vertex.color, vertex.normal, vertex.texCoord);
             return seed;

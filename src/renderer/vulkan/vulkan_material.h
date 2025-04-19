@@ -16,6 +16,8 @@ namespace Raytracing
     struct VulkanMaterial {
         int index = 0;
         Ref<VulkanImage> baseColorTexture;
+        Ref<VulkanImage> normalMapTexture;
+        Ref<VulkanImage> metallicRoughnessTexture;
         MaterialParams params;
         VkDescriptorSet descriptorSet;
         Ref<VulkanBuffer> materialBuffer;
@@ -24,14 +26,23 @@ namespace Raytracing
 
     class VulkanMaterialBuilder {
     public:
-        VulkanMaterialBuilder(VulkanDevice* device): vulkanDevice(device) {};
+        explicit VulkanMaterialBuilder(VulkanDevice* device): vulkanDevice(device) {};
         ~VulkanMaterialBuilder() = default;
 
         VulkanMaterialBuilder(const VulkanMaterialBuilder&) = delete;
         VulkanMaterialBuilder& operator=(const VulkanMaterialBuilder&) = delete;
 
         VulkanMaterialBuilder& SetIndex(int index);
+
         VulkanMaterialBuilder& SetBaseColorPath(const std::string& baseColorPath);
+        VulkanMaterialBuilder& SetBaseColorTexture(const Ref<VulkanImage>& baseColorTexture);
+
+        VulkanMaterialBuilder& SetNormalMapPath(const std::string& normalMapPath);
+        VulkanMaterialBuilder& SetNormalMapTexture(const Ref<VulkanImage>& normalMapTexture);
+
+        VulkanMaterialBuilder& SetMetallicRoughnessPath(const std::string& metallicRoughnessPath);
+        VulkanMaterialBuilder& SetMetallicRoughnessTexture(const Ref<VulkanImage>& metallicRoughnessTexture);
+
         VulkanMaterialBuilder& SetParams(const MaterialParams& params);
         VulkanMaterialBuilder& SetPipeline(Ref<VulkanPipeline> shader);
         VulkanMaterial Build();
@@ -39,10 +50,16 @@ namespace Raytracing
     private:
         int index = 0;
         VulkanDevice* vulkanDevice;
-        Ref<VulkanImage> baseColorTexture;
+
         Ref<VulkanPipeline> pipeline;
         MaterialParams params;
 
+        Ref<VulkanImage> baseColorTexture;
+        Ref<VulkanImage> normalMapTexture;
+        Ref<VulkanImage> metallicRoughnessTexture;
+
         std::string baseColorPath;
+        std::string normalMapPath;
+        std::string metallicRoughnessPath;
     };
 }

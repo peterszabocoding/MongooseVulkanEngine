@@ -17,11 +17,14 @@
 #include "loaders/obj_loader.h"
 #include "renderer/vulkan/vulkan_mesh.h"
 #include "renderer/vulkan/vulkan_device.h"
+#include "renderer/vulkan/vulkan_pipeline.h"
 #include "util/log.h"
 
 
 namespace Raytracing
 {
+    Ref<VulkanPipeline> ResourceManager::mainPipeline;
+
     ImageResource ResourceManager::LoadImageResource(const std::string& imagePath)
     {
         int width, height, channels;
@@ -46,6 +49,20 @@ namespace Raytracing
     {
         LOG_TRACE("Release image data: " + image.path);
         stbi_image_free(image.data);
+    }
+
+    void ResourceManager::LoadPipelines(VulkanDevice* vulkanDevice)
+    {
+        mainPipeline = PipelineBuilder()
+                .SetShaders("shader/spv/vert.spv", "shader/spv/frag.spv")
+                .SetCullMode(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE)
+                .SetPolygonMode(VK_POLYGON_MODE_FILL)
+                .EnableDepthTest()
+                .DisableBlending()
+                .SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+                .SetMultisampling(VK_SAMPLE_COUNT_1_BIT)
+                .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(SimplePushConstantData))
+                .Build(vulkanDevice);
     }
 
     Ref<VulkanMesh> ResourceManager::LoadMesh(VulkanDevice* device, const std::string& meshPath)
@@ -87,6 +104,7 @@ namespace Raytracing
         textureImageBuilder.SetTiling(VK_IMAGE_TILING_OPTIMAL);
 
         Ref<VulkanImage> texture = textureImageBuilder.Build(device);
+        texture->SetImageResource(imageResource);
 
         ReleaseImage(imageResource);
 

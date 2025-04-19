@@ -76,11 +76,8 @@ namespace Raytracing
         VulkanBuffer::CopyBuffer(vulkanDevice, &stagingBuffer, indexBuffer.get());
     }
 
-    VulkanMesh::VulkanMesh(VulkanDevice* device, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices)
+    void VulkanMesh::AddMeshlet(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices, int materialIndex)
     {
-        vulkanDevice = device;
-
-        auto meshlet = VulkanMeshlet(vulkanDevice, vertices, indices);
-        meshlets.push_back(meshlet);
+        meshlets.push_back({vulkanDevice, vertices, indices, materialIndex});
     }
 }

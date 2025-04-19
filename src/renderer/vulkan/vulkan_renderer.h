@@ -29,17 +29,10 @@ namespace Raytracing
 		Scope<VulkanDevice> vulkanDevice;
 		Ref<VulkanPipeline> graphicsPipeline;
 
-		Ref<VulkanMesh> mesh;
-		Ref<VulkanMesh> cube;
+		Ref<VulkanMesh> vikingRoom;
 		Ref<VulkanMesh> boomBox;
 
 		Transform transform;
-		Transform cubeTransform;
 		Transform boomBoxTransform;
-
-		std::vector<VulkanMaterial> materials;
-
-		Ref<VulkanImage> texture;
-		Ref<VulkanImage> checkerTexture;
 	};
 }

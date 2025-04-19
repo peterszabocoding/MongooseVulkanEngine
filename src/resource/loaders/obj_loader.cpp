@@ -60,6 +60,9 @@ namespace Raytracing
             }
         }
 
-        return CreateRef<VulkanMesh>(device, vertices, indices);
+        auto mesh = CreateRef<VulkanMesh>(device);
+        mesh->AddMeshlet(vertices, indices, 0);
+
+        return mesh;
     }
 }

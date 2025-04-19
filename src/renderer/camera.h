@@ -39,7 +39,7 @@ namespace Raytracing
             CalculateView();
         }
 
-        void SetTransform(Transform& transform)
+        void SetTransform(const Transform& transform)
         {
             this->transform = transform;
         }
