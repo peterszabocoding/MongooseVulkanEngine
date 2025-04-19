@@ -31,7 +31,7 @@ namespace Raytracing
         VulkanMaterialBuilder& operator=(const VulkanMaterialBuilder&) = delete;
 
         VulkanMaterialBuilder& SetIndex(int index);
-        VulkanMaterialBuilder& SetBaseColorTexture(const Ref<VulkanImage>& baseColorTexture);
+        VulkanMaterialBuilder& SetBaseColorPath(const std::string& baseColorPath);
         VulkanMaterialBuilder& SetParams(const MaterialParams& params);
         VulkanMaterialBuilder& SetPipeline(Ref<VulkanPipeline> shader);
         VulkanMaterial Build();
@@ -42,5 +42,7 @@ namespace Raytracing
         Ref<VulkanImage> baseColorTexture;
         Ref<VulkanPipeline> pipeline;
         MaterialParams params;
+
+        std::string baseColorPath;
     };
 }

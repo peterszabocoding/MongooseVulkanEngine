@@ -13,10 +13,13 @@ namespace Raytracing {
     public:
         ResourceManager() = delete;
 
-        static ImageResource LoadImage(const std::string& imagePath);
+        static ImageResource LoadImageResource(const std::string& imagePath);
         static void ReleaseImage(const ImageResource& image);
 
         static Ref<VulkanMesh> LoadMesh(VulkanDevice* device, const std::string& meshPath);
+        static Ref<VulkanMesh> LoadMeshFromObj(VulkanDevice* device, const std::string& meshPath);
+        static Ref<VulkanMesh> LoadMeshFromglTF(VulkanDevice* device, const std::string& meshPath);
         static Ref<VulkanImage> LoadTexture(VulkanDevice* device, std::string textureImagePath);
+
     };
 }

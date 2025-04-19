@@ -70,23 +70,6 @@ namespace Raytracing
         }
     };
 
-    class Mesh {
-    public:
-        Mesh(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices)
-        {
-            this->vertices = vertices;
-            this->indices = indices;
-        }
-
-        virtual ~Mesh() {};
-
-        uint32_t GetIndexCount() const { return indices.size(); };
-
-    protected:
-        std::vector<Vertex> vertices;
-        std::vector<uint32_t> indices;
-    };
-
     namespace Primitives
     {
         const std::vector<uint32_t> RECTANGLE_INDICES = {

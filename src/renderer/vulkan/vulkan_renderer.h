@@ -2,7 +2,6 @@
 
 #include "renderer/renderer.h"
 #include "vulkan_device.h"
-#include "vulkan_image.h"
 #include "vulkan_material.h"
 #include "renderer/components.h"
 
@@ -32,12 +31,13 @@ namespace Raytracing
 
 		Ref<VulkanMesh> mesh;
 		Ref<VulkanMesh> cube;
+		Ref<VulkanMesh> boomBox;
 
 		Transform transform;
 		Transform cubeTransform;
+		Transform boomBoxTransform;
 
-		VulkanMaterial material{};
-		VulkanMaterial checkerMaterial{};
+		std::vector<VulkanMaterial> materials;
 
 		Ref<VulkanImage> texture;
 		Ref<VulkanImage> checkerTexture;

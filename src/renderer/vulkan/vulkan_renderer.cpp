@@ -1,9 +1,9 @@
 #include "vulkan_renderer.h"
+#include "resource/resource_manager.h"
 #include "vulkan_mesh.h"
 #include "vulkan_pipeline.h"
 #include "vulkan_swapchain.h"
 #include "renderer/mesh.h"
-#include "resource/resource_manager.h"
 #include "util/log.h"
 
 namespace Raytracing {
@@ -11,7 +11,6 @@ namespace Raytracing {
     void VulkanRenderer::Init(const int width, const int height) {
         LOG_TRACE("VulkanRenderer::Init()");
         vulkanDevice = CreateScope<VulkanDevice>(width, height, glfwWindow);
-
 
         LOG_TRACE("Build pipeline");
         graphicsPipeline = PipelineBuilder()
@@ -26,36 +25,63 @@ namespace Raytracing {
                 .Build(vulkanDevice.get());
 
         mesh = ResourceManager::LoadMesh(vulkanDevice.get(), "resources/models/viking_room.obj");
+        mesh->SetMaterialIndex(0);
+
         cube = ResourceManager::LoadMesh(vulkanDevice.get(), "resources/models/cube.obj");
+        cube->SetMaterialIndex(1);
+
+        boomBox = ResourceManager::LoadMesh(vulkanDevice.get(), "resources/gltf/BoomBox.gltf");
+        boomBox->SetMaterialIndex(2);
 
         transform.m_Position = glm::vec3(0.0f, 0.0f, -1.0f);
         transform.m_Rotation = glm::vec3(0.0f, 0.0f, 0.0f);
 
-        cubeTransform.m_Position = glm::vec3(1.0f, 1.5f, -2.0f);
-        cubeTransform.m_Scale = glm::vec3(0.25f, 0.25f, 0.25f);
+        cubeTransform.m_Position = glm::vec3(0.0f, 5.0f, -1.0f);
+        cubeTransform.m_Scale = glm::vec3(1.0f, 1.0f, 1.0f);
+        cubeTransform.m_Rotation = glm::vec3(0.0f, 0.0f, 0.0f);
 
-        texture = ResourceManager::LoadTexture(vulkanDevice.get(), "resources/textures/viking_room.png");
-        checkerTexture = ResourceManager::LoadTexture(vulkanDevice.get(), "resources/textures/checker.png");
+        boomBoxTransform.m_Position = glm::vec3(2.0f, 0.5f, -1.0f);
+        boomBoxTransform.m_Scale = glm::vec3(50.0f, 50.0f, 50.0f);
+        boomBoxTransform.m_Rotation = glm::vec3(0.0f, 180.0f, 0.0f);
 
-        material = VulkanMaterialBuilder(vulkanDevice.get())
+        {
+            VulkanMaterial material = VulkanMaterialBuilder(vulkanDevice.get())
                 .SetIndex(0)
                 .SetPipeline(graphicsPipeline)
-                .SetBaseColorTexture(texture)
+                .SetBaseColorPath("resources/textures/viking_room.png")
                 .Build();
 
-        checkerMaterial = VulkanMaterialBuilder(vulkanDevice.get())
+            materials.push_back(material);
+        }
+
+        {
+            VulkanMaterial material = VulkanMaterialBuilder(vulkanDevice.get())
                 .SetIndex(1)
                 .SetPipeline(graphicsPipeline)
-                .SetBaseColorTexture(checkerTexture)
+                .SetBaseColorPath("resources/textures/checker.png")
                 .Build();
+
+            materials.push_back(material);
+        }
+
+        {
+            VulkanMaterial material = VulkanMaterialBuilder(vulkanDevice.get())
+                .SetIndex(2)
+                .SetPipeline(graphicsPipeline)
+                .SetBaseColorPath("resources/gltf/BoomBox_baseColor.png")
+                .Build();
+
+            materials.push_back(material);
+        }
     }
 
     void VulkanRenderer::DrawFrame(float deltaTime, Ref<Camera> camera) {
         const bool result = vulkanDevice->BeginFrame();
         if (!result) return;
 
-        vulkanDevice->DrawMesh(camera, mesh, transform, material);
-        vulkanDevice->DrawMesh(camera, cube, cubeTransform, checkerMaterial);
+        vulkanDevice->DrawMesh(camera, materials[mesh->GetMaterialIndex()], mesh, transform);
+        vulkanDevice->DrawMesh(camera, materials[cube->GetMaterialIndex()], cube, cubeTransform);
+        vulkanDevice->DrawMesh(camera, materials[boomBox->GetMaterialIndex()], boomBox, boomBoxTransform);
         vulkanDevice->DrawImGui();
 
         vulkanDevice->EndFrame();

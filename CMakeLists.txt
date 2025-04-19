@@ -98,6 +98,8 @@ set(SOURCE_ONE_WEEKEND
         ./src/renderer/vulkan/imgui_vulkan.cpp
 
         ./src/resource/resource_manager.cpp
+        ./src/resource/loaders/obj_loader.cpp
+        ./src/resource/loaders/gltf_loader.cpp
 
         ./src/input/camera_controller.cpp
         ./src/input/input.cpp

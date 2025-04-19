@@ -49,8 +49,8 @@ namespace Raytracing
         vkDestroyInstance(instance, nullptr);
     }
 
-    void VulkanDevice::DrawMesh(Ref<Camera> camera, const Ref<VulkanMesh> mesh, const Transform& transform,
-                                const VulkanMaterial& material) const
+    void VulkanDevice::DrawMesh(Ref<Camera> camera, const VulkanMaterial& material, const Ref<VulkanMesh> mesh,
+                                const Transform& transform) const
     {
         const glm::mat4 modelMatrix = transform.GetTransform();
 
@@ -58,23 +58,26 @@ namespace Raytracing
         pushConstantData.transform = camera->GetProjection() * camera->GetView() * modelMatrix;
         pushConstantData.normalMatrix = transform.GetNormalMatrix();
 
-        mesh->Bind(commandBuffers[currentFrame]);
-        vkCmdBindPipeline(commandBuffers[currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, material.pipeline->GetPipeline());
-        vkCmdBindDescriptorSets(commandBuffers[currentFrame],
-                                VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                material.pipeline->GetPipelineLayout(), 0,
-                                1, &material.descriptorSet,
-                                0, nullptr);
-        
-        vkCmdPushConstants(
-            commandBuffers[currentFrame],
-            material.pipeline->GetPipelineLayout(),
-            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-            0,
-            sizeof(SimplePushConstantData),
-            &pushConstantData);
+        for (auto& meshlet: mesh->GetMeshlets())
+        {
+            vkCmdBindPipeline(commandBuffers[currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, material.pipeline->GetPipeline());
+            vkCmdBindDescriptorSets(commandBuffers[currentFrame],
+                                    VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                    material.pipeline->GetPipelineLayout(), 0,
+                                    1, &material.descriptorSet,
+                                    0, nullptr);
 
-        vkCmdDrawIndexed(commandBuffers[currentFrame], mesh->GetIndexCount(), 1, 0, 0, 0);
+            vkCmdPushConstants(
+                commandBuffers[currentFrame],
+                material.pipeline->GetPipelineLayout(),
+                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                0,
+                sizeof(SimplePushConstantData),
+                &pushConstantData);
+
+            meshlet.Bind(commandBuffers[currentFrame]);
+            vkCmdDrawIndexed(commandBuffers[currentFrame], meshlet.GetIndexCount(), 1, 0, 0, 0);
+        }
     }
 
     void VulkanDevice::DrawImGui() const

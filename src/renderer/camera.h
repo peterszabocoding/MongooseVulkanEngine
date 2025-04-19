@@ -1,6 +1,5 @@
 #pragma once
 
-#include <complex>
 #include <glm/glm.hpp>
 #include "glm/gtc/matrix_transform.hpp"
 
@@ -26,7 +25,7 @@ namespace Raytracing
             CalculateView();
         }
 
-        void SetResolution(unsigned int width, unsigned int height)
+        void SetResolution(const unsigned int width, const unsigned int height)
         {
             viewportWidth = width;
             viewportHeight = height;
@@ -34,7 +33,7 @@ namespace Raytracing
             CalculateProjection();
         }
 
-        void SetFocalLength(float focalLength)
+        void SetFocalLength(const float focalLength)
         {
             this->focalLength = focalLength;
             CalculateView();
@@ -45,13 +44,13 @@ namespace Raytracing
             this->transform = transform;
         }
 
-        void SetNearPlane(float nearPlane)
+        void SetNearPlane(const float nearPlane)
         {
             this->nearPlane = nearPlane;
             CalculateView();
         }
 
-        void SetFarPlane(float farPlane)
+        void SetFarPlane(const float farPlane)
         {
             this->farPlane = farPlane;
             CalculateView();

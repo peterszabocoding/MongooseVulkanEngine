@@ -4,6 +4,7 @@
 #include "vulkan_descriptor_writer.h"
 #include "vulkan_device.h"
 #include "vulkan_pipeline.h"
+#include "resource/resource_manager.h"
 
 namespace Raytracing
 {
@@ -13,9 +14,9 @@ namespace Raytracing
         return *this;
     }
 
-    VulkanMaterialBuilder& VulkanMaterialBuilder::SetBaseColorTexture(const Ref<VulkanImage>& baseColorTexture)
+    VulkanMaterialBuilder& VulkanMaterialBuilder::SetBaseColorPath(const std::string& baseColorPath)
     {
-        this->baseColorTexture = baseColorTexture;
+        this->baseColorPath = baseColorPath;
         return *this;
     }
 
@@ -33,6 +34,8 @@ namespace Raytracing
 
     VulkanMaterial VulkanMaterialBuilder::Build()
     {
+        baseColorTexture = ResourceManager::LoadTexture(vulkanDevice, baseColorPath);
+
         Ref<VulkanBuffer> materialBuffer = CreateRef<VulkanBuffer>(
             vulkanDevice,
             sizeof(MaterialParams),
