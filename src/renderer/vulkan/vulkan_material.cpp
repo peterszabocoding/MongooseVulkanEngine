@@ -92,17 +92,23 @@ namespace Raytracing
 
         VkDescriptorSet descriptorSet;
 
-        if (normalMapTexture != nullptr)
+        if (normalMapTexture != nullptr && metallicRoughnessTexture != nullptr)
         {
             VkDescriptorImageInfo normalMapImageInfo{};
             normalMapImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             normalMapImageInfo.imageView = normalMapTexture->GetImageView();
             normalMapImageInfo.sampler = normalMapTexture->GetSampler();
 
+            VkDescriptorImageInfo metallicRoughnessImageInfo{};
+            metallicRoughnessImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            metallicRoughnessImageInfo.imageView = metallicRoughnessTexture->GetImageView();
+            metallicRoughnessImageInfo.sampler = metallicRoughnessTexture->GetSampler();
+
             VulkanDescriptorWriter(pipeline->GetShader()->GetVulkanDescriptorSetLayout(), vulkanDevice->GetShaderDescriptorPool())
                 .WriteBuffer(0, &bufferInfo)
                 .WriteImage(1, &baseColorImageInfo)
                 .WriteImage(2, &normalMapImageInfo)
+                .WriteImage(3, &metallicRoughnessImageInfo)
                 .Build(descriptorSet);
         } else
         {

@@ -3,7 +3,7 @@
 #include "renderer/renderer.h"
 #include "vulkan_device.h"
 #include "vulkan_material.h"
-#include "renderer/components.h"
+#include "renderer/transform.h"
 
 namespace Raytracing
 {
@@ -31,8 +31,10 @@ namespace Raytracing
 
 		Ref<VulkanMesh> vikingRoom;
 		Ref<VulkanMesh> boomBox;
+		Ref<VulkanMesh> sphere;
 
 		Transform transform;
 		Transform boomBoxTransform;
+		Transform sphereTransform;
 	};
 }

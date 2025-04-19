@@ -17,7 +17,7 @@ layout(push_constant) uniform Push {
   mat4 normalMatrix;
 } push;
 
-const vec3 LIGHT_DIRECTION = normalize(vec3(1.0, 1.0, 1.0));
+const vec3 LIGHT_DIRECTION = normalize(vec3(0.0, 1.0, 1.0));
 const float AMBIENT = 0.05;
 
 void main() {
@@ -25,5 +25,4 @@ void main() {
 
     float diffuseFactor = AMBIENT + clamp(dot(normalWorldSpace, normalize(LIGHT_DIRECTION)), 0.0, 1.0);
     outColor = diffuseFactor * vec4(materialParams.tint, 1.0) * texture(texSampler, fragTexCoord);
-
 }

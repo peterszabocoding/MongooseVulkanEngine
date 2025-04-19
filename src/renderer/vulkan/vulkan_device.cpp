@@ -13,7 +13,8 @@
 #include "GLFW/glfw3.h"
 
 #define VMA_IMPLEMENTATION
-#include <renderer/components.h>
+#include <glm/gtx/transform.hpp>
+#include <renderer/transform.h>
 
 #include "vulkan_descriptor_pool.h"
 #include "renderer/camera.h"
@@ -49,13 +50,12 @@ namespace Raytracing
         vkDestroyInstance(instance, nullptr);
     }
 
-    void VulkanDevice::DrawMesh(Ref<Camera> camera, const Ref<VulkanMesh> mesh, const Transform& transform) const
+    void VulkanDevice::DrawMesh(Ref<Camera> camera, const Transform& transform, const Ref<VulkanMesh> mesh) const
     {
         const glm::mat4 modelMatrix = transform.GetTransform();
-
         SimplePushConstantData pushConstantData;
-        pushConstantData.transform = camera->GetProjection() * camera->GetView() * modelMatrix;
         pushConstantData.normalMatrix = transform.GetNormalMatrix();
+        pushConstantData.transform = camera->GetProjection() * camera->GetView() * modelMatrix;
 
         for (auto& meshlet: mesh->GetMeshlets())
         {

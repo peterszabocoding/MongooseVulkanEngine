@@ -4,6 +4,7 @@
 #include "vulkan_buffer.h"
 #include "vulkan_material.h"
 #include "util/core.h"
+#include "renderer/transform.h"
 
 namespace Raytracing
 {
@@ -19,11 +20,10 @@ namespace Raytracing
         {
             this->vertices = otherMeshlet.vertices;
             this->indices = otherMeshlet.indices;
+            this->materialIndex = otherMeshlet.materialIndex;
 
             vertexBuffer = std::move(otherMeshlet.vertexBuffer);
             indexBuffer = std::move(otherMeshlet.indexBuffer);
-
-            this->materialIndex = otherMeshlet.materialIndex;
         }
 
         VulkanMeshlet& operator=(const VulkanMeshlet&) = delete;

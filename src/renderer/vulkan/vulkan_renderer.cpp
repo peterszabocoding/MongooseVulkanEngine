@@ -18,12 +18,12 @@ namespace Raytracing {
         LOG_TRACE("Load meshes");
         vikingRoom = ResourceManager::LoadMesh(vulkanDevice.get(), "resources/gltf/viking_room.gltf");
         boomBox = ResourceManager::LoadMesh(vulkanDevice.get(), "resources/gltf/BoomBox.gltf");
+        sphere = ResourceManager::LoadMesh(vulkanDevice.get(), "resources/gltf/sphere.gltf");
 
         transform.m_Position = glm::vec3(0.0f, 0.0f, -1.0f);
-        transform.m_Rotation = glm::vec3(0.0f, 0.0f, 0.0f);
+        sphereTransform.m_Position = glm::vec3(0.0f, 1.0f, -1.0f);
 
         boomBoxTransform.m_Position = glm::vec3(2.0f, 0.5f, -1.0f);
-        boomBoxTransform.m_Scale = glm::vec3(50.0f, 50.0f, 50.0f);
         boomBoxTransform.m_Rotation = glm::vec3(0.0f, 180.0f, 0.0f);
     }
 
@@ -31,8 +31,9 @@ namespace Raytracing {
         const bool result = vulkanDevice->BeginFrame();
         if (!result) return;
 
-        vulkanDevice->DrawMesh(camera, vikingRoom, transform);
-        vulkanDevice->DrawMesh(camera, boomBox, boomBoxTransform);
+        vulkanDevice->DrawMesh(camera, transform, vikingRoom);
+        vulkanDevice->DrawMesh(camera, boomBoxTransform, boomBox);
+        vulkanDevice->DrawMesh(camera, sphereTransform, sphere);
         vulkanDevice->DrawImGui();
 
         vulkanDevice->EndFrame();

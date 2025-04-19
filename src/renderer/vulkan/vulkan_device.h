@@ -38,7 +38,7 @@ namespace Raytracing
 
         void DrawMesh(
             Ref<Camera> camera,
-            Ref<VulkanMesh> mesh, const Transform& transform) const;
+            const Transform& transform, Ref<VulkanMesh> mesh) const;
 
         void DrawImGui() const;
         bool BeginFrame();
