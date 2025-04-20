@@ -4,7 +4,6 @@
 #include "vulkan_buffer.h"
 #include "vulkan_material.h"
 #include "util/core.h"
-#include "renderer/transform.h"
 
 namespace Raytracing
 {

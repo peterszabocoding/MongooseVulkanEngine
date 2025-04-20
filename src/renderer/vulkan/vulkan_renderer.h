@@ -27,14 +27,8 @@ namespace Raytracing
 
 	private:
 		Scope<VulkanDevice> vulkanDevice;
-		Ref<VulkanPipeline> graphicsPipeline;
 
-		Ref<VulkanMesh> vikingRoom;
-		Ref<VulkanMesh> boomBox;
-		Ref<VulkanMesh> sphere;
-
+		Ref<VulkanMesh> scene;
 		Transform transform;
-		Transform boomBoxTransform;
-		Transform sphereTransform;
 	};
 }

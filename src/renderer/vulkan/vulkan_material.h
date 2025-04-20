@@ -11,6 +11,7 @@ namespace Raytracing
 
     struct MaterialParams {
         glm::vec3 tint = {1.f, 1.f, 1.f};
+        int useNormalMap = 0;
     };
 
     struct VulkanMaterial {

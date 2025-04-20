@@ -19,11 +19,11 @@ namespace Raytracing
         glm::vec2 mouseDelta = {0.0f, 0.0f};
         glm::vec2 lastMousePos = {0.0f, 0.0f};
 
-        float movementSpeed = 0.1f;
+        float movementSpeed = 1.0f;
         float turnSpeed = 0.1f;
 
         float moveTransitionEffect = 0.5f;
-        float maxSpeed = 5.0f;
+        float maxSpeed = 50.0f;
         float cameraDrag = 0.975f;
 
         glm::vec3 velocity = glm::vec3(0.0f, 0.0f, 0.0f);

@@ -91,7 +91,7 @@ namespace Raytracing
         unsigned int viewportHeight = 1;
 
         float nearPlane = 0.1f;
-        float farPlane = 10.0f;
+        float farPlane = 10000.0f;
 
         Transform transform;
 

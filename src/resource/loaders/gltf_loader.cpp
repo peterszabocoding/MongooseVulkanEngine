@@ -38,11 +38,13 @@ namespace Raytracing
                 {
                     const float* bufferPos = nullptr;
                     const float* bufferNormals = nullptr;
+                    const float* bufferTangents = nullptr;
                     const float* bufferTexCoordSet0 = nullptr;
                     const float* bufferColorSet0 = nullptr;
 
                     int posByteStride = 0;
                     int normByteStride = 0;
+                    int tanByteStride = 0;
                     int uv0ByteStride = 0;
                     int color0ByteStride = 0;
 
@@ -76,6 +78,18 @@ namespace Raytracing
                                              : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC3);
                     }
 
+                    // TANGENT
+                    if (primitive.attributes.find("TANGENT") != primitive.attributes.end())
+                    {
+                        const tinygltf::Accessor& tanAccessor = model.accessors[primitive.attributes.find("TANGENT")->second];
+                        const tinygltf::BufferView& tanView = model.bufferViews[tanAccessor.bufferView];
+                        bufferTangents = reinterpret_cast<const float*>(&(model.buffers[tanView.buffer].data[
+                            tanAccessor.byteOffset + tanView.byteOffset]));
+                        tanByteStride = tanAccessor.ByteStride(tanView)
+                                            ? (tanAccessor.ByteStride(tanView) / sizeof(float))
+                                            : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC4);
+                    }
+
                     // UVs
                     if (primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end())
                     {
@@ -107,10 +121,15 @@ namespace Raytracing
                         vert.pos = glm::vec4(glm::make_vec3(&bufferPos[v * posByteStride]), 1.0f);
                         vert.texCoord = bufferTexCoordSet0 ? glm::make_vec2(&bufferTexCoordSet0[v * uv0ByteStride]) : glm::vec3(0.0f);
                         vert.color = bufferColorSet0 ? glm::make_vec4(&bufferColorSet0[v * color0ByteStride]) : glm::vec4(1.0f);
-                        vert.normal = glm::normalize(
-                            glm::vec3(bufferNormals
-                                          ? glm::make_vec3(&bufferNormals[v * normByteStride])
-                                          : glm::vec3(0.0f)));
+                        vert.normal = glm::normalize(glm::vec3(bufferNormals
+                                                                   ? glm::make_vec3(&bufferNormals[v * normByteStride])
+                                                                   : glm::vec3(0.0f)));
+                        glm::vec4 tempTangent = glm::normalize(glm::vec4(bufferTangents
+                                                                    ? glm::make_vec4(&bufferTangents[v * tanByteStride])
+                                                                    : glm::vec4(0.0f)));
+                        vert.tangent = glm::normalize(glm::vec3(tempTangent));
+                        vert.bitangent = glm::normalize(glm::cross(vert.normal, glm::vec3(tempTangent)) * tempTangent.w);
+
                         vertexPos++;
                     }
                 }

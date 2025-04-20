@@ -118,6 +118,8 @@ namespace Raytracing
                 .Build(descriptorSet);
         }
 
+        params.useNormalMap = normalMapTexture != nullptr ? 1 : 0;
+
         VulkanMaterial material;
         material.index = 0;
         material.baseColorTexture = baseColorTexture;
