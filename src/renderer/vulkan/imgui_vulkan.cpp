@@ -10,6 +10,33 @@
 
 namespace Raytracing
 {
+
+    namespace Utils
+    {
+        void DrawFloatControl(const std::string& label, float& values, float min, float max, float steps, float resetValue, float columnWidth)
+        {
+            ImGuiIO& io = ImGui::GetIO();
+
+            ImGui::PushID(label.c_str());
+
+            auto labelSize = ImGui::CalcTextSize(label.c_str());
+
+            ImGui::Text(label.c_str());
+            ImGui::SameLine();
+
+            ImGui::Columns(2);
+            ImGui::SetColumnWidth(0, labelSize.x + 15.0);
+            ImGui::NextColumn();
+
+            ImGui::SetColumnWidth(1, columnWidth);
+            ImGui::DragFloat("", &values, steps, min, max, "%.2f");
+
+            ImGui::Columns(1);
+
+            ImGui::PopID();
+        }
+    }
+
     ImGuiVulkan::ImGuiVulkan() = default;
 
     ImGuiVulkan::~ImGuiVulkan()
@@ -78,9 +105,12 @@ namespace Raytracing
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        ImGui::Begin("Performance");
-        ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
-        ImGui::End();
+        for (const auto uiWindow : uiWindows)
+        {
+            ImGui::Begin(uiWindow->GetTitle());
+            uiWindow->Draw();
+            ImGui::End();
+        }
 
         // Rendering
         ImGui::Render();

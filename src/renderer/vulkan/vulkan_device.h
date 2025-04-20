@@ -61,6 +61,8 @@ namespace Raytracing
         [[nodiscard]] VkRenderPass GetRenderPass() const { return vulkanRenderPass->Get(); }
         [[nodiscard]] VkCommandPool GetCommandPool() const { return commandPool; }
         [[nodiscard]] Ref<VulkanSwapchain> GetSwapchain() const { return vulkanSwapChain; }
+        [[nodiscard]] VkPhysicalDeviceProperties GetDeviceProperties() const { return physicalDeviceProperties; }
+
 
         VkSampleCountFlagBits GetMaxMSAASampleCount() const;
 
@@ -101,6 +103,7 @@ namespace Raytracing
 
         VkSurfaceKHR surface{};
         VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+        VkPhysicalDeviceProperties physicalDeviceProperties;
 
         VkCommandPool commandPool{};
 

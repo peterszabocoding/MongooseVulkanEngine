@@ -4,6 +4,8 @@
 #include "glm/gtc/matrix_transform.hpp"
 
 #include "transform.h"
+#include "math/math.h"
+#include <limits>
 
 namespace Raytracing
 {
@@ -19,8 +21,8 @@ namespace Raytracing
         void Update()
         {
             forwardVector = transform.GetForwardDirection();
-            rightVector = glm::normalize(glm::cross(forwardVector, glm::vec3(0.0f, 1.0f, 0.0f)));
-            upVector = glm::normalize(glm::cross(rightVector, forwardVector));
+            rightVector = normalize(cross(forwardVector, glm::vec3(0.0f, 1.0f, 0.0f)));
+            upVector = normalize(cross(rightVector, forwardVector));
 
             CalculateView();
         }
@@ -33,10 +35,12 @@ namespace Raytracing
             CalculateProjection();
         }
 
-        void SetFocalLength(const float focalLength)
+        void SetFOV(const float focalLength)
         {
-            this->focalLength = focalLength;
-            CalculateView();
+            if (isEqual(fov, focalLength)) return;
+
+            this->fov = focalLength;
+            CalculateProjection();
         }
 
         void SetTransform(const Transform& transform)
@@ -66,32 +70,32 @@ namespace Raytracing
         unsigned int Width() const { return viewportWidth; }
         unsigned int Height() const { return viewportHeight; }
 
-        double FocalLength() const { return focalLength; }
-        double AspectRatio() const { return aspectRatio; }
+        double GetFOV() const { return fov; }
+        double GetAspectRatio() const { return aspectRatio; }
 
         Transform& GetTransform() { return transform; }
 
     private:
         void CalculateProjection()
         {
-            projection = glm::perspective(glm::radians(focalLength), aspectRatio, nearPlane, farPlane);
+            projection = glm::perspective(glm::radians(fov), aspectRatio, nearPlane, farPlane);
             projection[1][1] *= -1;
         }
 
         void CalculateView()
         {
-            view = glm::lookAt(transform.m_Position, transform.m_Position + forwardVector, upVector);
+            view = lookAt(transform.m_Position, transform.m_Position + forwardVector, upVector);
         }
 
     private:
-        float focalLength = 45.0;
+        float fov = 45.0;
         float aspectRatio = 1.0;
-
-        unsigned int viewportWidth = 1;
-        unsigned int viewportHeight = 1;
 
         float nearPlane = 0.1f;
         float farPlane = 10000.0f;
+
+        unsigned int viewportWidth = 1;
+        unsigned int viewportHeight = 1;
 
         Transform transform;
 

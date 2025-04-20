@@ -161,6 +161,8 @@ namespace Raytracing
         LOG_TRACE("Vulkan: create logical device");
         device = CreateLogicalDevice();
 
+        vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
+
         LOG_TRACE("Vulkan: create renderpass");
         vulkanRenderPass = CreateRef<VulkanRenderPass>(this, VulkanSwapchain::GetImageFormat(this));
         vulkanSwapChain = CreateRef<VulkanSwapchain>(this, viewportWidth, viewportHeight);
@@ -323,9 +325,6 @@ namespace Raytracing
 
     VkSampleCountFlagBits VulkanDevice::GetMaxMSAASampleCount() const
     {
-        VkPhysicalDeviceProperties physicalDeviceProperties;
-        vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
-
         VkSampleCountFlags counts = physicalDeviceProperties.limits.framebufferColorSampleCounts & physicalDeviceProperties.limits.
                                     framebufferDepthSampleCounts;
         if (counts & VK_SAMPLE_COUNT_64_BIT) { return VK_SAMPLE_COUNT_64_BIT; }
