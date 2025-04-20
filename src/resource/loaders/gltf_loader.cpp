@@ -15,173 +15,180 @@ namespace Raytracing
 {
     namespace Utils
     {
+        struct VertexAttribute {
+            const char* name;
+            int type;
+            const float* buffer = nullptr;
+            int byteStride = -1;
+        };
+
+        static std::pair<const float*, int> ReadVertexValue(const tinygltf::Primitive& primitive, const tinygltf::Model& model,
+                                                            const char* value, int type)
+        {
+            const tinygltf::Accessor& accessor = model.accessors[primitive.attributes.find(value)->second];
+            const tinygltf::BufferView& view = model.bufferViews[accessor.bufferView];
+
+            auto buffer = reinterpret_cast<const float*>(&model.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]);
+
+            int byteStride = accessor.ByteStride(view)
+                                 ? accessor.ByteStride(view) / sizeof(float)
+                                 : tinygltf::GetNumComponentsInType(type);
+
+            return std::make_pair(buffer, byteStride);
+        }
+
+        static std::pair<glm::vec3, glm::vec3> ReadBoundingBoxValues(const tinygltf::Primitive& primitive, const tinygltf::Model& model)
+        {
+            const tinygltf::Accessor& accessor = model.accessors[primitive.attributes.find("POSITION")->second];
+
+            return std::make_pair(glm::vec3(accessor.minValues[0], accessor.minValues[1], accessor.minValues[2]),
+                                  glm::vec3(accessor.maxValues[0], accessor.maxValues[1], accessor.maxValues[2]));
+        }
+
+        static uint32_t GetVertexCount(const tinygltf::Primitive& primitive, const tinygltf::Model& model)
+        {
+            return model.accessors[primitive.attributes.find("POSITION")->second].count;
+        }
+
+        static bool HasAttribute(const tinygltf::Primitive& primitive, const char* attributeName)
+        {
+            return primitive.attributes.find(attributeName) != primitive.attributes.end();
+        }
+
+        static void LoadPrimitive(const tinygltf::Primitive& primitive, const tinygltf::Model& model, Ref<VulkanMesh> mesh)
+        {
+            std::array<VertexAttribute, 5> vAttributes{};
+            vAttributes[0].name = "POSITION";
+            vAttributes[0].type = TINYGLTF_TYPE_VEC3;
+
+            vAttributes[1].name = "NORMAL";
+            vAttributes[1].type = TINYGLTF_TYPE_VEC3;
+
+            vAttributes[2].name = "TANGENT";
+            vAttributes[2].type = TINYGLTF_TYPE_VEC4;
+
+            vAttributes[3].name = "TEXCOORD_0";
+            vAttributes[3].type = TINYGLTF_TYPE_VEC2;
+
+            vAttributes[4].name = "COLOR_0";
+            vAttributes[4].type = TINYGLTF_TYPE_VEC3;
+
+            std::vector<Vertex> vertices;
+            std::vector<uint32_t> indices;
+
+            uint32_t vertexPos = 0;
+            uint32_t indexPos = 0;
+            uint32_t indexCount = 0;
+            uint32_t vertexCount = 0;
+
+            std::pair<glm::vec3, glm::vec3> boundingBox;
+
+            // Vertices
+            {
+                // Position attribute is required
+                assert(HasAttribute(primitive, "POSITION"));
+
+                // POSITION
+                vertexCount = GetVertexCount(primitive, model);
+                vertices.resize(vertexCount);
+
+                boundingBox = ReadBoundingBoxValues(primitive, model);
+
+                for (auto& vertexAttribute: vAttributes)
+                {
+                    if (!HasAttribute(primitive, vertexAttribute.name)) continue;
+
+                    auto [fst, snd] = ReadVertexValue(primitive, model, vertexAttribute.name, vertexAttribute.type);
+                    vertexAttribute.buffer = fst;
+                    vertexAttribute.byteStride = snd;
+                }
+
+                for (size_t v = 0; v < vertexCount; v++)
+                {
+                    Vertex& vert = vertices[vertexPos];
+
+                    vert.pos = glm::vec4(glm::make_vec3(&vAttributes[0].buffer[v * vAttributes[0].byteStride]), 1.0f);
+
+                    vert.texCoord = vAttributes[3].buffer
+                                        ? glm::make_vec2(&vAttributes[3].buffer[v * vAttributes[3].byteStride])
+                                        : glm::vec3(0.0f);
+
+                    vert.color = vAttributes[4].buffer
+                                     ? glm::make_vec4(&vAttributes[4].buffer[v * vAttributes[4].byteStride])
+                                     : glm::vec4(1.0f);
+
+                    vert.normal = normalize(glm::vec3(vAttributes[1].buffer
+                                                          ? glm::make_vec3(&vAttributes[1].buffer[v * vAttributes[1].byteStride])
+                                                          : glm::vec3(0.0f)));
+
+                    glm::vec4 tempTangent = normalize(glm::vec4(vAttributes[2].buffer
+                                                                    ? glm::make_vec4(&vAttributes[2].buffer[v * vAttributes[2].byteStride])
+                                                                    : glm::vec4(0.0f)));
+
+                    vert.tangent = normalize(glm::vec3(tempTangent));
+                    vert.bitangent = normalize(cross(vert.normal, glm::vec3(tempTangent)) * tempTangent.w);
+
+                    vertexPos++;
+                }
+            }
+
+            // Indices
+            if (primitive.indices > -1)
+            {
+                const tinygltf::Accessor& accessor = model.accessors[primitive.indices];
+                const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
+                const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
+
+                indexCount = static_cast<uint32_t>(accessor.count);
+                indices.resize(indexCount);
+                const void* dataPtr = &(buffer.data[accessor.byteOffset + bufferView.byteOffset]);
+
+                switch (accessor.componentType)
+                {
+                    case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT: {
+                        const uint32_t* buf = static_cast<const uint32_t*>(dataPtr);
+                        for (size_t index = 0; index < accessor.count; index++)
+                        {
+                            indices[indexPos] = buf[index];
+                            indexPos++;
+                        }
+                        break;
+                    }
+                    case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT: {
+                        const uint16_t* buf = static_cast<const uint16_t*>(dataPtr);
+                        for (size_t index = 0; index < accessor.count; index++)
+                        {
+                            indices[indexPos] = buf[index];
+                            indexPos++;
+                        }
+                        break;
+                    }
+                    case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE: {
+                        const uint8_t* buf = static_cast<const uint8_t*>(dataPtr);
+                        for (size_t index = 0; index < accessor.count; index++)
+                        {
+                            indices[indexPos] = buf[index];
+                            indexPos++;
+                        }
+                        break;
+                    }
+                    default:
+                        LOG_ERROR("Index component type ", accessor.componentType, " not supported!");
+                        return;
+                }
+            }
+
+            mesh->AddMeshlet(vertices, indices, primitive.material);
+        }
+
         static void LoadGLTFNode(const tinygltf::Node& node, const tinygltf::Model& model, Ref<VulkanMesh>& vulkanMesh)
         {
             if (node.mesh <= -1) return;
 
             const tinygltf::Mesh mesh = model.meshes[node.mesh];
-            for (size_t j = 0; j < mesh.primitives.size(); j++)
+            for (auto& primitive: mesh.primitives)
             {
-                std::vector<Vertex> vertices;
-                std::vector<uint32_t> indices;
-
-                const tinygltf::Primitive& primitive = mesh.primitives[j];
-
-                uint32_t vertexPos = 0;
-                uint32_t indexPos = 0;
-                uint32_t indexCount = 0;
-                uint32_t vertexCount = 0;
-                glm::vec3 posMin{};
-                glm::vec3 posMax{};
-
-                // Vertices
-                {
-                    const float* bufferPos = nullptr;
-                    const float* bufferNormals = nullptr;
-                    const float* bufferTangents = nullptr;
-                    const float* bufferTexCoordSet0 = nullptr;
-                    const float* bufferColorSet0 = nullptr;
-
-                    int posByteStride = 0;
-                    int normByteStride = 0;
-                    int tanByteStride = 0;
-                    int uv0ByteStride = 0;
-                    int color0ByteStride = 0;
-
-                    // Position attribute is required
-                    assert(primitive.attributes.find("POSITION") != primitive.attributes.end());
-
-                    // POSITION
-                    const tinygltf::Accessor& posAccessor = model.accessors[primitive.attributes.find("POSITION")->second];
-                    const tinygltf::BufferView& posView = model.bufferViews[posAccessor.bufferView];
-
-                    bufferPos = reinterpret_cast<const float*>(&(model.buffers[posView.buffer].data[
-                        posAccessor.byteOffset + posView.byteOffset]));
-
-                    posMin = glm::vec3(posAccessor.minValues[0], posAccessor.minValues[1], posAccessor.minValues[2]);
-                    posMax = glm::vec3(posAccessor.maxValues[0], posAccessor.maxValues[1], posAccessor.maxValues[2]);
-                    vertexCount = static_cast<uint32_t>(posAccessor.count);
-                    vertices.resize(vertexCount);
-                    posByteStride = posAccessor.ByteStride(posView)
-                                        ? (posAccessor.ByteStride(posView) / sizeof(float))
-                                        : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC3);
-
-                    // NORMAL
-                    if (primitive.attributes.find("NORMAL") != primitive.attributes.end())
-                    {
-                        const tinygltf::Accessor& normAccessor = model.accessors[primitive.attributes.find("NORMAL")->second];
-                        const tinygltf::BufferView& normView = model.bufferViews[normAccessor.bufferView];
-                        bufferNormals = reinterpret_cast<const float*>(&(model.buffers[normView.buffer].data[
-                            normAccessor.byteOffset + normView.byteOffset]));
-                        normByteStride = normAccessor.ByteStride(normView)
-                                             ? (normAccessor.ByteStride(normView) / sizeof(float))
-                                             : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC3);
-                    }
-
-                    // TANGENT
-                    if (primitive.attributes.find("TANGENT") != primitive.attributes.end())
-                    {
-                        const tinygltf::Accessor& tanAccessor = model.accessors[primitive.attributes.find("TANGENT")->second];
-                        const tinygltf::BufferView& tanView = model.bufferViews[tanAccessor.bufferView];
-                        bufferTangents = reinterpret_cast<const float*>(&(model.buffers[tanView.buffer].data[
-                            tanAccessor.byteOffset + tanView.byteOffset]));
-                        tanByteStride = tanAccessor.ByteStride(tanView)
-                                            ? (tanAccessor.ByteStride(tanView) / sizeof(float))
-                                            : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC4);
-                    }
-
-                    // UVs
-                    if (primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end())
-                    {
-                        const tinygltf::Accessor& uvAccessor = model.accessors[primitive.attributes.find("TEXCOORD_0")->second];
-                        const tinygltf::BufferView& uvView = model.bufferViews[uvAccessor.bufferView];
-                        bufferTexCoordSet0 = reinterpret_cast<const float*>(&(model.buffers[uvView.buffer].data[
-                            uvAccessor.byteOffset + uvView.byteOffset]));
-                        uv0ByteStride = uvAccessor.ByteStride(uvView)
-                                            ? (uvAccessor.ByteStride(uvView) / sizeof(float))
-                                            : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC2);
-                    }
-
-                    // Vertex colors
-                    if (primitive.attributes.find("COLOR_0") != primitive.attributes.end())
-                    {
-                        const tinygltf::Accessor& accessor = model.accessors[primitive.attributes.find("COLOR_0")->second];
-                        const tinygltf::BufferView& view = model.bufferViews[accessor.bufferView];
-                        bufferColorSet0 = reinterpret_cast<const float*>(&(model.buffers[view.buffer].data[
-                            accessor.byteOffset + view.byteOffset]));
-                        color0ByteStride = accessor.ByteStride(view)
-                                               ? (accessor.ByteStride(view) / sizeof(float))
-                                               : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC3);
-                    }
-
-
-                    for (size_t v = 0; v < posAccessor.count; v++)
-                    {
-                        Vertex& vert = vertices[vertexPos];
-                        vert.pos = glm::vec4(glm::make_vec3(&bufferPos[v * posByteStride]), 1.0f);
-                        vert.texCoord = bufferTexCoordSet0 ? glm::make_vec2(&bufferTexCoordSet0[v * uv0ByteStride]) : glm::vec3(0.0f);
-                        vert.color = bufferColorSet0 ? glm::make_vec4(&bufferColorSet0[v * color0ByteStride]) : glm::vec4(1.0f);
-                        vert.normal = glm::normalize(glm::vec3(bufferNormals
-                                                                   ? glm::make_vec3(&bufferNormals[v * normByteStride])
-                                                                   : glm::vec3(0.0f)));
-                        glm::vec4 tempTangent = glm::normalize(glm::vec4(bufferTangents
-                                                                    ? glm::make_vec4(&bufferTangents[v * tanByteStride])
-                                                                    : glm::vec4(0.0f)));
-                        vert.tangent = glm::normalize(glm::vec3(tempTangent));
-                        vert.bitangent = glm::normalize(glm::cross(vert.normal, glm::vec3(tempTangent)) * tempTangent.w);
-
-                        vertexPos++;
-                    }
-                }
-
-                // Indices
-                bool hasIndices = primitive.indices > -1;
-                if (hasIndices)
-                {
-                    const tinygltf::Accessor& accessor = model.accessors[primitive.indices > -1 ? primitive.indices : 0];
-                    const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
-                    const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
-
-                    indexCount = static_cast<uint32_t>(accessor.count);
-                    indices.resize(indexCount);
-                    const void* dataPtr = &(buffer.data[accessor.byteOffset + bufferView.byteOffset]);
-
-                    switch (accessor.componentType)
-                    {
-                        case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT: {
-                            const uint32_t* buf = static_cast<const uint32_t*>(dataPtr);
-                            for (size_t index = 0; index < accessor.count; index++)
-                            {
-                                indices[indexPos] = buf[index];
-                                indexPos++;
-                            }
-                            break;
-                        }
-                        case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT: {
-                            const uint16_t* buf = static_cast<const uint16_t*>(dataPtr);
-                            for (size_t index = 0; index < accessor.count; index++)
-                            {
-                                indices[indexPos] = buf[index];
-                                indexPos++;
-                            }
-                            break;
-                        }
-                        case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE: {
-                            const uint8_t* buf = static_cast<const uint8_t*>(dataPtr);
-                            for (size_t index = 0; index < accessor.count; index++)
-                            {
-                                indices[indexPos] = buf[index];
-                                indexPos++;
-                            }
-                            break;
-                        }
-                        default:
-                            LOG_ERROR("Index component type ", accessor.componentType, " not supported!");
-                            return;
-                    }
-                }
-
-                vulkanMesh->AddMeshlet(vertices, indices, primitive.material);
+                LoadPrimitive(primitive, model, vulkanMesh);
             }
         }
 
@@ -254,13 +261,13 @@ namespace Raytracing
         const bool ret = loader.LoadASCIIFromFile(&model, &err, &warn, meshPath);
 
         if (!warn.empty())
-            LOG_TRACE("Warn: " + warn);
+            LOG_WARN("Warn: " + warn);
         if (!err.empty())
-            LOG_TRACE("Err: " + err);
+            LOG_ERROR("Err: " + err);
 
         if (!ret)
         {
-            LOG_TRACE("Failed to parse glTF");
+            LOG_ERROR("Failed to parse glTF");
             abort();
         }
 
@@ -287,5 +294,10 @@ namespace Raytracing
         mesh->SetMaterials(materials);
 
         return mesh;
+    }
+
+    Scene GLTFLoader::LoadScene(VulkanDevice* device, const std::string& scenePath)
+    {
+        return {};
     }
 }
