@@ -1,4 +1,6 @@
 #pragma once
+
+#include "renderer/scene.h"
 #include "util/core.h"
 
 namespace Raytracing
@@ -9,5 +11,6 @@ namespace Raytracing
     class GLTFLoader {
     public:
         static Ref<VulkanMesh> LoadMesh(VulkanDevice* device, const std::string& meshPath);
+        static Scene LoadScene(VulkanDevice* device, const std::string& scenePath);
     };
 }

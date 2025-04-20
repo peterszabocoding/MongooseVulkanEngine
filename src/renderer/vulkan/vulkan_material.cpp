@@ -5,12 +5,31 @@
 #include "vulkan_device.h"
 #include "vulkan_pipeline.h"
 #include "resource/resource_manager.h"
+#include "util/log.h"
 
 namespace Raytracing
 {
     VulkanMaterialBuilder& VulkanMaterialBuilder::SetIndex(int index)
     {
         this->index = index;
+        return *this;
+    }
+
+    VulkanMaterialBuilder& VulkanMaterialBuilder::SetBaseColor(glm::vec4 baseColor)
+    {
+        this->baseColor = baseColor;
+        return *this;
+    }
+
+    VulkanMaterialBuilder& VulkanMaterialBuilder::SetMetallic(float metallic)
+    {
+        this->metallic = metallic;
+        return *this;
+    }
+
+    VulkanMaterialBuilder& VulkanMaterialBuilder::SetRoughness(float roughness)
+    {
+        this->roughness = roughness;
         return *this;
     }
 
@@ -80,45 +99,59 @@ namespace Raytracing
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
             VMA_MEMORY_USAGE_CPU_TO_GPU);
 
+        LOG_INFO(sizeof(MaterialParams));
+
         VkDescriptorBufferInfo bufferInfo{};
         bufferInfo.buffer = materialBuffer->GetBuffer();
         bufferInfo.offset = 0;
         bufferInfo.range = sizeof(MaterialParams);
 
-        VkDescriptorImageInfo baseColorImageInfo{};
-        baseColorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        baseColorImageInfo.imageView = baseColorTexture->GetImageView();
-        baseColorImageInfo.sampler = baseColorTexture->GetSampler();
+        auto descriptorWriter = VulkanDescriptorWriter(pipeline->GetShader()->GetVulkanDescriptorSetLayout(),
+                                                       vulkanDevice->GetShaderDescriptorPool());
+        descriptorWriter.WriteBuffer(0, &bufferInfo);
 
-        VkDescriptorSet descriptorSet;
-
-        if (normalMapTexture != nullptr && metallicRoughnessTexture != nullptr)
+        if (baseColorTexture != nullptr)
         {
+            params.useBaseColorMap = 1;
+
+            VkDescriptorImageInfo baseColorImageInfo{};
+            baseColorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            baseColorImageInfo.imageView = baseColorTexture->GetImageView();
+            baseColorImageInfo.sampler = baseColorTexture->GetSampler();
+
+            descriptorWriter.WriteImage(1, &baseColorImageInfo);
+        }
+
+        if (normalMapTexture != nullptr)
+        {
+            params.useNormalMap = 1;
+
             VkDescriptorImageInfo normalMapImageInfo{};
             normalMapImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             normalMapImageInfo.imageView = normalMapTexture->GetImageView();
             normalMapImageInfo.sampler = normalMapTexture->GetSampler();
+
+            descriptorWriter.WriteImage(2, &normalMapImageInfo);
+        }
+
+        if (metallicRoughnessTexture != nullptr)
+        {
+            params.useMetallicRoughnessMap = 1;
 
             VkDescriptorImageInfo metallicRoughnessImageInfo{};
             metallicRoughnessImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             metallicRoughnessImageInfo.imageView = metallicRoughnessTexture->GetImageView();
             metallicRoughnessImageInfo.sampler = metallicRoughnessTexture->GetSampler();
 
-            VulkanDescriptorWriter(pipeline->GetShader()->GetVulkanDescriptorSetLayout(), vulkanDevice->GetShaderDescriptorPool())
-                .WriteBuffer(0, &bufferInfo)
-                .WriteImage(1, &baseColorImageInfo)
-                .WriteImage(2, &normalMapImageInfo)
-                .WriteImage(3, &metallicRoughnessImageInfo)
-                .Build(descriptorSet);
-        } else
-        {
-            VulkanDescriptorWriter(pipeline->GetShader()->GetVulkanDescriptorSetLayout(), vulkanDevice->GetShaderDescriptorPool())
-                .WriteBuffer(0, &bufferInfo)
-                .WriteImage(1, &baseColorImageInfo)
-                .Build(descriptorSet);
+            descriptorWriter.WriteImage(3, &metallicRoughnessImageInfo);
         }
 
-        params.useNormalMap = normalMapTexture != nullptr ? 1 : 0;
+        VkDescriptorSet descriptorSet;
+        descriptorWriter.Build(descriptorSet);
+
+        params.baseColor = baseColor;
+        params.metallic = metallic;
+        params.roughness = roughness;
 
         VulkanMaterial material;
         material.index = 0;
@@ -129,7 +162,7 @@ namespace Raytracing
         material.pipeline = pipeline;
         material.materialBuffer = materialBuffer;
 
-        memcpy(materialBuffer->GetMappedData(), &params, sizeof(params));
+        memcpy(material.materialBuffer->GetMappedData(), &material.params, sizeof(MaterialParams));
 
         return material;
     }

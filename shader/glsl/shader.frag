@@ -6,11 +6,17 @@ layout(location = 2) in vec2 fragTexCoord;
 layout(location = 3) in vec3 fragNormal;
 
 layout(binding = 0) uniform MaterialParams {
-    vec3 tint;
+    vec4 tint;
+    vec4 baseColor;
+    float metallic;
+    float roughness;
+
+    bool useBaseColorMap;
     bool useNormalMap;
+    bool useMetallicRoughnessMap;
 } materialParams;
 
-layout(binding = 1) uniform sampler2D texSampler;
+layout(binding = 1) uniform sampler2D baseColorSampler;
 layout(binding = 2) uniform sampler2D normalSampler;
 layout(binding = 3) uniform sampler2D metallicRoughnessSampler;
 
@@ -32,7 +38,6 @@ vec3 CalcSurfaceNormal(vec3 normalFromTexture, mat3 TBN)
 }
 
 void main() {
-
     vec3 q1 = dFdx(fragPosition);
 	vec3 q2 = dFdy(fragPosition);
 	vec2 st1 = dFdx(fragTexCoord);
@@ -43,11 +48,24 @@ void main() {
 	vec3 B = -normalize(cross(N, T));
 	mat3 TBN = mat3(T, B, N);
 
-    vec3 normalWorldSpace = materialParams.useNormalMap
-            ? CalcSurfaceNormal(texture(normalSampler, fragTexCoord).rgb, TBN)
-            : fragNormal;
+    vec4 color = materialParams.useBaseColorMap ? texture(baseColorSampler, fragTexCoord) : materialParams.baseColor;
 
-    float diffuseFactor = AMBIENT + clamp(dot(normalWorldSpace, normalize(LIGHT_DIRECTION)), 0.0, 1.0);
-    vec4 diffuseColor = vec4(materialParams.tint, 1.0) * texture(texSampler, fragTexCoord);
+    float metallic = materialParams.metallic;
+    float roughness = materialParams.roughness;
+    if (materialParams.useMetallicRoughnessMap)
+    {
+        vec4 metallicRoughness = texture(metallicRoughnessSampler, fragTexCoord);
+
+        metallic =  metallicRoughness.b;
+        roughness = metallicRoughness.g;
+    }
+
+    vec3 normalWorldSpace = materialParams.useNormalMap
+                ? CalcSurfaceNormal(texture(normalSampler, fragTexCoord).rgb, TBN)
+                : fragNormal;
+
+    float diffuseFactor = AMBIENT + clamp(dot(normalWorldSpace, LIGHT_DIRECTION), 0.0, 1.0);
+    vec4 diffuseColor = materialParams.tint * color;
+
     outColor = diffuseFactor * diffuseColor;
 }

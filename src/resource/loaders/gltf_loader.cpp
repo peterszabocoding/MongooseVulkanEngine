@@ -55,7 +55,7 @@ namespace Raytracing
             return primitive.attributes.find(attributeName) != primitive.attributes.end();
         }
 
-        static void LoadPrimitive(const tinygltf::Primitive& primitive, const tinygltf::Model& model, Ref<VulkanMesh> mesh)
+        static void LoadPrimitive(const tinygltf::Primitive& primitive, const tinygltf::Model& model, const Ref<VulkanMesh>& mesh)
         {
             std::array<VertexAttribute, 5> vAttributes{};
             vAttributes[0].name = "POSITION";
@@ -76,23 +76,17 @@ namespace Raytracing
             std::vector<Vertex> vertices;
             std::vector<uint32_t> indices;
 
-            uint32_t vertexPos = 0;
-            uint32_t indexPos = 0;
-            uint32_t indexCount = 0;
-            uint32_t vertexCount = 0;
-
-            std::pair<glm::vec3, glm::vec3> boundingBox;
-
             // Vertices
             {
                 // Position attribute is required
                 assert(HasAttribute(primitive, "POSITION"));
 
                 // POSITION
-                vertexCount = GetVertexCount(primitive, model);
+                uint32_t vertexCount = GetVertexCount(primitive, model);
                 vertices.resize(vertexCount);
+                uint32_t vertexPos = 0;
 
-                boundingBox = ReadBoundingBoxValues(primitive, model);
+                std::pair<glm::vec3, glm::vec3> boundingBox = ReadBoundingBoxValues(primitive, model);
 
                 for (auto& vertexAttribute: vAttributes)
                 {
@@ -135,6 +129,8 @@ namespace Raytracing
             // Indices
             if (primitive.indices > -1)
             {
+                uint32_t indexCount = 0;
+                uint32_t indexPos = 0;
                 const tinygltf::Accessor& accessor = model.accessors[primitive.indices];
                 const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
                 const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
@@ -181,7 +177,7 @@ namespace Raytracing
             mesh->AddMeshlet(vertices, indices, primitive.material);
         }
 
-        static void LoadGLTFNode(const tinygltf::Node& node, const tinygltf::Model& model, Ref<VulkanMesh>& vulkanMesh)
+        static void LoadGLTFNode(const tinygltf::Node& node, const tinygltf::Model& model, const Ref<VulkanMesh>& vulkanMesh)
         {
             if (node.mesh <= -1) return;
 
@@ -192,45 +188,24 @@ namespace Raytracing
             }
         }
 
-        static void GetNodeProps(const tinygltf::Node& node, const tinygltf::Model& model, size_t& vertexCount, size_t& indexCount)
-        {
-            if (node.children.size() > 0)
-            {
-                for (size_t i = 0; i < node.children.size(); i++)
-                    GetNodeProps(model.nodes[node.children[i]], model, vertexCount, indexCount);
-            }
-
-            if (node.mesh > -1)
-            {
-                const tinygltf::Mesh mesh = model.meshes[node.mesh];
-                for (size_t i = 0; i < mesh.primitives.size(); i++)
-                {
-                    auto primitive = mesh.primitives[i];
-                    vertexCount += model.accessors[primitive.attributes.find("POSITION")->second].count;
-                    if (primitive.indices > -1)
-                        indexCount += model.accessors[primitive.indices].count;
-                }
-            }
-        }
-
-        static std::vector<Ref<VulkanImage> > LoadTextures(tinygltf::Model& gltfModel, VulkanDevice* device,
-                                                           std::filesystem::path parentPath)
+        static std::vector<Ref<VulkanImage> > LoadTextures(tinygltf::Model& model, VulkanDevice* device,
+                                                           const std::filesystem::path& parentPath)
         {
             std::vector<Ref<VulkanImage> > textures;
-            for (tinygltf::Texture& tex: gltfModel.textures)
+            for (tinygltf::Texture& tex: model.textures)
             {
-                tinygltf::Image image = gltfModel.images[tex.source];
+                tinygltf::Image image = model.images[tex.source];
                 std::string imagePath = parentPath.string() + "/" + image.uri;
                 textures.push_back(ResourceManager::LoadTexture(device, imagePath));
             }
             return textures;
         }
 
-        static std::vector<VulkanMaterial> LoadMaterials(tinygltf::Model& gltfModel, VulkanDevice* device,
+        static std::vector<VulkanMaterial> LoadMaterials(const tinygltf::Model& model, VulkanDevice* device,
                                                          const std::vector<Ref<VulkanImage> >& textures)
         {
             std::vector<VulkanMaterial> materials;
-            for (const tinygltf::Material& material: gltfModel.materials)
+            for (const tinygltf::Material& material: model.materials)
             {
                 VulkanMaterialBuilder builder(device);
                 builder.SetPipeline(ResourceManager::GetMainPipeline());
@@ -243,6 +218,10 @@ namespace Raytracing
 
                 if (material.normalTexture.index >= 0)
                     builder.SetNormalMapTexture(textures[material.normalTexture.index]);
+
+                builder.SetBaseColor(glm::make_vec4(material.pbrMetallicRoughness.baseColorFactor.data()));
+                builder.SetMetallic(material.pbrMetallicRoughness.metallicFactor);
+                builder.SetRoughness(material.pbrMetallicRoughness.roughnessFactor);
 
                 materials.push_back(builder.Build());
             }
@@ -272,24 +251,13 @@ namespace Raytracing
         }
 
         const tinygltf::Scene& scene = model.scenes[model.defaultScene > -1 ? model.defaultScene : 0];
+        const tinygltf::Node node = model.nodes[scene.nodes[0]];
 
         auto mesh = CreateRef<VulkanMesh>(device);
-        for (size_t i = 0; i < scene.nodes.size(); i++)
-        {
-            size_t vertexCount = 0;
-            size_t indexCount = 0;
+        Utils::LoadGLTFNode(node, model, mesh);
 
-            Utils::GetNodeProps(model.nodes[scene.nodes[i]], model, vertexCount, indexCount);
-
-            std::vector<Vertex> vertices(vertexCount);
-            std::vector<uint32_t> indices(indexCount);
-
-            const tinygltf::Node node = model.nodes[scene.nodes[i]];
-            Utils::LoadGLTFNode(node, model, mesh);
-        }
-
-        std::vector<Ref<VulkanImage> > textures = Utils::LoadTextures(model, device, gltfFilePath.parent_path());
-        std::vector<VulkanMaterial> materials = Utils::LoadMaterials(model, device, textures);
+        const std::vector<Ref<VulkanImage> > textures = Utils::LoadTextures(model, device, gltfFilePath.parent_path());
+        const std::vector<VulkanMaterial> materials = Utils::LoadMaterials(model, device, textures);
 
         mesh->SetMaterials(materials);
 
@@ -298,6 +266,67 @@ namespace Raytracing
 
     Scene GLTFLoader::LoadScene(VulkanDevice* device, const std::string& scenePath)
     {
-        return {};
+        tinygltf::Model model;
+        tinygltf::TinyGLTF loader;
+        std::string err;
+        std::string warn;
+
+        std::filesystem::path gltfFilePath(scenePath);
+        const bool ret = loader.LoadASCIIFromFile(&model, &err, &warn, scenePath);
+
+        if (!warn.empty())
+            LOG_WARN("Warn: " + warn);
+        if (!err.empty())
+            LOG_ERROR("Err: " + err);
+
+        if (!ret)
+        {
+            LOG_ERROR("Failed to parse glTF");
+            abort();
+        }
+
+        const std::vector<Ref<VulkanImage> > textures = Utils::LoadTextures(model, device, gltfFilePath.parent_path());
+        const std::vector<VulkanMaterial> materials = Utils::LoadMaterials(model, device, textures);
+        std::vector<Ref<VulkanMesh>> meshes;
+        std::vector<Transform> transforms;
+
+        const tinygltf::Scene& gltfScene = model.scenes[model.defaultScene > -1 ? model.defaultScene : 0];
+
+        for (auto nodeIndex: gltfScene.nodes)
+        {
+            const tinygltf::Node node = model.nodes[nodeIndex];
+
+            Transform transform;
+            // Generate local node matrix
+            glm::vec3 translation = glm::vec3(0.0f);
+            if (node.translation.size() == 3) {
+                transform.m_Position = glm::make_vec3(node.translation.data());
+            }
+            glm::mat4 rotation = glm::mat4(1.0f);
+            if (node.rotation.size() == 4) {
+                transform.m_Rotation_Quat = glm::make_quat(node.rotation.data());
+            }
+            glm::vec3 scale = glm::vec3(1.0f);
+            if (node.scale.size() == 3) {
+                transform.m_Scale = glm::make_vec3(node.scale.data());
+            }
+
+            auto mesh = CreateRef<VulkanMesh>(device);
+            Utils::LoadGLTFNode(node, model, mesh);
+
+            mesh->SetMaterials(materials);
+
+            meshes.push_back(mesh);
+            transforms.push_back(transform);
+        }
+
+        Scene scene;
+        scene.filePath = scenePath;
+        scene.name = gltfScene.name;
+        scene.materials = materials;
+        scene.meshes = meshes;
+        scene.transforms = transforms;
+
+        return scene;
     }
 }

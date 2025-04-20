@@ -1,6 +1,7 @@
 #pragma once
 
 #include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
 
 #include "vulkan_buffer.h"
 #include "vulkan_image.h"
@@ -10,8 +11,15 @@ namespace Raytracing
     class VulkanPipeline;
 
     struct MaterialParams {
-        glm::vec3 tint = {1.f, 1.f, 1.f};
+        glm::vec4 tint = {1.0f, 1.0f, 1.0f, 1.0f};
+        glm::vec4 baseColor = {1.0f, 1.0f, 1.0f, 1.0f};
+
+        float metallic = 0.0f;
+        float roughness = 1.0f;
+
+        int useBaseColorMap = 0;
         int useNormalMap = 0;
+        int useMetallicRoughnessMap = 0;
     };
 
     struct VulkanMaterial {
@@ -34,6 +42,10 @@ namespace Raytracing
         VulkanMaterialBuilder& operator=(const VulkanMaterialBuilder&) = delete;
 
         VulkanMaterialBuilder& SetIndex(int index);
+
+        VulkanMaterialBuilder& SetBaseColor(glm::vec4 baseColor);
+        VulkanMaterialBuilder& SetMetallic(float metallic);
+        VulkanMaterialBuilder& SetRoughness(float roughness);
 
         VulkanMaterialBuilder& SetBaseColorPath(const std::string& baseColorPath);
         VulkanMaterialBuilder& SetBaseColorTexture(const Ref<VulkanImage>& baseColorTexture);
@@ -62,5 +74,9 @@ namespace Raytracing
         std::string baseColorPath;
         std::string normalMapPath;
         std::string metallicRoughnessPath;
+
+        glm::vec4 baseColor = {1.0f, 1.0f, 1.0f, 1.0f};
+        float metallic = 0.0f;
+        float roughness = 1.0f;
     };
 }

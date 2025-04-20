@@ -110,4 +110,9 @@ namespace Raytracing
 
         return texture;
     }
+
+    Scene ResourceManager::LoadScene(VulkanDevice* device, const std::string& scenePath)
+    {
+        return GLTFLoader::LoadScene(device, scenePath);
+    }
 }

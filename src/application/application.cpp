@@ -11,8 +11,8 @@ namespace Raytracing
 		s_Instance = this;
 
 		applicationInfo.appName = "RaytracingInOneWeekend";
-		applicationInfo.windowWidth = 800;
-		applicationInfo.windowHeight = 800;
+		applicationInfo.windowWidth = 1024;
+		applicationInfo.windowHeight = 768;
 
 		Version version;
 		version.major = 0;

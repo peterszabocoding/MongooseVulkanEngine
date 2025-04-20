@@ -1,6 +1,5 @@
 #include "vulkan_renderer.h"
 #include "resource/resource_manager.h"
-#include "vulkan_mesh.h"
 #include "vulkan_pipeline.h"
 #include "vulkan_swapchain.h"
 #include "renderer/mesh.h"
@@ -17,7 +16,8 @@ namespace Raytracing {
 
         LOG_TRACE("Load meshes");
         //scene = ResourceManager::LoadMesh(vulkanDevice.get(), "resources/sponza/Sponza.gltf");
-        scene = ResourceManager::LoadMesh(vulkanDevice.get(), "resources/chess/ABeautifulGame.gltf");
+        completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/gltf/multiple_spheres.gltf");
+        //scene = ResourceManager::LoadMesh(vulkanDevice.get(), "resources/chess/ABeautifulGame.gltf");
 
         transform.m_Position = glm::vec3(0.0f, 0.0f, -1.0f);
     }
@@ -26,7 +26,11 @@ namespace Raytracing {
         const bool result = vulkanDevice->BeginFrame();
         if (!result) return;
 
-        vulkanDevice->DrawMesh(camera, transform, scene);
+        for (size_t i = 0; i < completeScene.meshes.size(); i++)
+        {
+            vulkanDevice->DrawMesh(camera, completeScene.transforms[i], completeScene.meshes[i]);
+        }
+
         vulkanDevice->DrawImGui();
         vulkanDevice->EndFrame();
     }

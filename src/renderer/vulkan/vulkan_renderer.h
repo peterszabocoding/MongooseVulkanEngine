@@ -3,6 +3,7 @@
 #include "renderer/renderer.h"
 #include "vulkan_device.h"
 #include "vulkan_material.h"
+#include "renderer/scene.h"
 #include "renderer/transform.h"
 
 namespace Raytracing
@@ -29,6 +30,8 @@ namespace Raytracing
 		Scope<VulkanDevice> vulkanDevice;
 
 		Ref<VulkanMesh> scene;
+
+		Scene completeScene;
 		Transform transform;
 	};
 }

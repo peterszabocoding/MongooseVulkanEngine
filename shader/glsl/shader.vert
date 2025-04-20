@@ -1,10 +1,5 @@
 #version 450
 
-layout(binding = 0) uniform MaterialParams {
-    vec3 tint;
-    bool useNormalMap;
-} materialParams;
-
 layout(push_constant) uniform Push {
   mat4 transform;
   mat4 normalMatrix;
