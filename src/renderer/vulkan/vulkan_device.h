@@ -36,12 +36,7 @@ namespace Raytracing
         void DrawImGui() const;
         bool BeginFrame();
         void EndFrame();
-        void ResizeFramebuffer(int width, int height)
-        {
-            viewportWidth = width;
-            viewportHeight = height;
-            framebufferResized = true;
-        }
+        void ResizeFramebuffer(int width, int height);
         void ImmediateSubmit(std::function<void (VkCommandBuffer commandBuffer)>&& function) const;
 
         VkSurfaceKHR CreateSurface(GLFWwindow* glfwWindow) const;
@@ -114,8 +109,8 @@ namespace Raytracing
         Ref<VulkanRenderPass> vulkanRenderPass{};
 
         Scope<VulkanSwapchain> vulkanSwapChain{};
-        std::vector<Ref<VulkanFramebuffer>> swapChainFramebuffers;
-        Ref<VulkanDepthImage> swapChainDepthImage;
+        std::vector<Ref<VulkanFramebuffer>> framebuffers;
+        Ref<VulkanDepthImage> depthImage;
 
         VmaAllocator vmaAllocator;
 

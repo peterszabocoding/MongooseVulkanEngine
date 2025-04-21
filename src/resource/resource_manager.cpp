@@ -50,7 +50,7 @@ namespace Raytracing
         int width, height, bitDepth;
         float* pixels = nullptr;
         stbi_set_flip_vertically_on_load(true);
-        pixels = stbi_loadf(hdrPath.c_str(), &width, &height, &bitDepth, 0);
+        pixels = stbi_loadf(hdrPath.c_str(), &width, &height, &bitDepth, 4);
         stbi_set_flip_vertically_on_load(false);
 
         uint64_t size = width * height * 3;

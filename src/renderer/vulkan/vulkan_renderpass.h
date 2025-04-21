@@ -13,6 +13,15 @@ namespace Raytracing
     class VulkanRenderPass {
     public:
         class Builder {
+            struct ColorAttachment {
+                VkFormat imageFormat;
+                VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT;
+            };
+
+            struct DepthAttachment {
+                VkFormat depthFormat = VK_FORMAT_D24_UNORM_S8_UINT;
+            };
+
         public:
             explicit Builder(VulkanDevice* vulkanDevice);
             Builder& AddColorAttachment(VkFormat imageFormat, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT);
@@ -21,21 +30,16 @@ namespace Raytracing
 
         private:
             VulkanDevice* vulkanDevice;
-            std::vector<VkAttachmentDescription> attachments;
 
-            VkAttachmentReference colorAttachmentRef{};
-            VkAttachmentReference depthAttachmentRef{};
-
-            VkSubpassDescription subpass{};
-            VkSubpassDependency dependency{};
+            std::vector<ColorAttachment> colorAttachments;
+            std::vector<DepthAttachment> depthAttachments;
         };
 
     public:
-        VulkanRenderPass(VulkanDevice* device, VkRenderPass renderPass):
-        device(device), renderPass(renderPass) {}
+        VulkanRenderPass(VulkanDevice* device, VkRenderPass renderPass): device(device), renderPass(renderPass) {}
         ~VulkanRenderPass();
 
-        void Begin(VkCommandBuffer commandBuffer, Ref<VulkanFramebuffer>& framebuffer, VkExtent2D extent);
+        void Begin(const VkCommandBuffer commandBuffer, const Ref<VulkanFramebuffer>& framebuffer, const VkExtent2D extent);
         void End(VkCommandBuffer commandBuffer);
 
         [[nodiscard]] VkRenderPass Get() const { return renderPass; }

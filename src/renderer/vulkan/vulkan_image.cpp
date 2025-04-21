@@ -152,7 +152,7 @@ namespace Raytracing
             throw std::invalid_argument("unsupported layout transition!");
         }
 
-        vkCmdPipelineBarrier(commandBuffer, 0, 0, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+        vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
     }
 
     void VulkanImageBuilder::CopyBufferToImage(const VkCommandBuffer commandBuffer, const VkBuffer buffer) const

@@ -101,7 +101,7 @@ namespace Raytracing
             "Failed to begin recording command buffer.");
 
         vulkanRenderPass->Begin(commandBuffers[currentFrame],
-                                swapChainFramebuffers[currentImageIndex],
+                                framebuffers[currentImageIndex],
                                 vulkanSwapChain->GetExtent());
 
         SetViewportAndScissor();
@@ -130,7 +130,6 @@ namespace Raytracing
             framebufferResized = false;
 
             vkDeviceWaitIdle(device);
-            vulkanSwapChain = nullptr;
             CreateSwapchain();
             CreateFramebuffers();
         } else if (result != VK_SUCCESS)
@@ -139,6 +138,13 @@ namespace Raytracing
         }
 
         currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+    }
+
+    void VulkanDevice::ResizeFramebuffer(int width, int height)
+    {
+        viewportWidth = width;
+        viewportHeight = height;
+        framebufferResized = true;
     }
 
     void VulkanDevice::Init(const int width, const int height, GLFWwindow* glfwWindow)
@@ -196,6 +202,9 @@ namespace Raytracing
     void VulkanDevice::CreateSwapchain()
     {
         LOG_TRACE("Vulkan: create swapchain");
+
+        vulkanSwapChain = nullptr;
+
         const auto swapChainSupport = VulkanUtils::QuerySwapChainSupport(physicalDevice, surface);
         const VkSurfaceFormatKHR surfaceFormat = VulkanUtils::ChooseSwapSurfaceFormat(swapChainSupport.formats);
 
@@ -212,19 +221,19 @@ namespace Raytracing
     {
         uint32_t imageCount = VulkanUtils::GetSwapchainImageCount(physicalDevice, surface);
 
-        swapChainDepthImage = VulkanDepthImageBuilder()
+        depthImage = VulkanDepthImageBuilder()
                 .SetResolution(viewportWidth, viewportHeight)
                 .Build(this);
 
-        swapChainFramebuffers.clear();
-        swapChainFramebuffers.resize(imageCount);
+        framebuffers.clear();
+        framebuffers.resize(imageCount);
         for (size_t i = 0; i < imageCount; i++)
         {
-            swapChainFramebuffers[i] = VulkanFramebuffer::Builder(this)
+            framebuffers[i] = VulkanFramebuffer::Builder(this)
                     .SetRenderpass(vulkanRenderPass)
                     .SetResolution(viewportWidth, viewportHeight)
                     .AddAttachment(vulkanSwapChain->GetImages()[i])
-                    .AddAttachment(swapChainDepthImage)
+                    .AddAttachment(depthImage)
                     .Build();
         }
     }
@@ -287,8 +296,6 @@ namespace Raytracing
         {
             LOG_WARN("Resize");
             vkDeviceWaitIdle(device);
-
-            vulkanSwapChain = nullptr;
             CreateSwapchain();
             CreateFramebuffers();
             return false;
