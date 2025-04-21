@@ -8,6 +8,9 @@
 #include <optional>
 #include <vulkan/vulkan_core.h>
 
+#include "vulkan_device.h"
+#include "vulkan_swapchain.h"
+
 #define VK_CHECK_MSG(x,msg)                                                     \
 do                                                                          \
     {                                                                       \
@@ -267,11 +270,57 @@ namespace Raytracing::VulkanUtils
         viewInfo.subresourceRange.layerCount = 1;
 
         VkImageView imageView;
-        if (vkCreateImageView(device, &viewInfo, nullptr, &imageView) != VK_SUCCESS)
-        {
-            throw std::runtime_error("failed to create texture image view!");
-        }
+        VK_CHECK_MSG(vkCreateImageView(device, &viewInfo, nullptr, &imageView), "Failed to create texture image view.");
 
         return imageView;
+    }
+
+    static SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
+    {
+        uint32_t formatCount;
+        uint32_t presentModeCount;
+        SwapChainSupportDetails details;
+
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &details.capabilities);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, nullptr);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, nullptr);
+
+        if (formatCount != 0)
+        {
+            details.formats.resize(formatCount);
+            vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, details.formats.data());
+        }
+
+        if (presentModeCount != 0)
+        {
+            details.presentModes.resize(presentModeCount);
+            vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, details.presentModes.data());
+        }
+
+        return details;
+    }
+
+    static VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
+    {
+        for (const auto& availableFormat: availableFormats)
+        {
+            if (availableFormat.format == VK_FORMAT_R8G8B8A8_UNORM && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+            {
+                return availableFormat;
+            }
+        }
+        return availableFormats[0];
+    }
+
+    static uint32_t GetSwapchainImageCount(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
+    {
+        SwapChainSupportDetails support = QuerySwapChainSupport(physicalDevice, surface);
+        uint32_t imageCount = support.capabilities.minImageCount + 1;
+        if (support.capabilities.maxImageCount > 0 && imageCount > support.capabilities.maxImageCount)
+        {
+            imageCount = support.capabilities.maxImageCount;
+        }
+
+        return imageCount;
     }
 }

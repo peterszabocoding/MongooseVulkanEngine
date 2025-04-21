@@ -24,7 +24,7 @@ namespace Raytracing {
 
     struct ImageResource {
         std::string path = "";
-        unsigned char* data = nullptr;
+        void* data = nullptr;
         uint64_t size = 0;
         uint32_t width = 0;
         uint32_t height = 0;

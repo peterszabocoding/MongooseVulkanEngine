@@ -17,6 +17,8 @@
 #include <renderer/transform.h>
 
 #include "vulkan_descriptor_pool.h"
+#include "vulkan_framebuffer.h"
+#include "vulkan_image_view.h"
 #include "renderer/camera.h"
 #include "util/log.h"
 #include "vma/vk_mem_alloc.h"
@@ -91,7 +93,17 @@ namespace Raytracing
         if (!SetupNextFrame())
             return false;
 
-        BeginRenderPass();
+        VkCommandBufferBeginInfo beginInfo{};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+        VK_CHECK_MSG(
+            vkBeginCommandBuffer(commandBuffers[currentFrame], &beginInfo),
+            "Failed to begin recording command buffer.");
+
+        vulkanRenderPass->Begin(commandBuffers[currentFrame],
+                                swapChainFramebuffers[currentImageIndex],
+                                vulkanSwapChain->GetExtent());
+
         SetViewportAndScissor();
         return true;
     }
@@ -99,7 +111,7 @@ namespace Raytracing
     void VulkanDevice::EndFrame()
     {
         // End render pass
-        vkCmdEndRenderPass(commandBuffers[currentFrame]);
+        vulkanRenderPass->End(commandBuffers[currentFrame]);
 
         // End command buffer
         VkResult result = vkEndCommandBuffer(commandBuffers[currentFrame]);
@@ -114,8 +126,13 @@ namespace Raytracing
         result = PresentFrame(currentImageIndex, signalSemaphores);
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized)
         {
+            LOG_WARN("Resize");
             framebufferResized = false;
-            vulkanSwapChain->RecreateSwapChain();
+
+            vkDeviceWaitIdle(device);
+            vulkanSwapChain = nullptr;
+            CreateSwapchain();
+            CreateFramebuffers();
         } else if (result != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to present swap chain image." + ' | ' + result);
@@ -152,20 +169,16 @@ namespace Raytracing
             //validation_layer_list.push_back("VK_LAYER_LUNARG_api_dump");
         }
 
-        LOG_TRACE("Vulkan: create instance");
         instance = CreateVkInstance(device_extensions, validation_layer_list);
-        LOG_TRACE("Vulkan: create surface");
         surface = CreateSurface(glfwWindow);
-        LOG_TRACE("Vulkan: pick physical device");
         physicalDevice = PickPhysicalDevice();
-        LOG_TRACE("Vulkan: create logical device");
         device = CreateLogicalDevice();
 
         vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
 
-        LOG_TRACE("Vulkan: create renderpass");
-        vulkanRenderPass = CreateRef<VulkanRenderPass>(this, VulkanSwapchain::GetImageFormat(this));
-        vulkanSwapChain = CreateRef<VulkanSwapchain>(this, viewportWidth, viewportHeight);
+        CreateSwapchain();
+        CreateRenderpass();
+        CreateFramebuffers();
 
         CreateCommandPool();
         CreateDescriptorPool();
@@ -178,6 +191,61 @@ namespace Raytracing
         allocatorInfo.device = device;
         allocatorInfo.instance = instance;
         vmaCreateAllocator(&allocatorInfo, &vmaAllocator);
+    }
+
+    void VulkanDevice::CreateSwapchain()
+    {
+        LOG_TRACE("Vulkan: create swapchain");
+        uint32_t imageCount = VulkanUtils::GetSwapchainImageCount(physicalDevice, surface);
+        vulkanSwapChain = VulkanSwapchain::Builder(this)
+                .SetResolution(viewportWidth, viewportHeight)
+                .SetPresentMode(VK_PRESENT_MODE_IMMEDIATE_KHR)
+                .SetImageCount(imageCount)
+                .Build();
+    }
+
+    void VulkanDevice::CreateFramebuffers()
+    {
+        uint32_t imageCount = VulkanUtils::GetSwapchainImageCount(physicalDevice, surface);
+        const auto swapChainSupport = VulkanUtils::QuerySwapChainSupport(physicalDevice, surface);
+        const VkSurfaceFormatKHR surfaceFormat = VulkanUtils::ChooseSwapSurfaceFormat(swapChainSupport.formats);
+
+        swapChainImageViews.resize(imageCount);
+        swapChainFramebuffers.resize(imageCount);
+
+        const auto swapChainImages = vulkanSwapChain->GetSwapChainImages();
+        for (size_t i = 0; i < imageCount; i++)
+        {
+            swapChainImageViews[i] = VulkanImageView::Builder(this)
+                    .SetFormat(surfaceFormat.format)
+                    .SetImage(swapChainImages[i])
+                    .SetAspectFlags(VK_IMAGE_ASPECT_COLOR_BIT)
+                    .SetViewType(VK_IMAGE_VIEW_TYPE_2D)
+                    .Build();
+        }
+
+        swapChainDepthImage = VulkanDepthImageBuilder()
+                .SetResolution(viewportWidth, viewportHeight)
+                .Build(this);
+
+        for (size_t i = 0; i < imageCount; i++)
+        {
+            swapChainFramebuffers[i] = VulkanFramebuffer::Builder(this)
+                    .SetRenderpass(GetVulkanRenderPass())
+                    .SetResolution(viewportWidth, viewportHeight)
+                    .AddAttachment(swapChainImageViews[i]->Get())
+                    .AddAttachment(swapChainDepthImage->GetImageView())
+                    .Build();
+        }
+    }
+
+    void VulkanDevice::CreateRenderpass()
+    {
+        LOG_TRACE("Vulkan: create renderpass");
+        vulkanRenderPass = VulkanRenderPass::Builder(this)
+                .AddColorAttachment(vulkanSwapChain->GetImageFormat())
+                .AddDepthAttachment()
+                .Build();
     }
 
     VkResult VulkanDevice::SubmitDrawCommands(VkSemaphore* signalSemaphores) const
@@ -227,7 +295,12 @@ namespace Raytracing
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR)
         {
-            vulkanSwapChain->RecreateSwapChain();
+            LOG_WARN("Resize");
+            vkDeviceWaitIdle(device);
+
+            vulkanSwapChain = nullptr;
+            CreateSwapchain();
+            CreateFramebuffers();
             return false;
         }
 
@@ -255,32 +328,6 @@ namespace Raytracing
         scissor.offset = {0, 0};
         scissor.extent = vulkanSwapChain->GetExtent();
         vkCmdSetScissor(commandBuffers[currentFrame], 0, 1, &scissor);
-    }
-
-    void VulkanDevice::BeginRenderPass() const
-    {
-        VkCommandBufferBeginInfo beginInfo{};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-        VK_CHECK_MSG(
-            vkBeginCommandBuffer(commandBuffers[currentFrame], &beginInfo),
-            "Failed to begin recording command buffer.");
-
-        VkRenderPassBeginInfo renderPassInfo{};
-        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderPassInfo.renderPass = vulkanRenderPass->Get();
-        renderPassInfo.framebuffer = vulkanSwapChain->GetSwapChainFramebuffers()[currentImageIndex];
-        renderPassInfo.renderArea.offset = {0, 0};
-        renderPassInfo.renderArea.extent = vulkanSwapChain->GetExtent();
-
-        std::array<VkClearValue, 2> clearValues{};
-        clearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
-        clearValues[1].depthStencil = {1.0f, 0};
-
-        renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());;
-        renderPassInfo.pClearValues = clearValues.data();
-
-        vkCmdBeginRenderPass(commandBuffers[currentFrame], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
     }
 
     void VulkanDevice::ImmediateSubmit(std::function<void(VkCommandBuffer commandBuffer)>&& function) const

@@ -16,6 +16,8 @@ namespace Raytracing {
         ResourceManager() = delete;
 
         static ImageResource LoadImageResource(const std::string& imagePath);
+        static ImageResource LoadHDRResource(const std::string& hdrPath);
+
         static void ReleaseImage(const ImageResource& image);
 
         static void LoadPipelines(VulkanDevice* vulkanDevice);
@@ -25,6 +27,7 @@ namespace Raytracing {
         static Ref<VulkanMesh> LoadMeshFromObj(VulkanDevice* device, const std::string& meshPath);
         static Ref<VulkanMesh> LoadMeshFromglTF(VulkanDevice* device, const std::string& meshPath);
         static Ref<VulkanImage> LoadTexture(VulkanDevice* device, std::string textureImagePath);
+        static Ref<VulkanImage> LoadHDRCubeMap(VulkanDevice* device, const std::string& hdrPath);
 
         static Scene LoadScene(VulkanDevice* device, const std::string& scenePath);
 

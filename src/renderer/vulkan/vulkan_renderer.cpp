@@ -14,10 +14,10 @@ namespace Raytracing {
         LOG_TRACE("Build pipelines");
         ResourceManager::LoadPipelines(vulkanDevice.get());
 
-        LOG_TRACE("Load meshes");
-        //scene = ResourceManager::LoadMesh(vulkanDevice.get(), "resources/sponza/Sponza.gltf");
-        completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/gltf/multiple_spheres.gltf");
-        //scene = ResourceManager::LoadMesh(vulkanDevice.get(), "resources/chess/ABeautifulGame.gltf");
+        LOG_TRACE("Load scene");
+        completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/sponza/Sponza.gltf");
+        //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/gltf/multiple_spheres.gltf");
+        //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/chess/ABeautifulGame.gltf");
 
         transform.m_Position = glm::vec3(0.0f, 0.0f, -1.0f);
     }
@@ -41,6 +41,6 @@ namespace Raytracing {
 
     void VulkanRenderer::Resize(const int width, const int height) {
         Renderer::Resize(width, height);
-        vulkanDevice->ResizeFramebuffer();
+        vulkanDevice->ResizeFramebuffer(width, height);
     }
 }

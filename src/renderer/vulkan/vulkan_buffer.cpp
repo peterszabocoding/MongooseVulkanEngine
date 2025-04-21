@@ -10,7 +10,7 @@ namespace Raytracing
                                VmaMemoryUsage memoryUsage)
     {
         this->vulkanDevice = vulkanDevice;
-        CreateBuffer(size, usage, properties, memoryUsage);
+        CreateBuffer(size, usage, memoryUsage);
     }
 
     VulkanBuffer::~VulkanBuffer()
@@ -29,10 +29,9 @@ namespace Raytracing
         });
     }
 
-    void VulkanBuffer::CreateBuffer(const VkDeviceSize size, const VkBufferUsageFlags usage, const VkMemoryPropertyFlags properties,
-                                    VmaMemoryUsage memoryUsage)
+    void VulkanBuffer::CreateBuffer(const VkDeviceSize size, const VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage)
     {
-        LOG_TRACE("Allocate buffer: " + std::to_string(size));
+        LOG_TRACE("Allocate buffer: " + std::to_string(size / 1024) + " kB");
 
         VkBufferCreateInfo bufferInfo{};
         bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;

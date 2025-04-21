@@ -45,6 +45,30 @@ namespace Raytracing
         return resource;
     }
 
+    ImageResource ResourceManager::LoadHDRResource(const std::string& hdrPath)
+    {
+        int width, height, bitDepth;
+        float* pixels = nullptr;
+        stbi_set_flip_vertically_on_load(true);
+        pixels = stbi_loadf(hdrPath.c_str(), &width, &height, &bitDepth, 0);
+        stbi_set_flip_vertically_on_load(false);
+
+        uint64_t size = width * height * 3;
+
+        if (!pixels)
+            throw std::runtime_error("Failed to load HDR image.");
+
+        ImageResource resource;
+        resource.path = hdrPath;
+        resource.width = width;
+        resource.height = height;
+        resource.data = pixels;
+        resource.size = size;
+        resource.format = ImageFormat::RGBA32F;
+
+        return resource;
+    }
+
     void ResourceManager::ReleaseImage(const ImageResource& image)
     {
         LOG_TRACE("Release image data: " + image.path);
@@ -69,6 +93,8 @@ namespace Raytracing
     {
         const std::filesystem::path filePath(meshPath);
 
+        LOG_INFO("Load Mesh: " + meshPath);
+
         if (filePath.extension() == ".obj")
             return ObjLoader::LoadMesh(device, meshPath);
 
@@ -92,22 +118,37 @@ namespace Raytracing
 
     Ref<VulkanImage> ResourceManager::LoadTexture(VulkanDevice* device, std::string textureImagePath)
     {
-        LOG_TRACE("Load Texture: " + textureImagePath);
-
+        LOG_INFO("Load Texture: " + textureImagePath);
         const ImageResource imageResource = LoadImageResource(textureImagePath);
 
-        VulkanTextureImageBuilder textureImageBuilder;
-        textureImageBuilder.SetData(imageResource.data, imageResource.size);
-        textureImageBuilder.SetResolution(imageResource.width, imageResource.height);
-        textureImageBuilder.SetFormat(VK_FORMAT_R8G8B8A8_UNORM);
-        textureImageBuilder.SetFilter(VK_FILTER_LINEAR, VK_FILTER_LINEAR);
-        textureImageBuilder.SetTiling(VK_IMAGE_TILING_OPTIMAL);
+        Ref<VulkanImage> texture = VulkanTextureImageBuilder()
+                .SetData(imageResource.data, imageResource.size)
+                .SetResolution(imageResource.width, imageResource.height)
+                .SetFormat(VK_FORMAT_R8G8B8A8_UNORM)
+                .SetFilter(VK_FILTER_LINEAR, VK_FILTER_LINEAR)
+                .SetTiling(VK_IMAGE_TILING_OPTIMAL)
+                .Build(device);
 
-        Ref<VulkanImage> texture = textureImageBuilder.Build(device);
         texture->SetImageResource(imageResource);
-
         ReleaseImage(imageResource);
 
+        return texture;
+    }
+
+    Ref<VulkanImage> ResourceManager::LoadHDRCubeMap(VulkanDevice* device, const std::string& hdrPath)
+    {
+        LOG_INFO("Load HDR: " + hdrPath);
+        const ImageResource imageResource = LoadHDRResource(hdrPath);
+
+        Ref<VulkanImage> texture = VulkanTextureImageBuilder()
+                .SetData(imageResource.data, imageResource.size)
+                .SetResolution(imageResource.width, imageResource.height)
+                .SetFormat(VK_FORMAT_R8G8B8A8_UNORM)
+                .SetFilter(VK_FILTER_LINEAR, VK_FILTER_LINEAR)
+                .SetTiling(VK_IMAGE_TILING_OPTIMAL)
+                .Build(device);
+
+        ReleaseImage(imageResource);
         return texture;
     }
 

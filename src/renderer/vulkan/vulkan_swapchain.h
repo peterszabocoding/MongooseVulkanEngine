@@ -5,54 +5,65 @@
 
 namespace Raytracing
 {
+    class VulkanImageView;
+    class VulkanFramebuffer;
+
+    struct SwapChainSupportDetails {
+        VkSurfaceCapabilitiesKHR capabilities;
+        std::vector<VkSurfaceFormatKHR> formats;
+        std::vector<VkPresentModeKHR> presentModes;
+    };
+
     class VulkanSwapchain {
     public:
-        void CreateDepthImage(int width, int height);
-        VulkanSwapchain(VulkanDevice* vulkanDevice, int width, int height);
+        class Builder {
+        public:
+            Builder(VulkanDevice* device): device(device) {}
+            ~Builder() = default;
+
+            Builder& SetResolution(int width, int height);
+            Builder& SetPresentMode(VkPresentModeKHR presentMode);
+            Builder& SetImageFormat(VkFormat imageFormat);
+            Builder& SetImageColorSpace(VkColorSpaceKHR colorSpace);
+            Builder& SetImageCount(uint32_t imageCount);
+
+            Scope<VulkanSwapchain> Build();
+
+        private:
+            VulkanDevice* device;
+
+            int width = 0, height = 0;
+            VkPresentModeKHR presentMode;
+
+            VkSwapchainKHR swapChain;
+            std::vector<VkImage> swapChainImages;
+
+            VkFormat imageFormat = VK_FORMAT_R8G8B8A8_SRGB;
+            VkColorSpaceKHR colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+
+            uint32_t imageCount = 0;
+        };
+
+    public:
+        VulkanSwapchain(VulkanDevice* vulkanDevice, const VkSwapchainKHR swapChain, const VkExtent2D swapChainExtent,
+                        const VkFormat swapChainImageFormat,
+                        const std::vector<VkImage>& swapChainImages): vulkanDevice(vulkanDevice), swapChain(swapChain),
+                                                                                  swapChainExtent(swapChainExtent),
+                                                                                  swapChainImageFormat(swapChainImageFormat),
+                                                                                  swapChainImages(swapChainImages) {}
         ~VulkanSwapchain();
-
-        void RecreateSwapChain();
-        void CleanupSwapChain() const;
-
-        int GetViewportWidth() const { return viewportWidth; }
-        int GetViewportHeight() const { return viewportHeight; }
 
         VkSwapchainKHR& GetSwapChain() { return swapChain; }
         VkExtent2D& GetExtent() { return swapChainExtent; }
-        VkFormat GetImageFormat() { return swapChainImageFormat; }
-
-        static VkFormat GetImageFormat(VulkanDevice* device);
+        VkFormat GetImageFormat() const { return swapChainImageFormat; }
 
         std::vector<VkImage> GetSwapChainImages() const { return swapChainImages; }
-        std::vector<VkImageView> GetSwapChainImageViews() const { return swapChainImageViews; }
-        std::vector<VkFramebuffer> GetSwapChainFramebuffers() const { return swapChainFramebuffers; }
 
     private:
-        static VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
-
-        static VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
-
-        void CreateSwapChain();
-
-        void CreateImageViews();
-
-        void CreateFramebuffers();
-
-        VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) const;
-
-        static SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice physical_device, VkSurfaceKHR surface);
-
-    private:
-        int viewportWidth, viewportHeight;
-
         VulkanDevice* vulkanDevice;
-        Ref<VulkanImage> vulkanDepthImage;
-
         VkSwapchainKHR swapChain;
-        std::vector<VkImage> swapChainImages;
-        VkFormat swapChainImageFormat;
         VkExtent2D swapChainExtent;
-        std::vector<VkFramebuffer> swapChainFramebuffers;
-        std::vector<VkImageView> swapChainImageViews;
+        VkFormat swapChainImageFormat;
+        std::vector<VkImage> swapChainImages;
     };
 }

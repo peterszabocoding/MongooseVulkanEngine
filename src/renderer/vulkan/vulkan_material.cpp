@@ -99,8 +99,6 @@ namespace Raytracing
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
             VMA_MEMORY_USAGE_CPU_TO_GPU);
 
-        LOG_INFO(sizeof(MaterialParams));
-
         VkDescriptorBufferInfo bufferInfo{};
         bufferInfo.buffer = materialBuffer->GetBuffer();
         bufferInfo.offset = 0;

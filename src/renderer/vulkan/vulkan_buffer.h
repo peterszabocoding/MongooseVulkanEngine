@@ -29,7 +29,7 @@ namespace Raytracing
         static void CopyBuffer(const VulkanDevice* vulkanDevice, const VulkanBuffer* src, const VulkanBuffer* dst);
 
     private:
-        void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VmaMemoryUsage memoryUsage);
+        void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage);
 
     private:
         VulkanDevice* vulkanDevice;

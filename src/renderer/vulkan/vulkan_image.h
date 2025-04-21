@@ -35,32 +35,37 @@ namespace Raytracing
 
         virtual Ref<VulkanImage> Build(VulkanDevice* device) = 0;
 
-        void SetData(unsigned char* data, const uint64_t size)
+        VulkanImageBuilder& SetData(void* data, const uint64_t size)
         {
             this->data = data;
             this->size = size;
+            return *this;
         }
 
-        void SetResolution(const uint32_t width, const uint32_t height)
+        VulkanImageBuilder& SetResolution(const uint32_t width, const uint32_t height)
         {
             this->width = width;
             this->height = height;
+            return *this;
         }
 
-        void SetFormat(const VkFormat format)
+        VulkanImageBuilder& SetFormat(const VkFormat format)
         {
             this->format = format;
+            return *this;
         }
 
-        void SetFilter(const VkFilter minFilter, const VkFilter magFilter)
+        VulkanImageBuilder& SetFilter(const VkFilter minFilter, const VkFilter magFilter)
         {
             this->minFilter = minFilter;
             this->magFilter = magFilter;
+            return *this;
         }
 
-        void SetTiling(const VkImageTiling tiling)
+        VulkanImageBuilder& SetTiling(const VkImageTiling tiling)
         {
             this->tiling = tiling;
+            return *this;
         }
 
     protected:
@@ -74,7 +79,7 @@ namespace Raytracing
         void CopyBufferToImage(VkCommandBuffer commandBuffer, VkBuffer buffer) const;
 
     protected:
-        unsigned char* data;
+        void* data;
         uint64_t size;
         uint32_t width;
         uint32_t height;

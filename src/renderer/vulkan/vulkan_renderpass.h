@@ -1,20 +1,44 @@
 #pragma once
 
+#include <vector>
 #include <vulkan/vulkan_core.h>
 
-namespace Raytracing {
+#include "util/core.h"
+
+namespace Raytracing
+{
+    class VulkanFramebuffer;
     class VulkanDevice;
 
     class VulkanRenderPass {
     public:
-        VulkanRenderPass(VulkanDevice* device, VkFormat imageFormat);
+        class Builder {
+        public:
+            explicit Builder(VulkanDevice* vulkanDevice);
+            Builder& AddColorAttachment(VkFormat imageFormat, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT);
+            Builder& AddDepthAttachment(VkFormat depthFormat = VK_FORMAT_D24_UNORM_S8_UINT);
+            Ref<VulkanRenderPass> Build();
 
+        private:
+            VulkanDevice* vulkanDevice;
+            std::vector<VkAttachmentDescription> attachments;
+
+            VkAttachmentReference colorAttachmentRef{};
+            VkAttachmentReference depthAttachmentRef{};
+
+            VkSubpassDescription subpass{};
+            VkSubpassDependency dependency{};
+        };
+
+    public:
+        VulkanRenderPass(VulkanDevice* device, VkRenderPass renderPass):
+        device(device), renderPass(renderPass) {}
         ~VulkanRenderPass();
 
-        [[nodiscard]] VkRenderPass Get() const { return renderPass; }
+        void Begin(VkCommandBuffer commandBuffer, Ref<VulkanFramebuffer>& framebuffer, VkExtent2D extent);
+        void End(VkCommandBuffer commandBuffer);
 
-    private:
-        void CreateRenderPass(VkFormat imageFormat);
+        [[nodiscard]] VkRenderPass Get() const { return renderPass; }
 
     private:
         VulkanDevice* device;

@@ -9,8 +9,7 @@
 #include <vma/vk_mem_alloc.h>
 
 #include "vulkan_descriptor_pool.h"
-#include "vulkan_image.h"
-#include "vulkan_material.h"
+#include "vulkan_image_view.h"
 #include "GLFW/glfw3.h"
 #include "renderer/camera.h"
 #include "util/core.h"
@@ -25,12 +24,6 @@ namespace Raytracing
 
     constexpr int MAX_FRAMES_IN_FLIGHT = 1;
 
-    struct SwapChainSupportDetails {
-        VkSurfaceCapabilitiesKHR capabilities;
-        std::vector<VkSurfaceFormatKHR> formats;
-        std::vector<VkPresentModeKHR> presentModes;
-    };
-
     class VulkanDevice {
     public:
         VulkanDevice(int width, int height, GLFWwindow* glfwWindow);
@@ -43,7 +36,12 @@ namespace Raytracing
         void DrawImGui() const;
         bool BeginFrame();
         void EndFrame();
-        void ResizeFramebuffer() { framebufferResized = true; }
+        void ResizeFramebuffer(int width, int height)
+        {
+            viewportWidth = width;
+            viewportHeight = height;
+            framebufferResized = true;
+        }
         void ImmediateSubmit(std::function<void (VkCommandBuffer commandBuffer)>&& function) const;
 
         VkSurfaceKHR CreateSurface(GLFWwindow* glfwWindow) const;
@@ -59,10 +57,9 @@ namespace Raytracing
         [[nodiscard]] VkQueue GetGraphicsQueue() const { return graphicsQueue; }
         [[nodiscard]] VkQueue GetPresentQueue() const { return presentQueue; }
         [[nodiscard]] VkRenderPass GetRenderPass() const { return vulkanRenderPass->Get(); }
+        [[nodiscard]] Ref<VulkanRenderPass> GetVulkanRenderPass() const { return vulkanRenderPass; }
         [[nodiscard]] VkCommandPool GetCommandPool() const { return commandPool; }
-        [[nodiscard]] Ref<VulkanSwapchain> GetSwapchain() const { return vulkanSwapChain; }
         [[nodiscard]] VkPhysicalDeviceProperties GetDeviceProperties() const { return physicalDeviceProperties; }
-
 
         VkSampleCountFlagBits GetMaxMSAASampleCount() const;
 
@@ -78,12 +75,14 @@ namespace Raytracing
             const std::vector<const char*>& validationLayers);
 
         void Init(int width, int height, GLFWwindow* glfwWindow);
+        void CreateSwapchain();
+        void CreateFramebuffers();
+        void CreateRenderpass();
         void CreateCommandPool();
         void CreateCommandBuffers();
         void CreateSyncObjects();
         void CreateDescriptorPool();
         bool SetupNextFrame();
-        void BeginRenderPass() const;
         void SetViewportAndScissor() const;
 
         VkResult SubmitDrawCommands(VkSemaphore* signalSemaphores) const;
@@ -112,7 +111,11 @@ namespace Raytracing
         std::vector<VkSemaphore> renderFinishedSemaphores;
         std::vector<VkFence> inFlightFences;
 
-        Ref<VulkanSwapchain> vulkanSwapChain{};
+        Scope<VulkanSwapchain> vulkanSwapChain{};
+        std::vector<Ref<VulkanFramebuffer>> swapChainFramebuffers;
+        std::vector<Ref<VulkanImageView>> swapChainImageViews;
+        Ref<VulkanImage> swapChainDepthImage;
+
         Ref<VulkanRenderPass> vulkanRenderPass{};
 
         VmaAllocator vmaAllocator;
