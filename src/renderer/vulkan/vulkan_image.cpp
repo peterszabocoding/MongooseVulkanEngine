@@ -3,15 +3,27 @@
 #include "vulkan_buffer.h"
 #include "vulkan_utils.h"
 #include "vulkan_device.h"
+#include "vulkan_image_view.h"
+#include "util/log.h"
 
 namespace Raytracing
 {
-    VulkanImage::~VulkanImage()
+    VulkanImage::~VulkanImage() {}
+
+    VulkanTextureImage::~VulkanTextureImage()
     {
+        LOG_INFO("Destroy texture image");
         vkDestroySampler(device->GetDevice(), sampler, nullptr);
-        vkDestroyImageView(device->GetDevice(), imageView, nullptr);
-        vkDestroyImage(device->GetDevice(), image, nullptr);
         vkFreeMemory(device->GetDevice(), imageMemory, nullptr);
+        vkDestroyImage(device->GetDevice(), image, nullptr);
+    }
+
+    VulkanDepthImage::~VulkanDepthImage()
+    {
+        LOG_INFO("Destroy depth image");
+        vkDestroySampler(device->GetDevice(), sampler, nullptr);
+        vkFreeMemory(device->GetDevice(), imageMemory, nullptr);
+        vkDestroyImage(device->GetDevice(), image, nullptr);
     }
 
     VkDeviceMemory VulkanImageBuilder::AllocateImageMemory(const VulkanDevice* device, const VkImage image,
@@ -58,23 +70,14 @@ namespace Raytracing
         return image;
     }
 
-    VkImageView VulkanImageBuilder::CreateImageView(const VulkanDevice* device, const VkImageAspectFlags aspectFlags) const
+    Ref<VulkanImageView> VulkanImageBuilder::CreateImageView(VulkanDevice* device, const VkImageAspectFlags aspectFlags) const
     {
-        VkImageViewCreateInfo viewInfo{};
-        viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        viewInfo.image = image;
-        viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        viewInfo.format = format;
-        viewInfo.subresourceRange.aspectMask = aspectFlags;
-        viewInfo.subresourceRange.baseMipLevel = 0;
-        viewInfo.subresourceRange.levelCount = 1;
-        viewInfo.subresourceRange.baseArrayLayer = 0;
-        viewInfo.subresourceRange.layerCount = 1;
-
-        VkImageView imageView;
-        VK_CHECK_MSG(vkCreateImageView(device->GetDevice(), &viewInfo, nullptr, &imageView), "Failed to create texture image view.");
-
-        return imageView;
+        return VulkanImageView::Builder(device)
+                .SetFormat(format)
+                .SetImage(image)
+                .SetViewType(VK_IMAGE_VIEW_TYPE_2D)
+                .SetAspectFlags(aspectFlags)
+                .Build();
     }
 
     VkSampler VulkanImageBuilder::CreateSampler(const VulkanDevice* device) const
@@ -109,7 +112,7 @@ namespace Raytracing
         return sampler;
     }
 
-    void VulkanImageBuilder::TransitionImageLayout(VkCommandBuffer commandBuffer, const VkImageLayout oldLayout,
+    void VulkanImageBuilder::TransitionImageLayout(const VkCommandBuffer commandBuffer, const VkImageLayout oldLayout,
                                                    const VkImageLayout newLayout) const
     {
         VkImageMemoryBarrier barrier{};
@@ -152,7 +155,7 @@ namespace Raytracing
         vkCmdPipelineBarrier(commandBuffer, 0, 0, 0, 0, nullptr, 0, nullptr, 1, &barrier);
     }
 
-    void VulkanImageBuilder::CopyBufferToImage(VkCommandBuffer commandBuffer, const VkBuffer buffer) const
+    void VulkanImageBuilder::CopyBufferToImage(const VkCommandBuffer commandBuffer, const VkBuffer buffer) const
     {
         VkBufferImageCopy region{};
         region.bufferOffset = 0;
@@ -177,7 +180,19 @@ namespace Raytracing
         );
     }
 
-    Ref<VulkanImage> VulkanTextureImageBuilder::Build(VulkanDevice* device)
+    Ref<VulkanImage> VulkanSimpleImageBuilder::Build(VulkanDevice* device)
+    {
+        imageView = VulkanImageView::Builder(device)
+                .SetFormat(format)
+                .SetImage(image)
+                .SetAspectFlags(VK_IMAGE_ASPECT_COLOR_BIT)
+                .SetViewType(VK_IMAGE_VIEW_TYPE_2D)
+                .Build();
+
+        return CreateRef<VulkanImage>(device, image, imageView);
+    }
+
+    Ref<VulkanTextureImage> VulkanTextureImageBuilder::Build(VulkanDevice* device)
     {
         const auto stagingBuffer = VulkanBuffer(device, size,
                                                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -186,29 +201,28 @@ namespace Raytracing
 
         memcpy(stagingBuffer.GetMappedData(), data, stagingBuffer.GetBufferSize());
 
-
         image = CreateImage(device, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
         imageMemory = AllocateImageMemory(device, image, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-        device->ImmediateSubmit([&](VkCommandBuffer cmd) {
+        device->ImmediateSubmit([&](const VkCommandBuffer cmd) {
             TransitionImageLayout(cmd, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
         });
 
-        device->ImmediateSubmit([&](VkCommandBuffer cmd) {
+        device->ImmediateSubmit([&](const VkCommandBuffer cmd) {
             CopyBufferToImage(cmd, stagingBuffer.GetBuffer());
         });
 
-        device->ImmediateSubmit([&](VkCommandBuffer cmd) {
+        device->ImmediateSubmit([&](const VkCommandBuffer cmd) {
             TransitionImageLayout(cmd, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         });
 
         imageView = CreateImageView(device, VK_IMAGE_ASPECT_COLOR_BIT);
         sampler = CreateSampler(device);
 
-        return CreateRef<VulkanImage>(device, image, imageMemory, imageView, sampler);
+        return CreateRef<VulkanTextureImage>(device, image, imageMemory, imageView, sampler);
     }
 
-    Ref<VulkanImage> VulkanDepthImageBuilder::Build(VulkanDevice* device)
+    Ref<VulkanDepthImage> VulkanDepthImageBuilder::Build(VulkanDevice* device)
     {
         format = VK_FORMAT_D24_UNORM_S8_UINT;
         tiling = VK_IMAGE_TILING_OPTIMAL;
@@ -220,6 +234,6 @@ namespace Raytracing
         imageView = CreateImageView(device, VK_IMAGE_ASPECT_DEPTH_BIT);
         sampler = CreateSampler(device);
 
-        return CreateRef<VulkanImage>(device, image, imageMemory, imageView, sampler);
+        return CreateRef<VulkanDepthImage>(device, image, imageMemory, imageView, sampler);
     }
 }

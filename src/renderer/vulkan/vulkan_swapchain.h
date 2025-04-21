@@ -37,6 +37,7 @@ namespace Raytracing
 
             VkSwapchainKHR swapChain;
             std::vector<VkImage> swapChainImages;
+            std::vector<Ref<VulkanImage>> images;
 
             VkFormat imageFormat = VK_FORMAT_R8G8B8A8_SRGB;
             VkColorSpaceKHR colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
@@ -47,23 +48,25 @@ namespace Raytracing
     public:
         VulkanSwapchain(VulkanDevice* vulkanDevice, const VkSwapchainKHR swapChain, const VkExtent2D swapChainExtent,
                         const VkFormat swapChainImageFormat,
-                        const std::vector<VkImage>& swapChainImages): vulkanDevice(vulkanDevice), swapChain(swapChain),
-                                                                                  swapChainExtent(swapChainExtent),
-                                                                                  swapChainImageFormat(swapChainImageFormat),
-                                                                                  swapChainImages(swapChainImages) {}
+                        const std::vector<Ref<VulkanImage>>& images): vulkanDevice(vulkanDevice), swapChain(swapChain),
+                                                                     swapChainExtent(swapChainExtent),
+                                                                     swapChainImageFormat(swapChainImageFormat),
+                                                                     images(images) {}
+
         ~VulkanSwapchain();
 
         VkSwapchainKHR& GetSwapChain() { return swapChain; }
         VkExtent2D& GetExtent() { return swapChainExtent; }
         VkFormat GetImageFormat() const { return swapChainImageFormat; }
 
-        std::vector<VkImage> GetSwapChainImages() const { return swapChainImages; }
+        std::vector<Ref<VulkanImage>> GetImages() const { return images; }
 
     private:
         VulkanDevice* vulkanDevice;
         VkSwapchainKHR swapChain;
         VkExtent2D swapChainExtent;
         VkFormat swapChainImageFormat;
-        std::vector<VkImage> swapChainImages;
+
+        std::vector<Ref<VulkanImage>> images;
     };
 }

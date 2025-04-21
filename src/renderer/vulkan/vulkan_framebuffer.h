@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 
+#include "vulkan_image.h"
 #include "util/core.h"
 #include "vulkan/vulkan.h"
 
@@ -16,7 +17,7 @@ namespace Raytracing
             explicit Builder(VulkanDevice* device): device(device) {}
             ~Builder() = default;
 
-            Builder& AddAttachment(VkImageView imageViewAttachment);
+            Builder& AddAttachment(Ref<VulkanImage> imageAttachment);
             Builder& SetRenderpass(Ref<VulkanRenderPass> renderPass);
             Builder& SetResolution(int width, int height);
 
@@ -26,7 +27,7 @@ namespace Raytracing
             VulkanDevice* device{};
             int width = 0, height = 0;
             Ref<VulkanRenderPass> renderPass{};
-            std::vector<VkImageView> attachments{};
+            std::vector<Ref<VulkanImage>> attachments{};
         };
 
     public:

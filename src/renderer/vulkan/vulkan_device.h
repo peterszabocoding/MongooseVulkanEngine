@@ -111,12 +111,11 @@ namespace Raytracing
         std::vector<VkSemaphore> renderFinishedSemaphores;
         std::vector<VkFence> inFlightFences;
 
+        Ref<VulkanRenderPass> vulkanRenderPass{};
+
         Scope<VulkanSwapchain> vulkanSwapChain{};
         std::vector<Ref<VulkanFramebuffer>> swapChainFramebuffers;
-        std::vector<Ref<VulkanImageView>> swapChainImageViews;
-        Ref<VulkanImage> swapChainDepthImage;
-
-        Ref<VulkanRenderPass> vulkanRenderPass{};
+        Ref<VulkanDepthImage> swapChainDepthImage;
 
         VmaAllocator vmaAllocator;
 

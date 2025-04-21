@@ -116,12 +116,12 @@ namespace Raytracing
         return GLTFLoader::LoadMesh(device, meshPath);
     }
 
-    Ref<VulkanImage> ResourceManager::LoadTexture(VulkanDevice* device, std::string textureImagePath)
+    Ref<VulkanTextureImage> ResourceManager::LoadTexture(VulkanDevice* device, std::string textureImagePath)
     {
         LOG_INFO("Load Texture: " + textureImagePath);
         const ImageResource imageResource = LoadImageResource(textureImagePath);
 
-        Ref<VulkanImage> texture = VulkanTextureImageBuilder()
+        Ref<VulkanTextureImage> texture = VulkanTextureImageBuilder()
                 .SetData(imageResource.data, imageResource.size)
                 .SetResolution(imageResource.width, imageResource.height)
                 .SetFormat(VK_FORMAT_R8G8B8A8_UNORM)
@@ -135,12 +135,12 @@ namespace Raytracing
         return texture;
     }
 
-    Ref<VulkanImage> ResourceManager::LoadHDRCubeMap(VulkanDevice* device, const std::string& hdrPath)
+    Ref<VulkanTextureImage> ResourceManager::LoadHDRCubeMap(VulkanDevice* device, const std::string& hdrPath)
     {
         LOG_INFO("Load HDR: " + hdrPath);
         const ImageResource imageResource = LoadHDRResource(hdrPath);
 
-        Ref<VulkanImage> texture = VulkanTextureImageBuilder()
+        Ref<VulkanTextureImage> texture = VulkanTextureImageBuilder()
                 .SetData(imageResource.data, imageResource.size)
                 .SetResolution(imageResource.width, imageResource.height)
                 .SetFormat(VK_FORMAT_R8G8B8A8_UNORM)

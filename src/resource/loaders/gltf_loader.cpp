@@ -188,10 +188,10 @@ namespace Raytracing
             }
         }
 
-        static std::vector<Ref<VulkanImage> > LoadTextures(tinygltf::Model& model, VulkanDevice* device,
-                                                           const std::filesystem::path& parentPath)
+        static std::vector<Ref<VulkanTextureImage>> LoadTextures(tinygltf::Model& model, VulkanDevice* device,
+                                                                 const std::filesystem::path& parentPath)
         {
-            std::vector<Ref<VulkanImage> > textures;
+            std::vector<Ref<VulkanTextureImage>> textures;
             for (tinygltf::Texture& tex: model.textures)
             {
                 tinygltf::Image image = model.images[tex.source];
@@ -202,7 +202,7 @@ namespace Raytracing
         }
 
         static std::vector<VulkanMaterial> LoadMaterials(const tinygltf::Model& model, VulkanDevice* device,
-                                                         const std::vector<Ref<VulkanImage> >& textures)
+                                                         const std::vector<Ref<VulkanTextureImage>>& textures)
         {
             std::vector<VulkanMaterial> materials;
             for (const tinygltf::Material& material: model.materials)
@@ -256,7 +256,7 @@ namespace Raytracing
         auto mesh = CreateRef<VulkanMesh>(device);
         Utils::LoadGLTFNode(node, model, mesh);
 
-        const std::vector<Ref<VulkanImage> > textures = Utils::LoadTextures(model, device, gltfFilePath.parent_path());
+        const std::vector<Ref<VulkanTextureImage>> textures = Utils::LoadTextures(model, device, gltfFilePath.parent_path());
         const std::vector<VulkanMaterial> materials = Utils::LoadMaterials(model, device, textures);
 
         mesh->SetMaterials(materials);
@@ -285,7 +285,7 @@ namespace Raytracing
             abort();
         }
 
-        const std::vector<Ref<VulkanImage> > textures = Utils::LoadTextures(model, device, gltfFilePath.parent_path());
+        const std::vector<Ref<VulkanTextureImage>> textures = Utils::LoadTextures(model, device, gltfFilePath.parent_path());
         const std::vector<VulkanMaterial> materials = Utils::LoadMaterials(model, device, textures);
         std::vector<Ref<VulkanMesh>> meshes;
         std::vector<Transform> transforms;
@@ -298,16 +298,16 @@ namespace Raytracing
 
             Transform transform;
             // Generate local node matrix
-            glm::vec3 translation = glm::vec3(0.0f);
-            if (node.translation.size() == 3) {
+            if (node.translation.size() == 3)
+            {
                 transform.m_Position = glm::make_vec3(node.translation.data());
             }
-            glm::mat4 rotation = glm::mat4(1.0f);
-            if (node.rotation.size() == 4) {
+            if (node.rotation.size() == 4)
+            {
                 transform.m_Rotation_Quat = glm::make_quat(node.rotation.data());
             }
-            glm::vec3 scale = glm::vec3(1.0f);
-            if (node.scale.size() == 3) {
+            if (node.scale.size() == 3)
+            {
                 transform.m_Scale = glm::make_vec3(node.scale.data());
             }
 

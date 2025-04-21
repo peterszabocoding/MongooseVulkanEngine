@@ -196,45 +196,35 @@ namespace Raytracing
     void VulkanDevice::CreateSwapchain()
     {
         LOG_TRACE("Vulkan: create swapchain");
+        const auto swapChainSupport = VulkanUtils::QuerySwapChainSupport(physicalDevice, surface);
+        const VkSurfaceFormatKHR surfaceFormat = VulkanUtils::ChooseSwapSurfaceFormat(swapChainSupport.formats);
+
         uint32_t imageCount = VulkanUtils::GetSwapchainImageCount(physicalDevice, surface);
         vulkanSwapChain = VulkanSwapchain::Builder(this)
                 .SetResolution(viewportWidth, viewportHeight)
                 .SetPresentMode(VK_PRESENT_MODE_IMMEDIATE_KHR)
                 .SetImageCount(imageCount)
+                .SetImageFormat(surfaceFormat.format)
                 .Build();
     }
 
     void VulkanDevice::CreateFramebuffers()
     {
         uint32_t imageCount = VulkanUtils::GetSwapchainImageCount(physicalDevice, surface);
-        const auto swapChainSupport = VulkanUtils::QuerySwapChainSupport(physicalDevice, surface);
-        const VkSurfaceFormatKHR surfaceFormat = VulkanUtils::ChooseSwapSurfaceFormat(swapChainSupport.formats);
-
-        swapChainImageViews.resize(imageCount);
-        swapChainFramebuffers.resize(imageCount);
-
-        const auto swapChainImages = vulkanSwapChain->GetSwapChainImages();
-        for (size_t i = 0; i < imageCount; i++)
-        {
-            swapChainImageViews[i] = VulkanImageView::Builder(this)
-                    .SetFormat(surfaceFormat.format)
-                    .SetImage(swapChainImages[i])
-                    .SetAspectFlags(VK_IMAGE_ASPECT_COLOR_BIT)
-                    .SetViewType(VK_IMAGE_VIEW_TYPE_2D)
-                    .Build();
-        }
 
         swapChainDepthImage = VulkanDepthImageBuilder()
                 .SetResolution(viewportWidth, viewportHeight)
                 .Build(this);
 
+        swapChainFramebuffers.clear();
+        swapChainFramebuffers.resize(imageCount);
         for (size_t i = 0; i < imageCount; i++)
         {
             swapChainFramebuffers[i] = VulkanFramebuffer::Builder(this)
-                    .SetRenderpass(GetVulkanRenderPass())
+                    .SetRenderpass(vulkanRenderPass)
                     .SetResolution(viewportWidth, viewportHeight)
-                    .AddAttachment(swapChainImageViews[i]->Get())
-                    .AddAttachment(swapChainDepthImage->GetImageView())
+                    .AddAttachment(vulkanSwapChain->GetImages()[i])
+                    .AddAttachment(swapChainDepthImage)
                     .Build();
         }
     }
