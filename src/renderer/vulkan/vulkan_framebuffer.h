@@ -17,7 +17,7 @@ namespace Raytracing
             explicit Builder(VulkanDevice* device): device(device) {}
             ~Builder() = default;
 
-            Builder& AddAttachment(Ref<VulkanImage> imageAttachment);
+            Builder& AddAttachment(VkImageView imageAttachment);
             Builder& SetRenderpass(Ref<VulkanRenderPass> renderPass);
             Builder& SetResolution(int width, int height);
 
@@ -27,7 +27,7 @@ namespace Raytracing
             VulkanDevice* device{};
             int width = 0, height = 0;
             Ref<VulkanRenderPass> renderPass{};
-            std::vector<Ref<VulkanImage>> attachments{};
+            std::vector<VkImageView> attachments{};
         };
 
     public:

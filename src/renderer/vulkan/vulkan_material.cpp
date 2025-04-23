@@ -39,7 +39,7 @@ namespace Raytracing
         return *this;
     }
 
-    VulkanMaterialBuilder& VulkanMaterialBuilder::SetBaseColorTexture(const Ref<VulkanTextureImage>& baseColorTexture)
+    VulkanMaterialBuilder& VulkanMaterialBuilder::SetBaseColorTexture(const Ref<VulkanImage>& baseColorTexture)
     {
         this->baseColorTexture = baseColorTexture;
         return *this;
@@ -51,7 +51,7 @@ namespace Raytracing
         return *this;
     }
 
-    VulkanMaterialBuilder& VulkanMaterialBuilder::SetNormalMapTexture(const Ref<VulkanTextureImage>& normalMapTexture)
+    VulkanMaterialBuilder& VulkanMaterialBuilder::SetNormalMapTexture(const Ref<VulkanImage>& normalMapTexture)
     {
         this->normalMapTexture = normalMapTexture;
         return *this;
@@ -63,7 +63,7 @@ namespace Raytracing
         return *this;
     }
 
-    VulkanMaterialBuilder& VulkanMaterialBuilder::SetMetallicRoughnessTexture(const Ref<VulkanTextureImage>& metallicRoughnessTexture)
+    VulkanMaterialBuilder& VulkanMaterialBuilder::SetMetallicRoughnessTexture(const Ref<VulkanImage>& metallicRoughnessTexture)
     {
         this->metallicRoughnessTexture = metallicRoughnessTexture;
         return *this;

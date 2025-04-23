@@ -8,7 +8,7 @@
 
 namespace Raytracing
 {
-    VulkanFramebuffer::Builder& VulkanFramebuffer::Builder::AddAttachment(Ref<VulkanImage> imageAttachment)
+    VulkanFramebuffer::Builder& VulkanFramebuffer::Builder::AddAttachment(VkImageView imageAttachment)
     {
         attachments.push_back(imageAttachment);
         return *this;
@@ -29,18 +29,11 @@ namespace Raytracing
 
     Ref<VulkanFramebuffer> VulkanFramebuffer::Builder::Build()
     {
-
-        std::vector<VkImageView> imageViews(attachments.size());
-        for (int i = 0; i < attachments.size(); i++)
-        {
-            imageViews[i] = attachments[i]->GetImageView()->Get();
-        }
-
         VkFramebufferCreateInfo framebuffer_info{};
         framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         framebuffer_info.renderPass = renderPass->Get();
-        framebuffer_info.attachmentCount = static_cast<uint32_t>(imageViews.size());
-        framebuffer_info.pAttachments = imageViews.data();
+        framebuffer_info.attachmentCount = static_cast<uint32_t>(attachments.size());
+        framebuffer_info.pAttachments = attachments.data();
         framebuffer_info.width = width;
         framebuffer_info.height = height;
         framebuffer_info.layers = 1;

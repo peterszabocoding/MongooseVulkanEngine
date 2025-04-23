@@ -37,7 +37,7 @@ namespace Raytracing
 
             VkSwapchainKHR swapChain;
             std::vector<VkImage> swapChainImages;
-            std::vector<Ref<VulkanImage>> images;
+            std::vector<Ref<VulkanImageView>> swapChainImageViews;
 
             VkFormat imageFormat = VK_FORMAT_R8G8B8A8_SRGB;
             VkColorSpaceKHR colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
@@ -48,10 +48,10 @@ namespace Raytracing
     public:
         VulkanSwapchain(VulkanDevice* vulkanDevice, const VkSwapchainKHR swapChain, const VkExtent2D swapChainExtent,
                         const VkFormat swapChainImageFormat,
-                        const std::vector<Ref<VulkanImage>>& images): vulkanDevice(vulkanDevice), swapChain(swapChain),
+                        const std::vector<VkImage>& images, const std::vector<Ref<VulkanImageView>>& imageViews): vulkanDevice(vulkanDevice), swapChain(swapChain),
                                                                      swapChainExtent(swapChainExtent),
                                                                      swapChainImageFormat(swapChainImageFormat),
-                                                                     images(images) {}
+                                                                     images(images), imageViews(imageViews) {}
 
         ~VulkanSwapchain();
 
@@ -59,7 +59,8 @@ namespace Raytracing
         VkExtent2D& GetExtent() { return swapChainExtent; }
         VkFormat GetImageFormat() const { return swapChainImageFormat; }
 
-        std::vector<Ref<VulkanImage>> GetImages() const { return images; }
+        std::vector<VkImage> GetImages() const { return images; }
+        std::vector<Ref<VulkanImageView>> GetImageViews() const { return imageViews; }
 
     private:
         VulkanDevice* vulkanDevice;
@@ -67,6 +68,7 @@ namespace Raytracing
         VkExtent2D swapChainExtent;
         VkFormat swapChainImageFormat;
 
-        std::vector<Ref<VulkanImage>> images;
+        std::vector<VkImage> images;
+        std::vector<Ref<VulkanImageView>> imageViews;
     };
 }

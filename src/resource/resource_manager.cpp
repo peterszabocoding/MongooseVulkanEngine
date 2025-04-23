@@ -116,18 +116,22 @@ namespace Raytracing
         return GLTFLoader::LoadMesh(device, meshPath);
     }
 
-    Ref<VulkanTextureImage> ResourceManager::LoadTexture(VulkanDevice* device, std::string textureImagePath)
+    Ref<VulkanImage> ResourceManager::LoadTexture(VulkanDevice* device, std::string textureImagePath)
     {
         LOG_INFO("Load Texture: " + textureImagePath);
         const ImageResource imageResource = LoadImageResource(textureImagePath);
 
-        Ref<VulkanTextureImage> texture = VulkanTextureImageBuilder()
+        Ref<VulkanImage> texture = VulkanImage::Builder(device)
                 .SetData(imageResource.data, imageResource.size)
                 .SetResolution(imageResource.width, imageResource.height)
                 .SetFormat(VK_FORMAT_R8G8B8A8_UNORM)
                 .SetFilter(VK_FILTER_LINEAR, VK_FILTER_LINEAR)
                 .SetTiling(VK_IMAGE_TILING_OPTIMAL)
-                .Build(device);
+                .AddUsage(VK_IMAGE_USAGE_TRANSFER_DST_BIT)
+                .AddUsage(VK_IMAGE_USAGE_SAMPLED_BIT)
+                .AddAspectFlag(VK_IMAGE_ASPECT_COLOR_BIT)
+                .MakeSampler()
+                .Build();
 
         texture->SetImageResource(imageResource);
         ReleaseImage(imageResource);
@@ -135,18 +139,22 @@ namespace Raytracing
         return texture;
     }
 
-    Ref<VulkanTextureImage> ResourceManager::LoadHDRCubeMap(VulkanDevice* device, const std::string& hdrPath)
+    Ref<VulkanImage> ResourceManager::LoadHDRCubeMap(VulkanDevice* device, const std::string& hdrPath)
     {
         LOG_INFO("Load HDR: " + hdrPath);
         const ImageResource imageResource = LoadHDRResource(hdrPath);
 
-        Ref<VulkanTextureImage> texture = VulkanTextureImageBuilder()
+        Ref<VulkanImage> texture = VulkanImage::Builder(device)
                 .SetData(imageResource.data, imageResource.size)
                 .SetResolution(imageResource.width, imageResource.height)
                 .SetFormat(VK_FORMAT_R8G8B8A8_UNORM)
                 .SetFilter(VK_FILTER_LINEAR, VK_FILTER_LINEAR)
                 .SetTiling(VK_IMAGE_TILING_OPTIMAL)
-                .Build(device);
+                .AddUsage(VK_IMAGE_USAGE_TRANSFER_DST_BIT)
+                .AddUsage(VK_IMAGE_USAGE_SAMPLED_BIT)
+                .AddAspectFlag(VK_IMAGE_ASPECT_COLOR_BIT)
+                .MakeSampler()
+                .Build();
 
         ReleaseImage(imageResource);
         return texture;

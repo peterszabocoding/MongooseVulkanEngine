@@ -221,9 +221,14 @@ namespace Raytracing
     {
         uint32_t imageCount = VulkanUtils::GetSwapchainImageCount(physicalDevice, surface);
 
-        depthImage = VulkanDepthImageBuilder()
+        depthImage = VulkanImage::Builder(this)
                 .SetResolution(viewportWidth, viewportHeight)
-                .Build(this);
+                .SetTiling(VK_IMAGE_TILING_OPTIMAL)
+                .SetFormat(VK_FORMAT_D24_UNORM_S8_UINT)
+                .AddAspectFlag(VK_IMAGE_ASPECT_DEPTH_BIT)
+                .AddUsage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+                .MakeSampler()
+                .Build();
 
         framebuffers.clear();
         framebuffers.resize(imageCount);
@@ -232,8 +237,8 @@ namespace Raytracing
             framebuffers[i] = VulkanFramebuffer::Builder(this)
                     .SetRenderpass(vulkanRenderPass)
                     .SetResolution(viewportWidth, viewportHeight)
-                    .AddAttachment(vulkanSwapChain->GetImages()[i])
-                    .AddAttachment(depthImage)
+                    .AddAttachment(vulkanSwapChain->GetImageViews()[i]->Get())
+                    .AddAttachment(depthImage->GetImageView()->Get())
                     .Build();
         }
     }

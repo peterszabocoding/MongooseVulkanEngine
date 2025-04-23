@@ -98,16 +98,18 @@ namespace Raytracing
         VK_CHECK_MSG(vkGetSwapchainImagesKHR(device->GetDevice(), swapChain, &imageCount, swapChainImages.data()),
                      "Failed to acquire swapchain images.");
 
-        images.resize(imageCount);
+        swapChainImageViews.resize(imageCount);
         for (size_t i = 0; i < imageCount; i++)
         {
-            images[i] = VulkanSimpleImageBuilder()
-                    .SetImage(swapChainImages[i])
-                    .SetFormat(imageFormat)
-                    .Build(device);
+            swapChainImageViews[i] = VulkanImageView::Builder(device)
+                .SetFormat(imageFormat)
+                .SetImage(swapChainImages[i])
+                .SetAspectFlags(VK_IMAGE_ASPECT_COLOR_BIT)
+                .SetViewType(VK_IMAGE_VIEW_TYPE_2D)
+                .Build();
         }
 
-        return CreateScope<VulkanSwapchain>(device, swapChain, extent, imageFormat, images);
+        return CreateScope<VulkanSwapchain>(device, swapChain, extent, imageFormat, swapChainImages, swapChainImageViews);
     }
 
     VulkanSwapchain::~VulkanSwapchain()

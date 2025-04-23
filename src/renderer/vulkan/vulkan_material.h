@@ -24,9 +24,9 @@ namespace Raytracing
 
     struct VulkanMaterial {
         int index = 0;
-        Ref<VulkanTextureImage> baseColorTexture;
-        Ref<VulkanTextureImage> normalMapTexture;
-        Ref<VulkanTextureImage> metallicRoughnessTexture;
+        Ref<VulkanImage> baseColorTexture;
+        Ref<VulkanImage> normalMapTexture;
+        Ref<VulkanImage> metallicRoughnessTexture;
         MaterialParams params;
         VkDescriptorSet descriptorSet;
         Ref<VulkanBuffer> materialBuffer;
@@ -48,13 +48,13 @@ namespace Raytracing
         VulkanMaterialBuilder& SetRoughness(float roughness);
 
         VulkanMaterialBuilder& SetBaseColorPath(const std::string& baseColorPath);
-        VulkanMaterialBuilder& SetBaseColorTexture(const Ref<VulkanTextureImage>& baseColorTexture);
+        VulkanMaterialBuilder& SetBaseColorTexture(const Ref<VulkanImage>& baseColorTexture);
 
         VulkanMaterialBuilder& SetNormalMapPath(const std::string& normalMapPath);
-        VulkanMaterialBuilder& SetNormalMapTexture(const Ref<VulkanTextureImage>& normalMapTexture);
+        VulkanMaterialBuilder& SetNormalMapTexture(const Ref<VulkanImage>& normalMapTexture);
 
         VulkanMaterialBuilder& SetMetallicRoughnessPath(const std::string& metallicRoughnessPath);
-        VulkanMaterialBuilder& SetMetallicRoughnessTexture(const Ref<VulkanTextureImage>& metallicRoughnessTexture);
+        VulkanMaterialBuilder& SetMetallicRoughnessTexture(const Ref<VulkanImage>& metallicRoughnessTexture);
 
         VulkanMaterialBuilder& SetParams(const MaterialParams& params);
         VulkanMaterialBuilder& SetPipeline(Ref<VulkanPipeline> shader);
@@ -67,9 +67,9 @@ namespace Raytracing
         Ref<VulkanPipeline> pipeline;
         MaterialParams params;
 
-        Ref<VulkanTextureImage> baseColorTexture;
-        Ref<VulkanTextureImage> normalMapTexture;
-        Ref<VulkanTextureImage> metallicRoughnessTexture;
+        Ref<VulkanImage> baseColorTexture;
+        Ref<VulkanImage> normalMapTexture;
+        Ref<VulkanImage> metallicRoughnessTexture;
 
         std::string baseColorPath;
         std::string normalMapPath;
