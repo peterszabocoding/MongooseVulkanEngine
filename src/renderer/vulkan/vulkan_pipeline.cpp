@@ -94,11 +94,11 @@ namespace Raytracing
         return CreateRef<VulkanPipeline>(vulkanDevice, shader, pipeline, pipelineLayout);
     }
 
-    PipelineBuilder& PipelineBuilder::SetShaders(const std::string& vertexShaderPath,
-                                     const std::string& fragmentShaderPath)
+    PipelineBuilder& PipelineBuilder::SetShaders(const std::string& _vertexShaderPath,
+                                     const std::string& _fragmentShaderPath)
     {
-        this->vertexShaderPath = vertexShaderPath;
-        this->fragmentShaderPath = fragmentShaderPath;
+        vertexShaderPath = _vertexShaderPath;
+        fragmentShaderPath = _fragmentShaderPath;
         return *this;
     }
 

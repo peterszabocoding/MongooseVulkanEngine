@@ -36,34 +36,34 @@ namespace Raytracing
         }
     }
 
-    VulkanSwapchain::Builder& VulkanSwapchain::Builder::SetResolution(int width, int height)
+    VulkanSwapchain::Builder& VulkanSwapchain::Builder::SetResolution(int _width, int _height)
     {
-        this->width = width;
-        this->height = height;
+        width = _width;
+        height = _height;
         return *this;
     }
 
-    VulkanSwapchain::Builder& VulkanSwapchain::Builder::SetPresentMode(VkPresentModeKHR presentMode)
+    VulkanSwapchain::Builder& VulkanSwapchain::Builder::SetPresentMode(VkPresentModeKHR _presentMode)
     {
-        this->presentMode = presentMode;
+        presentMode = _presentMode;
         return *this;
     }
 
-    VulkanSwapchain::Builder& VulkanSwapchain::Builder::SetImageFormat(VkFormat imageFormat)
+    VulkanSwapchain::Builder& VulkanSwapchain::Builder::SetImageFormat(VkFormat _imageFormat)
     {
-        this->imageFormat = imageFormat;
+        imageFormat = _imageFormat;
         return *this;
     }
 
-    VulkanSwapchain::Builder& VulkanSwapchain::Builder::SetImageColorSpace(VkColorSpaceKHR colorSpace)
+    VulkanSwapchain::Builder& VulkanSwapchain::Builder::SetImageColorSpace(VkColorSpaceKHR _colorSpace)
     {
-        this->colorSpace = colorSpace;
+        colorSpace = _colorSpace;
         return *this;
     }
 
-    VulkanSwapchain::Builder& VulkanSwapchain::Builder::SetImageCount(uint32_t imageCount)
+    VulkanSwapchain::Builder& VulkanSwapchain::Builder::SetImageCount(uint32_t _imageCount)
     {
-        this->imageCount = imageCount;
+        imageCount = _imageCount;
         return *this;
     }
 

@@ -14,16 +14,16 @@ namespace Raytracing
         return *this;
     }
 
-    VulkanFramebuffer::Builder& VulkanFramebuffer::Builder::SetRenderpass(Ref<VulkanRenderPass> renderPass)
+    VulkanFramebuffer::Builder& VulkanFramebuffer::Builder::SetRenderpass(Ref<VulkanRenderPass> _renderPass)
     {
-        this->renderPass = renderPass;
+        renderPass = _renderPass;
         return *this;
     }
 
-    VulkanFramebuffer::Builder& VulkanFramebuffer::Builder::SetResolution(int width, int height)
+    VulkanFramebuffer::Builder& VulkanFramebuffer::Builder::SetResolution(int _width, int _height)
     {
-        this->width = width;
-        this->height = height;
+        width = _width;
+        height = _height;
         return *this;
     }
 

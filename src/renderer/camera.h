@@ -39,24 +39,24 @@ namespace Raytracing
         {
             if (isEqual(fov, focalLength)) return;
 
-            this->fov = focalLength;
+            fov = focalLength;
             CalculateProjection();
         }
 
-        void SetTransform(const Transform& transform)
+        void SetTransform(const Transform& _transform)
         {
-            this->transform = transform;
+            transform = _transform;
         }
 
-        void SetNearPlane(const float nearPlane)
+        void SetNearPlane(const float _nearPlane)
         {
-            this->nearPlane = nearPlane;
+            nearPlane = _nearPlane;
             CalculateView();
         }
 
-        void SetFarPlane(const float farPlane)
+        void SetFarPlane(const float _farPlane)
         {
-            this->farPlane = farPlane;
+            farPlane = _farPlane;
             CalculateView();
         }
 

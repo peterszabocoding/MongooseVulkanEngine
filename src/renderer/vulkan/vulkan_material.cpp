@@ -9,75 +9,75 @@
 
 namespace Raytracing
 {
-    VulkanMaterialBuilder& VulkanMaterialBuilder::SetIndex(int index)
+    VulkanMaterialBuilder& VulkanMaterialBuilder::SetIndex(int _index)
     {
-        this->index = index;
+        index = _index;
         return *this;
     }
 
-    VulkanMaterialBuilder& VulkanMaterialBuilder::SetBaseColor(glm::vec4 baseColor)
+    VulkanMaterialBuilder& VulkanMaterialBuilder::SetBaseColor(glm::vec4 _baseColor)
     {
-        this->baseColor = baseColor;
+        baseColor = _baseColor;
         return *this;
     }
 
-    VulkanMaterialBuilder& VulkanMaterialBuilder::SetMetallic(float metallic)
+    VulkanMaterialBuilder& VulkanMaterialBuilder::SetMetallic(float _metallic)
     {
-        this->metallic = metallic;
+        metallic = _metallic;
         return *this;
     }
 
-    VulkanMaterialBuilder& VulkanMaterialBuilder::SetRoughness(float roughness)
+    VulkanMaterialBuilder& VulkanMaterialBuilder::SetRoughness(float _roughness)
     {
-        this->roughness = roughness;
+        roughness = _roughness;
         return *this;
     }
 
-    VulkanMaterialBuilder& VulkanMaterialBuilder::SetBaseColorPath(const std::string& baseColorPath)
+    VulkanMaterialBuilder& VulkanMaterialBuilder::SetBaseColorPath(const std::string& _baseColorPath)
     {
-        this->baseColorPath = baseColorPath;
+        baseColorPath = _baseColorPath;
         return *this;
     }
 
-    VulkanMaterialBuilder& VulkanMaterialBuilder::SetBaseColorTexture(const Ref<VulkanImage>& baseColorTexture)
+    VulkanMaterialBuilder& VulkanMaterialBuilder::SetBaseColorTexture(const Ref<VulkanImage>& _baseColorTexture)
     {
-        this->baseColorTexture = baseColorTexture;
+        baseColorTexture = _baseColorTexture;
         return *this;
     }
 
-    VulkanMaterialBuilder& VulkanMaterialBuilder::SetNormalMapPath(const std::string& normalMapPath)
+    VulkanMaterialBuilder& VulkanMaterialBuilder::SetNormalMapPath(const std::string& _normalMapPath)
     {
-        this->normalMapPath = normalMapPath;
+        normalMapPath = _normalMapPath;
         return *this;
     }
 
-    VulkanMaterialBuilder& VulkanMaterialBuilder::SetNormalMapTexture(const Ref<VulkanImage>& normalMapTexture)
+    VulkanMaterialBuilder& VulkanMaterialBuilder::SetNormalMapTexture(const Ref<VulkanImage>& _normalMapTexture)
     {
-        this->normalMapTexture = normalMapTexture;
+        normalMapTexture = _normalMapTexture;
         return *this;
     }
 
-    VulkanMaterialBuilder& VulkanMaterialBuilder::SetMetallicRoughnessPath(const std::string& metallicRoughnessPath)
+    VulkanMaterialBuilder& VulkanMaterialBuilder::SetMetallicRoughnessPath(const std::string& _metallicRoughnessPath)
     {
-        this->metallicRoughnessPath = metallicRoughnessPath;
+        metallicRoughnessPath = _metallicRoughnessPath;
         return *this;
     }
 
-    VulkanMaterialBuilder& VulkanMaterialBuilder::SetMetallicRoughnessTexture(const Ref<VulkanImage>& metallicRoughnessTexture)
+    VulkanMaterialBuilder& VulkanMaterialBuilder::SetMetallicRoughnessTexture(const Ref<VulkanImage>& _metallicRoughnessTexture)
     {
-        this->metallicRoughnessTexture = metallicRoughnessTexture;
+        metallicRoughnessTexture = _metallicRoughnessTexture;
         return *this;
     }
 
-    VulkanMaterialBuilder& VulkanMaterialBuilder::SetParams(const MaterialParams& params)
+    VulkanMaterialBuilder& VulkanMaterialBuilder::SetParams(const MaterialParams& _params)
     {
-        this->params = params;
+        params = _params;
         return *this;
     }
 
-    VulkanMaterialBuilder& VulkanMaterialBuilder::SetPipeline(Ref<VulkanPipeline> pipeline)
+    VulkanMaterialBuilder& VulkanMaterialBuilder::SetPipeline(Ref<VulkanPipeline> _pipeline)
     {
-        this->pipeline = pipeline;
+        pipeline = _pipeline;
         return *this;
     }
 

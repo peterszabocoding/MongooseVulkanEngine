@@ -4,27 +4,27 @@
 
 namespace Raytracing
 {
-    VulkanImageView::Builder& VulkanImageView::Builder::SetImage(VkImage image)
+    VulkanImageView::Builder& VulkanImageView::Builder::SetImage(const VkImage _image)
     {
-        this->image = image;
+        image = _image;
         return *this;
     }
 
-    VulkanImageView::Builder& VulkanImageView::Builder::SetFormat(VkFormat format)
+    VulkanImageView::Builder& VulkanImageView::Builder::SetFormat(const VkFormat _format)
     {
-        this->format = format;
+        format = _format;
         return *this;
     }
 
-    VulkanImageView::Builder& VulkanImageView::Builder::SetAspectFlags(VkImageAspectFlags flags)
+    VulkanImageView::Builder& VulkanImageView::Builder::SetAspectFlags(const VkImageAspectFlags _flags)
     {
-        this->aspectFlags = flags;
+        aspectFlags = _flags;
         return *this;
     }
 
-    VulkanImageView::Builder& VulkanImageView::Builder::SetViewType(VkImageViewType viewType)
+    VulkanImageView::Builder& VulkanImageView::Builder::SetViewType(const VkImageViewType _viewType)
     {
-        this->viewType = viewType;
+        viewType = _viewType;
         return *this;
     }
 

@@ -6,10 +6,10 @@
 
 namespace Raytracing
 {
-    VulkanBuffer::VulkanBuffer(VulkanDevice* vulkanDevice, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,
+    VulkanBuffer::VulkanBuffer(VulkanDevice* _vulkanDevice, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,
                                VmaMemoryUsage memoryUsage)
     {
-        this->vulkanDevice = vulkanDevice;
+        vulkanDevice = _vulkanDevice;
         CreateBuffer(size, usage, memoryUsage);
     }
 

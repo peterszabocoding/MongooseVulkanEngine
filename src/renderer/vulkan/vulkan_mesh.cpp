@@ -3,12 +3,12 @@
 
 namespace Raytracing
 {
-    VulkanMeshlet::VulkanMeshlet(VulkanDevice* vulkanDevice, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices,
-                                 int materialIndex)
+    VulkanMeshlet::VulkanMeshlet(VulkanDevice* vulkanDevice, const std::vector<Vertex>& _vertices, const std::vector<uint32_t>& _indices,
+                                 int _materialIndex)
     {
-        this->vertices = vertices;
-        this->indices = indices;
-        this->materialIndex = materialIndex;
+        vertices = _vertices;
+        indices = _indices;
+        materialIndex = _materialIndex;
 
         CreateVertexBuffer(vulkanDevice);
         CreateIndexBuffer(vulkanDevice);
