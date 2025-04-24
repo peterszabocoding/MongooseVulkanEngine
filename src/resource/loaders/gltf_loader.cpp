@@ -304,7 +304,8 @@ namespace Raytracing
             }
             if (node.rotation.size() == 4)
             {
-                transform.m_Rotation_Quat = glm::make_quat(node.rotation.data());
+                glm::quat quaternion = glm::make_quat(node.rotation.data());
+                transform.m_Rotation = eulerAngles(quaternion) * 180.f / static_cast<float>(M_PI);
             }
             if (node.scale.size() == 3)
             {
