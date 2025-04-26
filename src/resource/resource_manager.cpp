@@ -75,14 +75,18 @@ namespace Raytracing
         stbi_image_free(image.data);
     }
 
-    void ResourceManager::LoadPipelines(VulkanDevice* vulkanDevice)
+    auto ResourceManager::LoadPipelines(VulkanDevice* vulkanDevice) -> void
     {
-        mainPipeline = PipelineBuilder()
+        mainPipeline = VulkanPipeline::Builder()
                 .SetShaders("shader/spv/vert.spv", "shader/spv/frag.spv")
                 .SetCullMode(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE)
                 .SetPolygonMode(VK_POLYGON_MODE_FILL)
                 .EnableDepthTest()
                 .DisableBlending()
+                .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM)
+                .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM)
+                .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM)
+                .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM)
                 .SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
                 .SetMultisampling(VK_SAMPLE_COUNT_1_BIT)
                 .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(SimplePushConstantData))

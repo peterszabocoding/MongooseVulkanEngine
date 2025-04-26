@@ -4,6 +4,8 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <tiny_gltf/tiny_gltf.h>
 
+#include <math/math.h>
+
 #include "renderer/transform.h"
 #include "renderer/mesh.h"
 #include "renderer/vulkan/vulkan_material.h"

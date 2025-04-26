@@ -33,13 +33,16 @@ namespace Raytracing
 
             std::vector<ColorAttachment> colorAttachments;
             std::vector<DepthAttachment> depthAttachments;
+            std::vector<VkClearValue> clearValues{};
         };
 
     public:
-        VulkanRenderPass(VulkanDevice* device, VkRenderPass renderPass): device(device), renderPass(renderPass) {}
+        VulkanRenderPass(VulkanDevice* _device, VkRenderPass _renderPass, std::vector<VkClearValue> _clearValues): device(_device),
+            renderPass(_renderPass), clearValues(_clearValues) {}
+
         ~VulkanRenderPass();
 
-        void Begin(const VkCommandBuffer commandBuffer, const Ref<VulkanFramebuffer>& framebuffer, const VkExtent2D extent);
+        void Begin(VkCommandBuffer commandBuffer, const Ref<VulkanFramebuffer>& framebuffer, VkExtent2D extent);
         void End(VkCommandBuffer commandBuffer);
 
         [[nodiscard]] VkRenderPass Get() const { return renderPass; }
@@ -47,5 +50,6 @@ namespace Raytracing
     private:
         VulkanDevice* device;
         VkRenderPass renderPass{};
+        std::vector<VkClearValue> clearValues;
     };
 }

@@ -155,6 +155,7 @@ namespace Raytracing
         material.index = 0;
         material.baseColorTexture = baseColorTexture;
         material.normalMapTexture = normalMapTexture;
+        material.metallicRoughnessTexture = metallicRoughnessTexture;
         material.params = params;
         material.descriptorSet = descriptorSet;
         material.pipeline = pipeline;

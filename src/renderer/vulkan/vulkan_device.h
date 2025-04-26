@@ -110,7 +110,6 @@ namespace Raytracing
 
         Scope<VulkanSwapchain> vulkanSwapChain{};
         std::vector<Ref<VulkanFramebuffer>> framebuffers;
-        Ref<VulkanImage> depthImage;
 
         VmaAllocator vmaAllocator;
 

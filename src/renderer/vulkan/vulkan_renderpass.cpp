@@ -39,7 +39,7 @@ namespace Raytracing
             attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
             attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
             attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-            attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+            attachment.finalLayout = attachmentIndex == 0 ? VK_IMAGE_LAYOUT_PRESENT_SRC_KHR : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
             attachmentDescriptions.push_back(attachment);
 
@@ -50,6 +50,10 @@ namespace Raytracing
             attachmentIndex++;
 
             colorAttachmentsRefs.push_back(attachmentRef);
+
+            VkClearValue clearValue{};
+            clearValue.color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
+            clearValues.push_back(clearValue);
         }
 
         for (auto depthAttachment : depthAttachments)
@@ -58,7 +62,7 @@ namespace Raytracing
             attachment.format = depthAttachment.depthFormat;
             attachment.samples = VK_SAMPLE_COUNT_1_BIT;
             attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-            attachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            attachment.storeOp = VK_ATTACHMENT_STORE_OP_NONE;
             attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
             attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
             attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -73,21 +77,35 @@ namespace Raytracing
             attachmentIndex++;
 
             depthAttachmentsRefs.push_back(attachmentRef);
+
+            VkClearValue clearValue{};
+            clearValue.depthStencil = { 1.0f, 0 };
+            clearValues.push_back(clearValue);
         }
 
         VkSubpassDescription subpass{};
         subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-        subpass.colorAttachmentCount = colorAttachments.size();
+        subpass.colorAttachmentCount = colorAttachmentsRefs.size();
         subpass.pColorAttachments = colorAttachmentsRefs.data();
         subpass.pDepthStencilAttachment = depthAttachmentsRefs.data();
 
-        VkSubpassDependency dependency{};
-        dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-        dependency.dstSubpass = 0;
-        dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-        dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-        dependency.srcAccessMask = 0;
-        dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+        std::array<VkSubpassDependency, 2> dependencies;
+
+		dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+		dependencies[0].dstSubpass = 0;
+		dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+		dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+		dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+		dependencies[1].srcSubpass = 0;
+		dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
+		dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependencies[1].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+		dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		dependencies[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+		dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
         VkRenderPassCreateInfo render_pass_info{};
         render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -95,15 +113,15 @@ namespace Raytracing
         render_pass_info.pAttachments = attachmentDescriptions.data();
         render_pass_info.subpassCount = 1;
         render_pass_info.pSubpasses = &subpass;
-        render_pass_info.dependencyCount = 1;
-        render_pass_info.pDependencies = &dependency;
+        render_pass_info.dependencyCount = dependencies.size();
+        render_pass_info.pDependencies = dependencies.data();
 
         VkRenderPass renderPass = VK_NULL_HANDLE;
         VK_CHECK_MSG(
             vkCreateRenderPass(vulkanDevice->GetDevice(), &render_pass_info, nullptr, &renderPass),
             "Failed to create render pass.");
 
-        return CreateRef<VulkanRenderPass>(vulkanDevice, renderPass);
+        return CreateRef<VulkanRenderPass>(vulkanDevice, renderPass, clearValues);
     }
 
     VulkanRenderPass::~VulkanRenderPass()
@@ -119,12 +137,7 @@ namespace Raytracing
         renderPassInfo.framebuffer = framebuffer->Get();
         renderPassInfo.renderArea.offset = {0, 0};
         renderPassInfo.renderArea.extent = extent;
-
-        std::array<VkClearValue, 2> clearValues{};
-        clearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
-        clearValues[1].depthStencil = {1.0f, 0};
-
-        renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());;
+        renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
         renderPassInfo.pClearValues = clearValues.data();
 
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);

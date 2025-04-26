@@ -221,15 +221,6 @@ namespace Raytracing
     {
         uint32_t imageCount = VulkanUtils::GetSwapchainImageCount(physicalDevice, surface);
 
-        depthImage = VulkanImage::Builder(this)
-                .SetResolution(viewportWidth, viewportHeight)
-                .SetTiling(VK_IMAGE_TILING_OPTIMAL)
-                .SetFormat(VK_FORMAT_D24_UNORM_S8_UINT)
-                .AddAspectFlag(VK_IMAGE_ASPECT_DEPTH_BIT)
-                .AddUsage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
-                .MakeSampler()
-                .Build();
-
         framebuffers.clear();
         framebuffers.resize(imageCount);
         for (size_t i = 0; i < imageCount; i++)
@@ -238,7 +229,10 @@ namespace Raytracing
                     .SetRenderpass(vulkanRenderPass)
                     .SetResolution(viewportWidth, viewportHeight)
                     .AddAttachment(vulkanSwapChain->GetImageViews()[i]->Get())
-                    .AddAttachment(depthImage->GetImageView()->Get())
+                    .AddAttachment(FramebufferAttachmentFormat::RGBA8)
+                    .AddAttachment(FramebufferAttachmentFormat::RGBA8)
+                    .AddAttachment(FramebufferAttachmentFormat::RGBA8)
+                    .AddAttachment(FramebufferAttachmentFormat::DEPTH24_STENCIL8)
                     .Build();
         }
     }
@@ -247,7 +241,10 @@ namespace Raytracing
     {
         LOG_TRACE("Vulkan: create renderpass");
         vulkanRenderPass = VulkanRenderPass::Builder(this)
-                .AddColorAttachment(vulkanSwapChain->GetImageFormat())
+                .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM)
+                .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM)
+                .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM)
+                .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM)
                 .AddDepthAttachment()
                 .Build();
     }

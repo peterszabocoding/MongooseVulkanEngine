@@ -39,7 +39,7 @@ namespace Raytracing
             std::vector<VkImage> swapChainImages;
             std::vector<Ref<VulkanImageView>> swapChainImageViews;
 
-            VkFormat imageFormat = VK_FORMAT_R8G8B8A8_SRGB;
+            VkFormat imageFormat = VK_FORMAT_R8G8B8A8_UNORM;
             VkColorSpaceKHR colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
 
             uint32_t imageCount = 0;

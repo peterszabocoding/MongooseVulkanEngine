@@ -1,7 +1,11 @@
 #pragma once
 
+#define _USE_MATH_DEFINES
+
 #include <limits>
 #include <algorithm>
+#include <math.h>
+#include <cmath>
 
 namespace Raytracing {
 

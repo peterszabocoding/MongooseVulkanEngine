@@ -78,7 +78,7 @@ namespace Raytracing
             uint32_t height = 0;
             VkFilter minFilter = VK_FILTER_LINEAR;
             VkFilter magFilter = VK_FILTER_LINEAR;
-            VkImageTiling tiling = VK_IMAGE_TILING_LINEAR;
+            VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL;
             VkFormat format{};
             VkImageUsageFlags usage = 0;
             VkImageAspectFlags aspectFlags = 0;

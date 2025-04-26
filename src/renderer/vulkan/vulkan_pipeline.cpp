@@ -19,9 +19,9 @@ namespace Raytracing
         vkDestroyPipelineLayout(vulkanDevice->GetDevice(), pipelineLayout, nullptr);
     }
 
-    PipelineBuilder::PipelineBuilder() { clear(); }
+    VulkanPipeline::Builder::Builder() { clear(); }
 
-    Ref<VulkanPipeline> PipelineBuilder::Build(VulkanDevice* vulkanDevice) const
+    Ref<VulkanPipeline> VulkanPipeline::Builder::Build(VulkanDevice* vulkanDevice)
     {
         Ref<VulkanShader> shader = CreateRef<VulkanShader>(vulkanDevice, vertexShaderPath, fragmentShaderPath);
 
@@ -40,12 +40,24 @@ namespace Raytracing
         viewport_state.viewportCount = 1;
         viewport_state.scissorCount = 1;
 
+        if (disableBlending)
+        {
+            for (auto& attachment: colorBlendAttachments)
+            {
+                // default write mask
+                attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT
+                                            | VK_COLOR_COMPONENT_G_BIT
+                                            | VK_COLOR_COMPONENT_B_BIT
+                                            | VK_COLOR_COMPONENT_A_BIT;
+                // no blending
+                attachment.blendEnable = VK_FALSE;
+            }
+        }
+
         VkPipelineColorBlendStateCreateInfo color_blending{};
         color_blending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-        color_blending.logicOpEnable = VK_FALSE;
-        color_blending.logicOp = VK_LOGIC_OP_COPY;
-        color_blending.attachmentCount = 1;
-        color_blending.pAttachments = &colorBlendAttachment;
+        color_blending.attachmentCount = colorBlendAttachments.size();
+        color_blending.pAttachments = colorBlendAttachments.data();
 
         std::vector dynamicStates = {
             VK_DYNAMIC_STATE_VIEWPORT,
@@ -68,6 +80,20 @@ namespace Raytracing
         VK_CHECK_MSG(
             vkCreatePipelineLayout(vulkanDevice->GetDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout),
             "Failed to create pipeline layout.");
+
+        renderInfo.colorAttachmentCount = colorAttachmentFormats.size();
+        renderInfo.pColorAttachmentFormats = colorAttachmentFormats.data();
+
+        inputAssembly.topology = topology;
+        inputAssembly.primitiveRestartEnable = VK_FALSE;
+
+        rasterizer.polygonMode = polygonMode;
+        rasterizer.cullMode = cullMode;
+        rasterizer.frontFace = frontFace;
+        rasterizer.lineWidth = 1.0f;
+        rasterizer.depthClampEnable = VK_FALSE;
+        rasterizer.depthBiasEnable = VK_FALSE;
+        rasterizer.rasterizerDiscardEnable = VK_FALSE;
 
         VkGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -94,39 +120,34 @@ namespace Raytracing
         return CreateRef<VulkanPipeline>(vulkanDevice, shader, pipeline, pipelineLayout);
     }
 
-    PipelineBuilder& PipelineBuilder::SetShaders(const std::string& _vertexShaderPath,
-                                     const std::string& _fragmentShaderPath)
+    VulkanPipeline::Builder& VulkanPipeline::Builder::SetShaders(const std::string& _vertexShaderPath,
+                                                                 const std::string& _fragmentShaderPath)
     {
         vertexShaderPath = _vertexShaderPath;
         fragmentShaderPath = _fragmentShaderPath;
         return *this;
     }
 
-    PipelineBuilder& PipelineBuilder::SetInputTopology(VkPrimitiveTopology topology)
+    VulkanPipeline::Builder& VulkanPipeline::Builder::SetInputTopology(VkPrimitiveTopology _topology)
     {
-        inputAssembly.topology = topology;
-        inputAssembly.primitiveRestartEnable = VK_FALSE;
+        topology = _topology;
         return *this;
     }
 
-    PipelineBuilder& PipelineBuilder::SetPolygonMode(VkPolygonMode mode)
+    VulkanPipeline::Builder& VulkanPipeline::Builder::SetPolygonMode(VkPolygonMode _polygonMode)
     {
-        rasterizer.polygonMode = mode;
-        rasterizer.lineWidth = 1.0f;
-        rasterizer.depthClampEnable = VK_FALSE;
-        rasterizer.depthBiasEnable = VK_FALSE;
-        rasterizer.rasterizerDiscardEnable = VK_FALSE;
+        polygonMode = _polygonMode;
         return *this;
     }
 
-    PipelineBuilder& PipelineBuilder::SetCullMode(VkCullModeFlags cullMode, VkFrontFace frontFace)
+    VulkanPipeline::Builder& VulkanPipeline::Builder::SetCullMode(VkCullModeFlags _cullMode, VkFrontFace _frontFace)
     {
-        rasterizer.cullMode = cullMode;
-        rasterizer.frontFace = frontFace;
+        cullMode = _cullMode;
+        frontFace = _frontFace;
         return *this;
     }
 
-    PipelineBuilder& PipelineBuilder::SetMultisampling(VkSampleCountFlagBits sampleCountFlagBits)
+    VulkanPipeline::Builder& VulkanPipeline::Builder::SetMultisampling(VkSampleCountFlagBits sampleCountFlagBits)
     {
         multisampling.sampleShadingEnable = VK_FALSE;
         multisampling.rasterizationSamples = sampleCountFlagBits;
@@ -137,45 +158,26 @@ namespace Raytracing
         return *this;
     }
 
-    PipelineBuilder& PipelineBuilder::DisableBlending()
+    VulkanPipeline::Builder& VulkanPipeline::Builder::DisableBlending()
     {
-        // default write mask
-        colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
-                                              VK_COLOR_COMPONENT_A_BIT;
-        // no blending
-        colorBlendAttachment.blendEnable = VK_FALSE;
+        disableBlending = true;
         return *this;
     }
 
-    PipelineBuilder& PipelineBuilder::SetColorAttachmentFormat(VkFormat format)
+    VulkanPipeline::Builder& VulkanPipeline::Builder::AddColorAttachment(VkFormat format)
     {
-        colorAttachmentformat = format;
-        renderInfo.colorAttachmentCount = 1;
-        renderInfo.pColorAttachmentFormats = &colorAttachmentformat;
+        colorAttachmentFormats.push_back(format);
+        colorBlendAttachments.push_back({});
         return *this;
     }
 
-    PipelineBuilder& PipelineBuilder::SetDepthFormat(VkFormat format)
+    VulkanPipeline::Builder& VulkanPipeline::Builder::SetDepthFormat(VkFormat format)
     {
         renderInfo.depthAttachmentFormat = format;
         return *this;
     }
 
-    PipelineBuilder& PipelineBuilder::DisableDepthTest()
-    {
-        depthStencil.depthTestEnable = VK_FALSE;
-        depthStencil.depthWriteEnable = VK_FALSE;
-        depthStencil.depthCompareOp = VK_COMPARE_OP_NEVER;
-        depthStencil.depthBoundsTestEnable = VK_FALSE;
-        depthStencil.stencilTestEnable = VK_FALSE;
-        depthStencil.front = {};
-        depthStencil.back = {};
-        depthStencil.minDepthBounds = 0.0f;
-        depthStencil.maxDepthBounds = 1.0f;
-        return *this;
-    }
-
-    PipelineBuilder& PipelineBuilder::AddPushConstant(VkShaderStageFlags stageFlags, uint32_t offset, uint32_t size)
+    VulkanPipeline::Builder& VulkanPipeline::Builder::AddPushConstant(VkShaderStageFlags stageFlags, uint32_t offset, uint32_t size)
     {
         VkPushConstantRange pushConstantRange{};
         pushConstantRange.stageFlags = stageFlags;
@@ -186,7 +188,7 @@ namespace Raytracing
         return *this;
     }
 
-    PipelineBuilder& PipelineBuilder::EnableDepthTest()
+    VulkanPipeline::Builder& VulkanPipeline::Builder::EnableDepthTest()
     {
         depthStencil.depthTestEnable = VK_TRUE;
         depthStencil.depthWriteEnable = VK_TRUE;
@@ -200,7 +202,21 @@ namespace Raytracing
         return *this;
     }
 
-    void PipelineBuilder::clear()
+    VulkanPipeline::Builder& VulkanPipeline::Builder::DisableDepthTest()
+    {
+        depthStencil.depthTestEnable = VK_FALSE;
+        depthStencil.depthWriteEnable = VK_FALSE;
+        depthStencil.depthCompareOp = VK_COMPARE_OP_NEVER;
+        depthStencil.depthBoundsTestEnable = VK_FALSE;
+        depthStencil.stencilTestEnable = VK_FALSE;
+        depthStencil.front = {};
+        depthStencil.back = {};
+        depthStencil.minDepthBounds = 0.0f;
+        depthStencil.maxDepthBounds = 1.0f;
+        return *this;
+    }
+
+    void VulkanPipeline::Builder::clear()
     {
         inputAssembly = {};
         inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -208,7 +224,8 @@ namespace Raytracing
         rasterizer = {};
         rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 
-        colorBlendAttachment = {};
+        colorBlendAttachments.clear();
+        colorAttachmentFormats.clear();
 
         multisampling = {};
         multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;

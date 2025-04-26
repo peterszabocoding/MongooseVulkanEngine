@@ -9,6 +9,52 @@ namespace Raytracing
 
     class VulkanPipeline {
     public:
+        class Builder {
+        public:
+            Builder();
+            ~Builder() = default;
+            Ref<VulkanPipeline> Build(VulkanDevice* vulkanDevice);
+
+            Builder& SetShaders(const std::string& vertexShaderPath, const std::string& fragmentShaderPath);
+            Builder& SetInputTopology(VkPrimitiveTopology topology);
+            Builder& SetPolygonMode(VkPolygonMode mode);
+            Builder& SetCullMode(VkCullModeFlags cullMode, VkFrontFace frontFace);
+            Builder& SetMultisampling(VkSampleCountFlagBits sampleCountFlagBits = VK_SAMPLE_COUNT_1_BIT);
+            Builder& DisableBlending();
+            Builder& AddColorAttachment(VkFormat format);
+            Builder& SetDepthFormat(VkFormat format);
+            Builder& EnableDepthTest();
+            Builder& DisableDepthTest();
+            Builder& AddPushConstant(VkShaderStageFlags stageFlags, uint32_t offset, uint32_t size);
+
+        private:
+            void clear();
+
+        private:
+        public:
+            std::string vertexShaderPath;
+            std::string fragmentShaderPath;
+            VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
+            VkPipelineRasterizationStateCreateInfo rasterizer{};
+
+            std::vector<VkFormat> colorAttachmentFormats;
+            std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments{};
+
+            VkPipelineMultisampleStateCreateInfo multisampling{};
+            VkPipelineDepthStencilStateCreateInfo depthStencil{};
+            VkPipelineRenderingCreateInfo renderInfo{};
+
+            std::vector<VkPushConstantRange> pushConstantRanges;
+
+            VkPolygonMode polygonMode;
+            VkPrimitiveTopology topology;
+            VkCullModeFlags cullMode;
+            VkFrontFace frontFace;
+
+            bool disableBlending = false;
+        };
+
+    public:
         explicit VulkanPipeline(VulkanDevice* vulkanDevice, Ref<VulkanShader> shader, VkPipeline pipeline, VkPipelineLayout pipelineLayout);
         ~VulkanPipeline();
 
@@ -21,41 +67,5 @@ namespace Raytracing
         Ref<VulkanShader> shader;
         VkPipeline pipeline{};
         VkPipelineLayout pipelineLayout{};
-    };
-
-    class PipelineBuilder {
-    public:
-        PipelineBuilder();
-        ~PipelineBuilder() = default;
-        Ref<VulkanPipeline> Build(VulkanDevice* vulkanDevice) const;
-
-    public:
-        PipelineBuilder& SetShaders(const std::string& vertexShaderPath, const std::string& fragmentShaderPath);
-        PipelineBuilder& SetInputTopology(VkPrimitiveTopology topology);
-        PipelineBuilder& SetPolygonMode(VkPolygonMode mode);
-        PipelineBuilder& SetCullMode(VkCullModeFlags cullMode, VkFrontFace frontFace);
-        PipelineBuilder& SetMultisampling(VkSampleCountFlagBits sampleCountFlagBits = VK_SAMPLE_COUNT_1_BIT);
-        PipelineBuilder& DisableBlending();
-        PipelineBuilder& SetColorAttachmentFormat(VkFormat format);
-        PipelineBuilder& SetDepthFormat(VkFormat format);
-        PipelineBuilder& EnableDepthTest();
-        PipelineBuilder& DisableDepthTest();
-        PipelineBuilder& AddPushConstant(VkShaderStageFlags stageFlags, uint32_t offset, uint32_t size);
-
-    public:
-        std::string vertexShaderPath;
-        std::string fragmentShaderPath;
-        VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
-        VkPipelineRasterizationStateCreateInfo rasterizer{};
-        VkPipelineColorBlendAttachmentState colorBlendAttachment{};
-        VkPipelineMultisampleStateCreateInfo multisampling{};
-        VkPipelineDepthStencilStateCreateInfo depthStencil{};
-        VkPipelineRenderingCreateInfo renderInfo{};
-        VkFormat colorAttachmentformat;
-
-        std::vector<VkPushConstantRange> pushConstantRanges;
-
-    private:
-        void clear();
     };
 }
