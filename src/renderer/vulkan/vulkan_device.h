@@ -55,6 +55,7 @@ namespace Raytracing
         [[nodiscard]] Ref<VulkanRenderPass> GetVulkanRenderPass() const { return vulkanRenderPass; }
         [[nodiscard]] VkCommandPool GetCommandPool() const { return commandPool; }
         [[nodiscard]] VkPhysicalDeviceProperties GetDeviceProperties() const { return physicalDeviceProperties; }
+        [[nodiscard]] Ref<VulkanFramebuffer> GetFramebuffer() const { return framebuffers[currentFrame]; }
 
         VkSampleCountFlagBits GetMaxMSAASampleCount() const;
 

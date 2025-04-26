@@ -62,6 +62,8 @@ namespace Raytracing
 
         VkFramebuffer Get() const { return framebuffer; };
 
+        std::vector<Ref<VulkanImage>> GetImages() const { return images; }
+
     private:
         VulkanDevice* device;
         VkFramebuffer framebuffer;

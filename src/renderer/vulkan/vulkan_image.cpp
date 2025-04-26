@@ -89,7 +89,15 @@ namespace Raytracing
                                                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
             });
         }
-        return CreateRef<VulkanImage>(device, image, imageView, imageMemory, sampler);
+
+        ImageResource imageResource;
+        imageResource.width = width;
+        imageResource.height = height;
+
+        auto vulkanImage = CreateRef<VulkanImage>(device, image, imageView, imageMemory, sampler);
+        vulkanImage->SetImageResource(imageResource);
+
+        return vulkanImage;
     }
 
     VulkanImage::~VulkanImage()

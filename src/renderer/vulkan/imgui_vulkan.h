@@ -3,19 +3,22 @@
 
 namespace Raytracing
 {
-
     namespace Utils
     {
-        void DrawFloatControl(const std::string& label, float& values, float min, float max, float steps, float resetValue, float columnWidth);
+        void DrawFloatControl(const std::string& label, float& values, float min, float max, float steps, float resetValue,
+                              float columnWidth);
     }
 
     class ImGuiWindow {
     public:
-        ImGuiWindow() = default;
+        ImGuiWindow(Ref<VulkanRenderer> _renderer): renderer(_renderer) {}
         virtual ~ImGuiWindow() = default;
 
         virtual const char* GetTitle() = 0;
         virtual void Draw() = 0;
+
+    protected:
+        Ref<VulkanRenderer> renderer = nullptr;
     };
 
     class ImGuiVulkan {
@@ -31,7 +34,7 @@ namespace Raytracing
     private:
         void SetupImGui(int width, int height) const;
 
-    private:
+    protected:
         Ref<VulkanRenderer> renderer = nullptr;
         GLFWwindow* glfwWindow = nullptr;
 

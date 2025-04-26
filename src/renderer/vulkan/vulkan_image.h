@@ -105,6 +105,8 @@ namespace Raytracing
         Ref<VulkanImageView> GetImageView() const { return imageView; }
         VkSampler GetSampler() const { return sampler; }
 
+        ImageResource GetImageResource() const { return imageResource; }
+
         void SetImageResource(const ImageResource& _imageResource)
         {
             imageResource = _imageResource;

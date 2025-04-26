@@ -61,8 +61,16 @@ namespace Raytracing
 
         imGuiVulkan->AddWindow(
             std::reinterpret_pointer_cast<ImGuiWindow>(
-                CreateRef<PerformanceWindow>(CAST_REF(VulkanRenderer, renderer)->GetVulkanDevice())));
-        imGuiVulkan->AddWindow(std::reinterpret_pointer_cast<ImGuiWindow>(CreateRef<CameraSettingsWindow>(camera.get(), cameraController)));
+                CreateRef<PerformanceWindow>(CAST_REF(VulkanRenderer, renderer))));
+
+        imGuiVulkan->AddWindow(
+            std::reinterpret_pointer_cast<ImGuiWindow>(
+                CreateRef<CameraSettingsWindow>(CAST_REF(VulkanRenderer, renderer), camera.get(), cameraController)));
+
+        imGuiVulkan->AddWindow(
+            std::reinterpret_pointer_cast<ImGuiWindow>(
+                CreateRef<FramebufferViewer>(CAST_REF(VulkanRenderer, renderer))));
+
     }
 
     void Window::OnUpdate(float deltaTime)

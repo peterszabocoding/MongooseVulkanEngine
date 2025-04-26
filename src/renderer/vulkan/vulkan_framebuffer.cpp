@@ -98,14 +98,8 @@ namespace Raytracing
                             .MakeSampler()
                             .Build();
 
-        auto imageView = VulkanImageView::Builder(device)
-                .SetFormat(Utils::ConvertFramebufferAttachmentFormat(attachmentFormat))
-                .SetAspectFlags(Utils::GetAspectFlagFromFormat(attachmentFormat))
-                .SetImage(image->GetImage())
-                .Build();
-
         images.push_back(image);
-        imageViews.push_back(imageView);
+        imageViews.push_back(image->GetImageView());
 
         return *this;
     }

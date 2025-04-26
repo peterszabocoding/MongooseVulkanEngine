@@ -581,8 +581,8 @@ namespace Raytracing
                 .Build();
 
         imguiDescriptorPool = VulkanDescriptorPool::Builder(this)
-                .SetMaxSets(IMGUI_IMPL_VULKAN_MINIMUM_IMAGE_SAMPLER_POOL_SIZE)
-                .AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1)
+                .SetMaxSets(100)
+                .AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100)
                 .SetPoolFlags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT)
                 .Build();
     }
