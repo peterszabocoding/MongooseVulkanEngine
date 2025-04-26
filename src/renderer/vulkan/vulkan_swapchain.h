@@ -5,7 +5,7 @@
 
 namespace Raytracing
 {
-    class VulkanImageView;
+    class ImageViewBuilder;
     class VulkanFramebuffer;
 
     struct SwapChainSupportDetails {
@@ -18,7 +18,7 @@ namespace Raytracing
     public:
         class Builder {
         public:
-            Builder(VulkanDevice* device): device(device) {}
+            explicit Builder(VulkanDevice* device): device(device) {}
             ~Builder() = default;
 
             Builder& SetResolution(int width, int height);
@@ -33,25 +33,26 @@ namespace Raytracing
             VulkanDevice* device;
 
             int width = 0, height = 0;
-            VkPresentModeKHR presentMode;
+            VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR;
 
-            VkSwapchainKHR swapChain;
-            std::vector<VkImage> swapChainImages;
-            std::vector<Ref<VulkanImageView>> swapChainImageViews;
-
-            VkFormat imageFormat = VK_FORMAT_R8G8B8A8_UNORM;
-            VkColorSpaceKHR colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+            VkSwapchainKHR swapChain{};
+            std::vector<VkImage> swapChainImages{};
+            std::vector<VkImageView> swapChainImageViews{};
 
             uint32_t imageCount = 0;
+            VkFormat imageFormat = VK_FORMAT_R8G8B8A8_UNORM;
+            VkColorSpaceKHR colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
         };
 
     public:
         VulkanSwapchain(VulkanDevice* vulkanDevice, const VkSwapchainKHR swapChain, const VkExtent2D swapChainExtent,
-                        const VkFormat swapChainImageFormat,
-                        const std::vector<VkImage>& images, const std::vector<Ref<VulkanImageView>>& imageViews): vulkanDevice(vulkanDevice), swapChain(swapChain),
+                        const VkFormat swapChainImageFormat, const std::vector<VkImage>& images,
+                        const std::vector<VkImageView>& imageViews): vulkanDevice(vulkanDevice),
+                                                                     swapChain(swapChain),
                                                                      swapChainExtent(swapChainExtent),
                                                                      swapChainImageFormat(swapChainImageFormat),
-                                                                     images(images), imageViews(imageViews) {}
+                                                                     swapChainImages(images),
+                                                                     swapChainImageViews(imageViews) {}
 
         ~VulkanSwapchain();
 
@@ -59,8 +60,8 @@ namespace Raytracing
         VkExtent2D& GetExtent() { return swapChainExtent; }
         VkFormat GetImageFormat() const { return swapChainImageFormat; }
 
-        std::vector<VkImage> GetImages() const { return images; }
-        std::vector<Ref<VulkanImageView>> GetImageViews() const { return imageViews; }
+        std::vector<VkImage> GetImages() const { return swapChainImages; }
+        std::vector<VkImageView> GetImageViews() const { return swapChainImageViews; }
 
     private:
         VulkanDevice* vulkanDevice;
@@ -68,7 +69,7 @@ namespace Raytracing
         VkExtent2D swapChainExtent;
         VkFormat swapChainImageFormat;
 
-        std::vector<VkImage> images;
-        std::vector<Ref<VulkanImageView>> imageViews;
+        std::vector<VkImage> swapChainImages;
+        std::vector<VkImageView> swapChainImageViews;
     };
 }

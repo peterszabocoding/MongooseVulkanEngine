@@ -4,31 +4,31 @@
 
 namespace Raytracing
 {
-    VulkanImageView::Builder& VulkanImageView::Builder::SetImage(const VkImage _image)
+    ImageViewBuilder& ImageViewBuilder::SetImage(const VkImage _image)
     {
         image = _image;
         return *this;
     }
 
-    VulkanImageView::Builder& VulkanImageView::Builder::SetFormat(const VkFormat _format)
+    ImageViewBuilder& ImageViewBuilder::SetFormat(const VkFormat _format)
     {
         format = _format;
         return *this;
     }
 
-    VulkanImageView::Builder& VulkanImageView::Builder::SetAspectFlags(const VkImageAspectFlags _flags)
+    ImageViewBuilder& ImageViewBuilder::SetAspectFlags(const VkImageAspectFlags _flags)
     {
         aspectFlags = _flags;
         return *this;
     }
 
-    VulkanImageView::Builder& VulkanImageView::Builder::SetViewType(const VkImageViewType _viewType)
+    ImageViewBuilder& ImageViewBuilder::SetViewType(const VkImageViewType _viewType)
     {
         viewType = _viewType;
         return *this;
     }
 
-    Ref<VulkanImageView> VulkanImageView::Builder::Build()
+    VkImageView ImageViewBuilder::Build() const
     {
         VkImageViewCreateInfo viewInfo{};
         viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -41,14 +41,9 @@ namespace Raytracing
         viewInfo.subresourceRange.baseArrayLayer = 0;
         viewInfo.subresourceRange.layerCount = 1;
 
+        VkImageView imageView = VK_NULL_HANDLE;
         VK_CHECK_MSG(vkCreateImageView(device->GetDevice(), &viewInfo, nullptr, &imageView), "Failed to create texture image view.");
 
-        return CreateRef<VulkanImageView>(device, imageView);
-    }
-
-    VulkanImageView::~VulkanImageView()
-    {
-        LOG_INFO("Destroy imageview");
-        vkDestroyImageView(device->GetDevice(), imageView, nullptr);
+        return imageView;
     }
 }

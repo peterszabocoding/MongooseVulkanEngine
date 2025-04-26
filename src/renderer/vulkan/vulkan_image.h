@@ -7,7 +7,70 @@
 namespace Raytracing
 {
     class VulkanDevice;
-    class VulkanImageView;
+    class ImageViewBuilder;
+
+
+    class ImageBuilder {
+    public:
+        ImageBuilder(VulkanDevice* _device): device(_device) {}
+        ~ImageBuilder() = default;
+
+        ImageBuilder& SetResolution(const uint32_t _width, const uint32_t _height)
+        {
+            width = _width;
+            height = _height;
+            return *this;
+        }
+
+        ImageBuilder& SetFormat(const VkFormat _format)
+        {
+            format = _format;
+            return *this;
+        }
+
+        ImageBuilder& SetTiling(const VkImageTiling _tiling)
+        {
+            tiling = _tiling;
+            return *this;
+        }
+
+        ImageBuilder& AddUsage(const VkImageUsageFlags _usage)
+        {
+            usage |= _usage;
+            return *this;
+        }
+
+        VkImage Build(VkDeviceMemory& imageMemory);
+
+    private:
+        VulkanDevice* device;
+
+        uint32_t width = 0;
+        uint32_t height = 0;
+        VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL;
+        VkFormat format{};
+        VkImageUsageFlags usage = 0;
+    };
+
+    class ImageSamplerBuilder {
+    public:
+        ImageSamplerBuilder(VulkanDevice* _device): device(_device) {}
+        ~ImageSamplerBuilder() = default;
+
+        ImageSamplerBuilder& SetFilter(const VkFilter _minFilter, const VkFilter _magFilter)
+        {
+            minFilter = _minFilter;
+            magFilter = _magFilter;
+            return *this;
+        }
+
+        VkSampler Build();
+
+    private:
+        VulkanDevice* device;
+        VkFilter minFilter = VK_FILTER_LINEAR;
+        VkFilter magFilter = VK_FILTER_LINEAR;
+    };
 
     class VulkanImage {
     public:
@@ -15,6 +78,12 @@ namespace Raytracing
         public:
             explicit Builder(VulkanDevice* _device): device(_device) {}
             ~Builder() = default;
+
+            Builder& SetImage(VkImage _image)
+            {
+                image = _image;
+                return *this;
+            }
 
             Builder& SetData(void* _data, const uint64_t _size)
             {
@@ -87,37 +156,33 @@ namespace Raytracing
 
             VkImage image{};
             VkDeviceMemory imageMemory{};
-            Ref<VulkanImageView> imageView{};
+            VkImageView imageView{};
             VkSampler sampler{};
         };
 
     public:
-        VulkanImage(VulkanDevice* device, const VkImage image, Ref<VulkanImageView> imageView): device(device), image(image),
-            imageView(imageView) {}
+        VulkanImage(VulkanDevice* device, const VkImage image, VkImageView imageView): device(device), image(image),
+                                                                                       imageView(imageView) {}
 
-        VulkanImage(VulkanDevice* _device, const VkImage _image, Ref<VulkanImageView> _imageView, VkDeviceMemory _imageMemory,
+        VulkanImage(VulkanDevice* _device, const VkImage _image, VkImageView _imageView, VkDeviceMemory _imageMemory,
                     VkSampler _sampler): device(_device), image(_image),
                                          imageView(_imageView), imageMemory(_imageMemory), sampler(_sampler) {}
 
         virtual ~VulkanImage();
 
         VkImage GetImage() const { return image; };
-        Ref<VulkanImageView> GetImageView() const { return imageView; }
+        VkImageView GetImageView() const { return imageView; }
         VkSampler GetSampler() const { return sampler; }
 
         ImageResource GetImageResource() const { return imageResource; }
-
-        void SetImageResource(const ImageResource& _imageResource)
-        {
-            imageResource = _imageResource;
-        }
+        void SetImageResource(const ImageResource& _imageResource) { imageResource = _imageResource; }
 
     protected:
         VulkanDevice* device;
-        VkImage image{};
-        Ref<VulkanImageView> imageView{};
-
         ImageResource imageResource{};
+
+        VkImage image{};
+        VkImageView imageView{};
         VkDeviceMemory imageMemory{};
         VkSampler sampler{};
     };

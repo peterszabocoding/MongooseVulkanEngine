@@ -34,7 +34,7 @@ namespace Raytracing
 
         uint32_t GetIndexCount() const { return indices.size(); }
 
-        void SetMaterialIndex(int materialIndex) { this->materialIndex = materialIndex; }
+        void SetMaterialIndex(int _materialIndex) { materialIndex = _materialIndex; }
         int GetMaterialIndex() const { return materialIndex; }
 
     public:
@@ -55,7 +55,7 @@ namespace Raytracing
         void AddMeshlet(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices, int materialIndex);
         const std::vector<VulkanMeshlet>& GetMeshlets() const { return meshlets; }
 
-        void SetMaterials(const std::vector<VulkanMaterial>& materials) { this->materials = materials; }
+        void SetMaterials(const std::vector<VulkanMaterial>& _materials) { materials = _materials; }
         const std::vector<VulkanMaterial>& GetMaterials() const { return materials; }
 
     private:

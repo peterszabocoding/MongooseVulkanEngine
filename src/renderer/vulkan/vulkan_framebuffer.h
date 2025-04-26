@@ -28,6 +28,12 @@ namespace Raytracing
         DEPTH24_STENCIL8
     };
 
+    struct FramebufferAttachment {
+        VkImage image;
+        VkImageView imageView;
+        VkDeviceMemory imageMemory;
+    };
+
 
     class VulkanFramebuffer {
     public:
@@ -47,28 +53,33 @@ namespace Raytracing
             VulkanDevice* device{};
             int width = 0, height = 0;
             Ref<VulkanRenderPass> renderPass{};
-            std::vector<Ref<VulkanImage>> images{};
-            std::vector<Ref<VulkanImageView>> imageViews{};
+
+            std::vector<FramebufferAttachment> attachments{};
         };
 
     public:
-        VulkanFramebuffer(VulkanDevice* device, VkFramebuffer framebuffer): device(device), framebuffer(framebuffer) {}
+        VulkanFramebuffer(VulkanDevice* device, const VkFramebuffer framebuffer): device(device), framebuffer(framebuffer) {}
 
-        VulkanFramebuffer(VulkanDevice* _device, VkFramebuffer _framebuffer, std::vector<Ref<VulkanImage>> _images,
-                          std::vector<Ref<VulkanImageView>> _imageViews): device(_device), framebuffer(_framebuffer), images(_images),
-                                                                 imageViews(_imageViews) {}
+        VulkanFramebuffer(VulkanDevice* _device, const VkFramebuffer _framebuffer, int _width, int _height,
+                          const std::vector<FramebufferAttachment>& _attachments): device(_device),
+                                                                        framebuffer(_framebuffer),
+                                                                        width(_width), height(_height),
+                                                                        attachments(_attachments) {}
 
         ~VulkanFramebuffer();
 
         VkFramebuffer Get() const { return framebuffer; };
 
-        std::vector<Ref<VulkanImage>> GetImages() const { return images; }
+        int GetWidth() const { return width; }
+        int GetHeight() const { return height; }
+        std::vector<FramebufferAttachment> const& GetAttachments() const { return attachments; };
 
     private:
         VulkanDevice* device;
         VkFramebuffer framebuffer;
 
-        std::vector<Ref<VulkanImage>> images{};
-        std::vector<Ref<VulkanImageView>> imageViews{};
+        int width = 0, height = 0;
+
+        std::vector<FramebufferAttachment> attachments{};
     };
 }

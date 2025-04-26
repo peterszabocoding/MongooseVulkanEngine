@@ -6,37 +6,23 @@ namespace Raytracing
 {
     class VulkanDevice;
 
-    class VulkanImageView {
+    class ImageViewBuilder {
     public:
-        class Builder {
-        public:
-            Builder(VulkanDevice* device): device(device) {}
-            ~Builder() = default;
+        ImageViewBuilder(VulkanDevice* device): device(device) {}
+        ~ImageViewBuilder() = default;
 
-            Builder& SetImage(VkImage image);
-            Builder& SetFormat(VkFormat format);
-            Builder& SetAspectFlags(VkImageAspectFlags flags);
-            Builder& SetViewType(VkImageViewType viewType);
+        ImageViewBuilder& SetImage(VkImage image);
+        ImageViewBuilder& SetFormat(VkFormat format);
+        ImageViewBuilder& SetAspectFlags(VkImageAspectFlags flags);
+        ImageViewBuilder& SetViewType(VkImageViewType viewType);
 
-            Ref<VulkanImageView> Build();
-
-        private:
-            VulkanDevice* device{};
-            VkImage image{};
-            VkFormat format{};
-            VkImageViewType viewType = VK_IMAGE_VIEW_TYPE_2D;
-            VkImageAspectFlags aspectFlags{};
-            VkImageView imageView{};
-        };
-
-    public:
-        VulkanImageView(VulkanDevice* device, VkImageView imageView): device(device), imageView(imageView) {}
-        ~VulkanImageView();
-
-        VkImageView Get() { return imageView; }
+        VkImageView Build() const;
 
     private:
-        VulkanDevice* device;
-        VkImageView imageView;
+        VulkanDevice* device{};
+        VkImage image{};
+        VkFormat format{};
+        VkImageViewType viewType = VK_IMAGE_VIEW_TYPE_2D;
+        VkImageAspectFlags aspectFlags{};
     };
 }

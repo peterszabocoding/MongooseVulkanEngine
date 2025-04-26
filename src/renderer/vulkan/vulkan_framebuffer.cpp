@@ -10,7 +10,7 @@ namespace Raytracing
 {
     namespace Utils
     {
-        VkFormat ConvertFramebufferAttachmentFormat(FramebufferAttachmentFormat format)
+        VkFormat ConvertFramebufferAttachmentFormat(const FramebufferAttachmentFormat format)
         {
             switch (format)
             {
@@ -56,50 +56,39 @@ namespace Raytracing
             }
         }
 
-        VkImageUsageFlags GetusageFromFormat(FramebufferAttachmentFormat format)
+        VkImageUsageFlags GetUsageFromFormat(FramebufferAttachmentFormat format)
         {
-            switch (format)
-            {
-                case FramebufferAttachmentFormat::RGBA8:
-                    return VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-                case FramebufferAttachmentFormat::RGB8:
-                    return VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-                case FramebufferAttachmentFormat::RGBA16F:
-                    return VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-                case FramebufferAttachmentFormat::RGBA32F:
-                    return VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+            if (format == FramebufferAttachmentFormat::DEPTH24_STENCIL8 || format == FramebufferAttachmentFormat::DEPTH32)
+                return VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
-                case FramebufferAttachmentFormat::DEPTH24_STENCIL8:
-                    return VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-                case FramebufferAttachmentFormat::DEPTH32:
-                    return VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 
-                default:
-                    return VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-            }
+            return VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
         }
     }
 
     VulkanFramebuffer::Builder& VulkanFramebuffer::Builder::AddAttachment(VkImageView imageAttachment)
     {
-        imageViews.push_back(CreateRef<VulkanImageView>(device, imageAttachment));
+        attachments.push_back({nullptr, imageAttachment, nullptr});
         return *this;
     }
 
     VulkanFramebuffer::Builder& VulkanFramebuffer::Builder::AddAttachment(FramebufferAttachmentFormat attachmentFormat)
     {
-        auto image = VulkanImage::Builder(device)
-                            .SetFormat(Utils::ConvertFramebufferAttachmentFormat(attachmentFormat))
-                            .SetResolution(width, height)
-                            .AddAspectFlag(Utils::GetAspectFlagFromFormat(attachmentFormat))
-                            .AddUsage(Utils::GetusageFromFormat(attachmentFormat))
-                            .AddUsage(VK_IMAGE_USAGE_SAMPLED_BIT)
-                            .AddUsage(VK_IMAGE_USAGE_STORAGE_BIT)
-                            .MakeSampler()
-                            .Build();
+        VkDeviceMemory imageMemory;
+        VkImage image = ImageBuilder(device)
+                .SetResolution(width, height)
+                .SetTiling(VK_IMAGE_TILING_OPTIMAL)
+                .SetFormat(Utils::ConvertFramebufferAttachmentFormat(attachmentFormat))
+                .AddUsage(Utils::GetUsageFromFormat(attachmentFormat))
+                .Build(imageMemory);
 
-        images.push_back(image);
-        imageViews.push_back(image->GetImageView());
+        VkImageView imageView = ImageViewBuilder(device)
+                .SetFormat(Utils::ConvertFramebufferAttachmentFormat(attachmentFormat))
+                .SetAspectFlags(Utils::GetAspectFlagFromFormat(attachmentFormat))
+                .SetImage(image)
+                .Build();
+
+        attachments.push_back({image, imageView, imageMemory});
 
         return *this;
     }
@@ -119,17 +108,18 @@ namespace Raytracing
 
     Ref<VulkanFramebuffer> VulkanFramebuffer::Builder::Build()
     {
-        std::vector<VkImageView> attachments{};
-        for (const auto& imageView: imageViews)
+        std::vector<VkImageView> imageViews;
+
+        for (int i = 0; i < attachments.size(); i++)
         {
-            attachments.push_back(imageView->Get());
+            imageViews.push_back(attachments[i].imageView);
         }
 
         VkFramebufferCreateInfo framebuffer_info{};
         framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         framebuffer_info.renderPass = renderPass->Get();
-        framebuffer_info.attachmentCount = static_cast<uint32_t>(attachments.size());
-        framebuffer_info.pAttachments = attachments.data();
+        framebuffer_info.attachmentCount = static_cast<uint32_t>(imageViews.size());
+        framebuffer_info.pAttachments = imageViews.data();
         framebuffer_info.width = width;
         framebuffer_info.height = height;
         framebuffer_info.layers = 1;
@@ -138,11 +128,24 @@ namespace Raytracing
         VK_CHECK_MSG(vkCreateFramebuffer(device->GetDevice(), &framebuffer_info, nullptr, &framebuffer),
                      "Failed to create framebuffer.");
 
-        return CreateRef<VulkanFramebuffer>(device, framebuffer, images, imageViews);
+        return CreateRef<VulkanFramebuffer>(device, framebuffer, width, height, attachments);
     }
 
     VulkanFramebuffer::~VulkanFramebuffer()
     {
+        LOG_INFO("Destroy framebuffer images");
+        for (uint32_t i = 0; i < attachments.size(); i++)
+        {
+            if (attachments[i].imageMemory != VK_NULL_HANDLE)
+                vkFreeMemory(device->GetDevice(), attachments[i].imageMemory, nullptr);
+
+            if (attachments[i].imageView != VK_NULL_HANDLE && attachments[i].image != VK_NULL_HANDLE)
+            {
+                vkDestroyImageView(device->GetDevice(), attachments[i].imageView, nullptr);
+                vkDestroyImage(device->GetDevice(), attachments[i].image, nullptr);
+            }
+        }
+
         LOG_INFO("Destroy framebuffer");
         vkDestroyFramebuffer(device->GetDevice(), framebuffer, nullptr);
     }

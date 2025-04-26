@@ -89,8 +89,8 @@ namespace Raytracing
         createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
         createInfo.presentMode = presentMode;
         createInfo.clipped = VK_TRUE;
-
         createInfo.oldSwapchain = VK_NULL_HANDLE;
+
         swapChainImages.resize(imageCount);
 
         VK_CHECK_MSG(vkCreateSwapchainKHR(device->GetDevice(), &createInfo, nullptr, &swapChain),
@@ -101,12 +101,12 @@ namespace Raytracing
         swapChainImageViews.resize(imageCount);
         for (size_t i = 0; i < imageCount; i++)
         {
-            swapChainImageViews[i] = VulkanImageView::Builder(device)
-                .SetFormat(imageFormat)
-                .SetImage(swapChainImages[i])
-                .SetAspectFlags(VK_IMAGE_ASPECT_COLOR_BIT)
-                .SetViewType(VK_IMAGE_VIEW_TYPE_2D)
-                .Build();
+            swapChainImageViews[i] = ImageViewBuilder(device)
+                    .SetFormat(imageFormat)
+                    .SetImage(swapChainImages[i])
+                    .SetAspectFlags(VK_IMAGE_ASPECT_COLOR_BIT)
+                    .SetViewType(VK_IMAGE_VIEW_TYPE_2D)
+                    .Build();
         }
 
         return CreateScope<VulkanSwapchain>(device, swapChain, extent, imageFormat, swapChainImages, swapChainImageViews);
@@ -115,7 +115,9 @@ namespace Raytracing
     VulkanSwapchain::~VulkanSwapchain()
     {
         LOG_INFO("Destroy swapchain");
-        images.clear();
+        for (size_t i = 0; i < swapChainImageViews.size(); i++)
+            vkDestroyImageView(vulkanDevice->GetDevice(), swapChainImageViews[i], nullptr);
+
         vkDestroySwapchainKHR(vulkanDevice->GetDevice(), swapChain, nullptr);
     }
 }

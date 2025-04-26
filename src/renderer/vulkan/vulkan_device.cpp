@@ -130,6 +130,8 @@ namespace Raytracing
             framebufferResized = false;
 
             vkDeviceWaitIdle(device);
+            framebuffers.clear();
+
             CreateSwapchain();
             CreateFramebuffers();
         } else if (result != VK_SUCCESS)
@@ -202,7 +204,6 @@ namespace Raytracing
     void VulkanDevice::CreateSwapchain()
     {
         LOG_TRACE("Vulkan: create swapchain");
-
         vulkanSwapChain = nullptr;
 
         const auto swapChainSupport = VulkanUtils::QuerySwapChainSupport(physicalDevice, surface);
@@ -220,15 +221,13 @@ namespace Raytracing
     void VulkanDevice::CreateFramebuffers()
     {
         uint32_t imageCount = VulkanUtils::GetSwapchainImageCount(physicalDevice, surface);
-
-        framebuffers.clear();
         framebuffers.resize(imageCount);
         for (size_t i = 0; i < imageCount; i++)
         {
             framebuffers[i] = VulkanFramebuffer::Builder(this)
                     .SetRenderpass(vulkanRenderPass)
                     .SetResolution(viewportWidth, viewportHeight)
-                    .AddAttachment(vulkanSwapChain->GetImageViews()[i]->Get())
+                    .AddAttachment(vulkanSwapChain->GetImageViews()[i])
                     .AddAttachment(FramebufferAttachmentFormat::RGBA8)
                     .AddAttachment(FramebufferAttachmentFormat::RGBA8)
                     .AddAttachment(FramebufferAttachmentFormat::RGBA8)
@@ -298,6 +297,8 @@ namespace Raytracing
         {
             LOG_WARN("Resize");
             vkDeviceWaitIdle(device);
+
+            framebuffers.clear();
             CreateSwapchain();
             CreateFramebuffers();
             return false;

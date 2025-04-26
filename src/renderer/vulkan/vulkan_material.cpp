@@ -114,7 +114,7 @@ namespace Raytracing
 
             VkDescriptorImageInfo baseColorImageInfo{};
             baseColorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            baseColorImageInfo.imageView = baseColorTexture->GetImageView()->Get();
+            baseColorImageInfo.imageView = baseColorTexture->GetImageView();
             baseColorImageInfo.sampler = baseColorTexture->GetSampler();
 
             descriptorWriter.WriteImage(1, &baseColorImageInfo);
@@ -126,7 +126,7 @@ namespace Raytracing
 
             VkDescriptorImageInfo normalMapImageInfo{};
             normalMapImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            normalMapImageInfo.imageView = normalMapTexture->GetImageView()->Get();
+            normalMapImageInfo.imageView = normalMapTexture->GetImageView();
             normalMapImageInfo.sampler = normalMapTexture->GetSampler();
 
             descriptorWriter.WriteImage(2, &normalMapImageInfo);
@@ -138,7 +138,7 @@ namespace Raytracing
 
             VkDescriptorImageInfo metallicRoughnessImageInfo{};
             metallicRoughnessImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            metallicRoughnessImageInfo.imageView = metallicRoughnessTexture->GetImageView()->Get();
+            metallicRoughnessImageInfo.imageView = metallicRoughnessTexture->GetImageView();
             metallicRoughnessImageInfo.sampler = metallicRoughnessTexture->GetSampler();
 
             descriptorWriter.WriteImage(3, &metallicRoughnessImageInfo);

@@ -10,7 +10,7 @@ namespace Raytracing
         ~CameraController() = default;
 
         void Update(float deltaTime);
-        void SetCamera(const Ref<Camera>& camera) { this->camera = camera; }
+        void SetCamera(const Ref<Camera>& _camera) { camera = _camera; }
 
     public:
         float movementSpeed = 1.0f;
