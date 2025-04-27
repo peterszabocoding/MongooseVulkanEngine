@@ -190,10 +190,10 @@ namespace Raytracing
             }
         }
 
-        static std::vector<Ref<VulkanImage>> LoadTextures(tinygltf::Model& model, VulkanDevice* device,
+        static std::vector<Ref<VulkanTexture>> LoadTextures(tinygltf::Model& model, VulkanDevice* device,
                                                                  const std::filesystem::path& parentPath)
         {
-            std::vector<Ref<VulkanImage>> textures;
+            std::vector<Ref<VulkanTexture>> textures;
             for (tinygltf::Texture& tex: model.textures)
             {
                 tinygltf::Image image = model.images[tex.source];
@@ -204,7 +204,7 @@ namespace Raytracing
         }
 
         static std::vector<VulkanMaterial> LoadMaterials(const tinygltf::Model& model, VulkanDevice* device,
-                                                         const std::vector<Ref<VulkanImage>>& textures)
+                                                         const std::vector<Ref<VulkanTexture>>& textures)
         {
             std::vector<VulkanMaterial> materials;
             for (const tinygltf::Material& material: model.materials)
@@ -258,7 +258,7 @@ namespace Raytracing
         auto mesh = CreateRef<VulkanMesh>(device);
         Utils::LoadGLTFNode(node, model, mesh);
 
-        const std::vector<Ref<VulkanImage>> textures = Utils::LoadTextures(model, device, gltfFilePath.parent_path());
+        const std::vector<Ref<VulkanTexture>> textures = Utils::LoadTextures(model, device, gltfFilePath.parent_path());
         const std::vector<VulkanMaterial> materials = Utils::LoadMaterials(model, device, textures);
 
         mesh->SetMaterials(materials);
@@ -287,7 +287,7 @@ namespace Raytracing
             abort();
         }
 
-        const std::vector<Ref<VulkanImage>> textures = Utils::LoadTextures(model, device, gltfFilePath.parent_path());
+        const std::vector<Ref<VulkanTexture>> textures = Utils::LoadTextures(model, device, gltfFilePath.parent_path());
         const std::vector<VulkanMaterial> materials = Utils::LoadMaterials(model, device, textures);
         std::vector<Ref<VulkanMesh>> meshes;
         std::vector<Transform> transforms;

@@ -1,9 +1,6 @@
 #include "vulkan_image.h"
-
-#include "vulkan_buffer.h"
 #include "vulkan_utils.h"
 #include "vulkan_device.h"
-#include "vulkan_image_view.h"
 #include "util/log.h"
 
 namespace Raytracing
@@ -31,6 +28,25 @@ namespace Raytracing
         imageMemory = VulkanUtils::AllocateImageMemory(device, image, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
         return image;
+    }
+
+    VkImageView ImageViewBuilder::Build() const
+    {
+        VkImageViewCreateInfo viewInfo{};
+        viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        viewInfo.image = image;
+        viewInfo.viewType = viewType;
+        viewInfo.format = format;
+        viewInfo.subresourceRange.aspectMask = aspectFlags;
+        viewInfo.subresourceRange.baseMipLevel = 0;
+        viewInfo.subresourceRange.levelCount = 1;
+        viewInfo.subresourceRange.baseArrayLayer = 0;
+        viewInfo.subresourceRange.layerCount = 1;
+
+        VkImageView imageView = VK_NULL_HANDLE;
+        VK_CHECK_MSG(vkCreateImageView(device->GetDevice(), &viewInfo, nullptr, &imageView), "Failed to create texture image view.");
+
+        return imageView;
     }
 
     VkSampler ImageSamplerBuilder::Build()
@@ -62,75 +78,5 @@ namespace Raytracing
         VK_CHECK_MSG(vkCreateSampler(device->GetDevice(), &samplerInfo, nullptr, &sampler), "Failed to create texture sampler.");
 
         return sampler;
-    }
-
-    Ref<VulkanImage> VulkanImage::Builder::Build()
-    {
-        if (!image)
-        {
-            image = ImageBuilder(device)
-                    .SetResolution(width, height)
-                    .SetFormat(format)
-                    .SetTiling(tiling)
-                    .AddUsage(usage)
-                    .Build(imageMemory);
-        }
-
-        imageView = ImageViewBuilder(device)
-                .SetFormat(format)
-                .SetImage(image)
-                .SetViewType(VK_IMAGE_VIEW_TYPE_2D)
-                .SetAspectFlags(aspectFlags)
-                .Build();
-
-        if (makeSampler)
-        {
-            sampler = ImageSamplerBuilder(device)
-                    .SetFilter(minFilter, magFilter)
-                    .Build();
-        }
-
-        if (data && size > 0)
-        {
-            const auto stagingBuffer = VulkanBuffer(device, size,
-                                                    VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                                                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                                    VMA_MEMORY_USAGE_CPU_ONLY);
-
-            memcpy(stagingBuffer.GetMappedData(), data, stagingBuffer.GetBufferSize());
-
-            device->ImmediateSubmit([&](const VkCommandBuffer cmd) {
-                VulkanUtils::TransitionImageLayout(cmd, image, VK_IMAGE_ASPECT_COLOR_BIT,
-                                                   VK_IMAGE_LAYOUT_UNDEFINED,
-                                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-            });
-
-            device->ImmediateSubmit([&](const VkCommandBuffer cmd) {
-                VulkanUtils::CopyBufferToImage(cmd, image, width, height, stagingBuffer.GetBuffer());
-            });
-
-            device->ImmediateSubmit([&](const VkCommandBuffer cmd) {
-                VulkanUtils::TransitionImageLayout(cmd, image, VK_IMAGE_ASPECT_COLOR_BIT,
-                                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-            });
-        }
-
-        ImageResource imageResource;
-        imageResource.width = width;
-        imageResource.height = height;
-
-        auto vulkanImage = CreateRef<VulkanImage>(device, image, imageView, imageMemory, sampler);
-        vulkanImage->SetImageResource(imageResource);
-
-        return vulkanImage;
-    }
-
-    VulkanImage::~VulkanImage()
-    {
-        vkDestroyImageView(device->GetDevice(), imageView, nullptr);
-        vkDestroySampler(device->GetDevice(), sampler, nullptr);
-        vkFreeMemory(device->GetDevice(), imageMemory, nullptr);
-        vkDestroyImage(device->GetDevice(), image, nullptr);
     }
 }

@@ -5,6 +5,7 @@
 
 #include "vulkan_buffer.h"
 #include "vulkan_image.h"
+#include "vulkan_texture.h"
 
 namespace Raytracing
 {
@@ -24,9 +25,9 @@ namespace Raytracing
 
     struct VulkanMaterial {
         int index = 0;
-        Ref<VulkanImage> baseColorTexture;
-        Ref<VulkanImage> normalMapTexture;
-        Ref<VulkanImage> metallicRoughnessTexture;
+        Ref<VulkanTexture> baseColorTexture;
+        Ref<VulkanTexture> normalMapTexture;
+        Ref<VulkanTexture> metallicRoughnessTexture;
         MaterialParams params;
         VkDescriptorSet descriptorSet;
         Ref<VulkanBuffer> materialBuffer;
@@ -48,13 +49,13 @@ namespace Raytracing
         VulkanMaterialBuilder& SetRoughness(float roughness);
 
         VulkanMaterialBuilder& SetBaseColorPath(const std::string& baseColorPath);
-        VulkanMaterialBuilder& SetBaseColorTexture(const Ref<VulkanImage>& baseColorTexture);
+        VulkanMaterialBuilder& SetBaseColorTexture(const Ref<VulkanTexture>& baseColorTexture);
 
         VulkanMaterialBuilder& SetNormalMapPath(const std::string& normalMapPath);
-        VulkanMaterialBuilder& SetNormalMapTexture(const Ref<VulkanImage>& normalMapTexture);
+        VulkanMaterialBuilder& SetNormalMapTexture(const Ref<VulkanTexture>& normalMapTexture);
 
         VulkanMaterialBuilder& SetMetallicRoughnessPath(const std::string& metallicRoughnessPath);
-        VulkanMaterialBuilder& SetMetallicRoughnessTexture(const Ref<VulkanImage>& metallicRoughnessTexture);
+        VulkanMaterialBuilder& SetMetallicRoughnessTexture(const Ref<VulkanTexture>& metallicRoughnessTexture);
 
         VulkanMaterialBuilder& SetParams(const MaterialParams& params);
         VulkanMaterialBuilder& SetPipeline(Ref<VulkanPipeline> shader);
@@ -67,9 +68,9 @@ namespace Raytracing
         Ref<VulkanPipeline> pipeline;
         MaterialParams params;
 
-        Ref<VulkanImage> baseColorTexture;
-        Ref<VulkanImage> normalMapTexture;
-        Ref<VulkanImage> metallicRoughnessTexture;
+        Ref<VulkanTexture> baseColorTexture;
+        Ref<VulkanTexture> normalMapTexture;
+        Ref<VulkanTexture> metallicRoughnessTexture;
 
         std::string baseColorPath;
         std::string normalMapPath;

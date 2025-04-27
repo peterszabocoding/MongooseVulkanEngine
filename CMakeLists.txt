@@ -86,7 +86,6 @@ set(SOURCE_ONE_WEEKEND
         ./src/renderer/vulkan/vulkan_pipeline.cpp
         ./src/renderer/vulkan/vulkan_device.cpp
         ./src/renderer/vulkan/vulkan_image.cpp
-        ./src/renderer/vulkan/vulkan_image_view.cpp
         ./src/renderer/vulkan/vulkan_shader.cpp
         ./src/renderer/vulkan/vulkan_swapchain.cpp
         ./src/renderer/vulkan/vulkan_framebuffer.cpp
@@ -97,6 +96,7 @@ set(SOURCE_ONE_WEEKEND
         ./src/renderer/vulkan/vulkan_descriptor_pool.cpp
         ./src/renderer/vulkan/vulkan_descriptor_writer.cpp
         ./src/renderer/vulkan/vulkan_material.cpp
+        ./src/renderer/vulkan/vulkan_texture.cpp
         ./src/renderer/vulkan/imgui_vulkan.cpp
 
         ./src/resource/resource_manager.cpp

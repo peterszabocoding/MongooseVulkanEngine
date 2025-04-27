@@ -18,7 +18,6 @@
 
 #include "vulkan_descriptor_pool.h"
 #include "vulkan_framebuffer.h"
-#include "vulkan_image_view.h"
 #include "renderer/camera.h"
 #include "util/log.h"
 #include "vma/vk_mem_alloc.h"

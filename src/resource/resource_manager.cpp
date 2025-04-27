@@ -18,6 +18,7 @@
 #include "renderer/vulkan/vulkan_mesh.h"
 #include "renderer/vulkan/vulkan_device.h"
 #include "renderer/vulkan/vulkan_pipeline.h"
+#include "renderer/vulkan/vulkan_texture.h"
 #include "util/log.h"
 
 
@@ -120,12 +121,12 @@ namespace Raytracing
         return GLTFLoader::LoadMesh(device, meshPath);
     }
 
-    Ref<VulkanImage> ResourceManager::LoadTexture(VulkanDevice* device, std::string textureImagePath)
+    Ref<VulkanTexture> ResourceManager::LoadTexture(VulkanDevice* device, std::string textureImagePath)
     {
         LOG_INFO("Load Texture: " + textureImagePath);
-        const ImageResource imageResource = LoadImageResource(textureImagePath);
+        ImageResource imageResource = LoadImageResource(textureImagePath);
 
-        Ref<VulkanImage> texture = VulkanImage::Builder(device)
+        Ref<VulkanTexture> texture = VulkanTexture::Builder()
                 .SetData(imageResource.data, imageResource.size)
                 .SetResolution(imageResource.width, imageResource.height)
                 .SetFormat(VK_FORMAT_R8G8B8A8_UNORM)
@@ -134,21 +135,20 @@ namespace Raytracing
                 .AddUsage(VK_IMAGE_USAGE_TRANSFER_DST_BIT)
                 .AddUsage(VK_IMAGE_USAGE_SAMPLED_BIT)
                 .AddAspectFlag(VK_IMAGE_ASPECT_COLOR_BIT)
-                .MakeSampler()
-                .Build();
+                .SetImageResource(imageResource)
+                .Build(device);
 
-        texture->SetImageResource(imageResource);
         ReleaseImage(imageResource);
 
         return texture;
     }
 
-    Ref<VulkanImage> ResourceManager::LoadHDRCubeMap(VulkanDevice* device, const std::string& hdrPath)
+    Ref<VulkanTexture> ResourceManager::LoadHDRCubeMap(VulkanDevice* device, const std::string& hdrPath)
     {
         LOG_INFO("Load HDR: " + hdrPath);
-        const ImageResource imageResource = LoadHDRResource(hdrPath);
+        ImageResource imageResource = LoadHDRResource(hdrPath);
 
-        Ref<VulkanImage> texture = VulkanImage::Builder(device)
+        Ref<VulkanTexture> texture = VulkanTexture::Builder()
                 .SetData(imageResource.data, imageResource.size)
                 .SetResolution(imageResource.width, imageResource.height)
                 .SetFormat(VK_FORMAT_R8G8B8A8_UNORM)
@@ -157,8 +157,8 @@ namespace Raytracing
                 .AddUsage(VK_IMAGE_USAGE_TRANSFER_DST_BIT)
                 .AddUsage(VK_IMAGE_USAGE_SAMPLED_BIT)
                 .AddAspectFlag(VK_IMAGE_ASPECT_COLOR_BIT)
-                .MakeSampler()
-                .Build();
+                .SetImageResource(imageResource)
+                .Build(device);
 
         ReleaseImage(imageResource);
         return texture;
