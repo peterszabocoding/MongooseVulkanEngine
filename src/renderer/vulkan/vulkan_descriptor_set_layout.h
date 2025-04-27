@@ -18,7 +18,7 @@ namespace Raytracing
             explicit Builder(VulkanDevice* vulkanDevice): vulkanDevice(vulkanDevice) {}
 
             Builder& AddBinding(uint32_t binding, VkDescriptorType type, VkShaderStageFlags stageFlags, uint32_t count = 1);
-            Scope<VulkanDescriptorSetLayout> Build() const;
+            Ref<VulkanDescriptorSetLayout> Build() const;
 
         private:
             VulkanDevice* vulkanDevice;

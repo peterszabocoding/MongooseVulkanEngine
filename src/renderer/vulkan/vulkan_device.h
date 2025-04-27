@@ -9,6 +9,7 @@
 #include <vma/vk_mem_alloc.h>
 
 #include "vulkan_descriptor_pool.h"
+#include "vulkan_mesh.h"
 #include "GLFW/glfw3.h"
 #include "renderer/camera.h"
 #include "util/core.h"
@@ -29,8 +30,10 @@ namespace Raytracing
         ~VulkanDevice();
 
         void DrawMesh(
-            Ref<Camera> camera,
-            const Transform& transform, Ref<VulkanMesh> mesh) const;
+            const Ref<Camera>& camera,
+            const Transform& transform, const Ref<VulkanMesh>& mesh) const;
+
+        void DrawMeshlet(const VulkanMeshlet& meshlet, VkPipeline pipeline, VkPipelineLayout pipelineLayout, VkDescriptorSet descriptorSet) const;
 
         void DrawImGui() const;
         bool BeginFrame();
@@ -50,11 +53,11 @@ namespace Raytracing
         [[nodiscard]] VulkanDescriptorPool& GetShaderDescriptorPool() const { return *shaderDescriptorPool.get(); }
         [[nodiscard]] VkQueue GetGraphicsQueue() const { return graphicsQueue; }
         [[nodiscard]] VkQueue GetPresentQueue() const { return presentQueue; }
-        [[nodiscard]] VkRenderPass GetRenderPass() const { return vulkanRenderPass->Get(); }
-        [[nodiscard]] Ref<VulkanRenderPass> GetVulkanRenderPass() const { return vulkanRenderPass; }
+        [[nodiscard]] VkRenderPass GetRenderPass() const { return gBufferPass->Get(); }
+        [[nodiscard]] Ref<VulkanRenderPass> GetVulkanRenderPass() const { return gBufferPass; }
         [[nodiscard]] VkCommandPool GetCommandPool() const { return commandPool; }
         [[nodiscard]] VkPhysicalDeviceProperties GetDeviceProperties() const { return physicalDeviceProperties; }
-        [[nodiscard]] Ref<VulkanFramebuffer> GetFramebuffer() const { return framebuffers[currentFrame]; }
+        [[nodiscard]] Ref<VulkanFramebuffer> GetFramebuffer() const { return gbufferFramebuffers[currentFrame]; }
 
         VkSampleCountFlagBits GetMaxMSAASampleCount() const;
 
@@ -106,15 +109,22 @@ namespace Raytracing
         std::vector<VkSemaphore> renderFinishedSemaphores;
         std::vector<VkFence> inFlightFences;
 
-        Ref<VulkanRenderPass> vulkanRenderPass{};
+        Ref<VulkanRenderPass> gBufferPass{};
+        Ref<VulkanRenderPass> lightingPass{};
 
         Scope<VulkanSwapchain> vulkanSwapChain{};
-        std::vector<Ref<VulkanFramebuffer>> framebuffers;
+        std::vector<Ref<VulkanFramebuffer>> gbufferFramebuffers;
+        std::vector<Ref<VulkanFramebuffer>> presentFramebuffers;
 
         VmaAllocator vmaAllocator;
 
         Scope<VulkanDescriptorPool> globalUniformPool{};
         Scope<VulkanDescriptorPool> shaderDescriptorPool{};
         Scope<VulkanDescriptorPool> imguiDescriptorPool{};
+
+        VkDescriptorSet presentDescriptorSet{};
+        VkSampler presentSampler{};
+
+        Scope<VulkanMeshlet> screenRect;
     };
 }

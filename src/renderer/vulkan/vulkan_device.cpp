@@ -17,8 +17,10 @@
 #include <renderer/transform.h>
 
 #include "vulkan_descriptor_pool.h"
+#include "vulkan_descriptor_writer.h"
 #include "vulkan_framebuffer.h"
 #include "renderer/camera.h"
+#include "resource/resource_manager.h"
 #include "util/log.h"
 #include "vma/vk_mem_alloc.h"
 
@@ -51,35 +53,36 @@ namespace Raytracing
         vkDestroyInstance(instance, nullptr);
     }
 
-    void VulkanDevice::DrawMesh(Ref<Camera> camera, const Transform& transform, const Ref<VulkanMesh> mesh) const
+    void VulkanDevice::DrawMesh(const Ref<Camera>& camera, const Transform& transform, const Ref<VulkanMesh>& mesh) const
     {
-        const glm::mat4 modelMatrix = transform.GetTransform();
         SimplePushConstantData pushConstantData;
         pushConstantData.normalMatrix = transform.GetNormalMatrix();
-        pushConstantData.transform = camera->GetProjection() * camera->GetView() * modelMatrix;
+        pushConstantData.transform = camera->GetProjection() * camera->GetView() * transform.GetTransform();
 
         for (auto& meshlet: mesh->GetMeshlets())
         {
-            auto material = mesh->GetMaterials()[meshlet.GetMaterialIndex()];
-
-            vkCmdBindPipeline(commandBuffers[currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, material.pipeline->GetPipeline());
-            vkCmdBindDescriptorSets(commandBuffers[currentFrame],
-                                    VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                    material.pipeline->GetPipelineLayout(), 0,
-                                    1, &material.descriptorSet,
-                                    0, nullptr);
+            const VulkanMaterial& material = mesh->GetMaterials()[meshlet.GetMaterialIndex()];
+            const VkPipeline pipeline = material.pipeline->GetPipeline();
+            const VkPipelineLayout pipelineLayout = material.pipeline->GetPipelineLayout();
 
             vkCmdPushConstants(
-                commandBuffers[currentFrame],
-                material.pipeline->GetPipelineLayout(),
-                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                0,
-                sizeof(SimplePushConstantData),
-                &pushConstantData);
+                commandBuffers[currentFrame], pipelineLayout,
+                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0,
+                sizeof(SimplePushConstantData), &pushConstantData);
 
-            meshlet.Bind(commandBuffers[currentFrame]);
-            vkCmdDrawIndexed(commandBuffers[currentFrame], meshlet.GetIndexCount(), 1, 0, 0, 0);
+            DrawMeshlet(meshlet, pipeline, pipelineLayout, material.descriptorSet);
         }
+    }
+
+    void VulkanDevice::DrawMeshlet(const VulkanMeshlet& meshlet, const VkPipeline pipeline, const VkPipelineLayout pipelineLayout,
+                                   const VkDescriptorSet descriptorSet) const
+    {
+        vkCmdBindPipeline(commandBuffers[currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+        vkCmdBindDescriptorSets(commandBuffers[currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0,
+                                nullptr);
+
+        meshlet.Bind(commandBuffers[currentFrame]);
+        vkCmdDrawIndexed(commandBuffers[currentFrame], meshlet.GetIndexCount(), 1, 0, 0, 0);
     }
 
     void VulkanDevice::DrawImGui() const
@@ -99,9 +102,9 @@ namespace Raytracing
             vkBeginCommandBuffer(commandBuffers[currentFrame], &beginInfo),
             "Failed to begin recording command buffer.");
 
-        vulkanRenderPass->Begin(commandBuffers[currentFrame],
-                                framebuffers[currentImageIndex],
-                                vulkanSwapChain->GetExtent());
+        gBufferPass->Begin(commandBuffers[currentFrame],
+                           gbufferFramebuffers[currentImageIndex],
+                           vulkanSwapChain->GetExtent());
 
         SetViewportAndScissor();
         return true;
@@ -110,7 +113,53 @@ namespace Raytracing
     void VulkanDevice::EndFrame()
     {
         // End render pass
-        vulkanRenderPass->End(commandBuffers[currentFrame]);
+        gBufferPass->End(commandBuffers[currentFrame]);
+
+        if (!presentSampler)
+            presentSampler = ImageSamplerBuilder(this).Build();
+
+        auto pipeline = ResourceManager::renderToScreenPipeline;
+
+        auto writer = VulkanDescriptorWriter(*pipeline->GetDescriptorSetLayout(),
+                                             GetShaderDescriptorPool());
+
+        VkDescriptorImageInfo info{};
+        info.sampler = presentSampler;
+        info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        info.imageView = gbufferFramebuffers[currentFrame]->GetAttachments()[0].imageView;
+
+        writer.WriteImage(0, &info);
+
+        VkDescriptorImageInfo info2{};
+        info2.sampler = presentSampler;
+        info2.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        info2.imageView = gbufferFramebuffers[currentFrame]->GetAttachments()[1].imageView;
+
+        writer.WriteImage(1, &info2);
+
+        VkDescriptorImageInfo info3{};
+        info3.sampler = presentSampler;
+        info3.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        info3.imageView = gbufferFramebuffers[currentFrame]->GetAttachments()[2].imageView;
+
+        writer.WriteImage(2, &info3);
+
+        if (!presentDescriptorSet)
+            writer.Build(presentDescriptorSet);
+        else
+            writer.Overwrite(presentDescriptorSet);
+
+        lightingPass->Begin(commandBuffers[currentFrame],
+                            presentFramebuffers[currentImageIndex],
+                            vulkanSwapChain->GetExtent());
+
+        SetViewportAndScissor();
+        DrawMeshlet(*screenRect, ResourceManager::renderToScreenPipeline->GetPipeline(),
+                    ResourceManager::renderToScreenPipeline->GetPipelineLayout(), presentDescriptorSet);
+
+        DrawImGui();
+
+        lightingPass->End(commandBuffers[currentFrame]);
 
         // End command buffer
         VkResult result = vkEndCommandBuffer(commandBuffers[currentFrame]);
@@ -125,11 +174,10 @@ namespace Raytracing
         result = PresentFrame(currentImageIndex, signalSemaphores);
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized)
         {
-            LOG_WARN("Resize");
             framebufferResized = false;
 
             vkDeviceWaitIdle(device);
-            framebuffers.clear();
+            gbufferFramebuffers.clear();
 
             CreateSwapchain();
             CreateFramebuffers();
@@ -141,7 +189,7 @@ namespace Raytracing
         currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
     }
 
-    void VulkanDevice::ResizeFramebuffer(int width, int height)
+    void VulkanDevice::ResizeFramebuffer(const int width, const int height)
     {
         viewportWidth = width;
         viewportHeight = height;
@@ -157,7 +205,7 @@ namespace Raytracing
         const char** glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extension_count);
 
         std::vector<const char*> device_extensions;
-        std::vector<const char*> validation_layer_list;
+        const std::vector<const char*> validation_layer_list;
 
         device_extensions.reserve(glfw_extension_count);
         for (size_t i = 0; i < glfw_extension_count; i++)
@@ -183,6 +231,13 @@ namespace Raytracing
 
         vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
 
+        LOG_TRACE("Vulkan: VMA init");
+        VmaAllocatorCreateInfo allocatorInfo = {};
+        allocatorInfo.physicalDevice = physicalDevice;
+        allocatorInfo.device = device;
+        allocatorInfo.instance = instance;
+        vmaCreateAllocator(&allocatorInfo, &vmaAllocator);
+
         CreateSwapchain();
         CreateRenderpass();
         CreateFramebuffers();
@@ -192,12 +247,7 @@ namespace Raytracing
         CreateCommandBuffers();
         CreateSyncObjects();
 
-        LOG_TRACE("Vulkan: VMA init");
-        VmaAllocatorCreateInfo allocatorInfo = {};
-        allocatorInfo.physicalDevice = physicalDevice;
-        allocatorInfo.device = device;
-        allocatorInfo.instance = instance;
-        vmaCreateAllocator(&allocatorInfo, &vmaAllocator);
+        screenRect = CreateScope<VulkanMeshlet>(this, Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
     }
 
     void VulkanDevice::CreateSwapchain()
@@ -208,7 +258,7 @@ namespace Raytracing
         const auto swapChainSupport = VulkanUtils::QuerySwapChainSupport(physicalDevice, surface);
         const VkSurfaceFormatKHR surfaceFormat = VulkanUtils::ChooseSwapSurfaceFormat(swapChainSupport.formats);
 
-        uint32_t imageCount = VulkanUtils::GetSwapchainImageCount(physicalDevice, surface);
+        const uint32_t imageCount = VulkanUtils::GetSwapchainImageCount(physicalDevice, surface);
         vulkanSwapChain = VulkanSwapchain::Builder(this)
                 .SetResolution(viewportWidth, viewportHeight)
                 .SetPresentMode(VK_PRESENT_MODE_IMMEDIATE_KHR)
@@ -219,18 +269,28 @@ namespace Raytracing
 
     void VulkanDevice::CreateFramebuffers()
     {
-        uint32_t imageCount = VulkanUtils::GetSwapchainImageCount(physicalDevice, surface);
-        framebuffers.resize(imageCount);
+        const uint32_t imageCount = VulkanUtils::GetSwapchainImageCount(physicalDevice, surface);
+        gbufferFramebuffers.resize(imageCount);
+        presentFramebuffers.resize(imageCount);
+
         for (size_t i = 0; i < imageCount; i++)
         {
-            framebuffers[i] = VulkanFramebuffer::Builder(this)
-                    .SetRenderpass(vulkanRenderPass)
+            gbufferFramebuffers[i] = VulkanFramebuffer::Builder(this)
+                    .SetRenderpass(gBufferPass)
                     .SetResolution(viewportWidth, viewportHeight)
-                    .AddAttachment(vulkanSwapChain->GetImageViews()[i])
                     .AddAttachment(FramebufferAttachmentFormat::RGBA8)
                     .AddAttachment(FramebufferAttachmentFormat::RGBA8)
                     .AddAttachment(FramebufferAttachmentFormat::RGBA8)
                     .AddAttachment(FramebufferAttachmentFormat::DEPTH24_STENCIL8)
+                    .Build();
+        }
+
+        for (size_t i = 0; i < imageCount; i++)
+        {
+            presentFramebuffers[i] = VulkanFramebuffer::Builder(this)
+                    .SetRenderpass(lightingPass)
+                    .SetResolution(viewportWidth, viewportHeight)
+                    .AddAttachment(vulkanSwapChain->GetImageViews()[i])
                     .Build();
         }
     }
@@ -238,12 +298,15 @@ namespace Raytracing
     void VulkanDevice::CreateRenderpass()
     {
         LOG_TRACE("Vulkan: create renderpass");
-        vulkanRenderPass = VulkanRenderPass::Builder(this)
-                .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM)
+        gBufferPass = VulkanRenderPass::Builder(this)
                 .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM)
                 .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM)
                 .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM)
                 .AddDepthAttachment()
+                .Build();
+
+        lightingPass = VulkanRenderPass::Builder(this)
+                .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM)
                 .Build();
     }
 
@@ -253,7 +316,7 @@ namespace Raytracing
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
         const VkSemaphore waitSemaphores[] = {imageAvailableSemaphores[currentFrame]};
-        VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+        const VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
         submitInfo.waitSemaphoreCount = 1;
         submitInfo.pWaitSemaphores = waitSemaphores;
         submitInfo.pWaitDstStageMask = waitStages;
@@ -284,7 +347,7 @@ namespace Raytracing
     {
         vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
-        VkResult result = vkAcquireNextImageKHR(
+        const VkResult result = vkAcquireNextImageKHR(
             device,
             vulkanSwapChain->GetSwapChain(),
             UINT64_MAX,
@@ -297,7 +360,7 @@ namespace Raytracing
             LOG_WARN("Resize");
             vkDeviceWaitIdle(device);
 
-            framebuffers.clear();
+            gbufferFramebuffers.clear();
             CreateSwapchain();
             CreateFramebuffers();
             return false;
@@ -371,8 +434,8 @@ namespace Raytracing
 
     VkSampleCountFlagBits VulkanDevice::GetMaxMSAASampleCount() const
     {
-        VkSampleCountFlags counts = physicalDeviceProperties.limits.framebufferColorSampleCounts & physicalDeviceProperties.limits.
-                                    framebufferDepthSampleCounts;
+        const VkSampleCountFlags counts = physicalDeviceProperties.limits.framebufferColorSampleCounts & physicalDeviceProperties.limits.
+                                          framebufferDepthSampleCounts;
         if (counts & VK_SAMPLE_COUNT_64_BIT) { return VK_SAMPLE_COUNT_64_BIT; }
         if (counts & VK_SAMPLE_COUNT_32_BIT) { return VK_SAMPLE_COUNT_32_BIT; }
         if (counts & VK_SAMPLE_COUNT_16_BIT) { return VK_SAMPLE_COUNT_16_BIT; }
@@ -533,7 +596,7 @@ namespace Raytracing
 
     void VulkanDevice::CreateCommandPool()
     {
-        VulkanUtils::QueueFamilyIndices queueFamilyIndices = VulkanUtils::FindQueueFamilies(physicalDevice, surface);
+        const VulkanUtils::QueueFamilyIndices queueFamilyIndices = VulkanUtils::FindQueueFamilies(physicalDevice, surface);
 
         VkCommandPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;

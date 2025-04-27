@@ -8,22 +8,39 @@
 
 namespace Raytracing
 {
-    VulkanPipeline::VulkanPipeline(VulkanDevice* vulkanDevice, Ref<VulkanShader> shader, VkPipeline pipeline,
-                                   VkPipelineLayout pipelineLayout)
-        : vulkanDevice(vulkanDevice), shader(shader), pipeline(pipeline), pipelineLayout(pipelineLayout)
-    {}
-
     VulkanPipeline::~VulkanPipeline()
     {
-        vkDestroyPipeline(vulkanDevice->GetDevice(), pipeline, nullptr);
-        vkDestroyPipelineLayout(vulkanDevice->GetDevice(), pipelineLayout, nullptr);
+        vkDestroyShaderModule(vulkanDevice->GetDevice(), params.vertexShaderModule, nullptr);
+        vkDestroyShaderModule(vulkanDevice->GetDevice(), params.fragmentShaderModule, nullptr);
+        vkDestroyPipeline(vulkanDevice->GetDevice(), params.pipeline, nullptr);
+        vkDestroyPipelineLayout(vulkanDevice->GetDevice(), params.pipelineLayout, nullptr);
     }
 
     VulkanPipeline::Builder::Builder() { clear(); }
 
     Ref<VulkanPipeline> VulkanPipeline::Builder::Build(VulkanDevice* vulkanDevice)
     {
-        Ref<VulkanShader> shader = CreateRef<VulkanShader>(vulkanDevice, vertexShaderPath, fragmentShaderPath);
+        std::vector<VkPipelineShaderStageCreateInfo> pipelineShaderStageCreateInfos;
+
+        const auto vert_shader_code = FileSystem::ReadFile(vertexShaderPath);
+        const auto frag_shader_code = FileSystem::ReadFile(fragmentShaderPath);
+
+        VkShaderModule vertexShaderModule = VulkanUtils::CreateShaderModule(vulkanDevice->GetDevice(), vert_shader_code);
+        VkShaderModule fragmentShaderModule = VulkanUtils::CreateShaderModule(vulkanDevice->GetDevice(), frag_shader_code);
+
+        VkPipelineShaderStageCreateInfo vert_shader_stage_create_info{};
+        vert_shader_stage_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        vert_shader_stage_create_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
+        vert_shader_stage_create_info.module = vertexShaderModule;
+        vert_shader_stage_create_info.pName = "main";
+        pipelineShaderStageCreateInfos.push_back(vert_shader_stage_create_info);
+
+        VkPipelineShaderStageCreateInfo frag_shader_stage_create_info{};
+        frag_shader_stage_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        frag_shader_stage_create_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+        frag_shader_stage_create_info.module = fragmentShaderModule;
+        frag_shader_stage_create_info.pName = "main";
+        pipelineShaderStageCreateInfos.push_back(frag_shader_stage_create_info);
 
         auto binding_description = VulkanVertex::GetBindingDescription();
         auto attribute_descriptions = VulkanVertex::GetAttributeDescriptions();
@@ -72,7 +89,7 @@ namespace Raytracing
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 1;
-        pipelineLayoutInfo.pSetLayouts = &shader->GetDescriptorSetLayout();
+        pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout->GetDescriptorSetLayout();
         pipelineLayoutInfo.pushConstantRangeCount = pushConstantRanges.size();
         pipelineLayoutInfo.pPushConstantRanges = pushConstantRanges.data();
 
@@ -98,7 +115,7 @@ namespace Raytracing
         VkGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
         pipelineInfo.stageCount = 2;
-        pipelineInfo.pStages = shader->GetPipelineShaderStageCreateInfos().data();
+        pipelineInfo.pStages = pipelineShaderStageCreateInfos.data();
         pipelineInfo.pVertexInputState = &vertex_input_info;
         pipelineInfo.pInputAssemblyState = &inputAssembly;
         pipelineInfo.pViewportState = &viewport_state;
@@ -117,7 +134,18 @@ namespace Raytracing
             vkCreateGraphicsPipelines(vulkanDevice->GetDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline),
             "Failed to create graphics pipeline.");
 
-        return CreateRef<VulkanPipeline>(vulkanDevice, shader, pipeline, pipelineLayout);
+        PipelineParams params{};
+        params.pipeline = pipeline;
+        params.pipelineLayout = pipelineLayout;
+        params.fragmentShaderModule = fragmentShaderModule;
+        params.vertexShaderModule = vertexShaderModule;
+
+        params.vertexShaderPath = vertexShaderPath;
+        params.fragmentShaderPath = fragmentShaderPath;
+
+        params.descriptorSetLayout = descriptorSetLayout;
+
+        return CreateRef<VulkanPipeline>(vulkanDevice, params);
     }
 
     VulkanPipeline::Builder& VulkanPipeline::Builder::SetShaders(const std::string& _vertexShaderPath,
@@ -155,6 +183,12 @@ namespace Raytracing
         multisampling.pSampleMask = nullptr;
         multisampling.alphaToCoverageEnable = VK_FALSE;
         multisampling.alphaToOneEnable = VK_FALSE;
+        return *this;
+    }
+
+    VulkanPipeline::Builder& VulkanPipeline::Builder::SetDescriptorSetLayout(Ref<VulkanDescriptorSetLayout> _descriptorSetLayout)
+    {
+        descriptorSetLayout = _descriptorSetLayout;
         return *this;
     }
 

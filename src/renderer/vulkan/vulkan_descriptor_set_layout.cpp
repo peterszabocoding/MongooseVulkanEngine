@@ -24,7 +24,7 @@ namespace Raytracing
         return *this;
     }
 
-    Scope<VulkanDescriptorSetLayout> VulkanDescriptorSetLayout::Builder::Build() const
+    Ref<VulkanDescriptorSetLayout> VulkanDescriptorSetLayout::Builder::Build() const
     {
         return CreateScope<VulkanDescriptorSetLayout>(vulkanDevice, bindings);
     }

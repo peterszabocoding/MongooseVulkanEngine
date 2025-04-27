@@ -104,7 +104,7 @@ namespace Raytracing
         bufferInfo.offset = 0;
         bufferInfo.range = sizeof(MaterialParams);
 
-        auto descriptorWriter = VulkanDescriptorWriter(pipeline->GetShader()->GetVulkanDescriptorSetLayout(),
+        auto descriptorWriter = VulkanDescriptorWriter(*pipeline->GetDescriptorSetLayout(),
                                                        vulkanDevice->GetShaderDescriptorPool());
         descriptorWriter.WriteBuffer(0, &bufferInfo);
 

@@ -35,32 +35,16 @@ namespace Raytracing
 
         VkImageAspectFlagBits GetAspectFlagFromFormat(FramebufferAttachmentFormat format)
         {
-            switch (format)
-            {
-                case FramebufferAttachmentFormat::RGBA8:
-                    return VK_IMAGE_ASPECT_COLOR_BIT;
-                case FramebufferAttachmentFormat::RGB8:
-                    return VK_IMAGE_ASPECT_COLOR_BIT;
-                case FramebufferAttachmentFormat::RGBA16F:
-                    return VK_IMAGE_ASPECT_COLOR_BIT;
-                case FramebufferAttachmentFormat::RGBA32F:
-                    return VK_IMAGE_ASPECT_COLOR_BIT;
+            if (format == FramebufferAttachmentFormat::DEPTH24_STENCIL8 || format == FramebufferAttachmentFormat::DEPTH32)
+                return VK_IMAGE_ASPECT_DEPTH_BIT;
 
-                case FramebufferAttachmentFormat::DEPTH24_STENCIL8:
-                    return VK_IMAGE_ASPECT_DEPTH_BIT;
-                case FramebufferAttachmentFormat::DEPTH32:
-                    return VK_IMAGE_ASPECT_DEPTH_BIT;
-
-                default:
-                    return VK_IMAGE_ASPECT_COLOR_BIT;
-            }
+            return VK_IMAGE_ASPECT_COLOR_BIT;
         }
 
         VkImageUsageFlags GetUsageFromFormat(FramebufferAttachmentFormat format)
         {
             if (format == FramebufferAttachmentFormat::DEPTH24_STENCIL8 || format == FramebufferAttachmentFormat::DEPTH32)
                 return VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-
 
             return VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
         }
@@ -75,20 +59,21 @@ namespace Raytracing
     VulkanFramebuffer::Builder& VulkanFramebuffer::Builder::AddAttachment(FramebufferAttachmentFormat attachmentFormat)
     {
         VkDeviceMemory imageMemory;
-        VkImage image = ImageBuilder(device)
+        const VkFormat format = Utils::ConvertFramebufferAttachmentFormat(attachmentFormat);
+        const VkImage image = ImageBuilder(device)
                 .SetResolution(width, height)
                 .SetTiling(VK_IMAGE_TILING_OPTIMAL)
-                .SetFormat(Utils::ConvertFramebufferAttachmentFormat(attachmentFormat))
+                .SetFormat(format)
                 .AddUsage(Utils::GetUsageFromFormat(attachmentFormat))
                 .Build(imageMemory);
 
-        VkImageView imageView = ImageViewBuilder(device)
-                .SetFormat(Utils::ConvertFramebufferAttachmentFormat(attachmentFormat))
+        const VkImageView imageView = ImageViewBuilder(device)
+                .SetFormat(format)
                 .SetAspectFlags(Utils::GetAspectFlagFromFormat(attachmentFormat))
                 .SetImage(image)
                 .Build();
 
-        attachments.push_back({image, imageView, imageMemory});
+        attachments.push_back({image, imageView, imageMemory, format});
 
         return *this;
     }

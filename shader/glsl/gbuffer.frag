@@ -25,10 +25,9 @@ layout(push_constant) uniform Push {
   mat4 normalMatrix;
 } push;
 
-layout(location = 0) out vec4 finalImage;
-layout(location = 1) out vec4 baseColorImage;
-layout(location = 2) out vec4 normalImage;
-layout(location = 3) out vec4 metallicRoughnessImage;
+layout(location = 0) out vec4 baseColorImage;
+layout(location = 1) out vec4 normalImage;
+layout(location = 2) out vec4 metallicRoughnessImage;
 
 const vec3 LIGHT_DIRECTION = normalize(vec3(0.0, 1.0, 1.0));
 const float AMBIENT = 0.05;
@@ -72,7 +71,7 @@ void main() {
     float diffuseFactor = AMBIENT + clamp(dot(normalWorldSpace, LIGHT_DIRECTION), 0.0, 1.0);
     vec4 diffuseColor = materialParams.tint * color;
 
-    finalImage = diffuseFactor * diffuseColor;
+    //finalImage = diffuseFactor * diffuseColor;
     baseColorImage = color;
     normalImage = vec4(normalWorldSpace, 1.0);
     metallicRoughnessImage = vec4(occlusion, metallic, roughness, 1.0);

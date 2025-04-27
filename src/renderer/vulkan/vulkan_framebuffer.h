@@ -32,6 +32,7 @@ namespace Raytracing
         VkImage image;
         VkImageView imageView;
         VkDeviceMemory imageMemory;
+        VkFormat format;
     };
 
 

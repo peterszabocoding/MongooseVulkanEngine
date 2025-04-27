@@ -4,15 +4,14 @@
 #include "renderer/vulkan/vulkan_image.h"
 #include "resource/resource.h"
 
-namespace Raytracing {
-
+namespace Raytracing
+{
     class VulkanTexture;
     class VulkanDevice;
     class VulkanMesh;
     class VulkanPipeline;
 
     class ResourceManager {
-
     public:
         ResourceManager() = delete;
 
@@ -33,7 +32,8 @@ namespace Raytracing {
 
         static Scene LoadScene(VulkanDevice* device, const std::string& scenePath);
 
-        private:
+    public:
         static Ref<VulkanPipeline> mainPipeline;
+        static Ref<VulkanPipeline> renderToScreenPipeline;
     };
 }

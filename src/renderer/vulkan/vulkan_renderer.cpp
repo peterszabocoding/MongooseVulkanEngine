@@ -31,7 +31,7 @@ namespace Raytracing {
             vulkanDevice->DrawMesh(camera, completeScene.transforms[i], completeScene.meshes[i]);
         }
 
-        vulkanDevice->DrawImGui();
+        //vulkanDevice->DrawImGui();
         vulkanDevice->EndFrame();
     }
 

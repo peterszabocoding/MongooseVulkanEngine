@@ -25,8 +25,6 @@ namespace Raytracing
             indexBuffer = std::move(otherMeshlet.indexBuffer);
         }
 
-        VulkanMeshlet& operator=(const VulkanMeshlet&) = delete;
-
         void Bind(VkCommandBuffer commandBuffer) const;
 
         void CreateVertexBuffer(VulkanDevice* vulkanDevice);
@@ -56,7 +54,7 @@ namespace Raytracing
         const std::vector<VulkanMeshlet>& GetMeshlets() const { return meshlets; }
 
         void SetMaterials(const std::vector<VulkanMaterial>& _materials) { materials = _materials; }
-        const std::vector<VulkanMaterial>& GetMaterials() const { return materials; }
+        std::vector<VulkanMaterial>& GetMaterials() { return materials; }
 
     private:
         VulkanDevice* vulkanDevice;

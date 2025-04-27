@@ -17,8 +17,6 @@ namespace Raytracing
     struct Vertex {
         glm::vec3 pos;
         glm::vec3 normal;
-        glm::vec3 tangent;
-        glm::vec3 bitangent;
         glm::vec3 color;
         glm::vec2 texCoord;
 
@@ -26,7 +24,6 @@ namespace Raytracing
         {
             return pos == other.pos
                    && normal == other.normal
-                   && tangent == other.tangent
                    && color == other.color
                    && texCoord == other.texCoord;
         }
@@ -44,9 +41,9 @@ namespace Raytracing
             return bindingDescription;
         }
 
-        static std::array<VkVertexInputAttributeDescription, 6> GetAttributeDescriptions()
+        static std::array<VkVertexInputAttributeDescription, 4> GetAttributeDescriptions()
         {
-            std::array<VkVertexInputAttributeDescription, 6> attributeDescriptions{};
+            std::array<VkVertexInputAttributeDescription, 4> attributeDescriptions{};
 
             // Vertex position
             attributeDescriptions[0].binding = 0;
@@ -72,21 +69,23 @@ namespace Raytracing
             attributeDescriptions[3].format = VK_FORMAT_R32G32B32_SFLOAT;
             attributeDescriptions[3].offset = offsetof(Vertex, normal);
 
-            // Vertex tangents
-            attributeDescriptions[4].binding = 0;
-            attributeDescriptions[4].location = 4;
-            attributeDescriptions[4].format = VK_FORMAT_R32G32B32_SFLOAT;
-            attributeDescriptions[4].offset = offsetof(Vertex, tangent);
-
-            // Vertex bitangent
-            attributeDescriptions[5].binding = 0;
-            attributeDescriptions[5].location = 5;
-            attributeDescriptions[5].format = VK_FORMAT_R32G32B32_SFLOAT;
-            attributeDescriptions[5].offset = offsetof(Vertex, bitangent);
-
             return attributeDescriptions;
         }
     };
+
+    namespace Primitives
+    {
+        const std::vector<uint32_t> RECTANGLE_INDICES = {
+            0, 1, 2, 2, 3, 0
+        };
+
+        const std::vector<Vertex> RECTANGLE_VERTICES = {
+            {{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}},
+            {{1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}},
+            {{1.0f, 1.0f, 0.0f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
+            {{-1.0f, 1.0f, 0.0f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
+        };
+    }
 }
 
 namespace std
