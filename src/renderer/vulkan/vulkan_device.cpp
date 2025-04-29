@@ -10,6 +10,7 @@
 #include "vulkan_pipeline.h"
 #include "vulkan_swapchain.h"
 #include "vulkan_renderpass.h"
+#include "vulkan_cube_map_renderer.h"
 #include "GLFW/glfw3.h"
 
 #define VMA_IMPLEMENTATION
@@ -39,6 +40,8 @@ namespace Raytracing
 
     VulkanDevice::~VulkanDevice()
     {
+        delete cubeMapRenderer;
+
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
         {
             vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
@@ -114,6 +117,17 @@ namespace Raytracing
     {
         // End render pass
         gBufferPass->End(commandBuffers[currentFrame]);
+
+        for (size_t i = 0; i < 6; i++)
+        {
+            cubeMapPass->Begin(commandBuffers[currentFrame], cubeMapFramebuffers[i], {512, 512});
+
+            SetViewportAndScissor();
+            DrawMeshlet(*cube, cubeMapRenderer->pipeline->GetPipeline(),
+                        cubeMapRenderer->pipeline->GetPipelineLayout(), cubeMapRenderer->descriptorSets[i]);
+
+            cubeMapPass->End(commandBuffers[currentFrame]);
+        }
 
         if (!presentSampler)
             presentSampler = ImageSamplerBuilder(this).Build();
@@ -214,6 +228,7 @@ namespace Raytracing
 #ifdef PLATFORM_MACOS
             device_extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
 #endif
+
         device_extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 
         if (ENABLE_VALIDATION_LAYERS)
@@ -248,6 +263,12 @@ namespace Raytracing
         CreateSyncObjects();
 
         screenRect = CreateScope<VulkanMeshlet>(this, Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
+        cube = CreateScope<VulkanMeshlet>(this, Primitives::CUBE_VERTICES, Primitives::CUBE_INDICES);
+        cubeMapRenderer = new VulkanCubeMapRenderer(this);
+
+        cubeMapTexture = ResourceManager::LoadHDRCubeMap(this, "resources/environment/kloppenheim_06_puresky_4k.hdr");
+        //cubeMapTexture = ResourceManager::LoadHDRCubeMap(this, "resources/environment/newport_loft.hdr");
+        cubeMapRenderer->Load(this, cubeMapTexture);
     }
 
     void VulkanDevice::CreateSwapchain()
@@ -293,6 +314,15 @@ namespace Raytracing
                     .AddAttachment(vulkanSwapChain->GetImageViews()[i])
                     .Build();
         }
+
+        for (size_t i = 0; i < 6; i++)
+        {
+            cubeMapFramebuffers[i] = VulkanFramebuffer::Builder(this)
+                .SetRenderpass(cubeMapPass)
+                .SetResolution(512, 512)
+                .AddAttachment(FramebufferAttachmentFormat::RGBA16F)
+                .Build();
+        }
     }
 
     void VulkanDevice::CreateRenderpass()
@@ -306,6 +336,10 @@ namespace Raytracing
                 .Build();
 
         lightingPass = VulkanRenderPass::Builder(this)
+                .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM)
+                .Build();
+
+        cubeMapPass = VulkanRenderPass::Builder(this)
                 .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM)
                 .Build();
     }

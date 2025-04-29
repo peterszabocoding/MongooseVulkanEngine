@@ -11,12 +11,15 @@ namespace Raytracing
     {
         ASSERT(data && size > 0, "Texture data is NULL or size is 0.")
 
-        image = ImageBuilder(device)
+        AllocatedImage allocatedImage = ImageBuilder(device)
                 .SetFormat(format)
                 .SetResolution(width, height)
                 .SetTiling(tiling)
                 .AddUsage(usage)
-                .Build(imageMemory);
+                .Build();
+
+        image = allocatedImage.image;
+        imageMemory = allocatedImage.imageMemory;
 
         imageView = ImageViewBuilder(device)
                 .SetFormat(format)
@@ -27,6 +30,7 @@ namespace Raytracing
 
         sampler = ImageSamplerBuilder(device)
                 .SetFilter(minFilter, magFilter)
+                .SetFormat(format)
                 .Build();
 
         const auto stagingBuffer = VulkanBuffer(device, size,

@@ -5,7 +5,26 @@
 
 namespace Raytracing
 {
-    VkImage ImageBuilder::Build(VkDeviceMemory& imageMemory)
+    namespace Utils
+    {
+        static VkBorderColor GetBorderColor(const VkFormat format)
+        {
+            switch (format)
+            {
+                case VK_FORMAT_R8G8B8A8_SRGB:
+                case VK_FORMAT_R8G8B8A8_UNORM:
+                    return VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+
+                case VK_FORMAT_R32G32B32A32_SFLOAT:
+                    return VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
+
+                default:
+                    return VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+            }
+        }
+    }
+
+    AllocatedImage ImageBuilder::Build()
     {
         VkImageCreateInfo imageInfo{};
         imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -14,7 +33,7 @@ namespace Raytracing
         imageInfo.extent.height = height;
         imageInfo.extent.depth = 1;
         imageInfo.mipLevels = 1;
-        imageInfo.arrayLayers = 1;
+        imageInfo.arrayLayers = arrayLayers;
         imageInfo.format = format;
         imageInfo.tiling = tiling;
         imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -22,12 +41,22 @@ namespace Raytracing
         imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
         imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-        VkImage image;
-        VK_CHECK_MSG(vkCreateImage(device->GetDevice(), &imageInfo, nullptr, &image), "Failed to create image.");
+        if (flags)
+            imageInfo.flags = flags;
 
-        imageMemory = VulkanUtils::AllocateImageMemory(device, image, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-        return image;
+        AllocatedImage allocatedImage;
+
+        VmaAllocationCreateInfo vmaallocInfo = {};
+        vmaallocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+
+        VK_CHECK_MSG(vmaCreateImage(device->GetVmaAllocator(), &imageInfo, &vmaallocInfo,
+                         &allocatedImage.image, &allocatedImage.allocation, &allocatedImage.allocationInfo),
+                     "Failed to create image.");
+
+        allocatedImage.imageMemory = allocatedImage.allocationInfo.deviceMemory;
+
+        return allocatedImage;
     }
 
     VkImageView ImageViewBuilder::Build() const
@@ -41,7 +70,7 @@ namespace Raytracing
         viewInfo.subresourceRange.baseMipLevel = 0;
         viewInfo.subresourceRange.levelCount = 1;
         viewInfo.subresourceRange.baseArrayLayer = 0;
-        viewInfo.subresourceRange.layerCount = 1;
+        viewInfo.subresourceRange.layerCount = layerCount;
 
         VkImageView imageView = VK_NULL_HANDLE;
         VK_CHECK_MSG(vkCreateImageView(device->GetDevice(), &viewInfo, nullptr, &imageView), "Failed to create texture image view.");
@@ -59,13 +88,13 @@ namespace Raytracing
         samplerInfo.magFilter = magFilter;
         samplerInfo.minFilter = minFilter;
 
-        samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        samplerInfo.addressModeU = addressMode;
+        samplerInfo.addressModeV = addressMode;
+        samplerInfo.addressModeW = addressMode;
 
         samplerInfo.anisotropyEnable = VK_TRUE;
         samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
-        samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+        samplerInfo.borderColor = Utils::GetBorderColor(format);
         samplerInfo.unnormalizedCoordinates = VK_FALSE;
         samplerInfo.compareEnable = VK_FALSE;
         samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;

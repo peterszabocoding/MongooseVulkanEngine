@@ -1,10 +1,18 @@
 #pragma once
 #include <vulkan/vulkan_core.h>
+#include "util/core.h"
+#include "vma/vk_mem_alloc.h"
 
 namespace Raytracing
 {
     class VulkanDevice;
-    class ImageViewBuilder;
+
+    struct AllocatedImage {
+        VkImage image;
+        VkDeviceMemory imageMemory;
+        VmaAllocation allocation;
+        VmaAllocationInfo allocationInfo;
+    };
 
     class ImageBuilder {
     public:
@@ -36,7 +44,20 @@ namespace Raytracing
             return *this;
         }
 
-        VkImage Build(VkDeviceMemory& imageMemory);
+        ImageBuilder& SetArrayLayers(int _arrayLayers)
+        {
+            ASSERT(_arrayLayers >= 1, "Array layers must be greater than 0.")
+            arrayLayers = _arrayLayers;
+            return *this;
+        }
+
+        ImageBuilder& SetFlags(VkImageCreateFlags _flags)
+        {
+            flags = _flags;
+            return *this;
+        }
+
+        AllocatedImage Build();
 
     private:
         VulkanDevice* device;
@@ -46,6 +67,8 @@ namespace Raytracing
         VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL;
         VkFormat format{};
         VkImageUsageFlags usage = 0;
+        VkImageCreateFlags flags = 0;
+        int arrayLayers = 1;
     };
 
     class ImageViewBuilder {
@@ -77,6 +100,12 @@ namespace Raytracing
             return *this;
         }
 
+        ImageViewBuilder& SetLayerCount(uint32_t _layerCount)
+        {
+            layerCount = _layerCount;
+            return *this;
+        }
+
         VkImageView Build() const;
 
     private:
@@ -85,6 +114,7 @@ namespace Raytracing
         VkFormat format{};
         VkImageViewType viewType = VK_IMAGE_VIEW_TYPE_2D;
         VkImageAspectFlags aspectFlags{};
+        uint32_t layerCount = 1;
     };
 
     class ImageSamplerBuilder {
@@ -99,11 +129,25 @@ namespace Raytracing
             return *this;
         }
 
+        ImageSamplerBuilder& SetFormat(const VkFormat _format)
+        {
+            format = _format;
+            return *this;
+        }
+
+        ImageSamplerBuilder& SetAddressMode(const VkSamplerAddressMode _addressMode)
+        {
+            addressMode = _addressMode;
+            return *this;
+        }
+
         VkSampler Build();
 
     private:
         VulkanDevice* device;
         VkFilter minFilter = VK_FILTER_LINEAR;
         VkFilter magFilter = VK_FILTER_LINEAR;
+        VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
+        VkSamplerAddressMode addressMode = VK_SAMPLER_ADDRESS_MODE_REPEAT;
     };
 }

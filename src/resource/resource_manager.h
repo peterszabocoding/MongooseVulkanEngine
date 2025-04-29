@@ -6,6 +6,7 @@
 
 namespace Raytracing
 {
+    class VulkanCubeMapTexture;
     class VulkanTexture;
     class VulkanDevice;
     class VulkanMesh;

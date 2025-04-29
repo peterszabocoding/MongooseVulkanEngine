@@ -14,6 +14,9 @@ namespace Raytracing {
         LOG_TRACE("Build pipelines");
         ResourceManager::LoadPipelines(vulkanDevice.get());
 
+        LOG_TRACE("Load skybox");
+        //auto cubeMapTexture = ResourceManager::LoadHDRCubeMap(vulkanDevice.get(), "resources/environment/aristea_wreck_puresky_4k.hdr");
+
         LOG_TRACE("Load scene");
         completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/sponza/Sponza.gltf");
         //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/gltf/multiple_spheres.gltf");

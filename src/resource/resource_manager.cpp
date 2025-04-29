@@ -15,10 +15,12 @@
 
 #include "loaders/gltf_loader.h"
 #include "loaders/obj_loader.h"
+#include "renderer/vulkan/vulkan_cube_map_texture.h"
 #include "renderer/vulkan/vulkan_mesh.h"
 #include "renderer/vulkan/vulkan_device.h"
 #include "renderer/vulkan/vulkan_pipeline.h"
 #include "renderer/vulkan/vulkan_texture.h"
+#include "renderer/vulkan/vulkan_cube_map_texture.h"
 #include "util/log.h"
 
 
@@ -51,11 +53,12 @@ namespace Raytracing
     {
         int width, height, bitDepth;
         float* pixels = nullptr;
-        stbi_set_flip_vertically_on_load(true);
-        pixels = stbi_loadf(hdrPath.c_str(), &width, &height, &bitDepth, 4);
-        stbi_set_flip_vertically_on_load(false);
 
-        uint64_t size = width * height * 3;
+        //stbi_set_flip_vertically_on_load(true);
+        pixels = stbi_loadf(hdrPath.c_str(), &width, &height, &bitDepth, 4);
+        //stbi_set_flip_vertically_on_load(false);
+
+        const uint64_t size = width * height * 4 * 4;
 
         if (!pixels)
             throw std::runtime_error("Failed to load HDR image.");
@@ -103,10 +106,10 @@ namespace Raytracing
                 .Build(vulkanDevice);
 
         const Ref<VulkanDescriptorSetLayout> screenDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice)
-                        .AddBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // Base Color
-                        .AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // Normal map
-                        .AddBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // Metallic/Roughness
-                        .Build();
+                .AddBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // Base Color
+                .AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // Normal map
+                .AddBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // Metallic/Roughness
+                .Build();
 
         renderToScreenPipeline = VulkanPipeline::Builder()
                 .SetShaders("shader/spv/screen.vert.spv", "shader/spv/screen.frag.spv")
@@ -172,13 +175,22 @@ namespace Raytracing
 
     Ref<VulkanTexture> ResourceManager::LoadHDRCubeMap(VulkanDevice* device, const std::string& hdrPath)
     {
+        VkImageFormatProperties properties;
+        vkGetPhysicalDeviceImageFormatProperties(device->GetPhysicalDevice(),
+                                                 VK_FORMAT_R32G32B32A32_SFLOAT,
+                                                 VK_IMAGE_TYPE_2D,
+                                                 VK_IMAGE_TILING_OPTIMAL,
+                                                 VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                                                 0,
+                                                 &properties);
+
+
         LOG_INFO("Load HDR: " + hdrPath);
         ImageResource imageResource = LoadHDRResource(hdrPath);
-
         Ref<VulkanTexture> texture = VulkanTexture::Builder()
                 .SetData(imageResource.data, imageResource.size)
                 .SetResolution(imageResource.width, imageResource.height)
-                .SetFormat(VK_FORMAT_R8G8B8A8_UNORM)
+                .SetFormat(VK_FORMAT_R32G32B32A32_SFLOAT)
                 .SetFilter(VK_FILTER_LINEAR, VK_FILTER_LINEAR)
                 .SetTiling(VK_IMAGE_TILING_OPTIMAL)
                 .AddUsage(VK_IMAGE_USAGE_TRANSFER_DST_BIT)

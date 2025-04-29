@@ -21,6 +21,7 @@ namespace Raytracing
     class VulkanSwapchain;
     class VulkanRenderPass;
     class VulkanMesh;
+    class VulkanCubeMapRenderer;
 
     constexpr int MAX_FRAMES_IN_FLIGHT = 1;
 
@@ -33,7 +34,8 @@ namespace Raytracing
             const Ref<Camera>& camera,
             const Transform& transform, const Ref<VulkanMesh>& mesh) const;
 
-        void DrawMeshlet(const VulkanMeshlet& meshlet, VkPipeline pipeline, VkPipelineLayout pipelineLayout, VkDescriptorSet descriptorSet) const;
+        void DrawMeshlet(const VulkanMeshlet& meshlet, VkPipeline pipeline, VkPipelineLayout pipelineLayout,
+                         VkDescriptorSet descriptorSet) const;
 
         void DrawImGui() const;
         bool BeginFrame();
@@ -86,6 +88,11 @@ namespace Raytracing
         VkResult SubmitDrawCommands(VkSemaphore* signalSemaphores) const;
         VkResult PresentFrame(uint32_t imageIndex, const VkSemaphore* signalSemaphores) const;
 
+    public:
+        Ref<VulkanTexture> cubeMapTexture;
+        VulkanCubeMapRenderer* cubeMapRenderer{};
+        std::array<Ref<VulkanFramebuffer>, 6> cubeMapFramebuffers;
+
     private:
         int viewportWidth{}, viewportHeight{};
         bool framebufferResized = false;
@@ -111,10 +118,12 @@ namespace Raytracing
 
         Ref<VulkanRenderPass> gBufferPass{};
         Ref<VulkanRenderPass> lightingPass{};
+        Ref<VulkanRenderPass> cubeMapPass{};
 
         Scope<VulkanSwapchain> vulkanSwapChain{};
         std::vector<Ref<VulkanFramebuffer>> gbufferFramebuffers;
         std::vector<Ref<VulkanFramebuffer>> presentFramebuffers;
+
 
         VmaAllocator vmaAllocator;
 
@@ -126,5 +135,6 @@ namespace Raytracing
         VkSampler presentSampler{};
 
         Scope<VulkanMeshlet> screenRect;
+        Scope<VulkanMeshlet> cube;
     };
 }

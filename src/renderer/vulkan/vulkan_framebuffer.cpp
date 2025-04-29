@@ -58,22 +58,21 @@ namespace Raytracing
 
     VulkanFramebuffer::Builder& VulkanFramebuffer::Builder::AddAttachment(FramebufferAttachmentFormat attachmentFormat)
     {
-        VkDeviceMemory imageMemory;
         const VkFormat format = Utils::ConvertFramebufferAttachmentFormat(attachmentFormat);
-        const VkImage image = ImageBuilder(device)
+        const AllocatedImage allocatedImage = ImageBuilder(device)
                 .SetResolution(width, height)
                 .SetTiling(VK_IMAGE_TILING_OPTIMAL)
                 .SetFormat(format)
                 .AddUsage(Utils::GetUsageFromFormat(attachmentFormat))
-                .Build(imageMemory);
+                .Build();
 
         const VkImageView imageView = ImageViewBuilder(device)
                 .SetFormat(format)
                 .SetAspectFlags(Utils::GetAspectFlagFromFormat(attachmentFormat))
-                .SetImage(image)
+                .SetImage(allocatedImage.image)
                 .Build();
 
-        attachments.push_back({image, imageView, imageMemory, format});
+        attachments.push_back({allocatedImage.image, imageView, allocatedImage.imageMemory, format});
 
         return *this;
     }
