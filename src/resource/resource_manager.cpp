@@ -77,94 +77,66 @@ namespace Raytracing
         stbi_image_free(image.data);
     }
 
-    auto ResourceManager::LoadPipeline(VulkanDevice* vulkanDevice, std::string shaderName, Ref<VulkanRenderPass> renderPass) -> void
-    {
-        const Ref<VulkanDescriptorSetLayout> mainDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice)
-                .AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
-                .AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // Base Color
-                .AddBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // Normal map
-                .AddBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // Metallic/Roughness
-                .Build();
-
-        mainPipeline = VulkanPipeline::Builder()
-                .SetShaders("shader/spv/" + shaderName + ".vert.spv", "shader/spv/" + shaderName + ".frag.spv")
-                .SetDescriptorSetLayout(mainDescriptorSetLayout)
-                .SetCullMode(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE)
-                .SetPolygonMode(VK_POLYGON_MODE_FILL)
-                .EnableDepthTest()
-                .DisableBlending()
-                .AddColorAttachment(ImageFormat::RGBA8_UNORM)
-                .AddColorAttachment(ImageFormat::RGBA8_UNORM)
-                .AddColorAttachment(ImageFormat::RGBA8_UNORM)
-                .AddColorAttachment(ImageFormat::RGBA8_UNORM)
-                .SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
-                .SetMultisampling(VK_SAMPLE_COUNT_1_BIT)
-                .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(SimplePushConstantData))
-                .Build(vulkanDevice);
-
-        const Ref<VulkanDescriptorSetLayout> screenDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice)
-                .AddBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // Base Color
-                .AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // Normal map
-                .AddBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // Metallic/Roughness
-                .Build();
-
-        renderToScreenPipeline = VulkanPipeline::Builder()
-                .SetShaders("shader/spv/screen.vert.spv", "shader/spv/screen.frag.spv")
-                .SetDescriptorSetLayout(screenDescriptorSetLayout)
-                .SetCullMode(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE)
-                .SetPolygonMode(VK_POLYGON_MODE_FILL)
-                .DisableDepthTest()
-                .DisableBlending()
-                .AddColorAttachment(ImageFormat::RGBA8_UNORM)
-                .SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
-                .SetMultisampling(VK_SAMPLE_COUNT_1_BIT)
-                .Build(vulkanDevice);
-    }
-
     void ResourceManager::LoadPipelines(VulkanDevice* vulkanDevice, Ref<VulkanRenderPass> renderPass)
     {
-        const Ref<VulkanDescriptorSetLayout> mainDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice)
-                .AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
-                .AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // Base Color
-                .AddBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // Normal map
-                .AddBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // Metallic/Roughness
-                .Build();
+        PipelineConfig geometryPipelineConfig; {
+            geometryPipelineConfig.vertexShaderPath = "shader/spv/gbuffer.vert.spv";
+            geometryPipelineConfig.fragmentShaderPath = "shader/spv/gbuffer.frag.spv";
 
-        mainPipeline = VulkanPipeline::Builder()
-                .SetShaders("shader/spv/gbuffer.vert.spv", "shader/spv/gbuffer.frag.spv")
-                .SetDescriptorSetLayout(mainDescriptorSetLayout)
-                .SetCullMode(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE)
-                .SetPolygonMode(VK_POLYGON_MODE_FILL)
-                .EnableDepthTest()
-                .DisableBlending()
-                .AddColorAttachment(ImageFormat::RGBA8_UNORM)
-                .AddColorAttachment(ImageFormat::RGBA8_UNORM)
-                .AddColorAttachment(ImageFormat::RGBA8_UNORM)
-                .AddColorAttachment(ImageFormat::RGBA8_UNORM)
-                .SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
-                .SetMultisampling(VK_SAMPLE_COUNT_1_BIT)
-                .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(SimplePushConstantData))
-                .SetRenderpass(renderPass)
-                .Build(vulkanDevice);
+            geometryPipelineConfig.cullMode = PipelineCullMode::Back;
+            geometryPipelineConfig.polygonMode = PipelinePolygonMode::Fill;
+            geometryPipelineConfig.frontFace = PipelineFrontFace::Counter_clockwise;
 
-        const Ref<VulkanDescriptorSetLayout> screenDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice)
-                .AddBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // Base Color
-                .AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // Normal map
-                .AddBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // Metallic/Roughness
-                .Build();
+            geometryPipelineConfig.bindings = {
+                {0, PipelineBindingType::UniformBuffer, PipelineShaderStage::FragmentShader},
+                {1, PipelineBindingType::TextureSampler, PipelineShaderStage::FragmentShader},
+                {2, PipelineBindingType::TextureSampler, PipelineShaderStage::FragmentShader},
+                {3, PipelineBindingType::TextureSampler, PipelineShaderStage::FragmentShader},
+            };
 
-        renderToScreenPipeline = VulkanPipeline::Builder()
-                .SetShaders("shader/spv/screen.vert.spv", "shader/spv/screen.frag.spv")
-                .SetDescriptorSetLayout(screenDescriptorSetLayout)
-                .SetCullMode(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE)
-                .SetPolygonMode(VK_POLYGON_MODE_FILL)
-                .DisableDepthTest()
-                .DisableBlending()
-                .AddColorAttachment(ImageFormat::RGBA8_UNORM)
-                .SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
-                .SetMultisampling(VK_SAMPLE_COUNT_1_BIT)
-                .SetRenderpass(renderPass)
-                .Build(vulkanDevice);
+            geometryPipelineConfig.colorAttachments = {
+                ImageFormat::RGBA8_UNORM,
+                ImageFormat::RGBA8_UNORM,
+                ImageFormat::RGBA8_UNORM,
+                ImageFormat::RGBA8_UNORM,
+            };
+
+            geometryPipelineConfig.disableBlending = true;
+            geometryPipelineConfig.enableDepthTest = true;
+            geometryPipelineConfig.depthAttachment = ImageFormat::DEPTH24_STENCIL8;
+
+            geometryPipelineConfig.renderPass = renderPass;
+
+            geometryPipelineConfig.pushConstantData.shaderStages = {PipelineShaderStage::VertexShader, PipelineShaderStage::FragmentShader};
+            geometryPipelineConfig.pushConstantData.offset = 0;
+            geometryPipelineConfig.pushConstantData.size = sizeof(SimplePushConstantData);
+        }
+        mainPipeline = VulkanPipeline::Builder().Build(vulkanDevice, geometryPipelineConfig);
+
+        PipelineConfig lightingPipelineConfig; {
+            lightingPipelineConfig.vertexShaderPath = "shader/spv/screen.vert.spv";
+            lightingPipelineConfig.fragmentShaderPath = "shader/spv/screen.frag.spv";
+
+            lightingPipelineConfig.cullMode = PipelineCullMode::Back;
+            lightingPipelineConfig.polygonMode = PipelinePolygonMode::Fill;
+            lightingPipelineConfig.frontFace = PipelineFrontFace::Clockwise;
+
+            lightingPipelineConfig.bindings = {
+                {0, PipelineBindingType::TextureSampler, PipelineShaderStage::FragmentShader},
+                {1, PipelineBindingType::TextureSampler, PipelineShaderStage::FragmentShader},
+                {2, PipelineBindingType::TextureSampler, PipelineShaderStage::FragmentShader},
+            };
+
+            lightingPipelineConfig.colorAttachments = {
+                ImageFormat::RGBA8_UNORM,
+            };
+
+            lightingPipelineConfig.disableBlending = true;
+            lightingPipelineConfig.enableDepthTest = false;
+
+            lightingPipelineConfig.renderPass = renderPass;
+        }
+        renderToScreenPipeline = VulkanPipeline::Builder().Build(vulkanDevice, lightingPipelineConfig);
     }
 
     Ref<VulkanMesh> ResourceManager::LoadMesh(VulkanDevice* device, const std::string& meshPath)

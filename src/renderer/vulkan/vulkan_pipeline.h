@@ -41,38 +41,72 @@ namespace Raytracing
     };
 
     enum class PipelineBindingType {
-        None = 0,
+        Unknown = 0,
         UniformBuffer = 1,
         TextureSampler = 2,
     };
 
-    enum class PipelineBindingStage {
-        None = 0,
-        VertexShader = 1,
-        FragmentShader = 2,
-        ComputeShader = 3,
-        GeometryShader = 4,
+    enum class PipelineShaderStage {
+        Unknown = 0,
+        VertexShader,
+        FragmentShader,
+        ComputeShader,
+        GeometryShader,
     };
 
     enum class PipelinePolygonMode {
-        None = 0,
-        Point = 1,
-        Line = 2,
-        Fill = 3,
+        Unknown = 0,
+        Point,
+        Line,
+        Fill,
+    };
+
+    enum class PipelineCullMode {
+        Unknown = 0,
+        Front,
+        Back,
+        Front_and_Back,
+    };
+
+    enum class PipelineFrontFace {
+        Counter_clockwise = 0,
+        Clockwise,
+    };
+
+    struct PipelinePushConstantData {
+        std::vector<PipelineShaderStage> shaderStages = {
+            PipelineShaderStage::Unknown
+        };
+        uint32_t offset = 0;
+        uint32_t size = 0;
     };
 
     struct PipelineBinding {
         uint32_t binding = 0;
-        PipelineBindingType type = PipelineBindingType::None;
-        PipelineBindingStage stage = PipelineBindingStage::None;
+        PipelineBindingType type = PipelineBindingType::Unknown;
+        PipelineShaderStage stage = PipelineShaderStage::Unknown;
     };
 
     struct PipelineConfig {
         std::string vertexShaderPath;
         std::string fragmentShaderPath;
+
         std::vector<PipelineBinding> bindings;
+        std::vector<ImageFormat> colorAttachments;
+        ImageFormat depthAttachment = ImageFormat::DEPTH24_STENCIL8;
+
         PipelinePolygonMode polygonMode = PipelinePolygonMode::Fill;
+        PipelineFrontFace frontFace = PipelineFrontFace::Counter_clockwise;
+        PipelineCullMode cullMode = PipelineCullMode::Back;
+
+        Ref<VulkanRenderPass> renderPass = VK_NULL_HANDLE;
+
+        PipelinePushConstantData pushConstantData{};
+
+        bool enableDepthTest = true;
+        bool disableBlending = true;
     };
+
 
     class VulkanPipeline {
     public:
@@ -96,6 +130,7 @@ namespace Raytracing
             Builder& SetRenderpass(Ref<VulkanRenderPass> _renderpass);
 
             Ref<VulkanPipeline> Build(VulkanDevice* vulkanDevice);
+            Ref<VulkanPipeline> Build(VulkanDevice* vulkanDevice, PipelineConfig& config);
 
         private:
             void clear();
@@ -117,7 +152,7 @@ namespace Raytracing
             std::vector<VkPushConstantRange> pushConstantRanges;
 
             VkPolygonMode polygonMode;
-            VkPrimitiveTopology topology;
+            VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
             VkCullModeFlags cullMode;
             VkFrontFace frontFace;
 

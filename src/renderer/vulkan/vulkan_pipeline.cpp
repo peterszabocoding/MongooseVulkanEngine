@@ -8,6 +8,95 @@
 
 namespace Raytracing
 {
+    namespace Utils
+    {
+        static VkPolygonMode ConvertPolygonMode(const PipelinePolygonMode polygonMode)
+        {
+            switch (polygonMode)
+            {
+                case PipelinePolygonMode::Point:
+                    return VK_POLYGON_MODE_POINT;
+
+                case PipelinePolygonMode::Line:
+                    return VK_POLYGON_MODE_LINE;
+
+                case PipelinePolygonMode::Fill:
+                    return VK_POLYGON_MODE_FILL;
+
+                default: ASSERT(false, "Unknown polygon mode");
+            }
+            return VK_POLYGON_MODE_MAX_ENUM;
+        }
+
+        static VkCullModeFlags ConvertCullMode(const PipelineCullMode cullMode)
+        {
+            switch (cullMode)
+            {
+                case PipelineCullMode::Front:
+                    return VK_CULL_MODE_FRONT_BIT;
+                case PipelineCullMode::Back:
+                    return VK_CULL_MODE_BACK_BIT;
+                case PipelineCullMode::Front_and_Back:
+                    return VK_CULL_MODE_FRONT_AND_BACK;
+
+                default:
+                    return VK_CULL_MODE_NONE;
+            }
+        }
+
+        static VkFrontFace ConvertFrontFace(const PipelineFrontFace frontFace)
+        {
+            switch (frontFace)
+            {
+                case PipelineFrontFace::Counter_clockwise:
+                    return VK_FRONT_FACE_COUNTER_CLOCKWISE;
+
+                case PipelineFrontFace::Clockwise:
+                    return VK_FRONT_FACE_CLOCKWISE;
+
+                default:
+                    return VK_FRONT_FACE_COUNTER_CLOCKWISE;
+            }
+        }
+
+        static VkDescriptorType ConvertDescriptorType(const PipelineBindingType type)
+        {
+            switch (type)
+            {
+                case PipelineBindingType::UniformBuffer:
+                    return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+                case PipelineBindingType::TextureSampler:
+                    return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+
+                default:
+                    ASSERT(false, "Unknown descriptor type");
+            }
+        }
+
+        static VkShaderStageFlagBits ConvertShaderStage(const PipelineShaderStage type)
+        {
+            switch (type)
+            {
+                case PipelineShaderStage::VertexShader:
+                    return VK_SHADER_STAGE_VERTEX_BIT;
+
+                case PipelineShaderStage::FragmentShader:
+                    return VK_SHADER_STAGE_FRAGMENT_BIT;
+
+                case PipelineShaderStage::GeometryShader:
+                    return VK_SHADER_STAGE_GEOMETRY_BIT;
+
+                case PipelineShaderStage::ComputeShader:
+                    return VK_SHADER_STAGE_COMPUTE_BIT;
+
+                default:
+                    ASSERT(false, "Unknown shader stage");
+            }
+
+            return VK_SHADER_STAGE_ALL;
+        }
+    }
+
     VulkanPipeline::~VulkanPipeline()
     {
         vkDestroyShaderModule(vulkanDevice->GetDevice(), params.vertexShaderModule, nullptr);
@@ -148,6 +237,61 @@ namespace Raytracing
         return CreateRef<VulkanPipeline>(vulkanDevice, params);
     }
 
+    Ref<VulkanPipeline> VulkanPipeline::Builder::Build(VulkanDevice* vulkanDevice, PipelineConfig& config)
+    {
+        // SPR-V Shader source
+        SetShaders(config.vertexShaderPath, config.fragmentShaderPath);
+
+        // Various flags
+        SetPolygonMode(Utils::ConvertPolygonMode(config.polygonMode));
+        SetCullMode(Utils::ConvertCullMode(config.cullMode), Utils::ConvertFrontFace(config.frontFace));
+        SetMultisampling();
+        SetRenderpass(config.renderPass);
+        if (config.disableBlending) DisableBlending();
+
+        // Depth testing
+        if (config.enableDepthTest)
+        {
+            EnableDepthTest();
+            SetDepthFormat(config.depthAttachment);
+        } else
+        {
+            DisableDepthTest();
+        }
+
+        // Descriptor Set Layout
+        auto descriptorSetLayoutBuilder = VulkanDescriptorSetLayout::Builder(vulkanDevice);
+        for (auto& [binding, type, stage]: config.bindings)
+        {
+            descriptorSetLayoutBuilder.AddBinding(binding,
+                                                  Utils::ConvertDescriptorType(type),
+                                                  Utils::ConvertShaderStage(stage));
+        }
+        SetDescriptorSetLayout(descriptorSetLayoutBuilder.Build());
+
+        // Color attachments
+        for (const auto& colorAttachment: config.colorAttachments)
+            AddColorAttachment(colorAttachment);
+
+
+        // Optional push constant
+        if (config.pushConstantData.size > 0)
+        {
+            VkShaderStageFlags stageFlags = 0;
+
+            for (auto flag: config.pushConstantData.shaderStages)
+            {
+                stageFlags |= Utils::ConvertShaderStage(flag);
+            }
+
+            AddPushConstant(stageFlags,
+                            config.pushConstantData.offset,
+                            config.pushConstantData.size);
+        }
+
+        return Build(vulkanDevice);
+    }
+
     VulkanPipeline::Builder& VulkanPipeline::Builder::SetShaders(const std::string& _vertexShaderPath,
                                                                  const std::string& _fragmentShaderPath)
     {
@@ -156,26 +300,26 @@ namespace Raytracing
         return *this;
     }
 
-    VulkanPipeline::Builder& VulkanPipeline::Builder::SetInputTopology(VkPrimitiveTopology _topology)
+    VulkanPipeline::Builder& VulkanPipeline::Builder::SetInputTopology(const VkPrimitiveTopology _topology)
     {
         topology = _topology;
         return *this;
     }
 
-    VulkanPipeline::Builder& VulkanPipeline::Builder::SetPolygonMode(VkPolygonMode _polygonMode)
+    VulkanPipeline::Builder& VulkanPipeline::Builder::SetPolygonMode(const VkPolygonMode _polygonMode)
     {
         polygonMode = _polygonMode;
         return *this;
     }
 
-    VulkanPipeline::Builder& VulkanPipeline::Builder::SetCullMode(VkCullModeFlags _cullMode, VkFrontFace _frontFace)
+    VulkanPipeline::Builder& VulkanPipeline::Builder::SetCullMode(const VkCullModeFlags _cullMode, const VkFrontFace _frontFace)
     {
         cullMode = _cullMode;
         frontFace = _frontFace;
         return *this;
     }
 
-    VulkanPipeline::Builder& VulkanPipeline::Builder::SetMultisampling(VkSampleCountFlagBits sampleCountFlagBits)
+    VulkanPipeline::Builder& VulkanPipeline::Builder::SetMultisampling(const VkSampleCountFlagBits sampleCountFlagBits)
     {
         multisampling.sampleShadingEnable = VK_FALSE;
         multisampling.rasterizationSamples = sampleCountFlagBits;
@@ -198,20 +342,21 @@ namespace Raytracing
         return *this;
     }
 
-    VulkanPipeline::Builder& VulkanPipeline::Builder::AddColorAttachment(ImageFormat format)
+    VulkanPipeline::Builder& VulkanPipeline::Builder::AddColorAttachment(const ImageFormat format)
     {
         colorAttachmentFormats.push_back(VulkanUtils::ConvertImageFormat(format));
         colorBlendAttachments.push_back({});
         return *this;
     }
 
-    VulkanPipeline::Builder& VulkanPipeline::Builder::SetDepthFormat(ImageFormat format)
+    VulkanPipeline::Builder& VulkanPipeline::Builder::SetDepthFormat(const ImageFormat format)
     {
         renderInfo.depthAttachmentFormat = VulkanUtils::ConvertImageFormat(format);
         return *this;
     }
 
-    VulkanPipeline::Builder& VulkanPipeline::Builder::AddPushConstant(VkShaderStageFlags stageFlags, uint32_t offset, uint32_t size)
+    VulkanPipeline::Builder& VulkanPipeline::Builder::AddPushConstant(const VkShaderStageFlags stageFlags, const uint32_t offset,
+                                                                      const uint32_t size)
     {
         VkPushConstantRange pushConstantRange{};
         pushConstantRange.stageFlags = stageFlags;

@@ -24,7 +24,6 @@ namespace Raytracing
 
         static void ReleaseImage(const ImageResource& image);
 
-        static void LoadPipeline(VulkanDevice* vulkanDevice, std::string shaderName, Ref<VulkanRenderPass> renderPass);
         static void LoadPipelines(VulkanDevice* vulkanDevice, Ref<VulkanRenderPass> renderPass);
         static Ref<VulkanPipeline> GetMainPipeline() { return mainPipeline; }
 
