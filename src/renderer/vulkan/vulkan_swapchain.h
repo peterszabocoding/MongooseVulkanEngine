@@ -1,18 +1,11 @@
 #pragma once
 
 #include "vulkan_device.h"
-#include "vulkan_image.h"
 
 namespace Raytracing
 {
     class ImageViewBuilder;
     class VulkanFramebuffer;
-
-    struct SwapChainSupportDetails {
-        VkSurfaceCapabilitiesKHR capabilities;
-        std::vector<VkSurfaceFormatKHR> formats;
-        std::vector<VkPresentModeKHR> presentModes;
-    };
 
     class VulkanSwapchain {
     public:
@@ -23,7 +16,7 @@ namespace Raytracing
 
             Builder& SetResolution(int width, int height);
             Builder& SetPresentMode(VkPresentModeKHR presentMode);
-            Builder& SetImageFormat(VkFormat imageFormat);
+            Builder& SetImageFormat(VkFormat _imageFormat);
             Builder& SetImageColorSpace(VkColorSpaceKHR colorSpace);
             Builder& SetImageCount(uint32_t imageCount);
 

@@ -55,7 +55,7 @@ namespace Raytracing
         [[nodiscard]] VulkanDescriptorPool& GetShaderDescriptorPool() const { return *shaderDescriptorPool.get(); }
         [[nodiscard]] VkQueue GetGraphicsQueue() const { return graphicsQueue; }
         [[nodiscard]] VkQueue GetPresentQueue() const { return presentQueue; }
-        [[nodiscard]] VkRenderPass GetRenderPass() const { return gBufferPass->Get(); }
+        [[nodiscard]] Ref<VulkanRenderPass> GetRenderPass() const { return gBufferPass; }
         [[nodiscard]] Ref<VulkanRenderPass> GetVulkanRenderPass() const { return gBufferPass; }
         [[nodiscard]] VkCommandPool GetCommandPool() const { return commandPool; }
         [[nodiscard]] VkPhysicalDeviceProperties GetDeviceProperties() const { return physicalDeviceProperties; }

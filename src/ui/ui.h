@@ -47,8 +47,8 @@ namespace Raytracing
         virtual void Draw() override
         {
             float cameraFov = camera->GetFOV();;
-            Utils::DrawFloatControl("FOV", cameraFov, 0.0f, 180.0f, 0.1f, 45.0f, 150.0f);
-            Utils::DrawFloatControl("Move speed", controller.movementSpeed, 0.0f, 10.0f, 0.001f, 1.0f, 150.0f);
+            ImageUtils::DrawFloatControl("FOV", cameraFov, 0.0f, 180.0f, 0.1f, 45.0f, 150.0f);
+            ImageUtils::DrawFloatControl("Move speed", controller.movementSpeed, 0.0f, 10.0f, 0.001f, 1.0f, 150.0f);
 
             camera->SetFOV(cameraFov);
         }

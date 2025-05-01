@@ -9,6 +9,9 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "vulkan_renderpass.h"
+#include "resource/resource.h"
+
 namespace Raytracing
 {
     class VulkanDevice;
@@ -37,6 +40,40 @@ namespace Raytracing
         Ref<VulkanDescriptorSetLayout> descriptorSetLayout = VK_NULL_HANDLE;
     };
 
+    enum class PipelineBindingType {
+        None = 0,
+        UniformBuffer = 1,
+        TextureSampler = 2,
+    };
+
+    enum class PipelineBindingStage {
+        None = 0,
+        VertexShader = 1,
+        FragmentShader = 2,
+        ComputeShader = 3,
+        GeometryShader = 4,
+    };
+
+    enum class PipelinePolygonMode {
+        None = 0,
+        Point = 1,
+        Line = 2,
+        Fill = 3,
+    };
+
+    struct PipelineBinding {
+        uint32_t binding = 0;
+        PipelineBindingType type = PipelineBindingType::None;
+        PipelineBindingStage stage = PipelineBindingStage::None;
+    };
+
+    struct PipelineConfig {
+        std::string vertexShaderPath;
+        std::string fragmentShaderPath;
+        std::vector<PipelineBinding> bindings;
+        PipelinePolygonMode polygonMode = PipelinePolygonMode::Fill;
+    };
+
     class VulkanPipeline {
     public:
         class Builder {
@@ -51,11 +88,12 @@ namespace Raytracing
             Builder& SetMultisampling(VkSampleCountFlagBits sampleCountFlagBits = VK_SAMPLE_COUNT_1_BIT);
             Builder& SetDescriptorSetLayout(Ref<VulkanDescriptorSetLayout> _descriptorSetLayout);
             Builder& DisableBlending();
-            Builder& AddColorAttachment(VkFormat format);
-            Builder& SetDepthFormat(VkFormat format);
+            Builder& AddColorAttachment(ImageFormat format);
+            Builder& SetDepthFormat(ImageFormat format);
             Builder& EnableDepthTest();
             Builder& DisableDepthTest();
             Builder& AddPushConstant(VkShaderStageFlags stageFlags, uint32_t offset, uint32_t size);
+            Builder& SetRenderpass(Ref<VulkanRenderPass> _renderpass);
 
             Ref<VulkanPipeline> Build(VulkanDevice* vulkanDevice);
 
@@ -86,6 +124,8 @@ namespace Raytracing
             Ref<VulkanDescriptorSetLayout> descriptorSetLayout;
 
             bool disableBlending = false;
+
+            Ref<VulkanRenderPass> renderpass;
         };
 
     public:

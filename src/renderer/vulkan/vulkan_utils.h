@@ -8,30 +8,30 @@
 #include <optional>
 #include <vulkan/vulkan_core.h>
 
-#include "vulkan_device.h"
-#include "vulkan_swapchain.h"
+#include "util/core.h"
+#include "resource/resource.h"
 
-#define VK_CHECK_MSG(x,msg)                                                     \
-do                                                                          \
-    {                                                                       \
-        VkResult err = x;                                                   \
-        if (err)                                                            \
-        {                                                                   \
-            std::cout << msg << std::endl;                                  \
+#define VK_CHECK_MSG(x,msg)                                                                                 \
+do                                                                                                          \
+    {                                                                                                       \
+        VkResult err = x;                                                                                   \
+        if (err)                                                                                            \
+        {                                                                                                   \
+            std::cout << msg << std::endl;                                                                  \
             std::cout <<"Detected Vulkan error: " << VulkanUtils::GetVkResultString(err) << std::endl;      \
-            abort();                                                        \
-        }                                                                   \
+            abort();                                                                                        \
+        }                                                                                                   \
 } while (0)
 
-#define VK_CHECK(x)                                                         \
-do                                                                          \
-    {                                                                       \
-        VkResult err = x;                                                   \
-        if (err)                                                            \
-        {                                                                   \
+#define VK_CHECK(x)                                                                                         \
+do                                                                                                          \
+    {                                                                                                       \
+        VkResult err = x;                                                                                   \
+        if (err)                                                                                            \
+        {                                                                                                   \
             std::cout <<"Detected Vulkan error: " << VulkanUtils::GetVkResultString(err) << std::endl;      \
-            abort();                                                        \
-        }                                                                   \
+            abort();                                                                                        \
+        }                                                                                                   \
 } while (0)
 
 namespace Raytracing::VulkanUtils
@@ -43,6 +43,12 @@ namespace Raytracing::VulkanUtils
         bool IsComplete() const { return graphicsFamily.has_value(); }
     };
 
+    struct SwapChainSupportDetails {
+        VkSurfaceCapabilitiesKHR capabilities;
+        std::vector<VkSurfaceFormatKHR> formats;
+        std::vector<VkPresentModeKHR> presentModes;
+    };
+
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
         VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
         VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -52,6 +58,100 @@ namespace Raytracing::VulkanUtils
         std::cerr << "validation layer: " << pCallbackData->pMessage << '\n';
         return VK_FALSE;
     }
+
+    static VkFormat ConvertImageFormat(ImageFormat imageFormat)
+    {
+        switch (imageFormat)
+        {
+            case ImageFormat::RGB8_UNORM:
+                return VK_FORMAT_R8G8B8_UNORM;
+
+            case ImageFormat::RGB8_SRGB:
+                return VK_FORMAT_R8G8B8_SRGB;
+
+            case ImageFormat::RGBA8_UNORM:
+                return VK_FORMAT_R8G8B8A8_UNORM;
+
+            case ImageFormat::RGBA8_SRGB:
+                return VK_FORMAT_R8G8B8A8_SRGB;
+
+            case ImageFormat::RGB16_UNORM:
+                return VK_FORMAT_R16G16B16_UNORM;
+
+            case ImageFormat::RGB16_SFLOAT:
+                return VK_FORMAT_R16G16B16_SFLOAT;
+
+            case ImageFormat::RGBA16_UNORM:
+                return VK_FORMAT_R16G16B16A16_UNORM;
+
+            case ImageFormat::RGBA16_SFLOAT:
+                return VK_FORMAT_R16G16B16A16_SFLOAT;
+
+            case ImageFormat::RGB32_SFLOAT:
+                return VK_FORMAT_R32G32B32_SFLOAT;
+
+            case ImageFormat::RGBA32_SFLOAT:
+                return VK_FORMAT_R32G32B32A32_SFLOAT;
+
+            case ImageFormat::DEPTH24_STENCIL8:
+                return VK_FORMAT_D24_UNORM_S8_UINT;
+
+            case ImageFormat::DEPTH32:
+                return VK_FORMAT_D32_SFLOAT;
+
+            default:
+                ASSERT(false, "Unknown image format");
+        }
+        return VK_FORMAT_UNDEFINED;
+    }
+
+
+    static ImageFormat ConvertVulkanFormat(VkFormat format)
+    {
+        switch (format)
+        {
+            case VK_FORMAT_R8G8B8_UNORM:
+                return ImageFormat::RGB8_UNORM;
+
+            case VK_FORMAT_R8G8B8_SRGB:
+                return ImageFormat::RGB8_SRGB;
+
+            case VK_FORMAT_R8G8B8A8_UNORM:
+                return ImageFormat::RGBA8_UNORM;
+
+            case VK_FORMAT_R8G8B8A8_SRGB:
+                return ImageFormat::RGBA8_SRGB;
+
+            case VK_FORMAT_R16G16B16_UNORM:
+                return ImageFormat::RGB16_UNORM;
+
+            case VK_FORMAT_R16G16B16_SFLOAT:
+                return ImageFormat::RGB16_SFLOAT;
+
+            case VK_FORMAT_R16G16B16A16_UNORM:
+                return ImageFormat::RGBA16_UNORM;
+
+            case VK_FORMAT_R16G16B16A16_SFLOAT:
+                return ImageFormat::RGBA16_SFLOAT;
+
+            case VK_FORMAT_R32G32B32_SFLOAT:
+                return ImageFormat::RGB32_SFLOAT;
+
+            case VK_FORMAT_R32G32B32A32_SFLOAT:
+                return ImageFormat::RGBA32_SFLOAT;
+
+            case VK_FORMAT_D24_UNORM_S8_UINT:
+                return ImageFormat::DEPTH24_STENCIL8;
+
+            case VK_FORMAT_D32_SFLOAT:
+                return ImageFormat::DEPTH32;
+
+            default:
+                ASSERT(false, "Unknown image format");
+        }
+        return ImageFormat::Unknown;
+    }
+
 
     static std::string GetVkResultString(const VkResult vulkan_result)
     {
@@ -324,8 +424,9 @@ namespace Raytracing::VulkanUtils
         return imageCount;
     }
 
-    static void TransitionImageLayout(const VkCommandBuffer commandBuffer, VkImage image, VkImageAspectFlags aspectFlags, const VkImageLayout oldLayout,
-                                                   const VkImageLayout newLayout)
+    static void TransitionImageLayout(const VkCommandBuffer commandBuffer, VkImage image, VkImageAspectFlags aspectFlags,
+                                      const VkImageLayout oldLayout,
+                                      const VkImageLayout newLayout)
     {
         VkImageMemoryBarrier barrier{};
         barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -367,7 +468,8 @@ namespace Raytracing::VulkanUtils
         vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
     }
 
-    static void CopyBufferToImage(const VkCommandBuffer commandBuffer, VkImage image, uint32_t width, uint32_t height, const VkBuffer buffer)
+    static void CopyBufferToImage(const VkCommandBuffer commandBuffer, VkImage image, uint32_t width, uint32_t height,
+                                  const VkBuffer buffer)
     {
         VkBufferImageCopy region{};
         region.bufferOffset = 0;
@@ -392,19 +494,20 @@ namespace Raytracing::VulkanUtils
         );
     }
 
-    static VkDeviceMemory AllocateImageMemory(const VulkanDevice* device, const VkImage image, const VkMemoryPropertyFlags properties)
+    static VkDeviceMemory AllocateImageMemory(const VkDevice device, const VkPhysicalDevice physicalDevice, const VkImage image,
+                                              const VkMemoryPropertyFlags properties)
     {
         VkMemoryRequirements memRequirements;
-        vkGetImageMemoryRequirements(device->GetDevice(), image, &memRequirements);
+        vkGetImageMemoryRequirements(device, image, &memRequirements);
 
         VkMemoryAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
         allocInfo.allocationSize = memRequirements.size;
-        allocInfo.memoryTypeIndex = FindMemoryType(device->GetPhysicalDevice(), memRequirements.memoryTypeBits, properties);
+        allocInfo.memoryTypeIndex = FindMemoryType(physicalDevice, memRequirements.memoryTypeBits, properties);
 
         VkDeviceMemory imageMemory;
-        VK_CHECK_MSG(vkAllocateMemory(device->GetDevice(), &allocInfo, nullptr, &imageMemory), "Failed to allocate image memory.");
-        vkBindImageMemory(device->GetDevice(), image, imageMemory, 0);
+        VK_CHECK_MSG(vkAllocateMemory(device, &allocInfo, nullptr, &imageMemory), "Failed to allocate image memory.");
+        vkBindImageMemory(device, image, imageMemory, 0);
 
         return imageMemory;
     }

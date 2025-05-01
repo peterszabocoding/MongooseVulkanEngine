@@ -124,7 +124,7 @@ namespace Raytracing
         pipelineInfo.pColorBlendState = &color_blending;
         pipelineInfo.pDynamicState = &dynamicState;
         pipelineInfo.layout = pipelineLayout;
-        pipelineInfo.renderPass = vulkanDevice->GetRenderPass();
+        pipelineInfo.renderPass = renderpass->Get();
         pipelineInfo.subpass = 0;
         pipelineInfo.pDepthStencilState = &depthStencil;
         pipelineInfo.pNext = &renderInfo;
@@ -198,16 +198,16 @@ namespace Raytracing
         return *this;
     }
 
-    VulkanPipeline::Builder& VulkanPipeline::Builder::AddColorAttachment(VkFormat format)
+    VulkanPipeline::Builder& VulkanPipeline::Builder::AddColorAttachment(ImageFormat format)
     {
-        colorAttachmentFormats.push_back(format);
+        colorAttachmentFormats.push_back(VulkanUtils::ConvertImageFormat(format));
         colorBlendAttachments.push_back({});
         return *this;
     }
 
-    VulkanPipeline::Builder& VulkanPipeline::Builder::SetDepthFormat(VkFormat format)
+    VulkanPipeline::Builder& VulkanPipeline::Builder::SetDepthFormat(ImageFormat format)
     {
-        renderInfo.depthAttachmentFormat = format;
+        renderInfo.depthAttachmentFormat = VulkanUtils::ConvertImageFormat(format);
         return *this;
     }
 
@@ -219,6 +219,12 @@ namespace Raytracing
         pushConstantRange.size = size;
 
         pushConstantRanges.push_back(pushConstantRange);
+        return *this;
+    }
+
+    VulkanPipeline::Builder& VulkanPipeline::Builder::SetRenderpass(Ref<VulkanRenderPass> _renderpass)
+    {
+        renderpass = _renderpass;
         return *this;
     }
 

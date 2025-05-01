@@ -29,7 +29,7 @@ namespace Raytracing
                 return *this;
             }
 
-            Builder& SetFormat(const VkFormat _format)
+            Builder& SetFormat(const ImageFormat _format)
             {
                 format = _format;
                 return *this;
@@ -76,7 +76,7 @@ namespace Raytracing
             VkFilter minFilter = VK_FILTER_LINEAR;
             VkFilter magFilter = VK_FILTER_LINEAR;
             VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL;
-            VkFormat format{};
+            ImageFormat format = ImageFormat::Unknown;
             VkImageUsageFlags usage = 0;
             VkImageAspectFlags aspectFlags = 0;
 

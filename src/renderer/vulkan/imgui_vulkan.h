@@ -3,7 +3,7 @@
 
 namespace Raytracing
 {
-    namespace Utils
+    namespace ImageUtils
     {
         void DrawFloatControl(const std::string& label, float& values, float min, float max, float steps, float resetValue,
                               float columnWidth);

@@ -3,24 +3,29 @@
 #include <string>
 
 namespace Raytracing {
-    enum class ImageFormat
-    {
-        None = 0,
-        RED8UN,
-        RED8UI,
-        RED16UI,
-        RED32UI,
-        RED32F,
-        RG8,
-        RG16F,
-        RG32F,
-        RGB,
-        RGBA,
-        RGBA16F,
-        RGBA32F,
-        B10R11G11UF,
-        SRGB,
+
+    enum class ImageFormat {
+        Unknown = 0,
+
+        RGB8_UNORM,
+        RGB8_SRGB,
+
+        RGB16_UNORM,
+        RGB16_SFLOAT,
+
+        RGBA8_UNORM,
+        RGBA8_SRGB,
+
+        RGBA16_UNORM,
+        RGBA16_SFLOAT,
+
+        RGB32_SFLOAT,
+        RGBA32_SFLOAT,
+
+        DEPTH24_STENCIL8,
+        DEPTH32,
     };
+
 
     struct ImageResource {
         std::string path = "";
@@ -28,7 +33,7 @@ namespace Raytracing {
         uint64_t size = 0;
         uint32_t width = 0;
         uint32_t height = 0;
-        ImageFormat format = ImageFormat::None;
+        ImageFormat format = ImageFormat::Unknown;
     };
 
     struct TextureResource {
@@ -37,6 +42,6 @@ namespace Raytracing {
         uint64_t size = 0;
         uint32_t width = 0;
         uint32_t height = 0;
-        ImageFormat format = ImageFormat::None;
+        ImageFormat format = ImageFormat::Unknown;
     };
 }

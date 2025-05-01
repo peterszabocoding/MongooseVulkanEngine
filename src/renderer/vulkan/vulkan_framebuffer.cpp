@@ -8,42 +8,19 @@
 
 namespace Raytracing
 {
-    namespace Utils
+    namespace ImageUtils
     {
-        VkFormat ConvertFramebufferAttachmentFormat(const FramebufferAttachmentFormat format)
+        VkImageAspectFlagBits GetAspectFlagFromFormat(ImageFormat format)
         {
-            switch (format)
-            {
-                case FramebufferAttachmentFormat::RGBA8:
-                    return VK_FORMAT_R8G8B8A8_UNORM;
-                case FramebufferAttachmentFormat::RGB8:
-                    return VK_FORMAT_R8G8B8_UNORM;
-                case FramebufferAttachmentFormat::RGBA16F:
-                    return VK_FORMAT_R16G16B16A16_UNORM;
-                case FramebufferAttachmentFormat::RGBA32F:
-                    return VK_FORMAT_R32G32B32A32_SINT;
-
-                case FramebufferAttachmentFormat::DEPTH32:
-                    return VK_FORMAT_D32_SFLOAT;
-                case FramebufferAttachmentFormat::DEPTH24_STENCIL8:
-                    return VK_FORMAT_D24_UNORM_S8_UINT;
-
-                default:
-                    return VK_FORMAT_UNDEFINED;
-            }
-        }
-
-        VkImageAspectFlagBits GetAspectFlagFromFormat(FramebufferAttachmentFormat format)
-        {
-            if (format == FramebufferAttachmentFormat::DEPTH24_STENCIL8 || format == FramebufferAttachmentFormat::DEPTH32)
+            if (format == ImageFormat::DEPTH24_STENCIL8 || format == ImageFormat::DEPTH32)
                 return VK_IMAGE_ASPECT_DEPTH_BIT;
 
             return VK_IMAGE_ASPECT_COLOR_BIT;
         }
 
-        VkImageUsageFlags GetUsageFromFormat(FramebufferAttachmentFormat format)
+        VkImageUsageFlags GetUsageFromFormat(ImageFormat format)
         {
-            if (format == FramebufferAttachmentFormat::DEPTH24_STENCIL8 || format == FramebufferAttachmentFormat::DEPTH32)
+            if (format == ImageFormat::DEPTH24_STENCIL8 || format == ImageFormat::DEPTH32)
                 return VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
             return VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
@@ -56,23 +33,27 @@ namespace Raytracing
         return *this;
     }
 
-    VulkanFramebuffer::Builder& VulkanFramebuffer::Builder::AddAttachment(FramebufferAttachmentFormat attachmentFormat)
+    VulkanFramebuffer::Builder& VulkanFramebuffer::Builder::AddAttachment(ImageFormat attachmentFormat)
     {
-        const VkFormat format = Utils::ConvertFramebufferAttachmentFormat(attachmentFormat);
         const AllocatedImage allocatedImage = ImageBuilder(device)
                 .SetResolution(width, height)
                 .SetTiling(VK_IMAGE_TILING_OPTIMAL)
-                .SetFormat(format)
-                .AddUsage(Utils::GetUsageFromFormat(attachmentFormat))
+                .SetFormat(attachmentFormat)
+                .AddUsage(ImageUtils::GetUsageFromFormat(attachmentFormat))
                 .Build();
 
         const VkImageView imageView = ImageViewBuilder(device)
-                .SetFormat(format)
-                .SetAspectFlags(Utils::GetAspectFlagFromFormat(attachmentFormat))
+                .SetFormat(attachmentFormat)
+                .SetAspectFlags(ImageUtils::GetAspectFlagFromFormat(attachmentFormat))
                 .SetImage(allocatedImage.image)
                 .Build();
 
-        attachments.push_back({allocatedImage.image, imageView, allocatedImage.imageMemory, format});
+        attachments.push_back({
+            allocatedImage.image,
+            imageView,
+            allocatedImage.imageMemory,
+            VulkanUtils::ConvertImageFormat(attachmentFormat)
+        });
 
         return *this;
     }

@@ -2,17 +2,18 @@
 #include "resource/resource_manager.h"
 #include "vulkan_pipeline.h"
 #include "vulkan_swapchain.h"
-#include "renderer/mesh.h"
+#include "renderer/vulkan/vulkan_device.h"
 #include "util/log.h"
 
-namespace Raytracing {
-
-    void VulkanRenderer::Init(const int width, const int height) {
+namespace Raytracing
+{
+    void VulkanRenderer::Init(const int width, const int height)
+    {
         LOG_TRACE("VulkanRenderer::Init()");
         vulkanDevice = CreateScope<VulkanDevice>(width, height, glfwWindow);
 
         LOG_TRACE("Build pipelines");
-        ResourceManager::LoadPipelines(vulkanDevice.get());
+        ResourceManager::LoadPipelines(vulkanDevice.get(), vulkanDevice->GetRenderPass());
 
         LOG_TRACE("Load skybox");
         //auto cubeMapTexture = ResourceManager::LoadHDRCubeMap(vulkanDevice.get(), "resources/environment/aristea_wreck_puresky_4k.hdr");
@@ -25,7 +26,8 @@ namespace Raytracing {
         transform.m_Position = glm::vec3(0.0f, 0.0f, -1.0f);
     }
 
-    void VulkanRenderer::DrawFrame(float deltaTime, Ref<Camera> camera) {
+    void VulkanRenderer::DrawFrame(float deltaTime, Ref<Camera> camera)
+    {
         const bool result = vulkanDevice->BeginFrame();
         if (!result) return;
 
@@ -38,11 +40,13 @@ namespace Raytracing {
         vulkanDevice->EndFrame();
     }
 
-    void VulkanRenderer::IdleWait() {
+    void VulkanRenderer::IdleWait()
+    {
         vkDeviceWaitIdle(vulkanDevice->GetDevice());
     }
 
-    void VulkanRenderer::Resize(const int width, const int height) {
+    void VulkanRenderer::Resize(const int width, const int height)
+    {
         Renderer::Resize(width, height);
         vulkanDevice->ResizeFramebuffer(width, height);
     }

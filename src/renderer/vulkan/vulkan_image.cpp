@@ -5,7 +5,7 @@
 
 namespace Raytracing
 {
-    namespace Utils
+    namespace ImageUtils
     {
         static VkBorderColor GetBorderColor(const VkFormat format)
         {
@@ -94,7 +94,7 @@ namespace Raytracing
 
         samplerInfo.anisotropyEnable = VK_TRUE;
         samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
-        samplerInfo.borderColor = Utils::GetBorderColor(format);
+        samplerInfo.borderColor = ImageUtils::GetBorderColor(format);
         samplerInfo.unnormalizedCoordinates = VK_FALSE;
         samplerInfo.compareEnable = VK_FALSE;
         samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;

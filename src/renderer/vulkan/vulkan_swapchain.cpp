@@ -10,7 +10,7 @@
 
 namespace Raytracing
 {
-    namespace Utils
+    namespace ImageUtils
     {
         VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, int width, int height)
         {
@@ -69,11 +69,11 @@ namespace Raytracing
 
     Scope<VulkanSwapchain> VulkanSwapchain::Builder::Build()
     {
-        const SwapChainSupportDetails swapChainSupport = VulkanUtils::QuerySwapChainSupport(
+        const VulkanUtils::SwapChainSupportDetails swapChainSupport = VulkanUtils::QuerySwapChainSupport(
             device->GetPhysicalDevice(),
             device->GetSurface());
 
-        const VkExtent2D extent = Utils::ChooseSwapExtent(swapChainSupport.capabilities, width, height);
+        const VkExtent2D extent = ImageUtils::ChooseSwapExtent(swapChainSupport.capabilities, width, height);
 
         VkSwapchainCreateInfoKHR createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;

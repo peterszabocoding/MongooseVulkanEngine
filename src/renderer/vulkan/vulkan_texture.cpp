@@ -2,6 +2,7 @@
 
 #include <stdexcept>
 #include "vulkan_buffer.h"
+#include "vulkan_device.h"
 #include "vulkan_image.h"
 #include "vulkan_utils.h"
 

@@ -15,7 +15,7 @@
 
 namespace Raytracing
 {
-    namespace Utils
+    namespace ImageUtils
     {
         struct VertexAttribute {
             const char* name;
@@ -249,10 +249,10 @@ namespace Raytracing
         const tinygltf::Node node = model.nodes[scene.nodes[0]];
 
         auto mesh = CreateRef<VulkanMesh>(device);
-        Utils::LoadGLTFNode(node, model, mesh);
+        ImageUtils::LoadGLTFNode(node, model, mesh);
 
-        const std::vector<Ref<VulkanTexture>> textures = Utils::LoadTextures(model, device, gltfFilePath.parent_path());
-        const std::vector<VulkanMaterial> materials = Utils::LoadMaterials(model, device, textures);
+        const std::vector<Ref<VulkanTexture>> textures = ImageUtils::LoadTextures(model, device, gltfFilePath.parent_path());
+        const std::vector<VulkanMaterial> materials = ImageUtils::LoadMaterials(model, device, textures);
 
         mesh->SetMaterials(materials);
 
@@ -280,8 +280,8 @@ namespace Raytracing
             abort();
         }
 
-        const std::vector<Ref<VulkanTexture>> textures = Utils::LoadTextures(model, device, gltfFilePath.parent_path());
-        const std::vector<VulkanMaterial> materials = Utils::LoadMaterials(model, device, textures);
+        const std::vector<Ref<VulkanTexture>> textures = ImageUtils::LoadTextures(model, device, gltfFilePath.parent_path());
+        const std::vector<VulkanMaterial> materials = ImageUtils::LoadMaterials(model, device, textures);
         std::vector<Ref<VulkanMesh>> meshes;
         std::vector<Transform> transforms;
 
@@ -308,7 +308,7 @@ namespace Raytracing
             }
 
             auto mesh = CreateRef<VulkanMesh>(device);
-            Utils::LoadGLTFNode(node, model, mesh);
+            ImageUtils::LoadGLTFNode(node, model, mesh);
 
             mesh->SetMaterials(materials);
 

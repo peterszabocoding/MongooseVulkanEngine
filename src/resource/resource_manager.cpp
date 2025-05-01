@@ -7,7 +7,6 @@
 #include <tiny_obj_loader/tiny_obj_loader.h>
 
 #define TINYGLTF_IMPLEMENTATION
-#include <iostream>
 #include <tiny_gltf/tiny_gltf.h>
 
 #include <stdexcept>
@@ -20,9 +19,7 @@
 #include "renderer/vulkan/vulkan_device.h"
 #include "renderer/vulkan/vulkan_pipeline.h"
 #include "renderer/vulkan/vulkan_texture.h"
-#include "renderer/vulkan/vulkan_cube_map_texture.h"
 #include "util/log.h"
-
 
 namespace Raytracing
 {
@@ -44,7 +41,7 @@ namespace Raytracing
         resource.height = height;
         resource.data = pixels;
         resource.size = size;
-        resource.format = ImageFormat::RGBA32F;
+        resource.format = ImageFormat::RGB32_SFLOAT;
 
         return resource;
     }
@@ -69,7 +66,7 @@ namespace Raytracing
         resource.height = height;
         resource.data = pixels;
         resource.size = size;
-        resource.format = ImageFormat::RGBA32F;
+        resource.format = ImageFormat::RGB32_SFLOAT;
 
         return resource;
     }
@@ -80,7 +77,7 @@ namespace Raytracing
         stbi_image_free(image.data);
     }
 
-    auto ResourceManager::LoadPipelines(VulkanDevice* vulkanDevice) -> void
+    auto ResourceManager::LoadPipeline(VulkanDevice* vulkanDevice, std::string shaderName, Ref<VulkanRenderPass> renderPass) -> void
     {
         const Ref<VulkanDescriptorSetLayout> mainDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice)
                 .AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
@@ -90,16 +87,16 @@ namespace Raytracing
                 .Build();
 
         mainPipeline = VulkanPipeline::Builder()
-                .SetShaders("shader/spv/gbuffer.vert.spv", "shader/spv/gbuffer.frag.spv")
+                .SetShaders("shader/spv/" + shaderName + ".vert.spv", "shader/spv/" + shaderName + ".frag.spv")
                 .SetDescriptorSetLayout(mainDescriptorSetLayout)
                 .SetCullMode(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE)
                 .SetPolygonMode(VK_POLYGON_MODE_FILL)
                 .EnableDepthTest()
                 .DisableBlending()
-                .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM)
-                .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM)
-                .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM)
-                .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM)
+                .AddColorAttachment(ImageFormat::RGBA8_UNORM)
+                .AddColorAttachment(ImageFormat::RGBA8_UNORM)
+                .AddColorAttachment(ImageFormat::RGBA8_UNORM)
+                .AddColorAttachment(ImageFormat::RGBA8_UNORM)
                 .SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
                 .SetMultisampling(VK_SAMPLE_COUNT_1_BIT)
                 .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(SimplePushConstantData))
@@ -118,9 +115,55 @@ namespace Raytracing
                 .SetPolygonMode(VK_POLYGON_MODE_FILL)
                 .DisableDepthTest()
                 .DisableBlending()
-                .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM)
+                .AddColorAttachment(ImageFormat::RGBA8_UNORM)
                 .SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
                 .SetMultisampling(VK_SAMPLE_COUNT_1_BIT)
+                .Build(vulkanDevice);
+    }
+
+    void ResourceManager::LoadPipelines(VulkanDevice* vulkanDevice, Ref<VulkanRenderPass> renderPass)
+    {
+        const Ref<VulkanDescriptorSetLayout> mainDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice)
+                .AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
+                .AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // Base Color
+                .AddBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // Normal map
+                .AddBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // Metallic/Roughness
+                .Build();
+
+        mainPipeline = VulkanPipeline::Builder()
+                .SetShaders("shader/spv/gbuffer.vert.spv", "shader/spv/gbuffer.frag.spv")
+                .SetDescriptorSetLayout(mainDescriptorSetLayout)
+                .SetCullMode(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE)
+                .SetPolygonMode(VK_POLYGON_MODE_FILL)
+                .EnableDepthTest()
+                .DisableBlending()
+                .AddColorAttachment(ImageFormat::RGBA8_UNORM)
+                .AddColorAttachment(ImageFormat::RGBA8_UNORM)
+                .AddColorAttachment(ImageFormat::RGBA8_UNORM)
+                .AddColorAttachment(ImageFormat::RGBA8_UNORM)
+                .SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+                .SetMultisampling(VK_SAMPLE_COUNT_1_BIT)
+                .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(SimplePushConstantData))
+                .SetRenderpass(renderPass)
+                .Build(vulkanDevice);
+
+        const Ref<VulkanDescriptorSetLayout> screenDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice)
+                .AddBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // Base Color
+                .AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // Normal map
+                .AddBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // Metallic/Roughness
+                .Build();
+
+        renderToScreenPipeline = VulkanPipeline::Builder()
+                .SetShaders("shader/spv/screen.vert.spv", "shader/spv/screen.frag.spv")
+                .SetDescriptorSetLayout(screenDescriptorSetLayout)
+                .SetCullMode(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE)
+                .SetPolygonMode(VK_POLYGON_MODE_FILL)
+                .DisableDepthTest()
+                .DisableBlending()
+                .AddColorAttachment(ImageFormat::RGBA8_UNORM)
+                .SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+                .SetMultisampling(VK_SAMPLE_COUNT_1_BIT)
+                .SetRenderpass(renderPass)
                 .Build(vulkanDevice);
     }
 
@@ -159,7 +202,7 @@ namespace Raytracing
         Ref<VulkanTexture> texture = VulkanTexture::Builder()
                 .SetData(imageResource.data, imageResource.size)
                 .SetResolution(imageResource.width, imageResource.height)
-                .SetFormat(VK_FORMAT_R8G8B8A8_UNORM)
+                .SetFormat(ImageFormat::RGBA8_UNORM)
                 .SetFilter(VK_FILTER_LINEAR, VK_FILTER_LINEAR)
                 .SetTiling(VK_IMAGE_TILING_OPTIMAL)
                 .AddUsage(VK_IMAGE_USAGE_TRANSFER_DST_BIT)
@@ -190,7 +233,7 @@ namespace Raytracing
         Ref<VulkanTexture> texture = VulkanTexture::Builder()
                 .SetData(imageResource.data, imageResource.size)
                 .SetResolution(imageResource.width, imageResource.height)
-                .SetFormat(VK_FORMAT_R32G32B32A32_SFLOAT)
+                .SetFormat(ImageFormat::RGBA32_SFLOAT)
                 .SetFilter(VK_FILTER_LINEAR, VK_FILTER_LINEAR)
                 .SetTiling(VK_IMAGE_TILING_OPTIMAL)
                 .AddUsage(VK_IMAGE_USAGE_TRANSFER_DST_BIT)

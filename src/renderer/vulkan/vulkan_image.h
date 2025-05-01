@@ -1,5 +1,8 @@
 #pragma once
 #include <vulkan/vulkan_core.h>
+
+#include "vulkan_utils.h"
+#include "resource/resource.h"
 #include "util/core.h"
 #include "vma/vk_mem_alloc.h"
 
@@ -26,9 +29,9 @@ namespace Raytracing
             return *this;
         }
 
-        ImageBuilder& SetFormat(const VkFormat _format)
+        ImageBuilder& SetFormat(const ImageFormat _format)
         {
-            format = _format;
+            format = VulkanUtils::ConvertImageFormat(_format);
             return *this;
         }
 
@@ -82,6 +85,12 @@ namespace Raytracing
             return *this;
         }
 
+        ImageViewBuilder& SetFormat(const ImageFormat _format)
+        {
+            format = VulkanUtils::ConvertImageFormat(_format);
+            return *this;
+        }
+
         ImageViewBuilder& SetFormat(const VkFormat _format)
         {
             format = _format;
@@ -129,9 +138,9 @@ namespace Raytracing
             return *this;
         }
 
-        ImageSamplerBuilder& SetFormat(const VkFormat _format)
+        ImageSamplerBuilder& SetFormat(const ImageFormat _format)
         {
-            format = _format;
+            format = VulkanUtils::ConvertImageFormat(_format);
             return *this;
         }
 

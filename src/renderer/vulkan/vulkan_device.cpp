@@ -253,14 +253,14 @@ namespace Raytracing
         allocatorInfo.instance = instance;
         vmaCreateAllocator(&allocatorInfo, &vmaAllocator);
 
-        CreateSwapchain();
-        CreateRenderpass();
-        CreateFramebuffers();
-
         CreateCommandPool();
         CreateDescriptorPool();
         CreateCommandBuffers();
         CreateSyncObjects();
+
+        CreateSwapchain();
+        CreateRenderpass();
+        CreateFramebuffers();
 
         screenRect = CreateScope<VulkanMeshlet>(this, Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
         cube = CreateScope<VulkanMeshlet>(this, Primitives::CUBE_VERTICES, Primitives::CUBE_INDICES);
@@ -299,10 +299,10 @@ namespace Raytracing
             gbufferFramebuffers[i] = VulkanFramebuffer::Builder(this)
                     .SetRenderpass(gBufferPass)
                     .SetResolution(viewportWidth, viewportHeight)
-                    .AddAttachment(FramebufferAttachmentFormat::RGBA8)
-                    .AddAttachment(FramebufferAttachmentFormat::RGBA8)
-                    .AddAttachment(FramebufferAttachmentFormat::RGBA8)
-                    .AddAttachment(FramebufferAttachmentFormat::DEPTH24_STENCIL8)
+                    .AddAttachment(ImageFormat::RGBA8_UNORM)
+                    .AddAttachment(ImageFormat::RGBA8_UNORM)
+                    .AddAttachment(ImageFormat::RGBA8_UNORM)
+                    .AddAttachment(ImageFormat::DEPTH24_STENCIL8)
                     .Build();
         }
 
@@ -320,7 +320,7 @@ namespace Raytracing
             cubeMapFramebuffers[i] = VulkanFramebuffer::Builder(this)
                 .SetRenderpass(cubeMapPass)
                 .SetResolution(512, 512)
-                .AddAttachment(FramebufferAttachmentFormat::RGBA16F)
+                .AddAttachment(ImageFormat::RGBA16_SFLOAT)
                 .Build();
         }
     }

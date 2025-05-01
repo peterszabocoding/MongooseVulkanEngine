@@ -10,24 +10,6 @@ namespace Raytracing
     class VulkanRenderPass;
     class VulkanDevice;
 
-    enum class FramebufferAttachmentFormat: uint32_t {
-        None = 0,
-
-        // Color
-        RGBA8,
-        RGB8,
-        RGBA16,
-        RGBA16F,
-        RGBA32F,
-        RED_INTEGER,
-
-        // Depth
-        DEPTH32,
-
-        // Depth + Stencil
-        DEPTH24_STENCIL8
-    };
-
     struct FramebufferAttachment {
         VkImage image;
         VkImageView imageView;
@@ -44,7 +26,7 @@ namespace Raytracing
             ~Builder() = default;
 
             Builder& AddAttachment(VkImageView imageAttachment);
-            Builder& AddAttachment(FramebufferAttachmentFormat attachmentFormat);
+            Builder& AddAttachment(ImageFormat attachmentFormat);
             Builder& SetRenderpass(Ref<VulkanRenderPass> renderPass);
             Builder& SetResolution(int width, int height);
 

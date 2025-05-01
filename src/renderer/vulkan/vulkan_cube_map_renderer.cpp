@@ -34,9 +34,10 @@ namespace Raytracing
                 .SetPolygonMode(VK_POLYGON_MODE_FILL)
                 .DisableDepthTest()
                 .DisableBlending()
-                .AddColorAttachment(VK_FORMAT_R16G16B16A16_SFLOAT)
+                .AddColorAttachment(ImageFormat::RGBA16_SFLOAT)
                 .SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
                 .SetMultisampling(VK_SAMPLE_COUNT_1_BIT)
+                .SetRenderpass(device->GetRenderPass())
                 .Build(device);
 
         for (size_t i = 0; i < 6; i++)

@@ -1,7 +1,10 @@
 #pragma once
 
+#include <complex.h>
+
 #include "renderer/scene.h"
 #include "renderer/vulkan/vulkan_image.h"
+#include "renderer/vulkan/vulkan_renderpass.h"
 #include "resource/resource.h"
 
 namespace Raytracing
@@ -21,7 +24,8 @@ namespace Raytracing
 
         static void ReleaseImage(const ImageResource& image);
 
-        static void LoadPipelines(VulkanDevice* vulkanDevice);
+        static void LoadPipeline(VulkanDevice* vulkanDevice, std::string shaderName, Ref<VulkanRenderPass> renderPass);
+        static void LoadPipelines(VulkanDevice* vulkanDevice, Ref<VulkanRenderPass> renderPass);
         static Ref<VulkanPipeline> GetMainPipeline() { return mainPipeline; }
 
         static Ref<VulkanMesh> LoadMesh(VulkanDevice* device, const std::string& meshPath);
