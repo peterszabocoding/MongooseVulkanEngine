@@ -26,6 +26,8 @@ namespace Raytracing
         ~VulkanRenderer() override = default;
 
         virtual void Init(int width, int height) override;
+        void DrawGeometryPass(float deltaTime, Ref<Camera> camera, VkCommandBuffer commandBuffer);
+        void DrawLightingPass(VkCommandBuffer commandBuffer);
 
         virtual void ProcessPixel(unsigned int pixelCount, vec3 pixelColor) override {}
         virtual void OnRenderBegin(const Camera& camera) override {}
@@ -39,7 +41,7 @@ namespace Raytracing
 
         [[nodiscard]] Ref<VulkanRenderPass> GetRenderPass() const { return gBufferPass; }
         [[nodiscard]] Ref<VulkanRenderPass> GetVulkanRenderPass() const { return gBufferPass; }
-        [[nodiscard]] Ref<VulkanFramebuffer> GetFramebuffer() const { return gbufferFramebuffers[currentFrame]; }
+        [[nodiscard]] Ref<VulkanFramebuffer> GetGBuffer() const { return gbufferFramebuffers[activeImage]; }
 
         void OnDeviceReadyToResize();
 
@@ -49,6 +51,7 @@ namespace Raytracing
         void CreateRenderPasses();
 
         void ResizeSwapchain();
+        void PrepareLightingPass();
 
     public:
         static Pipelines pipelines;
@@ -56,8 +59,7 @@ namespace Raytracing
 
     private:
         uint32_t viewportWidth, viewportHeight;
-        uint32_t currentFrame = 0;
-        uint32_t currentImageIndex = 0;
+        uint32_t activeImage = 0;
 
         Scope<VulkanDevice> vulkanDevice;
 
@@ -81,7 +83,7 @@ namespace Raytracing
         Ref<VulkanTexture> cubeMapTexture;
         VulkanCubeMapRenderer* cubeMapRenderer{};
 
-        VkDescriptorSet presentDescriptorSet{};
+        std::vector<VkDescriptorSet> presentDescriptorSets{};
         VkSampler presentSampler{};
     };
 }

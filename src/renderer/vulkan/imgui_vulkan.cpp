@@ -53,7 +53,10 @@ namespace Raytracing
         SetupImGui(width, height);
     }
 
-    void ImGuiVulkan::Resize(const int width, const int height) {}
+    void ImGuiVulkan::Resize(const int width, const int height)
+    {
+        for (auto& uiWindow : uiWindows) uiWindow->Resize();
+    }
 
     void ImGuiVulkan::SetupImGui(const int width, const int height) const
     {

@@ -28,6 +28,7 @@ namespace Raytracing
         CreateRenderPasses();
         CreateFramebuffers();
 
+
         descriptorSetLayouts.materialDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice.get())
                 .AddBinding({0, DescriptorSetBindingType::UniformBuffer, {DescriptorSetShaderStage::FragmentShader}})
                 .AddBinding({1, DescriptorSetBindingType::TextureSampler, {DescriptorSetShaderStage::FragmentShader}})
@@ -91,6 +92,8 @@ namespace Raytracing
         }
         pipelines.lightingPipeline = VulkanPipeline::Builder().Build(vulkanDevice.get(), lightingPipelineConfig);
 
+        PrepareLightingPass();
+
         screenRect = CreateScope<VulkanMeshlet>(vulkanDevice.get(), Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
         cube = CreateScope<VulkanMeshlet>(vulkanDevice.get(), Primitives::CUBE_VERTICES, Primitives::CUBE_INDICES);
 
@@ -105,61 +108,40 @@ namespace Raytracing
         transform.m_Position = glm::vec3(0.0f, 0.0f, -1.0f);
     }
 
+    void VulkanRenderer::DrawGeometryPass(float deltaTime, Ref<Camera> camera, VkCommandBuffer commandBuffer)
+    {
+        gBufferPass->Begin(commandBuffer, gbufferFramebuffers[activeImage], vulkanSwapChain->GetExtent());
+        for (size_t i = 0; i < completeScene.meshes.size(); i++)
+        {
+            vulkanDevice->DrawMesh(camera,
+                                   completeScene.transforms[i],
+                                   completeScene.meshes[i],
+                                   pipelines.geometryPipeline);
+        }
+        gBufferPass->End(commandBuffer);
+    }
+
+    void VulkanRenderer::DrawLightingPass(VkCommandBuffer commandBuffer)
+    {
+        lightingPass->Begin(commandBuffer, presentFramebuffers[activeImage],
+                            vulkanSwapChain->GetExtent());
+
+        vulkanDevice->DrawMeshlet(*screenRect, pipelines.lightingPipeline->GetPipeline(),
+                                  pipelines.lightingPipeline->GetPipelineLayout(),
+                                  presentDescriptorSets[activeImage]);
+
+        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+
+        lightingPass->End(commandBuffer);
+    }
+
     void VulkanRenderer::DrawFrame(float deltaTime, Ref<Camera> camera)
     {
         vulkanDevice->DrawFrame(vulkanSwapChain->GetSwapChain(), vulkanSwapChain->GetExtent(),
                                 [&](VkCommandBuffer commandBuffer, uint32_t frameIndex, uint32_t imageIndex) {
-                                    currentFrame = frameIndex;
-                                    currentImageIndex = imageIndex;
-
-                                    gBufferPass->Begin(commandBuffer, gbufferFramebuffers[imageIndex], vulkanSwapChain->GetExtent());
-
-                                    for (size_t i = 0; i < completeScene.meshes.size(); i++)
-                                        vulkanDevice->DrawMesh(camera, completeScene.transforms[i], completeScene.meshes[i],
-                                                               pipelines.geometryPipeline);
-
-                                    gBufferPass->End(commandBuffer);
-
-                                    if (!presentSampler) presentSampler = ImageSamplerBuilder(vulkanDevice.get()).Build();
-
-                                    auto writer = VulkanDescriptorWriter(*pipelines.lightingPipeline->GetDescriptorSetLayout(),
-                                                                         vulkanDevice->GetShaderDescriptorPool());
-
-                                    VkDescriptorImageInfo info{};
-                                    info.sampler = presentSampler;
-                                    info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                                    info.imageView = gbufferFramebuffers[currentFrame]->GetAttachments()[0].imageView;
-
-                                    writer.WriteImage(0, &info);
-
-                                    VkDescriptorImageInfo info2{};
-                                    info2.sampler = presentSampler;
-                                    info2.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                                    info2.imageView = gbufferFramebuffers[currentFrame]->GetAttachments()[1].imageView;
-
-                                    writer.WriteImage(1, &info2);
-
-                                    VkDescriptorImageInfo info3{};
-                                    info3.sampler = presentSampler;
-                                    info3.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                                    info3.imageView = gbufferFramebuffers[currentFrame]->GetAttachments()[2].imageView;
-
-                                    writer.WriteImage(2, &info3);
-
-                                    if (!presentDescriptorSet)
-                                        writer.Build(presentDescriptorSet);
-                                    else
-                                        writer.Overwrite(presentDescriptorSet);
-
-                                    lightingPass->Begin(commandBuffer, presentFramebuffers[currentImageIndex],
-                                                        vulkanSwapChain->GetExtent());
-
-                                    vulkanDevice->DrawMeshlet(*screenRect, pipelines.lightingPipeline->GetPipeline(),
-                                                              pipelines.lightingPipeline->GetPipelineLayout(),
-                                                              presentDescriptorSet);
-                                    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
-
-                                    lightingPass->End(commandBuffer);
+                                    activeImage = imageIndex;
+                                    DrawGeometryPass(deltaTime, camera, commandBuffer);
+                                    DrawLightingPass(commandBuffer);
                                 }, std::bind(&VulkanRenderer::ResizeSwapchain, this));
     }
 
@@ -263,5 +245,41 @@ namespace Raytracing
 
         CreateSwapchain();
         CreateFramebuffers();
+        PrepareLightingPass();
+    }
+
+    void VulkanRenderer::PrepareLightingPass()
+    {
+        presentSampler = ImageSamplerBuilder(vulkanDevice.get()).Build();
+
+        VulkanDescriptorWriter writer = VulkanDescriptorWriter(*pipelines.lightingPipeline->GetDescriptorSetLayout(),
+                                                               vulkanDevice->GetShaderDescriptorPool());
+
+        presentDescriptorSets.resize(gbufferFramebuffers.size());
+        for (size_t i = 0; i < gbufferFramebuffers.size(); i++)
+        {
+            VkDescriptorImageInfo info{};
+            info.sampler = presentSampler;
+            info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            info.imageView = gbufferFramebuffers[i]->GetAttachments()[0].imageView;
+
+            writer.WriteImage(0, &info);
+
+            VkDescriptorImageInfo info2{};
+            info2.sampler = presentSampler;
+            info2.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            info2.imageView = gbufferFramebuffers[i]->GetAttachments()[1].imageView;
+
+            writer.WriteImage(1, &info2);
+
+            VkDescriptorImageInfo info3{};
+            info3.sampler = presentSampler;
+            info3.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            info3.imageView = gbufferFramebuffers[i]->GetAttachments()[2].imageView;
+
+            writer.WriteImage(2, &info3);
+
+            writer.Build(presentDescriptorSets[i]);
+        }
     }
 }

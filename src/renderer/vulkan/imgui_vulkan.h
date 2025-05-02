@@ -17,6 +17,8 @@ namespace Raytracing
         virtual const char* GetTitle() = 0;
         virtual void Draw() = 0;
 
+        virtual void Resize() {}
+
     protected:
         Ref<VulkanRenderer> renderer = nullptr;
     };

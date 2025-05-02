@@ -69,45 +69,70 @@ namespace Raytracing
     public:
         explicit FramebufferViewer(const Ref<VulkanRenderer>& _renderer): ImGuiWindow(_renderer)
         {
-            framebuffer = renderer->GetFramebuffer();
+            sampler = ImageSamplerBuilder(renderer->GetVulkanDevice()).Build();
+        }
 
-            sampler = ImageSamplerBuilder(renderer->GetVulkanDevice())
-                    .Build();
+        ~FramebufferViewer() override
+        {
+            if (sampler) vkDestroySampler(renderer->GetVulkanDevice()->GetDevice(), sampler, nullptr);
+        }
 
-            for (auto attachment: framebuffer->GetAttachments())
+        void Init()
+        {
+            if (gbufferAttachments.size() > 0)
+            {
+                for (int i = 0; i < gbufferAttachments.size(); i++)
+                    ImGui_ImplVulkan_RemoveTexture(gbufferAttachments[i]);
+                gbufferAttachments.clear();
+            }
+
+            gbuffer = renderer->GetGBuffer();
+            for (const auto attachment: gbuffer->GetAttachments())
             {
                 if (!attachment.allocatedImage.image) continue;
 
-                auto descriptorSet = ImGui_ImplVulkan_AddTexture(sampler, attachment.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-                framebufferAttachments.push_back(descriptorSet);
+                auto descriptorSet = ImGui_ImplVulkan_AddTexture(sampler, attachment.imageView, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL);
+                gbufferAttachments.push_back(descriptorSet);
             }
         }
 
-        ~FramebufferViewer() override = default;
-
         virtual const char* GetTitle() override
         {
-            return "Framebuffer Viewer";
+            return "GBuffer Viewer";
         }
 
         virtual void Draw() override
         {
-            VkDescriptorSet descriptorSet = framebufferAttachments[1];
+            Init();
+
             const ImVec2 availableSpace = ImGui::GetContentRegionAvail();
 
-            const float aspect = static_cast<float>(framebuffer->GetHeight()) / static_cast<float>(framebuffer->GetWidth());
+            const float aspect = static_cast<float>(gbuffer->GetHeight()) / static_cast<float>(gbuffer->GetWidth());
             const ImVec2 imageSize = {
                 std::min(availableSpace.x, availableSpace.y),
                 std::min(availableSpace.x, availableSpace.y) * aspect,
             };
 
-            ImGui::Text("Resolution: %d x %d", framebuffer->GetWidth(), framebuffer->GetHeight());
-            ImGui::Image((ImTextureID) descriptorSet, imageSize, ImVec2(0, 0), ImVec2(1, 1));
+            ImGui::Text("Resolution: %d x %d", gbuffer->GetWidth(), gbuffer->GetHeight());
+
+            ImGui::Text("Base color:");
+            ImGui::Image(reinterpret_cast<ImTextureID>(gbufferAttachments[0]), imageSize, ImVec2(0, 0), ImVec2(1, 1));
+
+            ImGui::Text("Worldspace normal:");
+            ImGui::Image(reinterpret_cast<ImTextureID>(gbufferAttachments[1]), imageSize, ImVec2(0, 0), ImVec2(1, 1));
+
+            ImGui::Text("Metallic-Roughness:");
+            ImGui::Image(reinterpret_cast<ImTextureID>(gbufferAttachments[2]), imageSize, ImVec2(0, 0), ImVec2(1, 1));
+        }
+
+        virtual void Resize() override
+        {
+            Init();
         }
 
     private:
-        Ref<VulkanFramebuffer> framebuffer;
-        std::vector<VkDescriptorSet> framebufferAttachments;
+        Ref<VulkanFramebuffer> gbuffer;
+        std::vector<VkDescriptorSet> gbufferAttachments;
         VkSampler sampler = VK_NULL_HANDLE;
     };
 }
