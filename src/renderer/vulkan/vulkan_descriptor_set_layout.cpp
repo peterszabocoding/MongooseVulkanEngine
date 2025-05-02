@@ -5,22 +5,64 @@
 
 namespace Raytracing
 {
-    // *************** Descriptor Set Layout Builder *********************
+    namespace Utils
+    {
+        static VkDescriptorType ConvertDescriptorType(const DescriptorSetBindingType type)
+        {
+            switch (type)
+            {
+                case DescriptorSetBindingType::UniformBuffer:
+                    return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+                case DescriptorSetBindingType::TextureSampler:
+                    return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 
+                default:
+                    ASSERT(false, "Unknown descriptor type");
+            }
+        }
+
+        static VkShaderStageFlagBits ConvertShaderStage(const DescriptorSetShaderStage type)
+        {
+            switch (type)
+            {
+                case DescriptorSetShaderStage::VertexShader:
+                    return VK_SHADER_STAGE_VERTEX_BIT;
+
+                case DescriptorSetShaderStage::FragmentShader:
+                    return VK_SHADER_STAGE_FRAGMENT_BIT;
+
+                case DescriptorSetShaderStage::GeometryShader:
+                    return VK_SHADER_STAGE_GEOMETRY_BIT;
+
+                case DescriptorSetShaderStage::ComputeShader:
+                    return VK_SHADER_STAGE_COMPUTE_BIT;
+
+                default:
+                    ASSERT(false, "Unknown shader stage");
+            }
+
+            return VK_SHADER_STAGE_ALL;
+        }
+    }
+
+    // *************** Descriptor Set Layout Builder *********************
     VulkanDescriptorSetLayout::Builder& VulkanDescriptorSetLayout::Builder::AddBinding(
-        uint32_t binding,
-        VkDescriptorType descriptorType,
-        VkShaderStageFlags stageFlags,
-        uint32_t count)
+        const DescriptorSetBinding binding, const uint32_t count)
     {
         ASSERT(bindings.count(binding) == 0, "Binding already in use");
 
+        VkShaderStageFlags stageFlags = 0;
+
+        for (auto& stage: binding.stages)
+            stageFlags |= Utils::ConvertShaderStage(stage);
+
         VkDescriptorSetLayoutBinding layoutBinding{};
-        layoutBinding.binding = binding;
-        layoutBinding.descriptorType = descriptorType;
+        layoutBinding.binding = binding.location;
+        layoutBinding.descriptorType = Utils::ConvertDescriptorType(binding.type);
         layoutBinding.descriptorCount = count;
         layoutBinding.stageFlags = stageFlags;
-        bindings[binding] = layoutBinding;
+
+        bindings[binding.location] = layoutBinding;
         return *this;
     }
 

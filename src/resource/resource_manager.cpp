@@ -23,9 +23,6 @@
 
 namespace Raytracing
 {
-    Ref<VulkanPipeline> ResourceManager::mainPipeline;
-    Ref<VulkanPipeline> ResourceManager::renderToScreenPipeline;
-
     ImageResource ResourceManager::LoadImageResource(const std::string& imagePath)
     {
         int width, height, channels;
@@ -75,68 +72,6 @@ namespace Raytracing
     {
         LOG_TRACE("Release image data: " + image.path);
         stbi_image_free(image.data);
-    }
-
-    void ResourceManager::LoadPipelines(VulkanDevice* vulkanDevice, Ref<VulkanRenderPass> renderPass)
-    {
-        PipelineConfig geometryPipelineConfig; {
-            geometryPipelineConfig.vertexShaderPath = "shader/spv/gbuffer.vert.spv";
-            geometryPipelineConfig.fragmentShaderPath = "shader/spv/gbuffer.frag.spv";
-
-            geometryPipelineConfig.cullMode = PipelineCullMode::Back;
-            geometryPipelineConfig.polygonMode = PipelinePolygonMode::Fill;
-            geometryPipelineConfig.frontFace = PipelineFrontFace::Counter_clockwise;
-
-            geometryPipelineConfig.bindings = {
-                {0, PipelineBindingType::UniformBuffer, PipelineShaderStage::FragmentShader},
-                {1, PipelineBindingType::TextureSampler, PipelineShaderStage::FragmentShader},
-                {2, PipelineBindingType::TextureSampler, PipelineShaderStage::FragmentShader},
-                {3, PipelineBindingType::TextureSampler, PipelineShaderStage::FragmentShader},
-            };
-
-            geometryPipelineConfig.colorAttachments = {
-                ImageFormat::RGBA8_UNORM,
-                ImageFormat::RGBA8_UNORM,
-                ImageFormat::RGBA8_UNORM,
-                ImageFormat::RGBA8_UNORM,
-            };
-
-            geometryPipelineConfig.disableBlending = true;
-            geometryPipelineConfig.enableDepthTest = true;
-            geometryPipelineConfig.depthAttachment = ImageFormat::DEPTH24_STENCIL8;
-
-            geometryPipelineConfig.renderPass = renderPass;
-
-            geometryPipelineConfig.pushConstantData.shaderStages = {PipelineShaderStage::VertexShader, PipelineShaderStage::FragmentShader};
-            geometryPipelineConfig.pushConstantData.offset = 0;
-            geometryPipelineConfig.pushConstantData.size = sizeof(SimplePushConstantData);
-        }
-        mainPipeline = VulkanPipeline::Builder().Build(vulkanDevice, geometryPipelineConfig);
-
-        PipelineConfig lightingPipelineConfig; {
-            lightingPipelineConfig.vertexShaderPath = "shader/spv/screen.vert.spv";
-            lightingPipelineConfig.fragmentShaderPath = "shader/spv/screen.frag.spv";
-
-            lightingPipelineConfig.cullMode = PipelineCullMode::Back;
-            lightingPipelineConfig.polygonMode = PipelinePolygonMode::Fill;
-            lightingPipelineConfig.frontFace = PipelineFrontFace::Clockwise;
-
-            lightingPipelineConfig.bindings = {
-                {0, PipelineBindingType::TextureSampler, PipelineShaderStage::FragmentShader},
-                {1, PipelineBindingType::TextureSampler, PipelineShaderStage::FragmentShader},
-                {2, PipelineBindingType::TextureSampler, PipelineShaderStage::FragmentShader},
-            };
-
-            lightingPipelineConfig.colorAttachments = {
-                ImageFormat::RGBA8_UNORM,
-            };
-
-            lightingPipelineConfig.disableBlending = true;
-            lightingPipelineConfig.enableDepthTest = false;
-
-            lightingPipelineConfig.renderPass = renderPass;
-        }
-        renderToScreenPipeline = VulkanPipeline::Builder().Build(vulkanDevice, lightingPipelineConfig);
     }
 
     Ref<VulkanMesh> ResourceManager::LoadMesh(VulkanDevice* device, const std::string& meshPath)

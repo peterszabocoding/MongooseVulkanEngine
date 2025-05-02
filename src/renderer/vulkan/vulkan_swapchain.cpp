@@ -99,6 +99,7 @@ namespace Raytracing
                      "Failed to acquire swapchain images.");
 
         swapChainImageViews.resize(imageCount);
+
         for (size_t i = 0; i < imageCount; i++)
         {
             swapChainImageViews[i] = ImageViewBuilder(device)
@@ -115,8 +116,8 @@ namespace Raytracing
     VulkanSwapchain::~VulkanSwapchain()
     {
         LOG_INFO("Destroy swapchain");
-        for (size_t i = 0; i < swapChainImageViews.size(); i++)
-            vkDestroyImageView(vulkanDevice->GetDevice(), swapChainImageViews[i], nullptr);
+        for (const auto& imageView : swapChainImageViews)
+            vkDestroyImageView(vulkanDevice->GetDevice(), imageView, nullptr);
 
         vkDestroySwapchainKHR(vulkanDevice->GetDevice(), swapChain, nullptr);
     }

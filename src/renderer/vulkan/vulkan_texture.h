@@ -1,6 +1,8 @@
 #pragma once
 
 #include <vulkan/vulkan.h>
+
+#include "vulkan_image.h"
 #include "resource/resource.h"
 #include "util/core.h"
 
@@ -80,7 +82,7 @@ namespace Raytracing
             VkImageUsageFlags usage = 0;
             VkImageAspectFlags aspectFlags = 0;
 
-            VkImage image{};
+            AllocatedImage allocatedImage{};
             VkImageView imageView{};
             VkDeviceMemory imageMemory{};
             VkSampler sampler{};
@@ -88,10 +90,10 @@ namespace Raytracing
         };
 
     public:
-        VulkanTexture(VulkanDevice* _device, const VkImage _image, const VkImageView _imageView, const VkSampler _sampler,
+        VulkanTexture(VulkanDevice* _device, const AllocatedImage _image, const VkImageView _imageView, const VkSampler _sampler,
                       const VkDeviceMemory _imageMemory,
                       const ImageResource& _imageResource): device(_device),
-                                                            image(_image),
+                                                            allocatedImage(_image),
                                                             imageView(_imageView),
                                                             sampler(_sampler),
                                                             imageMemory(_imageMemory),
@@ -99,7 +101,7 @@ namespace Raytracing
 
         ~VulkanTexture();
 
-        VkImage GetImage() const { return image; };
+        VkImage GetImage() const { return allocatedImage.image; };
         VkImageView GetImageView() const { return imageView; }
         VkSampler GetSampler() const { return sampler; }
         ImageResource GetImageResource() const { return imageResource; }
@@ -108,7 +110,7 @@ namespace Raytracing
         VulkanDevice* device;
         ImageResource imageResource{};
 
-        VkImage image{};
+        AllocatedImage allocatedImage{};
         VkImageView imageView{};
         VkDeviceMemory imageMemory{};
         VkSampler sampler{};

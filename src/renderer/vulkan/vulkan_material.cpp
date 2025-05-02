@@ -75,9 +75,9 @@ namespace Raytracing
         return *this;
     }
 
-    VulkanMaterialBuilder& VulkanMaterialBuilder::SetPipeline(Ref<VulkanPipeline> _pipeline)
+    VulkanMaterialBuilder& VulkanMaterialBuilder::SetDescriptorSetLayout(Ref<VulkanDescriptorSetLayout> _descriptorSetLayout)
     {
-        pipeline = _pipeline;
+        descriptorSetLayout = _descriptorSetLayout;
         return *this;
     }
 
@@ -104,8 +104,7 @@ namespace Raytracing
         bufferInfo.offset = 0;
         bufferInfo.range = sizeof(MaterialParams);
 
-        auto descriptorWriter = VulkanDescriptorWriter(*pipeline->GetDescriptorSetLayout(),
-                                                       vulkanDevice->GetShaderDescriptorPool());
+        auto descriptorWriter = VulkanDescriptorWriter(*descriptorSetLayout, vulkanDevice->GetShaderDescriptorPool());
         descriptorWriter.WriteBuffer(0, &bufferInfo);
 
         if (baseColorTexture != nullptr)
@@ -158,7 +157,6 @@ namespace Raytracing
         material.metallicRoughnessTexture = metallicRoughnessTexture;
         material.params = params;
         material.descriptorSet = descriptorSet;
-        material.pipeline = pipeline;
         material.materialBuffer = materialBuffer;
 
         memcpy(material.materialBuffer->GetMappedData(), &material.params, sizeof(MaterialParams));

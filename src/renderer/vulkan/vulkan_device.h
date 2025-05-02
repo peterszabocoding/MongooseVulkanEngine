@@ -18,12 +18,12 @@ namespace Raytracing
 {
     struct SimplePushConstantData;
     class VulkanPipeline;
-    class VulkanSwapchain;
-    class VulkanRenderPass;
     class VulkanMesh;
-    class VulkanCubeMapRenderer;
 
     constexpr int MAX_FRAMES_IN_FLIGHT = 1;
+
+    typedef std::function<void(VkCommandBuffer commandBuffer, uint32_t frameIndex, uint32_t imageIndex)>&& DrawFrameFunction;
+    typedef std::function<void()>&& OutOfDateErrorCallback;
 
     class VulkanDevice {
     public:
@@ -32,15 +32,14 @@ namespace Raytracing
 
         void DrawMesh(
             const Ref<Camera>& camera,
-            const Transform& transform, const Ref<VulkanMesh>& mesh) const;
+            const Transform& transform, const Ref<VulkanMesh>& mesh, Ref<VulkanPipeline> pipeline) const;
 
         void DrawMeshlet(const VulkanMeshlet& meshlet, VkPipeline pipeline, VkPipelineLayout pipelineLayout,
                          VkDescriptorSet descriptorSet) const;
 
-        void DrawImGui() const;
-        bool BeginFrame();
-        void EndFrame();
-        void ResizeFramebuffer(int width, int height);
+        void DrawFrame(VkSwapchainKHR swapchain, VkExtent2D extent, DrawFrameFunction draw, OutOfDateErrorCallback errorCallback);
+
+        void GetReadyToResize();
         void ImmediateSubmit(std::function<void (VkCommandBuffer commandBuffer)>&& function) const;
 
         VkSurfaceKHR CreateSurface(GLFWwindow* glfwWindow) const;
@@ -53,13 +52,12 @@ namespace Raytracing
         [[nodiscard]] uint32_t GetQueueFamilyIndex() const;
         [[nodiscard]] VkDescriptorPool GetGuiDescriptorPool() const { return imguiDescriptorPool->GetDescriptorPool(); }
         [[nodiscard]] VulkanDescriptorPool& GetShaderDescriptorPool() const { return *shaderDescriptorPool.get(); }
+
         [[nodiscard]] VkQueue GetGraphicsQueue() const { return graphicsQueue; }
         [[nodiscard]] VkQueue GetPresentQueue() const { return presentQueue; }
-        [[nodiscard]] Ref<VulkanRenderPass> GetRenderPass() const { return gBufferPass; }
-        [[nodiscard]] Ref<VulkanRenderPass> GetVulkanRenderPass() const { return gBufferPass; }
+
         [[nodiscard]] VkCommandPool GetCommandPool() const { return commandPool; }
         [[nodiscard]] VkPhysicalDeviceProperties GetDeviceProperties() const { return physicalDeviceProperties; }
-        [[nodiscard]] Ref<VulkanFramebuffer> GetFramebuffer() const { return gbufferFramebuffers[currentFrame]; }
 
         VkSampleCountFlagBits GetMaxMSAASampleCount() const;
 
@@ -75,28 +73,25 @@ namespace Raytracing
             const std::vector<const char*>& validationLayers);
 
         void Init(int width, int height, GLFWwindow* glfwWindow);
-        void CreateSwapchain();
-        void CreateFramebuffers();
-        void CreateRenderpass();
+
         void CreateCommandPool();
         void CreateCommandBuffers();
         void CreateSyncObjects();
         void CreateDescriptorPool();
-        bool SetupNextFrame();
-        void SetViewportAndScissor() const;
+        VkResult SetupNextFrame(VkSwapchainKHR swapchain);
+        void SetViewportAndScissor(VkExtent2D extent2D) const;
+        void SetViewportAndScissor(VkExtent2D extent, VkCommandBuffer commandBuffer) const;
 
         VkResult SubmitDrawCommands(VkSemaphore* signalSemaphores) const;
-        VkResult PresentFrame(uint32_t imageIndex, const VkSemaphore* signalSemaphores) const;
+        VkResult PresentFrame(VkSwapchainKHR swapchain, uint32_t imageIndex, const VkSemaphore* signalSemaphores) const;
 
     public:
-        Ref<VulkanTexture> cubeMapTexture;
-        VulkanCubeMapRenderer* cubeMapRenderer{};
-        std::array<Ref<VulkanFramebuffer>, 6> cubeMapFramebuffers;
+        uint32_t currentFrame = 0;
 
     private:
         int viewportWidth{}, viewportHeight{};
-        bool framebufferResized = false;
-        uint32_t currentFrame = 0;
+        bool getReadyToResize = false;
+
         uint32_t currentImageIndex = 0;
 
         VkDevice device{};
@@ -116,25 +111,10 @@ namespace Raytracing
         std::vector<VkSemaphore> renderFinishedSemaphores;
         std::vector<VkFence> inFlightFences;
 
-        Ref<VulkanRenderPass> gBufferPass{};
-        Ref<VulkanRenderPass> lightingPass{};
-        Ref<VulkanRenderPass> cubeMapPass{};
-
-        Scope<VulkanSwapchain> vulkanSwapChain{};
-        std::vector<Ref<VulkanFramebuffer>> gbufferFramebuffers;
-        std::vector<Ref<VulkanFramebuffer>> presentFramebuffers;
-
-
         VmaAllocator vmaAllocator;
 
         Scope<VulkanDescriptorPool> globalUniformPool{};
         Scope<VulkanDescriptorPool> shaderDescriptorPool{};
         Scope<VulkanDescriptorPool> imguiDescriptorPool{};
-
-        VkDescriptorSet presentDescriptorSet{};
-        VkSampler presentSampler{};
-
-        Scope<VulkanMeshlet> screenRect;
-        Scope<VulkanMeshlet> cube;
     };
 }

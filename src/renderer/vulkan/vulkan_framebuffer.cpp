@@ -29,7 +29,13 @@ namespace Raytracing
 
     VulkanFramebuffer::Builder& VulkanFramebuffer::Builder::AddAttachment(VkImageView imageAttachment)
     {
-        attachments.push_back({nullptr, imageAttachment, nullptr});
+        FramebufferAttachment attachment;
+        attachment.allocatedImage.image = nullptr;
+        attachment.allocatedImage.allocation = nullptr;
+        attachment.imageView = imageAttachment;
+        attachment.format = VK_FORMAT_UNDEFINED;
+
+        attachments.push_back(attachment);
         return *this;
     }
 
@@ -49,9 +55,8 @@ namespace Raytracing
                 .Build();
 
         attachments.push_back({
-            allocatedImage.image,
+            allocatedImage,
             imageView,
-            allocatedImage.imageMemory,
             VulkanUtils::ConvertImageFormat(attachmentFormat)
         });
 
@@ -99,15 +104,12 @@ namespace Raytracing
     VulkanFramebuffer::~VulkanFramebuffer()
     {
         LOG_INFO("Destroy framebuffer images");
-        for (uint32_t i = 0; i < attachments.size(); i++)
+        for (const auto& attachment: attachments)
         {
-            if (attachments[i].imageMemory != VK_NULL_HANDLE)
-                vkFreeMemory(device->GetDevice(), attachments[i].imageMemory, nullptr);
-
-            if (attachments[i].imageView != VK_NULL_HANDLE && attachments[i].image != VK_NULL_HANDLE)
+            if (attachment.allocatedImage.image && attachment.imageView)
             {
-                vkDestroyImageView(device->GetDevice(), attachments[i].imageView, nullptr);
-                vkDestroyImage(device->GetDevice(), attachments[i].image, nullptr);
+                vkDestroyImageView(device->GetDevice(), attachment.imageView, nullptr);
+                vmaDestroyImage(device->GetVmaAllocator(), attachment.allocatedImage.image, attachment.allocatedImage.allocation);
             }
         }
 

@@ -69,14 +69,14 @@ namespace Raytracing
     public:
         explicit FramebufferViewer(const Ref<VulkanRenderer>& _renderer): ImGuiWindow(_renderer)
         {
-            framebuffer = renderer->GetVulkanDevice()->GetFramebuffer();
+            framebuffer = renderer->GetFramebuffer();
 
             sampler = ImageSamplerBuilder(renderer->GetVulkanDevice())
                     .Build();
 
             for (auto attachment: framebuffer->GetAttachments())
             {
-                if (!attachment.image) continue;
+                if (!attachment.allocatedImage.image) continue;
 
                 auto descriptorSet = ImGui_ImplVulkan_AddTexture(sampler, attachment.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
                 framebufferAttachments.push_back(descriptorSet);

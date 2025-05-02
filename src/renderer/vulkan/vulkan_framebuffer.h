@@ -11,9 +11,8 @@ namespace Raytracing
     class VulkanDevice;
 
     struct FramebufferAttachment {
-        VkImage image;
+        AllocatedImage allocatedImage;
         VkImageView imageView;
-        VkDeviceMemory imageMemory;
         VkFormat format;
     };
 

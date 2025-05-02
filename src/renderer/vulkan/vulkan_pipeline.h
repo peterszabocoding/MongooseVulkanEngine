@@ -40,19 +40,7 @@ namespace Raytracing
         Ref<VulkanDescriptorSetLayout> descriptorSetLayout = VK_NULL_HANDLE;
     };
 
-    enum class PipelineBindingType {
-        Unknown = 0,
-        UniformBuffer = 1,
-        TextureSampler = 2,
-    };
 
-    enum class PipelineShaderStage {
-        Unknown = 0,
-        VertexShader,
-        FragmentShader,
-        ComputeShader,
-        GeometryShader,
-    };
 
     enum class PipelinePolygonMode {
         Unknown = 0,
@@ -74,24 +62,16 @@ namespace Raytracing
     };
 
     struct PipelinePushConstantData {
-        std::vector<PipelineShaderStage> shaderStages = {
-            PipelineShaderStage::Unknown
-        };
+        VkShaderStageFlags shaderStageBits;
         uint32_t offset = 0;
         uint32_t size = 0;
-    };
-
-    struct PipelineBinding {
-        uint32_t binding = 0;
-        PipelineBindingType type = PipelineBindingType::Unknown;
-        PipelineShaderStage stage = PipelineShaderStage::Unknown;
     };
 
     struct PipelineConfig {
         std::string vertexShaderPath;
         std::string fragmentShaderPath;
 
-        std::vector<PipelineBinding> bindings;
+        Ref<VulkanDescriptorSetLayout> descriptorSetLayout = VK_NULL_HANDLE;
         std::vector<ImageFormat> colorAttachments;
         ImageFormat depthAttachment = ImageFormat::DEPTH24_STENCIL8;
 

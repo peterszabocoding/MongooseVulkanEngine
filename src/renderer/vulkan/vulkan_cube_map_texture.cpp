@@ -10,7 +10,7 @@ namespace Raytracing
     {
         ASSERT(data && size > 0, "Texture data is NULL or size is 0.")
 
-        AllocatedImage allocatedImage = ImageBuilder(device)
+        image = ImageBuilder(device)
                 .SetFormat(format)
                 .SetResolution(width, height)
                 .SetTiling(VK_IMAGE_TILING_OPTIMAL)
@@ -19,12 +19,9 @@ namespace Raytracing
                 .SetFlags(VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT)
                 .Build();
 
-        image = allocatedImage.image;
-        imageMemory = allocatedImage.imageMemory;
-
         imageView = ImageViewBuilder(device)
                 .SetFormat(format)
-                .SetImage(image)
+                .SetImage(image.image)
                 .SetViewType(VK_IMAGE_VIEW_TYPE_CUBE)
                 .SetAspectFlags(VK_IMAGE_ASPECT_COLOR_BIT)
                 .SetLayerCount(6)
@@ -41,8 +38,7 @@ namespace Raytracing
     VulkanCubeMapTexture::~VulkanCubeMapTexture()
     {
         vkDestroySampler(device->GetDevice(), sampler, nullptr);
-        vkFreeMemory(device->GetDevice(), imageMemory, nullptr);
         vkDestroyImageView(device->GetDevice(), imageView, nullptr);
-        vkDestroyImage(device->GetDevice(), image, nullptr);
+        vmaDestroyImage(device->GetVmaAllocator(), allocatedImage.image, allocatedImage.allocation);
     }
 }

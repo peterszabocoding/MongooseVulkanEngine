@@ -9,7 +9,6 @@
 #include "vulkan_utils.h"
 #include "vulkan_pipeline.h"
 #include "vulkan_swapchain.h"
-#include "vulkan_renderpass.h"
 #include "vulkan_cube_map_renderer.h"
 #include "GLFW/glfw3.h"
 
@@ -19,7 +18,6 @@
 
 #include "vulkan_descriptor_pool.h"
 #include "vulkan_descriptor_writer.h"
-#include "vulkan_framebuffer.h"
 #include "renderer/camera.h"
 #include "resource/resource_manager.h"
 #include "util/log.h"
@@ -40,8 +38,6 @@ namespace Raytracing
 
     VulkanDevice::~VulkanDevice()
     {
-        delete cubeMapRenderer;
-
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
         {
             vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
@@ -56,7 +52,8 @@ namespace Raytracing
         vkDestroyInstance(instance, nullptr);
     }
 
-    void VulkanDevice::DrawMesh(const Ref<Camera>& camera, const Transform& transform, const Ref<VulkanMesh>& mesh) const
+    void VulkanDevice::DrawMesh(const Ref<Camera>& camera, const Transform& transform, const Ref<VulkanMesh>& mesh,
+                                Ref<VulkanPipeline> pipeline) const
     {
         SimplePushConstantData pushConstantData;
         pushConstantData.normalMatrix = transform.GetNormalMatrix();
@@ -65,15 +62,14 @@ namespace Raytracing
         for (auto& meshlet: mesh->GetMeshlets())
         {
             const VulkanMaterial& material = mesh->GetMaterials()[meshlet.GetMaterialIndex()];
-            const VkPipeline pipeline = material.pipeline->GetPipeline();
-            const VkPipelineLayout pipelineLayout = material.pipeline->GetPipelineLayout();
+            const VkPipelineLayout pipelineLayout = pipeline->GetPipelineLayout();
 
             vkCmdPushConstants(
                 commandBuffers[currentFrame], pipelineLayout,
                 VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0,
                 sizeof(SimplePushConstantData), &pushConstantData);
 
-            DrawMeshlet(meshlet, pipeline, pipelineLayout, material.descriptorSet);
+            DrawMeshlet(meshlet, pipeline->GetPipeline(), pipelineLayout, material.descriptorSet);
         }
     }
 
@@ -88,140 +84,64 @@ namespace Raytracing
         vkCmdDrawIndexed(commandBuffers[currentFrame], meshlet.GetIndexCount(), 1, 0, 0, 0);
     }
 
-    void VulkanDevice::DrawImGui() const
+    void VulkanDevice::DrawFrame(VkSwapchainKHR swapchain, VkExtent2D extent, DrawFrameFunction draw, OutOfDateErrorCallback errorCallback)
     {
-        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffers[currentFrame]);
-    }
+        VkResult result = SetupNextFrame(swapchain);
 
-    bool VulkanDevice::BeginFrame()
-    {
-        if (!SetupNextFrame())
-            return false;
+        if (result == VK_ERROR_OUT_OF_DATE_KHR)
+        {
+            errorCallback();
+            return;
+        }
 
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-        VK_CHECK_MSG(
-            vkBeginCommandBuffer(commandBuffers[currentFrame], &beginInfo),
-            "Failed to begin recording command buffer.");
+        VK_CHECK_MSG(vkBeginCommandBuffer(commandBuffers[currentFrame], &beginInfo), "Failed to begin recording command buffer.");
 
-        gBufferPass->Begin(commandBuffers[currentFrame],
-                           gbufferFramebuffers[currentImageIndex],
-                           vulkanSwapChain->GetExtent());
+        SetViewportAndScissor(extent);
 
-        SetViewportAndScissor();
-        return true;
-    }
-
-    void VulkanDevice::EndFrame()
-    {
-        // End render pass
-        gBufferPass->End(commandBuffers[currentFrame]);
-
-        for (size_t i = 0; i < 6; i++)
-        {
-            cubeMapPass->Begin(commandBuffers[currentFrame], cubeMapFramebuffers[i], {512, 512});
-
-            SetViewportAndScissor();
-            DrawMeshlet(*cube, cubeMapRenderer->pipeline->GetPipeline(),
-                        cubeMapRenderer->pipeline->GetPipelineLayout(), cubeMapRenderer->descriptorSets[i]);
-
-            cubeMapPass->End(commandBuffers[currentFrame]);
-        }
-
-        if (!presentSampler)
-            presentSampler = ImageSamplerBuilder(this).Build();
-
-        auto pipeline = ResourceManager::renderToScreenPipeline;
-
-        auto writer = VulkanDescriptorWriter(*pipeline->GetDescriptorSetLayout(),
-                                             GetShaderDescriptorPool());
-
-        VkDescriptorImageInfo info{};
-        info.sampler = presentSampler;
-        info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        info.imageView = gbufferFramebuffers[currentFrame]->GetAttachments()[0].imageView;
-
-        writer.WriteImage(0, &info);
-
-        VkDescriptorImageInfo info2{};
-        info2.sampler = presentSampler;
-        info2.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        info2.imageView = gbufferFramebuffers[currentFrame]->GetAttachments()[1].imageView;
-
-        writer.WriteImage(1, &info2);
-
-        VkDescriptorImageInfo info3{};
-        info3.sampler = presentSampler;
-        info3.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        info3.imageView = gbufferFramebuffers[currentFrame]->GetAttachments()[2].imageView;
-
-        writer.WriteImage(2, &info3);
-
-        if (!presentDescriptorSet)
-            writer.Build(presentDescriptorSet);
-        else
-            writer.Overwrite(presentDescriptorSet);
-
-        lightingPass->Begin(commandBuffers[currentFrame],
-                            presentFramebuffers[currentImageIndex],
-                            vulkanSwapChain->GetExtent());
-
-        SetViewportAndScissor();
-        DrawMeshlet(*screenRect, ResourceManager::renderToScreenPipeline->GetPipeline(),
-                    ResourceManager::renderToScreenPipeline->GetPipelineLayout(), presentDescriptorSet);
-
-        DrawImGui();
-
-        lightingPass->End(commandBuffers[currentFrame]);
+        draw(commandBuffers[currentFrame], currentFrame, currentImageIndex);
 
         // End command buffer
-        VkResult result = vkEndCommandBuffer(commandBuffers[currentFrame]);
+        result = vkEndCommandBuffer(commandBuffers[currentFrame]);
         VK_CHECK_MSG(result, "Failed to record command buffer.");
 
-        VkSemaphore* signalSemaphores = {(&renderFinishedSemaphores[currentFrame])};
-
         // Submit commands
+        VkSemaphore* signalSemaphores = {(&renderFinishedSemaphores[currentFrame])};
         VK_CHECK_MSG(SubmitDrawCommands(signalSemaphores), "Failed to submit draw command buffer.");
 
         // Present frame
-        result = PresentFrame(currentImageIndex, signalSemaphores);
-        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized)
+        result = PresentFrame(swapchain, currentImageIndex, signalSemaphores);
+        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || getReadyToResize)
         {
-            framebufferResized = false;
-
-            vkDeviceWaitIdle(device);
-            gbufferFramebuffers.clear();
-
-            CreateSwapchain();
-            CreateFramebuffers();
-        } else if (result != VK_SUCCESS)
-        {
-            throw std::runtime_error("Failed to present swap chain image." + ' | ' + result);
+            getReadyToResize = false;
+            errorCallback();
+            return;
         }
+
+        if (result != VK_SUCCESS)
+            throw std::runtime_error("Failed to present swap chain image." + ' | ' + result);
 
         currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
     }
 
-    void VulkanDevice::ResizeFramebuffer(const int width, const int height)
+
+    void VulkanDevice::GetReadyToResize()
     {
-        viewportWidth = width;
-        viewportHeight = height;
-        framebufferResized = true;
+        getReadyToResize = true;
     }
 
     void VulkanDevice::Init(const int width, const int height, GLFWwindow* glfwWindow)
     {
-        viewportWidth = width;
-        viewportHeight = height;
-
         uint32_t glfw_extension_count = 0;
         const char** glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extension_count);
 
         std::vector<const char*> device_extensions;
-        const std::vector<const char*> validation_layer_list;
+        std::vector<const char*> validation_layer_list;
 
         device_extensions.reserve(glfw_extension_count);
+
         for (size_t i = 0; i < glfw_extension_count; i++)
             device_extensions.push_back(glfw_extensions[i]);
 
@@ -230,6 +150,7 @@ namespace Raytracing
 #endif
 
         device_extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+        device_extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
 
         if (ENABLE_VALIDATION_LAYERS)
         {
@@ -257,91 +178,6 @@ namespace Raytracing
         CreateDescriptorPool();
         CreateCommandBuffers();
         CreateSyncObjects();
-
-        CreateSwapchain();
-        CreateRenderpass();
-        CreateFramebuffers();
-
-        screenRect = CreateScope<VulkanMeshlet>(this, Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
-        cube = CreateScope<VulkanMeshlet>(this, Primitives::CUBE_VERTICES, Primitives::CUBE_INDICES);
-        cubeMapRenderer = new VulkanCubeMapRenderer(this);
-
-        cubeMapTexture = ResourceManager::LoadHDRCubeMap(this, "resources/environment/kloppenheim_06_puresky_4k.hdr");
-        //cubeMapTexture = ResourceManager::LoadHDRCubeMap(this, "resources/environment/newport_loft.hdr");
-        cubeMapRenderer->Load(this, cubeMapTexture);
-    }
-
-    void VulkanDevice::CreateSwapchain()
-    {
-        LOG_TRACE("Vulkan: create swapchain");
-        vulkanSwapChain = nullptr;
-
-        const auto swapChainSupport = VulkanUtils::QuerySwapChainSupport(physicalDevice, surface);
-        const VkSurfaceFormatKHR surfaceFormat = VulkanUtils::ChooseSwapSurfaceFormat(swapChainSupport.formats);
-
-        const uint32_t imageCount = VulkanUtils::GetSwapchainImageCount(physicalDevice, surface);
-        vulkanSwapChain = VulkanSwapchain::Builder(this)
-                .SetResolution(viewportWidth, viewportHeight)
-                .SetPresentMode(VK_PRESENT_MODE_IMMEDIATE_KHR)
-                .SetImageCount(imageCount)
-                .SetImageFormat(surfaceFormat.format)
-                .Build();
-    }
-
-    void VulkanDevice::CreateFramebuffers()
-    {
-        const uint32_t imageCount = VulkanUtils::GetSwapchainImageCount(physicalDevice, surface);
-        gbufferFramebuffers.resize(imageCount);
-        presentFramebuffers.resize(imageCount);
-
-        for (size_t i = 0; i < imageCount; i++)
-        {
-            gbufferFramebuffers[i] = VulkanFramebuffer::Builder(this)
-                    .SetRenderpass(gBufferPass)
-                    .SetResolution(viewportWidth, viewportHeight)
-                    .AddAttachment(ImageFormat::RGBA8_UNORM)
-                    .AddAttachment(ImageFormat::RGBA8_UNORM)
-                    .AddAttachment(ImageFormat::RGBA8_UNORM)
-                    .AddAttachment(ImageFormat::DEPTH24_STENCIL8)
-                    .Build();
-        }
-
-        for (size_t i = 0; i < imageCount; i++)
-        {
-            presentFramebuffers[i] = VulkanFramebuffer::Builder(this)
-                    .SetRenderpass(lightingPass)
-                    .SetResolution(viewportWidth, viewportHeight)
-                    .AddAttachment(vulkanSwapChain->GetImageViews()[i])
-                    .Build();
-        }
-
-        for (size_t i = 0; i < 6; i++)
-        {
-            cubeMapFramebuffers[i] = VulkanFramebuffer::Builder(this)
-                .SetRenderpass(cubeMapPass)
-                .SetResolution(512, 512)
-                .AddAttachment(ImageFormat::RGBA16_SFLOAT)
-                .Build();
-        }
-    }
-
-    void VulkanDevice::CreateRenderpass()
-    {
-        LOG_TRACE("Vulkan: create renderpass");
-        gBufferPass = VulkanRenderPass::Builder(this)
-                .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM)
-                .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM)
-                .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM)
-                .AddDepthAttachment()
-                .Build();
-
-        lightingPass = VulkanRenderPass::Builder(this)
-                .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM)
-                .Build();
-
-        cubeMapPass = VulkanRenderPass::Builder(this)
-                .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM)
-                .Build();
     }
 
     VkResult VulkanDevice::SubmitDrawCommands(VkSemaphore* signalSemaphores) const
@@ -364,66 +200,72 @@ namespace Raytracing
         return vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]);
     }
 
-    VkResult VulkanDevice::PresentFrame(const uint32_t imageIndex, const VkSemaphore* signalSemaphores) const
+    VkResult VulkanDevice::PresentFrame(VkSwapchainKHR swapchain, const uint32_t imageIndex,
+                                        const VkSemaphore* signalSemaphores) const
     {
         VkPresentInfoKHR presentInfo{};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
         presentInfo.waitSemaphoreCount = 1;
         presentInfo.pWaitSemaphores = signalSemaphores;
         presentInfo.swapchainCount = 1;
-        presentInfo.pSwapchains = &vulkanSwapChain->GetSwapChain();
+        presentInfo.pSwapchains = &swapchain;
         presentInfo.pImageIndices = &imageIndex;
 
         return vkQueuePresentKHR(presentQueue, &presentInfo);
     }
 
-    bool VulkanDevice::SetupNextFrame()
+    VkResult VulkanDevice::SetupNextFrame(VkSwapchainKHR swapchain)
     {
         vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
-        const VkResult result = vkAcquireNextImageKHR(
-            device,
-            vulkanSwapChain->GetSwapChain(),
-            UINT64_MAX,
-            imageAvailableSemaphores[currentFrame],
-            VK_NULL_HANDLE,
-            &currentImageIndex);
+        const VkResult result = vkAcquireNextImageKHR(device, swapchain,UINT64_MAX,
+                                                      imageAvailableSemaphores[currentFrame],VK_NULL_HANDLE, &currentImageIndex);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR)
-        {
-            LOG_WARN("Resize");
-            vkDeviceWaitIdle(device);
-
-            gbufferFramebuffers.clear();
-            CreateSwapchain();
-            CreateFramebuffers();
-            return false;
-        }
+            return VK_ERROR_OUT_OF_DATE_KHR;
 
         if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
-            throw std::runtime_error("Failed to acquire swap chain image.");
+            throw std::runtime_error("Failed to acquire swapchain image.");
 
         vkResetFences(device, 1, &inFlightFences[currentFrame]);
-        vkResetCommandBuffer(commandBuffers[currentFrame], /*VkCommandBufferResetFlagBits*/ 0);
+        vkResetCommandBuffer(commandBuffers[currentFrame], 0);
 
-        return true;
+        return VK_SUCCESS;
     }
 
-    void VulkanDevice::SetViewportAndScissor() const
+    void VulkanDevice::SetViewportAndScissor(VkExtent2D extent2D) const
     {
         VkViewport viewport{};
         viewport.x = 0.0f;
         viewport.y = 0.0f;
-        viewport.width = static_cast<float>(vulkanSwapChain->GetExtent().width);
-        viewport.height = static_cast<float>(vulkanSwapChain->GetExtent().height);
+        viewport.width = static_cast<float>(extent2D.width);
+        viewport.height = static_cast<float>(extent2D.height);
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
         vkCmdSetViewport(commandBuffers[currentFrame], 0, 1, &viewport);
 
         VkRect2D scissor{};
         scissor.offset = {0, 0};
-        scissor.extent = vulkanSwapChain->GetExtent();
+        scissor.extent = extent2D;
         vkCmdSetScissor(commandBuffers[currentFrame], 0, 1, &scissor);
+    }
+
+    void VulkanDevice::SetViewportAndScissor(VkExtent2D extent, VkCommandBuffer commandBuffer) const
+    {
+        VkViewport viewport{};
+        viewport.x = 0.0f;
+        viewport.y = 0.0f;
+        viewport.width = static_cast<float>(extent.width);
+        viewport.height = static_cast<float>(extent.height);
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+
+        VkRect2D scissor{};
+        scissor.offset = {0, 0};
+        scissor.extent = extent;
+
+        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+        vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
     }
 
     void VulkanDevice::ImmediateSubmit(std::function<void(VkCommandBuffer commandBuffer)>&& function) const

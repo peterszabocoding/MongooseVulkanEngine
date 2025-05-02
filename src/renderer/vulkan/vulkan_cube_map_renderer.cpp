@@ -20,11 +20,11 @@ namespace Raytracing
         lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f))
     };
 
-    VulkanCubeMapRenderer::VulkanCubeMapRenderer(VulkanDevice* device)
+    VulkanCubeMapRenderer::VulkanCubeMapRenderer(VulkanDevice* device, Ref<VulkanRenderPass> renderPass)
     {
         descriptorSetLayout = VulkanDescriptorSetLayout::Builder(device)
-                .AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
-                .AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // Base Color
+                .AddBinding({0, DescriptorSetBindingType::UniformBuffer, {DescriptorSetShaderStage::VertexShader}})
+                .AddBinding({1, DescriptorSetBindingType::TextureSampler, {DescriptorSetShaderStage::FragmentShader}})
                 .Build();
 
         pipeline = VulkanPipeline::Builder()
@@ -37,7 +37,7 @@ namespace Raytracing
                 .AddColorAttachment(ImageFormat::RGBA16_SFLOAT)
                 .SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
                 .SetMultisampling(VK_SAMPLE_COUNT_1_BIT)
-                .SetRenderpass(device->GetRenderPass())
+                .SetRenderpass(renderPass)
                 .Build(device);
 
         for (size_t i = 0; i < 6; i++)

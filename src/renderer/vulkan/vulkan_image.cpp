@@ -54,8 +54,6 @@ namespace Raytracing
                          &allocatedImage.image, &allocatedImage.allocation, &allocatedImage.allocationInfo),
                      "Failed to create image.");
 
-        allocatedImage.imageMemory = allocatedImage.allocationInfo.deviceMemory;
-
         return allocatedImage;
     }
 

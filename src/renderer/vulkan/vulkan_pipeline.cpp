@@ -58,43 +58,6 @@ namespace Raytracing
                     return VK_FRONT_FACE_COUNTER_CLOCKWISE;
             }
         }
-
-        static VkDescriptorType ConvertDescriptorType(const PipelineBindingType type)
-        {
-            switch (type)
-            {
-                case PipelineBindingType::UniformBuffer:
-                    return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-                case PipelineBindingType::TextureSampler:
-                    return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-
-                default:
-                    ASSERT(false, "Unknown descriptor type");
-            }
-        }
-
-        static VkShaderStageFlagBits ConvertShaderStage(const PipelineShaderStage type)
-        {
-            switch (type)
-            {
-                case PipelineShaderStage::VertexShader:
-                    return VK_SHADER_STAGE_VERTEX_BIT;
-
-                case PipelineShaderStage::FragmentShader:
-                    return VK_SHADER_STAGE_FRAGMENT_BIT;
-
-                case PipelineShaderStage::GeometryShader:
-                    return VK_SHADER_STAGE_GEOMETRY_BIT;
-
-                case PipelineShaderStage::ComputeShader:
-                    return VK_SHADER_STAGE_COMPUTE_BIT;
-
-                default:
-                    ASSERT(false, "Unknown shader stage");
-            }
-
-            return VK_SHADER_STAGE_ALL;
-        }
     }
 
     VulkanPipeline::~VulkanPipeline()
@@ -260,14 +223,7 @@ namespace Raytracing
         }
 
         // Descriptor Set Layout
-        auto descriptorSetLayoutBuilder = VulkanDescriptorSetLayout::Builder(vulkanDevice);
-        for (auto& [binding, type, stage]: config.bindings)
-        {
-            descriptorSetLayoutBuilder.AddBinding(binding,
-                                                  Utils::ConvertDescriptorType(type),
-                                                  Utils::ConvertShaderStage(stage));
-        }
-        SetDescriptorSetLayout(descriptorSetLayoutBuilder.Build());
+        SetDescriptorSetLayout(config.descriptorSetLayout);
 
         // Color attachments
         for (const auto& colorAttachment: config.colorAttachments)
@@ -277,14 +233,7 @@ namespace Raytracing
         // Optional push constant
         if (config.pushConstantData.size > 0)
         {
-            VkShaderStageFlags stageFlags = 0;
-
-            for (auto flag: config.pushConstantData.shaderStages)
-            {
-                stageFlags |= Utils::ConvertShaderStage(flag);
-            }
-
-            AddPushConstant(stageFlags,
+            AddPushConstant(config.pushConstantData.shaderStageBits,
                             config.pushConstantData.offset,
                             config.pushConstantData.size);
         }

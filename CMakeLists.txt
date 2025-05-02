@@ -164,6 +164,8 @@ endif (APPLE)
 
 if (WIN32)
     add_compile_definitions(PLATFORM_WINDOWS)
+
+    add_compile_definitions(PLATFORM_WINDOWS)
     add_executable(inOneWeekend ${EXTERNAL} ${HEADERS} ${SOURCE_ONE_WEEKEND} ${SOURCE_ONE_WEEKEND_WINDOWS})
 endif (WIN32)
 

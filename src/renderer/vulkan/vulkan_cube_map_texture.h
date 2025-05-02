@@ -40,7 +40,7 @@ namespace Raytracing
             uint32_t height = 0;
             ImageFormat format = ImageFormat::Unknown;
 
-            VkImage image{};
+            AllocatedImage image{};
             VkImageView imageView{};
             VkDeviceMemory imageMemory{};
             VkSampler sampler{};
@@ -48,23 +48,23 @@ namespace Raytracing
         };
 
     public:
-        VulkanCubeMapTexture(VulkanDevice* _device, const VkImage _image, const VkImageView _imageView, const VkSampler _sampler,
+        VulkanCubeMapTexture(VulkanDevice* _device, const AllocatedImage _image, const VkImageView _imageView, const VkSampler _sampler,
                              const VkDeviceMemory _imageMemory): device(_device),
-                                                                 image(_image),
+                                                                 allocatedImage(_image),
                                                                  imageView(_imageView),
                                                                  imageMemory(_imageMemory),
                                                                  sampler(_sampler) {}
 
         ~VulkanCubeMapTexture();
 
-        VkImage GetImage() const { return image; };
+        VkImage GetImage() const { return allocatedImage.image; };
         VkImageView GetImageView() const { return imageView; }
         VkSampler GetSampler() const { return sampler; }
 
     private:
         VulkanDevice* device;
 
-        VkImage image{};
+        AllocatedImage allocatedImage{};
         VkImageView imageView{};
         VkDeviceMemory imageMemory{};
         VkSampler sampler{};

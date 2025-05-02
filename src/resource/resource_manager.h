@@ -25,7 +25,6 @@ namespace Raytracing
         static void ReleaseImage(const ImageResource& image);
 
         static void LoadPipelines(VulkanDevice* vulkanDevice, Ref<VulkanRenderPass> renderPass);
-        static Ref<VulkanPipeline> GetMainPipeline() { return mainPipeline; }
 
         static Ref<VulkanMesh> LoadMesh(VulkanDevice* device, const std::string& meshPath);
         static Ref<VulkanMesh> LoadMeshFromObj(VulkanDevice* device, const std::string& meshPath);
@@ -35,9 +34,5 @@ namespace Raytracing
         static Ref<VulkanTexture> LoadHDRCubeMap(VulkanDevice* device, const std::string& hdrPath);
 
         static Scene LoadScene(VulkanDevice* device, const std::string& scenePath);
-
-    public:
-        static Ref<VulkanPipeline> mainPipeline;
-        static Ref<VulkanPipeline> renderToScreenPipeline;
     };
 }

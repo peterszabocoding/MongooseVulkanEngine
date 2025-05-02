@@ -87,7 +87,7 @@ namespace Raytracing
         init_info.QueueFamily = renderer->GetVulkanDevice()->GetQueueFamilyIndex();
         init_info.Queue = renderer->GetVulkanDevice()->GetPresentQueue();
         init_info.DescriptorPool = renderer->GetVulkanDevice()->GetGuiDescriptorPool();
-        init_info.RenderPass = renderer->GetVulkanDevice()->GetRenderPass()->Get();
+        init_info.RenderPass = renderer->GetRenderPass()->Get();
         init_info.MinImageCount = 2;
         init_info.ImageCount = 2;
         init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;

@@ -12,7 +12,6 @@ namespace Raytracing
 
     struct AllocatedImage {
         VkImage image;
-        VkDeviceMemory imageMemory;
         VmaAllocation allocation;
         VmaAllocationInfo allocationInfo;
     };

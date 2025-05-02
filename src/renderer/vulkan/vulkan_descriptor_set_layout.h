@@ -11,13 +11,33 @@ namespace Raytracing
 {
     class VulkanDevice;
 
+    enum class DescriptorSetBindingType {
+        Unknown = 0,
+        UniformBuffer = 1,
+        TextureSampler = 2,
+    };
+
+    enum class DescriptorSetShaderStage {
+        Unknown = 0,
+        VertexShader,
+        FragmentShader,
+        ComputeShader,
+        GeometryShader,
+    };
+
+    struct DescriptorSetBinding {
+        uint32_t location = 0;
+        DescriptorSetBindingType type = DescriptorSetBindingType::Unknown;
+        std::vector<DescriptorSetShaderStage> stages = { DescriptorSetShaderStage::Unknown };
+    };
+
     class VulkanDescriptorSetLayout {
     public:
         class Builder {
         public:
             explicit Builder(VulkanDevice* vulkanDevice): vulkanDevice(vulkanDevice) {}
 
-            Builder& AddBinding(uint32_t binding, VkDescriptorType type, VkShaderStageFlags stageFlags, uint32_t count = 1);
+            Builder& AddBinding(DescriptorSetBinding binding, uint32_t count = 1);
             Ref<VulkanDescriptorSetLayout> Build() const;
 
         private:

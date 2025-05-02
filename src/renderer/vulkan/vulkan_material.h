@@ -4,6 +4,7 @@
 #include <glm/vec4.hpp>
 
 #include "vulkan_buffer.h"
+#include "vulkan_descriptor_set_layout.h"
 #include "vulkan_image.h"
 #include "vulkan_texture.h"
 
@@ -31,7 +32,6 @@ namespace Raytracing
         MaterialParams params;
         VkDescriptorSet descriptorSet;
         Ref<VulkanBuffer> materialBuffer;
-        Ref<VulkanPipeline> pipeline;
     };
 
     class VulkanMaterialBuilder {
@@ -58,14 +58,14 @@ namespace Raytracing
         VulkanMaterialBuilder& SetMetallicRoughnessTexture(const Ref<VulkanTexture>& metallicRoughnessTexture);
 
         VulkanMaterialBuilder& SetParams(const MaterialParams& params);
-        VulkanMaterialBuilder& SetPipeline(Ref<VulkanPipeline> shader);
+        VulkanMaterialBuilder& SetDescriptorSetLayout(Ref<VulkanDescriptorSetLayout> _descriptorSetLayout);
         VulkanMaterial Build();
 
     private:
         int index = 0;
         VulkanDevice* vulkanDevice;
 
-        Ref<VulkanPipeline> pipeline;
+        Ref<VulkanDescriptorSetLayout> descriptorSetLayout;
         MaterialParams params;
 
         Ref<VulkanTexture> baseColorTexture;

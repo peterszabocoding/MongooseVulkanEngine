@@ -40,7 +40,7 @@ namespace Raytracing
     public:
         VulkanSwapchain(VulkanDevice* vulkanDevice, const VkSwapchainKHR swapChain, const VkExtent2D swapChainExtent,
                         const VkFormat swapChainImageFormat, const std::vector<VkImage>& images,
-                        const std::vector<VkImageView>& imageViews): vulkanDevice(vulkanDevice),
+                        const std::vector<VkImageView> imageViews): vulkanDevice(vulkanDevice),
                                                                      swapChain(swapChain),
                                                                      swapChainExtent(swapChainExtent),
                                                                      swapChainImageFormat(swapChainImageFormat),

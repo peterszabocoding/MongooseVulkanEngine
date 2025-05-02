@@ -17,7 +17,7 @@ namespace Raytracing
 
     class VulkanCubeMapRenderer {
     public:
-        VulkanCubeMapRenderer(VulkanDevice* device);
+        VulkanCubeMapRenderer(VulkanDevice* device, Ref<VulkanRenderPass> renderPass);
         ~VulkanCubeMapRenderer() {}
 
         void Load(VulkanDevice* device, Ref<VulkanTexture> hdrTexture);

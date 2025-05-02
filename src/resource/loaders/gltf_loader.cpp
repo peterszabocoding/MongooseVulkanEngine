@@ -10,6 +10,7 @@
 #include "renderer/mesh.h"
 #include "renderer/vulkan/vulkan_material.h"
 #include "renderer/vulkan/vulkan_mesh.h"
+#include "renderer/vulkan/vulkan_renderer.h"
 #include "resource/resource_manager.h"
 #include "util/log.h"
 
@@ -203,7 +204,7 @@ namespace Raytracing
             for (const tinygltf::Material& material: model.materials)
             {
                 VulkanMaterialBuilder builder(device);
-                builder.SetPipeline(ResourceManager::GetMainPipeline());
+                builder.SetDescriptorSetLayout(VulkanRenderer::descriptorSetLayouts.materialDescriptorSetLayout);
 
                 if (material.pbrMetallicRoughness.baseColorTexture.index >= 0)
                     builder.SetBaseColorTexture(textures[material.pbrMetallicRoughness.baseColorTexture.index]);
