@@ -56,8 +56,8 @@ namespace Raytracing
                                 Ref<VulkanPipeline> pipeline) const
     {
         SimplePushConstantData pushConstantData;
-        pushConstantData.normalMatrix = transform.GetNormalMatrix();
-        pushConstantData.transform = camera->GetProjection() * camera->GetView() * transform.GetTransform();
+        pushConstantData.modelMatrix = transform.GetTransform();
+        pushConstantData.transform = camera->GetProjection() * camera->GetView() * pushConstantData.modelMatrix;
 
         for (auto& meshlet: mesh->GetMeshlets())
         {

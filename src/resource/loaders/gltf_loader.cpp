@@ -118,6 +118,12 @@ namespace Raytracing
                                                           ? glm::make_vec3(&vAttributes[1].buffer[v * vAttributes[1].byteStride])
                                                           : glm::vec3(0.0f)));
 
+                    vert.tangent = normalize(glm::vec3(vAttributes[2].buffer
+                                                          ? glm::make_vec3(&vAttributes[2].buffer[v * vAttributes[2].byteStride])
+                                                          : glm::vec3(0.0f)));
+
+                    vert.bitangent = normalize(cross(vert.normal, vert.tangent));
+
                     vertexPos++;
                 }
             }

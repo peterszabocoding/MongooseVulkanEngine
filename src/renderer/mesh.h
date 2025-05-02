@@ -19,13 +19,17 @@ namespace Raytracing
         glm::vec3 normal;
         glm::vec3 color;
         glm::vec2 texCoord;
+        glm::vec3 tangent;
+        glm::vec3 bitangent;
 
         bool operator==(const Vertex& other) const
         {
             return pos == other.pos
                    && normal == other.normal
                    && color == other.color
-                   && texCoord == other.texCoord;
+                   && texCoord == other.texCoord
+                   && tangent == other.tangent
+                   && bitangent == other.bitangent;
         }
     };
 
@@ -41,9 +45,9 @@ namespace Raytracing
             return bindingDescription;
         }
 
-        static std::array<VkVertexInputAttributeDescription, 4> GetAttributeDescriptions()
+        static std::array<VkVertexInputAttributeDescription, 6> GetAttributeDescriptions()
         {
-            std::array<VkVertexInputAttributeDescription, 4> attributeDescriptions{};
+            std::array<VkVertexInputAttributeDescription, 6> attributeDescriptions{};
 
             // Vertex position
             attributeDescriptions[0].binding = 0;
@@ -57,17 +61,29 @@ namespace Raytracing
             attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
             attributeDescriptions[1].offset = offsetof(Vertex, color);
 
-            // Vertex UV coords
+            // Vertex UV coord
             attributeDescriptions[2].binding = 0;
             attributeDescriptions[2].location = 2;
             attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
             attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
 
-            // Vertex normals
+            // Vertex normal
             attributeDescriptions[3].binding = 0;
             attributeDescriptions[3].location = 3;
             attributeDescriptions[3].format = VK_FORMAT_R32G32B32_SFLOAT;
             attributeDescriptions[3].offset = offsetof(Vertex, normal);
+
+            // Vertex tangent
+            attributeDescriptions[4].binding = 0;
+            attributeDescriptions[4].location = 4;
+            attributeDescriptions[4].format = VK_FORMAT_R32G32B32_SFLOAT;
+            attributeDescriptions[4].offset = offsetof(Vertex, tangent);
+
+            // Vertex bitangent
+            attributeDescriptions[5].binding = 0;
+            attributeDescriptions[5].location = 5;
+            attributeDescriptions[5].format = VK_FORMAT_R32G32B32_SFLOAT;
+            attributeDescriptions[5].offset = offsetof(Vertex, bitangent);
 
             return attributeDescriptions;
         }
