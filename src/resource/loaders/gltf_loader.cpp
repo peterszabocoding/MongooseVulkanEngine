@@ -108,11 +108,11 @@ namespace Raytracing
 
                     vert.texCoord = vAttributes[3].buffer
                                         ? glm::make_vec2(&vAttributes[3].buffer[v * vAttributes[3].byteStride])
-                                        : glm::vec3(0.0f);
+                                        : glm::vec2(0.0f);
 
                     vert.color = vAttributes[4].buffer
-                                     ? glm::make_vec4(&vAttributes[4].buffer[v * vAttributes[4].byteStride])
-                                     : glm::vec4(1.0f);
+                                     ? glm::make_vec3(&vAttributes[4].buffer[v * vAttributes[4].byteStride])
+                                     : glm::vec3(1.0f);
 
                     vert.normal = normalize(glm::vec3(vAttributes[1].buffer
                                                           ? glm::make_vec3(&vAttributes[1].buffer[v * vAttributes[1].byteStride])

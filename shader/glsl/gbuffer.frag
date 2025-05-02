@@ -65,9 +65,9 @@ void main() {
                 : fragNormal;
 
     float diffuseFactor = AMBIENT + clamp(dot(normalWorldSpace, LIGHT_DIRECTION), 0.0, 1.0);
-    vec4 diffuseColor = materialParams.tint * color;
+    vec4 diffuseColor = vec4(fragColor, 1.0) * materialParams.tint * color;
 
-    baseColorImage = color;
+    baseColorImage = diffuseColor;
     normalImage = vec4(normalWorldSpace, 1.0);
     metallicRoughnessImage = vec4(occlusion, metallic, roughness, 1.0);
 }
