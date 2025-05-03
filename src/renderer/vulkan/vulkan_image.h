@@ -114,6 +114,12 @@ namespace Raytracing
             return *this;
         }
 
+        ImageViewBuilder& SetBaseArrayLayer(uint32_t _baseArrayLayer)
+        {
+            baseArrayLayer = _baseArrayLayer;
+            return *this;
+        }
+
         VkImageView Build() const;
 
     private:
@@ -123,6 +129,7 @@ namespace Raytracing
         VkImageViewType viewType = VK_IMAGE_VIEW_TYPE_2D;
         VkImageAspectFlags aspectFlags{};
         uint32_t layerCount = 1;
+        uint32_t baseArrayLayer = 0;
     };
 
     class ImageSamplerBuilder {
@@ -149,6 +156,12 @@ namespace Raytracing
             return *this;
         }
 
+        ImageSamplerBuilder& SetBorderColor(VkBorderColor _borderColor)
+        {
+            borderColor = _borderColor;
+            return *this;
+        }
+
         VkSampler Build();
 
     private:
@@ -157,5 +170,6 @@ namespace Raytracing
         VkFilter magFilter = VK_FILTER_LINEAR;
         VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
         VkSamplerAddressMode addressMode = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        VkBorderColor borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
     };
 }

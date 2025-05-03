@@ -95,7 +95,7 @@ namespace Raytracing
         Ref<VulkanBuffer> materialBuffer = CreateRef<VulkanBuffer>(
             vulkanDevice,
             sizeof(MaterialParams),
-            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
             VMA_MEMORY_USAGE_CPU_TO_GPU);
 

@@ -4,6 +4,7 @@
 #include <array>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/constants.hpp>
 
 #include "vulkan_cube_map_texture.h"
 #include "vulkan_descriptor_set_layout.h"
@@ -20,11 +21,13 @@ namespace Raytracing
         VulkanCubeMapRenderer(VulkanDevice* device, Ref<VulkanRenderPass> renderPass);
         ~VulkanCubeMapRenderer() {}
 
-        void Load(VulkanDevice* device, Ref<VulkanTexture> hdrTexture);
+        void Load(Ref<VulkanTexture> hdrTexture);
 
     public:
         static glm::mat4 captureProjection;
         static std::array<glm::mat4, 6> captureViews;
+
+        VulkanDevice* device;
 
         Ref<VulkanPipeline> pipeline;
 

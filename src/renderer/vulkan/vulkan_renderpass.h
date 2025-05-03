@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <glm/vec4.hpp>
 #include <vulkan/vulkan_core.h>
 
 #include "util/core.h"
@@ -16,6 +17,7 @@ namespace Raytracing
             struct ColorAttachment {
                 VkFormat imageFormat;
                 VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT;
+                glm::vec4 clearColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
             };
 
             struct DepthAttachment {
@@ -24,7 +26,8 @@ namespace Raytracing
 
         public:
             explicit Builder(VulkanDevice* vulkanDevice);
-            Builder& AddColorAttachment(VkFormat imageFormat, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT);
+            Builder& AddColorAttachment(VkFormat imageFormat, glm::vec4 clearColor = glm::vec4(0.0, 0.0, 0.0, 1.0),
+                                        VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT);
             Builder& AddDepthAttachment(VkFormat depthFormat = VK_FORMAT_D24_UNORM_S8_UINT);
             Ref<VulkanRenderPass> Build();
 

@@ -32,14 +32,14 @@ namespace Raytracing
         const auto stagingBuffer = VulkanBuffer(
             vulkanDevice,
             bufferSize,
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
             VMA_MEMORY_USAGE_CPU_ONLY);
 
         memcpy(stagingBuffer.GetMappedData(), vertices.data(), bufferSize);
 
         VkBufferUsageFlags vertexBufferUsageBits =
-                VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
                 VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 
         vertexBuffer = CreateRef<VulkanBuffer>(vulkanDevice,
@@ -57,7 +57,7 @@ namespace Raytracing
         const auto stagingBuffer = VulkanBuffer(
             vulkanDevice,
             bufferSize,
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
             VMA_MEMORY_USAGE_CPU_ONLY);
 
@@ -65,7 +65,7 @@ namespace Raytracing
 
         VkBufferUsageFlags indexBufferUsageBits =
                 VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-                VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+                VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
 
         indexBuffer = CreateRef<VulkanBuffer>(vulkanDevice,
                                               bufferSize,

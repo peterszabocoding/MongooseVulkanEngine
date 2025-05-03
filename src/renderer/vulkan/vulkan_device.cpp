@@ -52,7 +52,7 @@ namespace Raytracing
         vkDestroyInstance(instance, nullptr);
     }
 
-    void VulkanDevice::DrawMesh(const Ref<Camera>& camera, const Transform& transform, const Ref<VulkanMesh>& mesh,
+    void VulkanDevice::DrawMesh(VkCommandBuffer commandBuffer, const Ref<Camera>& camera, const Transform& transform, const Ref<VulkanMesh>& mesh,
                                 Ref<VulkanPipeline> pipeline) const
     {
         SimplePushConstantData pushConstantData;
@@ -65,23 +65,23 @@ namespace Raytracing
             const VkPipelineLayout pipelineLayout = pipeline->GetPipelineLayout();
 
             vkCmdPushConstants(
-                commandBuffers[currentFrame], pipelineLayout,
+                commandBuffer, pipelineLayout,
                 VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0,
                 sizeof(SimplePushConstantData), &pushConstantData);
 
-            DrawMeshlet(meshlet, pipeline->GetPipeline(), pipelineLayout, material.descriptorSet);
+            DrawMeshlet(commandBuffer, meshlet, pipeline->GetPipeline(), pipelineLayout, material.descriptorSet);
         }
     }
 
-    void VulkanDevice::DrawMeshlet(const VulkanMeshlet& meshlet, const VkPipeline pipeline, const VkPipelineLayout pipelineLayout,
+    void VulkanDevice::DrawMeshlet(VkCommandBuffer commandBuffer, const VulkanMeshlet& meshlet, const VkPipeline pipeline, const VkPipelineLayout pipelineLayout,
                                    const VkDescriptorSet descriptorSet) const
     {
-        vkCmdBindPipeline(commandBuffers[currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-        vkCmdBindDescriptorSets(commandBuffers[currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0,
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0,
                                 nullptr);
 
-        meshlet.Bind(commandBuffers[currentFrame]);
-        vkCmdDrawIndexed(commandBuffers[currentFrame], meshlet.GetIndexCount(), 1, 0, 0, 0);
+        meshlet.Bind(commandBuffer);
+        vkCmdDrawIndexed(commandBuffer, meshlet.GetIndexCount(), 1, 0, 0, 0);
     }
 
     void VulkanDevice::DrawFrame(VkSwapchainKHR swapchain, VkExtent2D extent, DrawFrameFunction draw, OutOfDateErrorCallback errorCallback)
@@ -137,6 +137,8 @@ namespace Raytracing
         uint32_t glfw_extension_count = 0;
         const char** glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extension_count);
 
+        VulkanUtils::GetAvailableExtensions();
+
         std::vector<const char*> device_extensions;
         std::vector<const char*> validation_layer_list;
 
@@ -151,12 +153,13 @@ namespace Raytracing
 
         device_extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
         device_extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
+        //device_extensions.push_back(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
 
         if (ENABLE_VALIDATION_LAYERS)
         {
             device_extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
             //validation_layer_list.push_back("VK_LAYER_LUNARG_crash_diagnostic");
-            //validation_layer_list.push_back("VK_LAYER_KHRONOS_validation");
+            validation_layer_list.push_back("VK_LAYER_KHRONOS_validation");
             //validation_layer_list.push_back("VK_LAYER_LUNARG_api_dump");
         }
 
@@ -172,6 +175,7 @@ namespace Raytracing
         allocatorInfo.physicalDevice = physicalDevice;
         allocatorInfo.device = device;
         allocatorInfo.instance = instance;
+        allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
         vmaCreateAllocator(&allocatorInfo, &vmaAllocator);
 
         CreateCommandPool();
@@ -366,10 +370,28 @@ namespace Raytracing
         VkPhysicalDeviceFeatures deviceFeatures{};
         deviceFeatures.samplerAnisotropy = VK_TRUE;
 
+        VkPhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures{};
+        descriptorIndexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
+        descriptorIndexingFeatures.pNext = nullptr;
+
+        VkPhysicalDeviceBufferDeviceAddressFeatures bufferDeviceAddressFeatures{};
+        bufferDeviceAddressFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
+        bufferDeviceAddressFeatures.pNext = &descriptorIndexingFeatures;
+
+        VkPhysicalDeviceFeatures2 deviceFeatures2{};
+        deviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        deviceFeatures2.pNext = &bufferDeviceAddressFeatures;
+
+        // Fetch all features
+        vkGetPhysicalDeviceFeatures2(physicalDevice, &deviceFeatures2);
+
+
         VkDeviceCreateInfo createInfo{};
         createInfo.pQueueCreateInfos = &queue_create_info;
         createInfo.queueCreateInfoCount = 1;
-        createInfo.pEnabledFeatures = &deviceFeatures;
+        //createInfo.pEnabledFeatures = &deviceFeatures;
+        createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+        createInfo.pNext = &deviceFeatures2;
 
         const std::vector device_extensions = {
             VK_KHR_SWAPCHAIN_EXTENSION_NAME

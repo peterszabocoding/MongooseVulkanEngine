@@ -129,7 +129,7 @@ namespace Raytracing
             VkPipelineDepthStencilStateCreateInfo depthStencil{};
             VkPipelineRenderingCreateInfo renderInfo{};
 
-            std::vector<VkPushConstantRange> pushConstantRanges;
+            std::vector<VkPushConstantRange> pushConstantRanges{};
 
             VkPolygonMode polygonMode;
             VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
@@ -153,8 +153,6 @@ namespace Raytracing
 
     private:
         VulkanDevice* vulkanDevice;
-        VkPipeline pipeline{};
-        VkPipelineLayout pipelineLayout{};
         PipelineParams params;
     };
 }

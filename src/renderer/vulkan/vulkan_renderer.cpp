@@ -15,6 +15,12 @@ namespace Raytracing
 {
     DescriptorSetLayouts VulkanRenderer::descriptorSetLayouts;
     Pipelines VulkanRenderer::pipelines;
+    Renderpass VulkanRenderer::renderpass;
+
+    VulkanRenderer::~VulkanRenderer()
+    {
+        delete cubeMapRenderer;
+    }
 
     void VulkanRenderer::Init(const int width, const int height)
     {
@@ -27,7 +33,7 @@ namespace Raytracing
         CreateSwapchain();
         CreateRenderPasses();
         CreateFramebuffers();
-
+        CreateTransformsBuffer();
 
         descriptorSetLayouts.materialDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice.get())
                 .AddBinding({0, DescriptorSetBindingType::UniformBuffer, {DescriptorSetShaderStage::FragmentShader}})
@@ -40,9 +46,42 @@ namespace Raytracing
                 .AddBinding({0, DescriptorSetBindingType::TextureSampler, {DescriptorSetShaderStage::FragmentShader}})
                 .AddBinding({1, DescriptorSetBindingType::TextureSampler, {DescriptorSetShaderStage::FragmentShader}})
                 .AddBinding({2, DescriptorSetBindingType::TextureSampler, {DescriptorSetShaderStage::FragmentShader}})
+                .AddBinding({3, DescriptorSetBindingType::TextureSampler, {DescriptorSetShaderStage::FragmentShader}})
+                .Build();
+
+        descriptorSetLayouts.skyboxDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice.get())
+                .AddBinding({0, DescriptorSetBindingType::UniformBuffer, {DescriptorSetShaderStage::VertexShader}})
+                .AddBinding({1, DescriptorSetBindingType::TextureSampler, {DescriptorSetShaderStage::FragmentShader}})
                 .Build();
 
         LOG_TRACE("Build pipelines");
+
+        LOG_TRACE("Building skybox pipeline");
+        PipelineConfig skyboxPipelineConfig; {
+            skyboxPipelineConfig.vertexShaderPath = "shader/spv/skybox.vert.spv";
+            skyboxPipelineConfig.fragmentShaderPath = "shader/spv/skybox.frag.spv";
+
+            skyboxPipelineConfig.cullMode = PipelineCullMode::Front;
+            skyboxPipelineConfig.polygonMode = PipelinePolygonMode::Fill;
+            skyboxPipelineConfig.frontFace = PipelineFrontFace::Counter_clockwise;
+
+            skyboxPipelineConfig.descriptorSetLayout = descriptorSetLayouts.skyboxDescriptorSetLayout;
+
+            skyboxPipelineConfig.colorAttachments = {
+                ImageFormat::RGBA8_UNORM,
+                ImageFormat::RGBA8_UNORM,
+                ImageFormat::RGBA8_UNORM,
+            };
+
+            skyboxPipelineConfig.disableBlending = true;
+            skyboxPipelineConfig.enableDepthTest = true;
+            skyboxPipelineConfig.depthAttachment = ImageFormat::DEPTH24_STENCIL8;
+
+            skyboxPipelineConfig.renderPass = renderpass.lightingPass;
+        }
+        pipelines.skyBox = VulkanPipeline::Builder().Build(vulkanDevice.get(), skyboxPipelineConfig);
+
+        LOG_TRACE("Building geometry pipeline");
         PipelineConfig geometryPipelineConfig; {
             geometryPipelineConfig.vertexShaderPath = "shader/spv/gbuffer.vert.spv";
             geometryPipelineConfig.fragmentShaderPath = "shader/spv/gbuffer.frag.spv";
@@ -57,21 +96,22 @@ namespace Raytracing
                 ImageFormat::RGBA8_UNORM,
                 ImageFormat::RGBA8_UNORM,
                 ImageFormat::RGBA8_UNORM,
-                ImageFormat::RGBA8_UNORM,
             };
 
             geometryPipelineConfig.disableBlending = true;
             geometryPipelineConfig.enableDepthTest = true;
             geometryPipelineConfig.depthAttachment = ImageFormat::DEPTH24_STENCIL8;
 
-            geometryPipelineConfig.renderPass = gBufferPass;
+            geometryPipelineConfig.renderPass = renderpass.gBufferPass;
 
             geometryPipelineConfig.pushConstantData.shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
             geometryPipelineConfig.pushConstantData.offset = 0;
             geometryPipelineConfig.pushConstantData.size = sizeof(SimplePushConstantData);
         }
-        pipelines.geometryPipeline = VulkanPipeline::Builder().Build(vulkanDevice.get(), geometryPipelineConfig);
+        pipelines.gBuffer = VulkanPipeline::Builder().Build(vulkanDevice.get(), geometryPipelineConfig);
 
+
+        LOG_TRACE("Building lighting pipeline");
         PipelineConfig lightingPipelineConfig; {
             lightingPipelineConfig.vertexShaderPath = "shader/spv/screen.vert.spv";
             lightingPipelineConfig.fragmentShaderPath = "shader/spv/screen.frag.spv";
@@ -88,59 +128,114 @@ namespace Raytracing
 
             lightingPipelineConfig.disableBlending = true;
             lightingPipelineConfig.enableDepthTest = false;
-            lightingPipelineConfig.renderPass = lightingPass;
+            lightingPipelineConfig.renderPass = renderpass.lightingPass;
         }
-        pipelines.lightingPipeline = VulkanPipeline::Builder().Build(vulkanDevice.get(), lightingPipelineConfig);
+        pipelines.lighting = VulkanPipeline::Builder().Build(vulkanDevice.get(), lightingPipelineConfig);
 
+
+        LOG_TRACE("Load skybox");
+        //hdrTexture = ResourceManager::LoadHDRCubeMap(vulkanDevice.get(), "resources/environment/newport_loft.hdr");
+        //hdrTexture = ResourceManager::LoadHDRCubeMap(vulkanDevice.get(), "resources/environment/champagne_castle_1_4k.hdr");
+        hdrTexture = ResourceManager::LoadHDRCubeMap(vulkanDevice.get(), "resources/environment/kloppenheim_06_puresky_4k.hdr");
+        cubemapResolution = hdrTexture->GetImageResource().width / 4;
+
+        cubemapTexture = VulkanCubeMapTexture::Builder()
+                .SetFormat(ImageFormat::RGBA16_SFLOAT)
+                .SetResolution(cubemapResolution, cubemapResolution)
+                .Build(vulkanDevice.get());
+
+        for (size_t i = 0; i < 6; i++)
+        {
+            cubeMapFramebuffers[i] = VulkanFramebuffer::Builder(vulkanDevice.get())
+                    .SetRenderpass(renderpass.cubeMapPass)
+                    .SetResolution(cubemapResolution, cubemapResolution)
+                    .AddAttachment(cubemapTexture->GetFaceImageView(i))
+                    .Build();
+        }
+
+        PrepareSkyboxPass();
         PrepareLightingPass();
 
         screenRect = CreateScope<VulkanMeshlet>(vulkanDevice.get(), Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
-        cube = CreateScope<VulkanMeshlet>(vulkanDevice.get(), Primitives::CUBE_VERTICES, Primitives::CUBE_INDICES);
+        //cube = CreateScope<VulkanMeshlet>(vulkanDevice.get(), Primitives::CUBE_VERTICES, Primitives::CUBE_INDICES);
 
-        LOG_TRACE("Load skybox");
-        //auto cubeMapTexture = ResourceManager::LoadHDRCubeMap(vulkanDevice.get(), "resources/environment/aristea_wreck_puresky_4k.hdr");
+        cubeMesh = ResourceManager::LoadMesh(vulkanDevice.get(), "resources/models/cube.obj");
+
+        cubeMapRenderer = new VulkanCubeMapRenderer(vulkanDevice.get(), renderpass.cubeMapPass);
+        cubeMapRenderer->Load(hdrTexture);
 
         LOG_TRACE("Load scene");
-        completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/sponza/Sponza.gltf");
+        //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/sponza/Sponza.gltf");
+        //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/vertex_color/vertex_color.gltf");
         //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/normal_tangent/NormalTangentTest.gltf");
-        //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/gltf/multiple_spheres.gltf");
+        completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/gltf/multiple_spheres.gltf");
         //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/chess/ABeautifulGame.gltf");
 
         transform.m_Position = glm::vec3(0.0f, 0.0f, -1.0f);
+
+        LOG_INFO("Convert HDR to Cubemap");
+        vulkanDevice->DrawFrame(vulkanSwapChain->GetSwapChain(), vulkanSwapChain->GetExtent(),
+                                [&](VkCommandBuffer commandBuffer, uint32_t frameIndex, uint32_t imageIndex) {
+                                    activeImage = imageIndex;
+                                    DrawCubemap(commandBuffer);
+                                }, std::bind(&VulkanRenderer::ResizeSwapchain, this));
+    }
+
+    void VulkanRenderer::DrawCubemap(VkCommandBuffer commandBuffer)
+    {
+        for (size_t i = 0; i < 6; i++)
+        {
+            renderpass.cubeMapPass->Begin(commandBuffer, cubeMapFramebuffers[i], {cubemapResolution, cubemapResolution});
+            vulkanDevice->DrawMeshlet(commandBuffer,
+                                      cubeMesh->GetMeshlets()[0],
+                                      cubeMapRenderer->pipeline->GetPipeline(),
+                                      cubeMapRenderer->pipeline->GetPipelineLayout(), cubeMapRenderer->descriptorSets[i]);
+            renderpass.cubeMapPass->End(commandBuffer);
+        }
     }
 
     void VulkanRenderer::DrawGeometryPass(float deltaTime, Ref<Camera> camera, VkCommandBuffer commandBuffer)
     {
-        gBufferPass->Begin(commandBuffer, gbufferFramebuffers[activeImage], vulkanSwapChain->GetExtent());
+        renderpass.gBufferPass->Begin(commandBuffer, gbufferFramebuffers[activeImage], vulkanSwapChain->GetExtent());
+
         for (size_t i = 0; i < completeScene.meshes.size(); i++)
         {
-            vulkanDevice->DrawMesh(camera,
+            vulkanDevice->DrawMesh(commandBuffer,
+                                   camera,
                                    completeScene.transforms[i],
                                    completeScene.meshes[i],
-                                   pipelines.geometryPipeline);
+                                   pipelines.gBuffer);
         }
-        gBufferPass->End(commandBuffer);
+
+        renderpass.gBufferPass->End(commandBuffer);
     }
 
     void VulkanRenderer::DrawLightingPass(VkCommandBuffer commandBuffer)
     {
-        lightingPass->Begin(commandBuffer, presentFramebuffers[activeImage],
-                            vulkanSwapChain->GetExtent());
+        renderpass.lightingPass->Begin(commandBuffer, presentFramebuffers[activeImage],
+                                       vulkanSwapChain->GetExtent());
 
-        vulkanDevice->DrawMeshlet(*screenRect, pipelines.lightingPipeline->GetPipeline(),
-                                  pipelines.lightingPipeline->GetPipelineLayout(),
-                                  presentDescriptorSets[activeImage]);
+        vulkanDevice->DrawMeshlet(commandBuffer,
+                                  cubeMesh->GetMeshlets()[0],
+                                  pipelines.skyBox->GetPipeline(),
+                                  pipelines.skyBox->GetPipelineLayout(), skyboxDescriptorSet);
+/*
+        vulkanDevice->DrawMeshlet(commandBuffer, *screenRect,
+                                  pipelines.lighting->GetPipeline(),
+                                  pipelines.lighting->GetPipelineLayout(), presentDescriptorSets[activeImage]);
+*/
+        //ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 
-        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
-
-        lightingPass->End(commandBuffer);
+        renderpass.lightingPass->End(commandBuffer);
     }
 
     void VulkanRenderer::DrawFrame(float deltaTime, Ref<Camera> camera)
     {
+        UpdateTransformsBuffer(camera);
         vulkanDevice->DrawFrame(vulkanSwapChain->GetSwapChain(), vulkanSwapChain->GetExtent(),
                                 [&](VkCommandBuffer commandBuffer, uint32_t frameIndex, uint32_t imageIndex) {
                                     activeImage = imageIndex;
+
                                     DrawGeometryPass(deltaTime, camera, commandBuffer);
                                     DrawLightingPass(commandBuffer);
                                 }, std::bind(&VulkanRenderer::ResizeSwapchain, this));
@@ -188,7 +283,7 @@ namespace Raytracing
         for (size_t i = 0; i < imageCount; i++)
         {
             gbufferFramebuffers[i] = VulkanFramebuffer::Builder(vulkanDevice.get())
-                    .SetRenderpass(gBufferPass)
+                    .SetRenderpass(renderpass.gBufferPass)
                     .SetResolution(viewportWidth, viewportHeight)
                     .AddAttachment(ImageFormat::RGBA8_UNORM)
                     .AddAttachment(ImageFormat::RGBA8_UNORM)
@@ -200,18 +295,9 @@ namespace Raytracing
         for (size_t i = 0; i < imageCount; i++)
         {
             presentFramebuffers[i] = VulkanFramebuffer::Builder(vulkanDevice.get())
-                    .SetRenderpass(lightingPass)
+                    .SetRenderpass(renderpass.lightingPass)
                     .SetResolution(viewportWidth, viewportHeight)
                     .AddAttachment(vulkanSwapChain->GetImageViews()[i])
-                    .Build();
-        }
-
-        for (size_t i = 0; i < 6; i++)
-        {
-            cubeMapFramebuffers[i] = VulkanFramebuffer::Builder(vulkanDevice.get())
-                    .SetRenderpass(cubeMapPass)
-                    .SetResolution(512, 512)
-                    .AddAttachment(ImageFormat::RGBA16_SFLOAT)
                     .Build();
         }
     }
@@ -219,19 +305,24 @@ namespace Raytracing
     void VulkanRenderer::CreateRenderPasses()
     {
         LOG_TRACE("Vulkan: create renderpass");
-        gBufferPass = VulkanRenderPass::Builder(vulkanDevice.get())
+        renderpass.cubeMapPass = VulkanRenderPass::Builder(vulkanDevice.get())
+                .AddColorAttachment(VK_FORMAT_R16G16B16A16_SFLOAT)
+                .Build();
+
+        renderpass.skyboxPass = VulkanRenderPass::Builder(vulkanDevice.get())
+                .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM)
+                .AddDepthAttachment()
+                .Build();
+
+        renderpass.gBufferPass = VulkanRenderPass::Builder(vulkanDevice.get())
                 .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM)
                 .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM)
                 .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM)
                 .AddDepthAttachment()
                 .Build();
 
-        lightingPass = VulkanRenderPass::Builder(vulkanDevice.get())
-                .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM)
-                .Build();
-
-        cubeMapPass = VulkanRenderPass::Builder(vulkanDevice.get())
-                .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM)
+        renderpass.lightingPass = VulkanRenderPass::Builder(vulkanDevice.get())
+                .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM, glm::vec4(1.0))
                 .Build();
     }
 
@@ -249,11 +340,30 @@ namespace Raytracing
         PrepareLightingPass();
     }
 
+    void VulkanRenderer::CreateTransformsBuffer()
+    {
+        transformsBuffer = CreateRef<VulkanBuffer>(
+            vulkanDevice.get(),
+            sizeof(TransformsBuffer),
+            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            VMA_MEMORY_USAGE_CPU_TO_GPU);
+    }
+
+    void VulkanRenderer::UpdateTransformsBuffer(const Ref<Camera>& camera)
+    {
+        TransformsBuffer bufferData;
+        bufferData.view = camera->GetView();
+        bufferData.proj = camera->GetProjection();
+
+        memcpy(transformsBuffer->GetMappedData(), &bufferData, sizeof(TransformsBuffer));
+    }
+
     void VulkanRenderer::PrepareLightingPass()
     {
         presentSampler = ImageSamplerBuilder(vulkanDevice.get()).Build();
 
-        VulkanDescriptorWriter writer = VulkanDescriptorWriter(*pipelines.lightingPipeline->GetDescriptorSetLayout(),
+        VulkanDescriptorWriter writer = VulkanDescriptorWriter(*pipelines.lighting->GetDescriptorSetLayout(),
                                                                vulkanDevice->GetShaderDescriptorPool());
 
         presentDescriptorSets.resize(gbufferFramebuffers.size());
@@ -280,7 +390,36 @@ namespace Raytracing
 
             writer.WriteImage(2, &info3);
 
+            VkDescriptorImageInfo info4{};
+            info4.sampler = cubemapTexture->GetSampler();
+            info4.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            info4.imageView = cubemapTexture->GetImageView();
+
+            writer.WriteImage(3, &info4);
+
             writer.Build(presentDescriptorSets[i]);
         }
+    }
+
+    void VulkanRenderer::PrepareSkyboxPass()
+    {
+        VulkanDescriptorWriter writer = VulkanDescriptorWriter(*pipelines.skyBox->GetDescriptorSetLayout(),
+                                                               vulkanDevice->GetShaderDescriptorPool());
+
+
+        VkDescriptorBufferInfo bufferInfo{};
+        bufferInfo.buffer = transformsBuffer->GetBuffer();
+        bufferInfo.offset = 0;
+        bufferInfo.range = sizeof(TransformsBuffer);
+
+        VkDescriptorImageInfo info{};
+        info.sampler = cubemapTexture->GetSampler();
+        info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        info.imageView = cubemapTexture->GetImageView();
+
+        writer.WriteBuffer(0, &bufferInfo);
+        writer.WriteImage(1, &info);
+
+        writer.Build(skyboxDescriptorSet);
     }
 }

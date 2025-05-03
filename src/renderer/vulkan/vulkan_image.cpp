@@ -67,7 +67,7 @@ namespace Raytracing
         viewInfo.subresourceRange.aspectMask = aspectFlags;
         viewInfo.subresourceRange.baseMipLevel = 0;
         viewInfo.subresourceRange.levelCount = 1;
-        viewInfo.subresourceRange.baseArrayLayer = 0;
+        viewInfo.subresourceRange.baseArrayLayer = baseArrayLayer;
         viewInfo.subresourceRange.layerCount = layerCount;
 
         VkImageView imageView = VK_NULL_HANDLE;
@@ -92,7 +92,7 @@ namespace Raytracing
 
         samplerInfo.anisotropyEnable = VK_TRUE;
         samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
-        samplerInfo.borderColor = ImageUtils::GetBorderColor(format);
+        samplerInfo.borderColor = borderColor;
         samplerInfo.unnormalizedCoordinates = VK_FALSE;
         samplerInfo.compareEnable = VK_FALSE;
         samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;

@@ -31,11 +31,11 @@ namespace Raytracing
         ~VulkanDevice();
 
         void DrawMesh(
-            const Ref<Camera>& camera,
-            const Transform& transform, const Ref<VulkanMesh>& mesh, Ref<VulkanPipeline> pipeline) const;
+            VkCommandBuffer commandBuffer,
+            const Ref<Camera>& camera, const Transform& transform, const Ref<VulkanMesh>& mesh, Ref<VulkanPipeline> pipeline) const;
 
-        void DrawMeshlet(const VulkanMeshlet& meshlet, VkPipeline pipeline, VkPipelineLayout pipelineLayout,
-                         VkDescriptorSet descriptorSet) const;
+        void DrawMeshlet(VkCommandBuffer commandBuffer, const VulkanMeshlet& meshlet, VkPipeline pipeline,
+                         VkPipelineLayout pipelineLayout, VkDescriptorSet descriptorSet) const;
 
         void DrawFrame(VkSwapchainKHR swapchain, VkExtent2D extent, DrawFrameFunction draw, OutOfDateErrorCallback errorCallback);
 

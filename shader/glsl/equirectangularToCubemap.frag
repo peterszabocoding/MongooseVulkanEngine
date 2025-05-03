@@ -1,6 +1,7 @@
 #version 450
 
 layout(location = 0) in vec3 inWorldPosition;
+
 layout(binding = 1) uniform sampler2D equirectangularMap;
 
 layout(location = 0) out vec4 fragColor;

@@ -42,16 +42,19 @@ namespace Raytracing
 
             AllocatedImage image{};
             VkImageView imageView{};
+            std::array<VkImageView, 6> faceImageViews{};
             VkDeviceMemory imageMemory{};
             VkSampler sampler{};
             ImageResource imageResource{};
         };
 
     public:
-        VulkanCubeMapTexture(VulkanDevice* _device, const AllocatedImage _image, const VkImageView _imageView, const VkSampler _sampler,
+        VulkanCubeMapTexture(VulkanDevice* _device, const AllocatedImage _image, const VkImageView _imageView,
+                             const std::array<VkImageView, 6> _faceImageViews, const VkSampler _sampler,
                              const VkDeviceMemory _imageMemory): device(_device),
                                                                  allocatedImage(_image),
                                                                  imageView(_imageView),
+                                                                 faceImageViews(_faceImageViews),
                                                                  imageMemory(_imageMemory),
                                                                  sampler(_sampler) {}
 
@@ -59,6 +62,7 @@ namespace Raytracing
 
         VkImage GetImage() const { return allocatedImage.image; };
         VkImageView GetImageView() const { return imageView; }
+        VkImageView GetFaceImageView(size_t faceIndex) const { return faceImageViews[faceIndex]; }
         VkSampler GetSampler() const { return sampler; }
 
     private:
@@ -66,6 +70,7 @@ namespace Raytracing
 
         AllocatedImage allocatedImage{};
         VkImageView imageView{};
+        std::array<VkImageView, 6> faceImageViews{};
         VkDeviceMemory imageMemory{};
         VkSampler sampler{};
     };

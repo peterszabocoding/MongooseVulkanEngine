@@ -11,16 +11,18 @@
 namespace Raytracing
 {
     glm::mat4 VulkanCubeMapRenderer::captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+
     std::array<glm::mat4, 6> VulkanCubeMapRenderer::captureViews = {
-        lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)),
-        lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)),
-        lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
-        lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f)),
-        lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f)),
-        lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f))
+        lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)),     // 0
+        lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)),    // 1
+        lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f)),      // 2
+        lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),    // 3
+        lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f)),     // 4
+        lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f)),    // 5
+
     };
 
-    VulkanCubeMapRenderer::VulkanCubeMapRenderer(VulkanDevice* device, Ref<VulkanRenderPass> renderPass)
+    VulkanCubeMapRenderer::VulkanCubeMapRenderer(VulkanDevice* _device, Ref<VulkanRenderPass> renderPass): device(_device)
     {
         descriptorSetLayout = VulkanDescriptorSetLayout::Builder(device)
                 .AddBinding({0, DescriptorSetBindingType::UniformBuffer, {DescriptorSetShaderStage::VertexShader}})
@@ -45,13 +47,13 @@ namespace Raytracing
             projectionViewBuffers[i] = CreateRef<VulkanBuffer>(
                 device,
                 sizeof(ProjectionViewBuffer),
-                VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                 VMA_MEMORY_USAGE_CPU_TO_GPU);
         }
     }
 
-    void VulkanCubeMapRenderer::Load(VulkanDevice* device, Ref<VulkanTexture> hdrTexture)
+    void VulkanCubeMapRenderer::Load(Ref<VulkanTexture> hdrTexture)
     {
         VkDescriptorImageInfo hdrImageInfo{};
         hdrImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;

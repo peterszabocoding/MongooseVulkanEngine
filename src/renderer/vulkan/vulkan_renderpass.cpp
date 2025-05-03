@@ -8,17 +8,19 @@
 
 namespace Raytracing
 {
-    VulkanRenderPass::Builder::Builder(VulkanDevice* vulkanDevice): vulkanDevice(vulkanDevice){}
+    VulkanRenderPass::Builder::Builder(VulkanDevice* vulkanDevice): vulkanDevice(vulkanDevice) {}
 
-    VulkanRenderPass::Builder& VulkanRenderPass::Builder::AddColorAttachment(const VkFormat imageFormat, const VkSampleCountFlagBits sampleCount)
+    VulkanRenderPass::Builder& VulkanRenderPass::Builder::AddColorAttachment(const VkFormat imageFormat,
+                                                                             const glm::vec4 clearColor,
+                                                                             const VkSampleCountFlagBits sampleCount)
     {
-        colorAttachments.push_back({ imageFormat, sampleCount });
+        colorAttachments.push_back({imageFormat, sampleCount, clearColor});
         return *this;
     }
 
     VulkanRenderPass::Builder& VulkanRenderPass::Builder::AddDepthAttachment(VkFormat depthFormat)
     {
-        depthAttachments.push_back({ depthFormat });
+        depthAttachments.push_back({depthFormat});
         return *this;
     }
 
@@ -29,7 +31,7 @@ namespace Raytracing
         std::vector<VkAttachmentReference> depthAttachmentsRefs;
         std::vector<VkAttachmentDescription> attachmentDescriptions;
 
-        for (auto colorAttachment : colorAttachments)
+        for (auto colorAttachment: colorAttachments)
         {
             VkAttachmentDescription attachment{};
             attachment.format = colorAttachment.imageFormat;
@@ -52,11 +54,19 @@ namespace Raytracing
             colorAttachmentsRefs.push_back(attachmentRef);
 
             VkClearValue clearValue{};
-            clearValue.color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
+
+            clearValue.color = {
+                {
+                    colorAttachment.clearColor.x,
+                    colorAttachment.clearColor.y,
+                    colorAttachment.clearColor.z,
+                    colorAttachment.clearColor.w
+                }
+            };
             clearValues.push_back(clearValue);
         }
 
-        for (auto depthAttachment : depthAttachments)
+        for (auto depthAttachment: depthAttachments)
         {
             VkAttachmentDescription attachment{};
             attachment.format = depthAttachment.depthFormat;
@@ -79,7 +89,7 @@ namespace Raytracing
             depthAttachmentsRefs.push_back(attachmentRef);
 
             VkClearValue clearValue{};
-            clearValue.depthStencil = { 1.0f, 0 };
+            clearValue.depthStencil = {1.0f, 0};
             clearValues.push_back(clearValue);
         }
 
@@ -91,21 +101,21 @@ namespace Raytracing
 
         std::array<VkSubpassDependency, 2> dependencies;
 
-		dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
-		dependencies[0].dstSubpass = 0;
-		dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-		dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-		dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-		dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+        dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+        dependencies[0].dstSubpass = 0;
+        dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+        dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+        dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
-		dependencies[1].srcSubpass = 0;
-		dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
-		dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependencies[1].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-		dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-		dependencies[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-		dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+        dependencies[1].srcSubpass = 0;
+        dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
+        dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependencies[1].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+        dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        dependencies[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+        dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
         VkRenderPassCreateInfo render_pass_info{};
         render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
