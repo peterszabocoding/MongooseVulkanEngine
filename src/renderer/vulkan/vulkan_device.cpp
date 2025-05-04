@@ -9,7 +9,6 @@
 #include "vulkan_utils.h"
 #include "vulkan_pipeline.h"
 #include "vulkan_swapchain.h"
-#include "vulkan_cube_map_renderer.h"
 #include "GLFW/glfw3.h"
 
 #define VMA_IMPLEMENTATION
@@ -153,13 +152,12 @@ namespace Raytracing
 
         device_extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
         device_extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
-        //device_extensions.push_back(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
 
         if (ENABLE_VALIDATION_LAYERS)
         {
             device_extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
             //validation_layer_list.push_back("VK_LAYER_LUNARG_crash_diagnostic");
-            validation_layer_list.push_back("VK_LAYER_KHRONOS_validation");
+            //validation_layer_list.push_back("VK_LAYER_KHRONOS_validation");
             //validation_layer_list.push_back("VK_LAYER_LUNARG_api_dump");
         }
 

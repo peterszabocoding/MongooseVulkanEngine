@@ -1,5 +1,6 @@
 #pragma once
 #include "vulkan_device.h"
+#include "renderer/bitmap.h"
 #include "util/core.h"
 
 namespace Raytracing
@@ -11,10 +12,9 @@ namespace Raytracing
             Builder() = default;
             ~Builder() = default;
 
-            Builder& SetData(void* _data, const uint64_t _size)
+            Builder& SetData(Bitmap* _bitmap)
             {
-                data = _data;
-                size = _size;
+                cubemap = _bitmap;
                 return *this;
             }
 
@@ -34,13 +34,12 @@ namespace Raytracing
             Ref<VulkanCubeMapTexture> Build(VulkanDevice* device);
 
         private:
-            void* data = nullptr;
-            uint64_t size = 0;
+            Bitmap* cubemap = nullptr;
             uint32_t width = 0;
             uint32_t height = 0;
             ImageFormat format = ImageFormat::Unknown;
 
-            AllocatedImage image{};
+            AllocatedImage allocatedImage{};
             VkImageView imageView{};
             std::array<VkImageView, 6> faceImageViews{};
             VkDeviceMemory imageMemory{};

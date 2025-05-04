@@ -2,6 +2,7 @@
 
 #include <complex.h>
 
+#include "renderer/bitmap.h"
 #include "renderer/scene.h"
 #include "renderer/vulkan/vulkan_image.h"
 #include "renderer/vulkan/vulkan_renderpass.h"
@@ -30,8 +31,9 @@ namespace Raytracing
         static Ref<VulkanMesh> LoadMeshFromObj(VulkanDevice* device, const std::string& meshPath);
         static Ref<VulkanMesh> LoadMeshFromglTF(VulkanDevice* device, const std::string& meshPath);
 
-        static Ref<VulkanTexture> LoadTexture(VulkanDevice* device, std::string textureImagePath);
-        static Ref<VulkanTexture> LoadHDRCubeMap(VulkanDevice* device, const std::string& hdrPath);
+        static Ref<VulkanTexture> LoadTexture(VulkanDevice* device, const std::string& textureImagePath);
+        static Ref<VulkanCubeMapTexture> LoadHDRCubeMap(VulkanDevice* device, const std::string& hdrPath);
+        static void LoadAndSaveHDR(const std::string& hdrPath);
 
         static Scene LoadScene(VulkanDevice* device, const std::string& scenePath);
     };

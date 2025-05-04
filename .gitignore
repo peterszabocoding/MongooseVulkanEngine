@@ -25,3 +25,5 @@ shader/spv/
 Testing/
 *.cap
 resources/
+cache/
+.cache/

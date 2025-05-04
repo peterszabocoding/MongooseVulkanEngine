@@ -1,6 +1,6 @@
 #pragma once
 
-#include "vulkan_cube_map_renderer.h"
+#include "vulkan_cube_map_texture.h"
 #include "renderer/renderer.h"
 #include "vulkan_device.h"
 #include "vulkan_material.h"
@@ -40,8 +40,7 @@ namespace Raytracing
         ~VulkanRenderer() override;
 
         virtual void Init(int width, int height) override;
-        void DrawCubemap(VkCommandBuffer commandBuffer);
-        void DrawGeometryPass(float deltaTime, Ref<Camera> camera, VkCommandBuffer commandBuffer);
+        void DrawGeometryPass(float deltaTime, const Ref<Camera>& camera, VkCommandBuffer commandBuffer) const;
         void DrawLightingPass(VkCommandBuffer commandBuffer);
 
         virtual void ProcessPixel(unsigned int pixelCount, vec3 pixelColor) override {}
@@ -56,8 +55,6 @@ namespace Raytracing
 
         [[nodiscard]] Ref<VulkanRenderPass> GetRenderPass() const { return renderpass.gBufferPass; }
         [[nodiscard]] Ref<VulkanFramebuffer> GetGBuffer() const { return gbufferFramebuffers[activeImage]; }
-
-        void OnDeviceReadyToResize();
 
     private:
         void CreateSwapchain();
@@ -97,7 +94,6 @@ namespace Raytracing
 
         Ref<VulkanTexture> hdrTexture;
         Ref<VulkanCubeMapTexture> cubemapTexture;
-        VulkanCubeMapRenderer* cubeMapRenderer{};
 
         uint32_t cubemapResolution = 0;
 

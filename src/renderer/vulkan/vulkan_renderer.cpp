@@ -17,10 +17,7 @@ namespace Raytracing
     Pipelines VulkanRenderer::pipelines;
     Renderpass VulkanRenderer::renderpass;
 
-    VulkanRenderer::~VulkanRenderer()
-    {
-        delete cubeMapRenderer;
-    }
+    VulkanRenderer::~VulkanRenderer() {}
 
     void VulkanRenderer::Init(const int width, const int height)
     {
@@ -69,15 +66,13 @@ namespace Raytracing
 
             skyboxPipelineConfig.colorAttachments = {
                 ImageFormat::RGBA8_UNORM,
-                ImageFormat::RGBA8_UNORM,
-                ImageFormat::RGBA8_UNORM,
             };
 
             skyboxPipelineConfig.disableBlending = true;
-            skyboxPipelineConfig.enableDepthTest = true;
+            skyboxPipelineConfig.enableDepthTest = false;
             skyboxPipelineConfig.depthAttachment = ImageFormat::DEPTH24_STENCIL8;
 
-            skyboxPipelineConfig.renderPass = renderpass.lightingPass;
+            skyboxPipelineConfig.renderPass = renderpass.gBufferPass;
         }
         pipelines.skyBox = VulkanPipeline::Builder().Build(vulkanDevice.get(), skyboxPipelineConfig);
 
@@ -132,71 +127,36 @@ namespace Raytracing
         }
         pipelines.lighting = VulkanPipeline::Builder().Build(vulkanDevice.get(), lightingPipelineConfig);
 
+        cubeMesh = ResourceManager::LoadMesh(vulkanDevice.get(), "resources/models/cube.obj");
 
         LOG_TRACE("Load skybox");
-        //hdrTexture = ResourceManager::LoadHDRCubeMap(vulkanDevice.get(), "resources/environment/newport_loft.hdr");
-        //hdrTexture = ResourceManager::LoadHDRCubeMap(vulkanDevice.get(), "resources/environment/champagne_castle_1_4k.hdr");
-        hdrTexture = ResourceManager::LoadHDRCubeMap(vulkanDevice.get(), "resources/environment/kloppenheim_06_puresky_4k.hdr");
-        cubemapResolution = hdrTexture->GetImageResource().width / 4;
-
-        cubemapTexture = VulkanCubeMapTexture::Builder()
-                .SetFormat(ImageFormat::RGBA16_SFLOAT)
-                .SetResolution(cubemapResolution, cubemapResolution)
-                .Build(vulkanDevice.get());
-
-        for (size_t i = 0; i < 6; i++)
-        {
-            cubeMapFramebuffers[i] = VulkanFramebuffer::Builder(vulkanDevice.get())
-                    .SetRenderpass(renderpass.cubeMapPass)
-                    .SetResolution(cubemapResolution, cubemapResolution)
-                    .AddAttachment(cubemapTexture->GetFaceImageView(i))
-                    .Build();
-        }
+        cubemapTexture = ResourceManager::LoadHDRCubeMap(vulkanDevice.get(), "resources/environment/kloppenheim_06_puresky_4k.hdr");
+        //cubemapTexture = ResourceManager::LoadHDRCubeMap(vulkanDevice.get(), "resources/environment/newport_loft.hdr");
+        //cubemapTexture = ResourceManager::LoadHDRCubeMap(vulkanDevice.get(), "resources/environment/champagne_castle_1_4k.hdr");
 
         PrepareSkyboxPass();
         PrepareLightingPass();
 
         screenRect = CreateScope<VulkanMeshlet>(vulkanDevice.get(), Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
-        //cube = CreateScope<VulkanMeshlet>(vulkanDevice.get(), Primitives::CUBE_VERTICES, Primitives::CUBE_INDICES);
-
-        cubeMesh = ResourceManager::LoadMesh(vulkanDevice.get(), "resources/models/cube.obj");
-
-        cubeMapRenderer = new VulkanCubeMapRenderer(vulkanDevice.get(), renderpass.cubeMapPass);
-        cubeMapRenderer->Load(hdrTexture);
 
         LOG_TRACE("Load scene");
-        //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/sponza/Sponza.gltf");
+        completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/sponza/Sponza.gltf");
         //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/vertex_color/vertex_color.gltf");
         //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/normal_tangent/NormalTangentTest.gltf");
-        completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/gltf/multiple_spheres.gltf");
+        //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/gltf/multiple_spheres.gltf");
         //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/chess/ABeautifulGame.gltf");
 
         transform.m_Position = glm::vec3(0.0f, 0.0f, -1.0f);
-
-        LOG_INFO("Convert HDR to Cubemap");
-        vulkanDevice->DrawFrame(vulkanSwapChain->GetSwapChain(), vulkanSwapChain->GetExtent(),
-                                [&](VkCommandBuffer commandBuffer, uint32_t frameIndex, uint32_t imageIndex) {
-                                    activeImage = imageIndex;
-                                    DrawCubemap(commandBuffer);
-                                }, std::bind(&VulkanRenderer::ResizeSwapchain, this));
     }
 
-    void VulkanRenderer::DrawCubemap(VkCommandBuffer commandBuffer)
-    {
-        for (size_t i = 0; i < 6; i++)
-        {
-            renderpass.cubeMapPass->Begin(commandBuffer, cubeMapFramebuffers[i], {cubemapResolution, cubemapResolution});
-            vulkanDevice->DrawMeshlet(commandBuffer,
-                                      cubeMesh->GetMeshlets()[0],
-                                      cubeMapRenderer->pipeline->GetPipeline(),
-                                      cubeMapRenderer->pipeline->GetPipelineLayout(), cubeMapRenderer->descriptorSets[i]);
-            renderpass.cubeMapPass->End(commandBuffer);
-        }
-    }
-
-    void VulkanRenderer::DrawGeometryPass(float deltaTime, Ref<Camera> camera, VkCommandBuffer commandBuffer)
+    void VulkanRenderer::DrawGeometryPass(float deltaTime, const Ref<Camera>& camera, const VkCommandBuffer commandBuffer) const
     {
         renderpass.gBufferPass->Begin(commandBuffer, gbufferFramebuffers[activeImage], vulkanSwapChain->GetExtent());
+
+        vulkanDevice->DrawMeshlet(commandBuffer,
+                                          cubeMesh->GetMeshlets()[0],
+                                          pipelines.skyBox->GetPipeline(),
+                                          pipelines.skyBox->GetPipelineLayout(), skyboxDescriptorSet);
 
         for (size_t i = 0; i < completeScene.meshes.size(); i++)
         {
@@ -215,16 +175,11 @@ namespace Raytracing
         renderpass.lightingPass->Begin(commandBuffer, presentFramebuffers[activeImage],
                                        vulkanSwapChain->GetExtent());
 
-        vulkanDevice->DrawMeshlet(commandBuffer,
-                                  cubeMesh->GetMeshlets()[0],
-                                  pipelines.skyBox->GetPipeline(),
-                                  pipelines.skyBox->GetPipelineLayout(), skyboxDescriptorSet);
-/*
         vulkanDevice->DrawMeshlet(commandBuffer, *screenRect,
                                   pipelines.lighting->GetPipeline(),
                                   pipelines.lighting->GetPipelineLayout(), presentDescriptorSets[activeImage]);
-*/
-        //ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+
+        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 
         renderpass.lightingPass->End(commandBuffer);
     }

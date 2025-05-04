@@ -41,6 +41,14 @@ FetchContent_Declare(
         GIT_TAG v1.15.2
 )
 
+FetchContent_Declare(
+        tracy
+        GIT_REPOSITORY https://github.com/wolfpld/tracy.git
+        GIT_TAG master
+        GIT_SHALLOW TRUE
+        GIT_PROGRESS TRUE
+)
+
 message(STATUS "Fetching GLFW...")
 FetchContent_MakeAvailable(glfw)
 
@@ -52,6 +60,9 @@ FetchContent_MakeAvailable(imgui)
 
 message(STATUS "Fetching fmt...")
 FetchContent_MakeAvailable(spdlog)
+
+message(STATUS "Fetching Tracy...")
+FetchContent_MakeAvailable(tracy)
 
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
@@ -97,7 +108,6 @@ set(SOURCE_ONE_WEEKEND
         ./src/renderer/vulkan/vulkan_material.cpp
         ./src/renderer/vulkan/vulkan_texture.cpp
         ./src/renderer/vulkan/vulkan_cube_map_texture.cpp
-        ./src/renderer/vulkan/vulkan_cube_map_renderer.cpp
         ./src/renderer/vulkan/imgui_vulkan.cpp
 
         ./src/resource/resource_manager.cpp
@@ -185,3 +195,5 @@ target_link_libraries(inOneWeekend PRIVATE glfw)
 target_link_libraries(inOneWeekend PRIVATE glm)
 target_link_libraries(inOneWeekend PRIVATE imgui)
 target_link_libraries(inOneWeekend PRIVATE spdlog)
+target_link_libraries(inOneWeekend PUBLIC TracyClient)
+

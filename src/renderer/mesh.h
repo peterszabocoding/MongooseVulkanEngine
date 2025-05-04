@@ -19,8 +19,9 @@ namespace Raytracing
         glm::vec3 normal;
         glm::vec3 color;
         glm::vec2 texCoord;
-        glm::vec3 tangent;
-        glm::vec3 bitangent;
+        glm::vec3 tangent = glm::vec3(0.0f);
+        glm::vec3 bitangent = glm::vec3(0.0f);
+        uint32_t padding = 0;
 
         bool operator==(const Vertex& other) const
         {
@@ -96,10 +97,10 @@ namespace Raytracing
         };
 
         const std::vector<Vertex> RECTANGLE_VERTICES = {
-            {{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}},
-            {{1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}},
-            {{1.0f, 1.0f, 0.0f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
-            {{-1.0f, 1.0f, 0.0f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
+            {{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f},},
+            {{1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 0.0f},},
+            {{1.0f, 1.0f, 0.0f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f},},
+            {{-1.0f, 1.0f, 0.0f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f},}
         };
 
         const std::vector<uint32_t> CUBE_INDICES = {

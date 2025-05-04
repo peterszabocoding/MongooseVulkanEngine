@@ -4,13 +4,15 @@
 
 #include "vulkan_cube_map_texture.h"
 
+#include "renderer/bitmap.h"
+
 namespace Raytracing
 {
     Ref<VulkanCubeMapTexture> VulkanCubeMapTexture::Builder::Build(VulkanDevice* device)
     {
         ASSERT(data && size > 0, "Texture data is NULL or size is 0.")
 
-        image = ImageBuilder(device)
+        allocatedImage = ImageBuilder(device)
                 .SetFormat(format)
                 .SetResolution(width, height)
                 .SetTiling(VK_IMAGE_TILING_OPTIMAL)
@@ -21,7 +23,7 @@ namespace Raytracing
 
         imageView = ImageViewBuilder(device)
                 .SetFormat(format)
-                .SetImage(image.image)
+                .SetImage(allocatedImage.image)
                 .SetViewType(VK_IMAGE_VIEW_TYPE_CUBE)
                 .SetAspectFlags(VK_IMAGE_ASPECT_COLOR_BIT)
                 .SetLayerCount(6)
@@ -31,7 +33,7 @@ namespace Raytracing
         {
             faceImageViews[i] = ImageViewBuilder(device)
                     .SetFormat(format)
-                    .SetImage(image.image)
+                    .SetImage(allocatedImage.image)
                     .SetViewType(VK_IMAGE_VIEW_TYPE_2D)
                     .SetAspectFlags(VK_IMAGE_ASPECT_COLOR_BIT)
                     .SetLayerCount(1)
@@ -46,7 +48,55 @@ namespace Raytracing
                 .SetBorderColor(VK_BORDER_COLOR_INT_OPAQUE_WHITE)
                 .Build();
 
-        return CreateRef<VulkanCubeMapTexture>(device, image, imageView, faceImageViews, sampler, imageMemory);
+
+        if (cubemap)
+        {
+            const auto stagingBuffer = VulkanBuffer(device, cubemap->pixelData.size(),
+                                                    VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                                                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                                                    VMA_MEMORY_USAGE_CPU_ONLY);
+
+            memcpy(stagingBuffer.GetMappedData(), cubemap->pixelData.data(), cubemap->pixelData.size());
+
+            std::vector<VkBufferImageCopy> bufferCopyRegions;
+            for (uint32_t face = 0; face < 6; face++)
+            {
+                const uint64_t offset = Bitmap::GetImageOffsetForFace(*cubemap, face);
+                VkBufferImageCopy bufferCopyRegion = {};
+                bufferCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+                bufferCopyRegion.imageSubresource.mipLevel = 0;
+                bufferCopyRegion.imageSubresource.baseArrayLayer = face;
+                bufferCopyRegion.imageSubresource.layerCount = 1;
+                bufferCopyRegion.imageExtent = {width, height, 1};
+                bufferCopyRegion.bufferOffset = offset;
+                bufferCopyRegions.push_back(bufferCopyRegion);
+            }
+
+            device->ImmediateSubmit([&](const VkCommandBuffer cmd) {
+                VulkanUtils::TransitionImageLayout(cmd, allocatedImage.image, VK_IMAGE_ASPECT_COLOR_BIT,
+                                                   VK_IMAGE_LAYOUT_UNDEFINED,
+                                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+            });
+
+            device->ImmediateSubmit([&](const VkCommandBuffer cmd) {
+                vkCmdCopyBufferToImage(
+                    cmd,
+                    stagingBuffer.GetBuffer(),
+                    allocatedImage.image,
+                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    6,
+                    bufferCopyRegions.data()
+                );
+            });
+
+            device->ImmediateSubmit([&](const VkCommandBuffer cmd) {
+                VulkanUtils::TransitionImageLayout(cmd, allocatedImage.image, VK_IMAGE_ASPECT_COLOR_BIT,
+                                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            });
+        }
+
+        return CreateRef<VulkanCubeMapTexture>(device, allocatedImage, imageView, faceImageViews, sampler, imageMemory);
     }
 
     VulkanCubeMapTexture::~VulkanCubeMapTexture()

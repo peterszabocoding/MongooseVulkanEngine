@@ -43,7 +43,7 @@ namespace Raytracing
                 VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 
         vertexBuffer = CreateRef<VulkanBuffer>(vulkanDevice,
-                                               bufferSize,
+                                               stagingBuffer.GetBufferSize(),
                                                vertexBufferUsageBits,
                                                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                                VMA_MEMORY_USAGE_GPU_ONLY);
@@ -64,11 +64,11 @@ namespace Raytracing
         memcpy(stagingBuffer.GetMappedData(), indices.data(), bufferSize);
 
         VkBufferUsageFlags indexBufferUsageBits =
-                VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
                 VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
 
         indexBuffer = CreateRef<VulkanBuffer>(vulkanDevice,
-                                              bufferSize,
+                                              stagingBuffer.GetBufferSize(),
                                               indexBufferUsageBits,
                                               VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                               VMA_MEMORY_USAGE_GPU_ONLY);

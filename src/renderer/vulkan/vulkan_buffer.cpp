@@ -20,6 +20,10 @@ namespace Raytracing
 
     void VulkanBuffer::CopyBuffer(const VulkanDevice* vulkanDevice, const VulkanBuffer* src, const VulkanBuffer* dst)
     {
+        LOG_INFO("COPY BUFFER");
+        LOG_WARN("Src: " + std::to_string(src->GetBufferSize()));
+        LOG_WARN("Dst: " + std::to_string(dst->GetBufferSize()));
+
         vulkanDevice->ImmediateSubmit([&](VkCommandBuffer commandBuffer) {
             VkBufferCopy copy_region;
             copy_region.srcOffset = 0; // Optional

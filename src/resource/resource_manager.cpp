@@ -14,6 +14,7 @@
 
 #include "loaders/gltf_loader.h"
 #include "loaders/obj_loader.h"
+#include "renderer/bitmap.h"
 #include "renderer/vulkan/vulkan_cube_map_texture.h"
 #include "renderer/vulkan/vulkan_mesh.h"
 #include "renderer/vulkan/vulkan_device.h"
@@ -48,9 +49,7 @@ namespace Raytracing
         int width, height, bitDepth;
         float* pixels = nullptr;
 
-        //stbi_set_flip_vertically_on_load(true);
         pixels = stbi_loadf(hdrPath.c_str(), &width, &height, &bitDepth, 4);
-        //stbi_set_flip_vertically_on_load(false);
 
         const uint64_t size = width * height * 4 * 4;
 
@@ -101,7 +100,7 @@ namespace Raytracing
         return GLTFLoader::LoadMesh(device, meshPath);
     }
 
-    Ref<VulkanTexture> ResourceManager::LoadTexture(VulkanDevice* device, std::string textureImagePath)
+    Ref<VulkanTexture> ResourceManager::LoadTexture(VulkanDevice* device, const std::string& textureImagePath)
     {
         LOG_INFO("Load Texture: " + textureImagePath);
         ImageResource imageResource = LoadImageResource(textureImagePath);
@@ -123,7 +122,7 @@ namespace Raytracing
         return texture;
     }
 
-    Ref<VulkanTexture> ResourceManager::LoadHDRCubeMap(VulkanDevice* device, const std::string& hdrPath)
+    Ref<VulkanCubeMapTexture> ResourceManager::LoadHDRCubeMap(VulkanDevice* device, const std::string& hdrPath)
     {
         VkImageFormatProperties properties;
         vkGetPhysicalDeviceImageFormatProperties(device->GetPhysicalDevice(),
@@ -134,23 +133,43 @@ namespace Raytracing
                                                  0,
                                                  &properties);
 
-
         LOG_INFO("Load HDR: " + hdrPath);
         ImageResource imageResource = LoadHDRResource(hdrPath);
-        Ref<VulkanTexture> texture = VulkanTexture::Builder()
-                .SetData(imageResource.data, imageResource.size)
-                .SetResolution(imageResource.width, imageResource.height)
+
+        Bitmap in(imageResource.width, imageResource.height, 4, eBitmapFormat_Float, imageResource.data);
+        Bitmap verticalCross = Bitmap::ConvertEquirectangularMapToVerticalCross(in);
+        Bitmap cubeMapBitmap = Bitmap::ConvertVerticalCrossToCubeMapFaces(verticalCross);
+
+        Ref<VulkanCubeMapTexture> cubemapTexture = VulkanCubeMapTexture::Builder()
                 .SetFormat(ImageFormat::RGBA32_SFLOAT)
-                .SetFilter(VK_FILTER_LINEAR, VK_FILTER_LINEAR)
-                .SetTiling(VK_IMAGE_TILING_OPTIMAL)
-                .AddUsage(VK_IMAGE_USAGE_TRANSFER_DST_BIT)
-                .AddUsage(VK_IMAGE_USAGE_SAMPLED_BIT)
-                .AddAspectFlag(VK_IMAGE_ASPECT_COLOR_BIT)
-                .SetImageResource(imageResource)
+                .SetResolution(cubeMapBitmap.width, cubeMapBitmap.height)
+                .SetData(&cubeMapBitmap)
                 .Build(device);
 
         ReleaseImage(imageResource);
-        return texture;
+        return cubemapTexture;
+    }
+
+    void ResourceManager::LoadAndSaveHDR(const std::string& hdrPath)
+    {
+        const ImageResource imageResource = LoadHDRResource(hdrPath);
+        const Bitmap in(imageResource.width, imageResource.height, 4, eBitmapFormat_Float, imageResource.data);
+        const Bitmap verticalCross = Bitmap::ConvertEquirectangularMapToVerticalCross(in);
+        const Bitmap* out = new Bitmap(Bitmap::ConvertVerticalCrossToCubeMapFaces(verticalCross));
+
+        ReleaseImage(imageResource);
+
+        stbi_write_hdr("./cache/verticalCross.hdr", verticalCross.width, verticalCross.height, verticalCross.comp,
+                       (const float*) verticalCross.pixelData.data());
+
+        for (int i = 0; i < 6; i++)
+        {
+            const uint64_t offset = Bitmap::GetImageOffsetForFace(*out, i);
+            stbi_write_hdr(("./cache/face_" + std::to_string(i) + ".hdr").c_str(), out->width, out->height, out->comp,
+                           reinterpret_cast<const float*>(out->pixelData.data()) + offset);
+        }
+
+        delete out;
     }
 
     Scene ResourceManager::LoadScene(VulkanDevice* device, const std::string& scenePath)

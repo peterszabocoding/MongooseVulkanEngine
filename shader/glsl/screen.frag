@@ -20,8 +20,10 @@ void main() {
     float metallic =  metallicRoughness.b;
     float roughness = metallicRoughness.g;
 
-    float diffuseFactor = AMBIENT + clamp(dot(normal, LIGHT_DIRECTION), 0.0, 1.0);
+    bool isBackground = normal == vec3(0.0, 0.0, 0.0) && metallicRoughness.rgb == vec3(0.0, 0.0, 0.0);
 
-    vec3 sampleDir = vec3(0.0, 1.0, 0.0);
-    finalImage = diffuseFactor * baseColor;
+    float diffuseFactor = AMBIENT + clamp(dot(normal, LIGHT_DIRECTION), 0.0, 1.0);
+    finalImage = !isBackground
+        ? diffuseFactor * baseColor
+        : baseColor;
 }
