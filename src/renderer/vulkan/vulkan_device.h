@@ -32,10 +32,11 @@ namespace Raytracing
 
         void DrawMesh(
             VkCommandBuffer commandBuffer,
-            const Ref<Camera>& camera, const Transform& transform, const Ref<VulkanMesh>& mesh, Ref<VulkanPipeline> pipeline) const;
+            const Ref<Camera>& camera, const Transform& transform, const Ref<VulkanMesh>& mesh, Ref<VulkanPipeline> pipeline, std::vector<
+            VkDescriptorSet> _descriptorSets) const;
 
         void DrawMeshlet(VkCommandBuffer commandBuffer, const VulkanMeshlet& meshlet, VkPipeline pipeline,
-                         VkPipelineLayout pipelineLayout, VkDescriptorSet descriptorSet) const;
+                         VkPipelineLayout pipelineLayout, std::vector<VkDescriptorSet> descriptorSets) const;
 
         void DrawFrame(VkSwapchainKHR swapchain, VkExtent2D extent, DrawFrameFunction draw, OutOfDateErrorCallback errorCallback);
 

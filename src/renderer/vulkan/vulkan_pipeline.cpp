@@ -139,10 +139,16 @@ namespace Raytracing
         dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
         dynamicState.pDynamicStates = dynamicStates.data();
 
+
+        std::vector<VkDescriptorSetLayout> vkDescriptorSetLayouts{};
+        for (auto& descriptorSetLayout: descriptorSetLayouts)
+            vkDescriptorSetLayouts.push_back(descriptorSetLayout->GetDescriptorSetLayout());
+
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutInfo.setLayoutCount = 1;
-        pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout->GetDescriptorSetLayout();
+        pipelineLayoutInfo.setLayoutCount = vkDescriptorSetLayouts.size();
+        pipelineLayoutInfo.pSetLayouts = vkDescriptorSetLayouts.data();
+
 
         if (!pushConstantRanges.empty())
         {
@@ -206,7 +212,7 @@ namespace Raytracing
         params.vertexShaderPath = vertexShaderPath;
         params.fragmentShaderPath = fragmentShaderPath;
 
-        params.descriptorSetLayout = descriptorSetLayout;
+        params.descriptorSetLayouts = descriptorSetLayouts;
 
         return CreateRef<VulkanPipeline>(vulkanDevice, params);
     }
@@ -234,7 +240,9 @@ namespace Raytracing
         }
 
         // Descriptor Set Layout
-        SetDescriptorSetLayout(config.descriptorSetLayout);
+
+        for (const auto& layout : config.descriptorSetLayouts)
+            AddDescriptorSetLayout(layout);
 
         // Color attachments
         for (const auto& colorAttachment: config.colorAttachments)
@@ -290,9 +298,9 @@ namespace Raytracing
         return *this;
     }
 
-    VulkanPipeline::Builder& VulkanPipeline::Builder::SetDescriptorSetLayout(Ref<VulkanDescriptorSetLayout> _descriptorSetLayout)
+    VulkanPipeline::Builder& VulkanPipeline::Builder::AddDescriptorSetLayout(Ref<VulkanDescriptorSetLayout> _descriptorSetLayout)
     {
-        descriptorSetLayout = _descriptorSetLayout;
+        descriptorSetLayouts.push_back(_descriptorSetLayout);
         return *this;
     }
 

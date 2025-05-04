@@ -51,32 +51,40 @@ namespace Raytracing
         vkDestroyInstance(instance, nullptr);
     }
 
-    void VulkanDevice::DrawMesh(VkCommandBuffer commandBuffer, const Ref<Camera>& camera, const Transform& transform, const Ref<VulkanMesh>& mesh,
-                                Ref<VulkanPipeline> pipeline) const
+    void VulkanDevice::DrawMesh(VkCommandBuffer commandBuffer, const Ref<Camera>& camera, const Transform& transform,
+                                const Ref<VulkanMesh>& mesh, Ref<VulkanPipeline> pipeline, std::vector<VkDescriptorSet> _descriptorSets) const
     {
         SimplePushConstantData pushConstantData;
         pushConstantData.modelMatrix = transform.GetTransform();
         pushConstantData.transform = camera->GetProjection() * camera->GetView() * pushConstantData.modelMatrix;
+
+
 
         for (auto& meshlet: mesh->GetMeshlets())
         {
             const VulkanMaterial& material = mesh->GetMaterials()[meshlet.GetMaterialIndex()];
             const VkPipelineLayout pipelineLayout = pipeline->GetPipelineLayout();
 
+
             vkCmdPushConstants(
                 commandBuffer, pipelineLayout,
                 VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0,
                 sizeof(SimplePushConstantData), &pushConstantData);
 
-            DrawMeshlet(commandBuffer, meshlet, pipeline->GetPipeline(), pipelineLayout, material.descriptorSet);
+            std::vector descriptorSets = {material.descriptorSet};
+            descriptorSets.insert(descriptorSets.end(), _descriptorSets.begin(), _descriptorSets.end());
+
+            DrawMeshlet(commandBuffer, meshlet, pipeline->GetPipeline(), pipelineLayout, descriptorSets);
         }
     }
 
-    void VulkanDevice::DrawMeshlet(VkCommandBuffer commandBuffer, const VulkanMeshlet& meshlet, const VkPipeline pipeline, const VkPipelineLayout pipelineLayout,
-                                   const VkDescriptorSet descriptorSet) const
+    void VulkanDevice::DrawMeshlet(VkCommandBuffer commandBuffer, const VulkanMeshlet& meshlet, const VkPipeline pipeline,
+                                   const VkPipelineLayout pipelineLayout,
+                                   const std::vector<VkDescriptorSet> descriptorSets) const
     {
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0,
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, descriptorSets.size(),
+                                descriptorSets.data(), 0,
                                 nullptr);
 
         meshlet.Bind(commandBuffer);

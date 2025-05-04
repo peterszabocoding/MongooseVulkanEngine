@@ -22,8 +22,9 @@ layout(location = 5) out mat3 TBN;
 
 
 void main() {
-    vec4 worldPosition = push.transform * vec4(inPosition, 1.0);
-    fragPosition = worldPosition.xyz / worldPosition.w;
+    vec4 screenPosition = push.transform * vec4(inPosition, 1.0);
+    vec4 worldPosition = push.modelMatrix * vec4(inPosition, 1.0);
+    fragPosition = worldPosition.xyz;
 
     fragColor = inColor;
     fragTexCoord = inTexCoord;
@@ -35,5 +36,5 @@ void main() {
     vec3 B = normalize(vec3(push.modelMatrix * vec4(inBitangent, 0.0)));
     TBN = mat3(T, B, N);
 
-    gl_Position = worldPosition;
+    gl_Position = screenPosition;
 }

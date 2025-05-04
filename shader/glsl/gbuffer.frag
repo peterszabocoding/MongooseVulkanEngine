@@ -7,7 +7,7 @@ layout(location = 3) in vec3 fragNormal;
 layout(location = 4) in vec3 fragTangent;
 layout(location = 5) in mat3 TBN;
 
-layout(binding = 0) uniform MaterialParams {
+layout(set = 0, binding = 0) uniform MaterialParams {
     vec4 tint;
     vec4 baseColor;
     float metallic;
@@ -18,18 +18,29 @@ layout(binding = 0) uniform MaterialParams {
     bool useMetallicRoughnessMap;
 } materialParams;
 
-layout(binding = 1) uniform sampler2D baseColorSampler;
-layout(binding = 2) uniform sampler2D normalSampler;
-layout(binding = 3) uniform sampler2D metallicRoughnessSampler;
+layout(set = 1, binding = 0) uniform Transforms {
+    vec4 cameraPosition;
+    mat4 view;
+    mat4 projection;
+} transforms;
+
+layout(set = 0, binding = 1) uniform sampler2D baseColorSampler;
+layout(set = 0, binding = 2) uniform sampler2D normalSampler;
+layout(set = 0, binding = 3) uniform sampler2D metallicRoughnessSampler;
+
+layout(set = 2, binding = 0) uniform samplerCube skyboxSampler;
 
 layout(push_constant) uniform Push {
   mat4 transform;
   mat4 modelMatrix;
 } push;
 
-layout(location = 0) out vec4 baseColorImage;
-layout(location = 1) out vec4 normalImage;
-layout(location = 2) out vec4 metallicRoughnessImage;
+
+layout(location = 0) out vec4 finalImage;
+layout(location = 1) out vec4 baseColorImage;
+layout(location = 2) out vec4 normalImage;
+layout(location = 3) out vec4 metallicRoughnessImage;
+layout(location = 4) out vec4 worldPosition;
 
 const vec3 LIGHT_DIRECTION = normalize(vec3(0.0, 1.0, 1.0));
 const float AMBIENT = 0.05;
@@ -50,6 +61,7 @@ void main() {
     float metallic = materialParams.metallic;
     float roughness = materialParams.roughness;
     float occlusion = 1.0;
+
     if (materialParams.useMetallicRoughnessMap)
     {
         vec4 metallicRoughness = texture(metallicRoughnessSampler, fragTexCoord);
@@ -64,10 +76,23 @@ void main() {
                 ? CalcSurfaceNormal(normalMapColor, TBN)
                 : fragNormal;
 
-    float diffuseFactor = AMBIENT + clamp(dot(normalWorldSpace, LIGHT_DIRECTION), 0.0, 1.0);
     vec4 diffuseColor = vec4(fragColor, 1.0) * materialParams.tint * color;
 
+
+    /////////////////   Reflection   /////////////////////
+    vec3 I = normalize(fragPosition - transforms.cameraPosition.xyz);
+    vec3 R = reflect(I, normalWorldSpace);
+    vec3 reflectionColor = texture(skyboxSampler, R).rgb;
+    /////////////////////////////////////////////////////
+
+    /////////////////   GBuffer   ////////////////////////
     baseColorImage = diffuseColor;
     normalImage = vec4(normalWorldSpace, 1.0);
     metallicRoughnessImage = vec4(occlusion, metallic, roughness, 1.0);
+    worldPosition = vec4(fragPosition, 1.0);
+    /////////////////////////////////////////////////////
+
+    diffuseColor += 0.05 * vec4(reflectionColor, 1.0);
+    float diffuseFactor = AMBIENT + clamp(dot(normalWorldSpace, LIGHT_DIRECTION), 0.0, 1.0);
+    finalImage = diffuseFactor * diffuseColor;
 }

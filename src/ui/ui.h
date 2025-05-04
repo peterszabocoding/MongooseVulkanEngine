@@ -123,6 +123,9 @@ namespace Raytracing
 
             ImGui::Text("Metallic-Roughness:");
             ImGui::Image(reinterpret_cast<ImTextureID>(gbufferAttachments[2]), imageSize, ImVec2(0, 0), ImVec2(1, 1));
+
+            ImGui::Text("Position:");
+            ImGui::Image(reinterpret_cast<ImTextureID>(gbufferAttachments[3]), imageSize, ImVec2(0, 0), ImVec2(1, 1));
         }
 
         virtual void Resize() override

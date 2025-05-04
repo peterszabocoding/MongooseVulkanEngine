@@ -37,9 +37,8 @@ namespace Raytracing
         VkPipeline pipeline;
         VkPipelineLayout pipelineLayout;
 
-        Ref<VulkanDescriptorSetLayout> descriptorSetLayout = VK_NULL_HANDLE;
+        std::vector<Ref<VulkanDescriptorSetLayout>> descriptorSetLayouts{};
     };
-
 
 
     enum class PipelinePolygonMode {
@@ -71,7 +70,7 @@ namespace Raytracing
         std::string vertexShaderPath;
         std::string fragmentShaderPath;
 
-        Ref<VulkanDescriptorSetLayout> descriptorSetLayout = VK_NULL_HANDLE;
+        std::vector<Ref<VulkanDescriptorSetLayout>> descriptorSetLayouts{};
         std::vector<ImageFormat> colorAttachments;
         ImageFormat depthAttachment = ImageFormat::DEPTH24_STENCIL8;
 
@@ -100,7 +99,7 @@ namespace Raytracing
             Builder& SetPolygonMode(VkPolygonMode mode);
             Builder& SetCullMode(VkCullModeFlags cullMode, VkFrontFace frontFace);
             Builder& SetMultisampling(VkSampleCountFlagBits sampleCountFlagBits = VK_SAMPLE_COUNT_1_BIT);
-            Builder& SetDescriptorSetLayout(Ref<VulkanDescriptorSetLayout> _descriptorSetLayout);
+            Builder& AddDescriptorSetLayout(Ref<VulkanDescriptorSetLayout> _descriptorSetLayout);
             Builder& DisableBlending();
             Builder& AddColorAttachment(ImageFormat format);
             Builder& SetDepthFormat(ImageFormat format);
@@ -136,7 +135,7 @@ namespace Raytracing
             VkCullModeFlags cullMode;
             VkFrontFace frontFace;
 
-            Ref<VulkanDescriptorSetLayout> descriptorSetLayout;
+            std::vector<Ref<VulkanDescriptorSetLayout>> descriptorSetLayouts;
 
             bool disableBlending = false;
 
@@ -149,7 +148,7 @@ namespace Raytracing
 
         VkPipeline GetPipeline() const { return params.pipeline; }
         VkPipelineLayout GetPipelineLayout() const { return params.pipelineLayout; }
-        Ref<VulkanDescriptorSetLayout> GetDescriptorSetLayout() const { return params.descriptorSetLayout; }
+        std::vector<Ref<VulkanDescriptorSetLayout>> GetDescriptorSetLayouts() const { return params.descriptorSetLayouts; }
 
     private:
         VulkanDevice* vulkanDevice;

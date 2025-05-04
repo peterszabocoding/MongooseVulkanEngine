@@ -14,6 +14,7 @@ namespace Raytracing
         Ref<VulkanDescriptorSetLayout> skyboxDescriptorSetLayout;
         Ref<VulkanDescriptorSetLayout> materialDescriptorSetLayout;
         Ref<VulkanDescriptorSetLayout> lightingDescriptorSetLayout;
+        Ref<VulkanDescriptorSetLayout> transformDescriptorSetLayout;
     };
 
     struct Pipelines {
@@ -30,6 +31,7 @@ namespace Raytracing
     };
 
     struct TransformsBuffer {
+        glm::vec4 cameraPosition;
         glm::mat4 view;
         glm::mat4 proj;
     };
@@ -98,9 +100,11 @@ namespace Raytracing
         uint32_t cubemapResolution = 0;
 
         std::vector<VkDescriptorSet> presentDescriptorSets{};
-        VkDescriptorSet skyboxDescriptorSet;
         VkSampler presentSampler{};
 
         Ref<VulkanBuffer> transformsBuffer{};
+
+        VkDescriptorSet skyboxDescriptorSet;
+        VkDescriptorSet transformDescriptorSet;
     };
 }
