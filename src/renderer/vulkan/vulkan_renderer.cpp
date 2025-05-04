@@ -66,6 +66,8 @@ namespace Raytracing
 
             skyboxPipelineConfig.colorAttachments = {
                 ImageFormat::RGBA8_UNORM,
+                ImageFormat::RGBA8_UNORM,
+                ImageFormat::RGBA8_UNORM,
             };
 
             skyboxPipelineConfig.disableBlending = true;

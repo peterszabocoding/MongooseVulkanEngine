@@ -1,5 +1,5 @@
 #pragma once
-#include <corecrt_math_defines.h>
+
 #include <vector>
 #include <glm/common.hpp>
 #include <glm/vec2.hpp>
