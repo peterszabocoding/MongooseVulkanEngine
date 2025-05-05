@@ -14,8 +14,10 @@
 namespace Raytracing
 {
     DescriptorSetLayouts VulkanRenderer::descriptorSetLayouts;
-    Pipelines VulkanRenderer::pipelines;
+    DescriptorBuffers VulkanRenderer::descriptorBuffers;
+    DescriptorSets VulkanRenderer::descriptorSets;
     Renderpass VulkanRenderer::renderpasses;
+    Pipelines VulkanRenderer::pipelines;
 
     VulkanRenderer::~VulkanRenderer() {}
 
@@ -52,7 +54,12 @@ namespace Raytracing
                 .AddBinding({0, DescriptorSetBindingType::TextureSampler, {DescriptorSetShaderStage::FragmentShader}})
                 .Build();
 
+        descriptorSetLayouts.lightsDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice.get())
+                .AddBinding({0, DescriptorSetBindingType::UniformBuffer, {DescriptorSetShaderStage::FragmentShader}})
+                .Build();
+
         CreateTransformsBuffer();
+        CreateLightsBuffer();
 
         LOG_TRACE("Build pipelines");
 
@@ -99,6 +106,7 @@ namespace Raytracing
                 descriptorSetLayouts.materialDescriptorSetLayout,
                 descriptorSetLayouts.transformDescriptorSetLayout,
                 descriptorSetLayouts.skyboxDescriptorSetLayout,
+                descriptorSetLayouts.lightsDescriptorSetLayout,
             };
 
             geometryPipelineConfig.colorAttachments = {
@@ -152,7 +160,7 @@ namespace Raytracing
         skyboxDrawParams.meshlet = &cubeMesh->GetMeshlets()[0];
         skyboxDrawParams.pipeline = pipelines.skyBox->GetPipeline();
         skyboxDrawParams.pipelineLayout = pipelines.skyBox->GetPipelineLayout();
-        skyboxDrawParams.descriptorSets = {skyboxDescriptorSet, transformDescriptorSet};
+        skyboxDrawParams.descriptorSets = {descriptorSets.skyboxDescriptorSet, descriptorSets.transformDescriptorSet};
 
         vulkanDevice->DrawMeshlet(skyboxDrawParams);
 
@@ -178,8 +186,9 @@ namespace Raytracing
             {
                 geometryDrawParams.descriptorSets = {
                     materials[meshlet.GetMaterialIndex()].descriptorSet,
-                    transformDescriptorSet,
-                    skyboxDescriptorSet
+                    descriptorSets.transformDescriptorSet,
+                    descriptorSets.skyboxDescriptorSet,
+                    descriptorSets.lightsDescriptorSet
                 };
                 geometryDrawParams.meshlet = &meshlet;
                 vulkanDevice->DrawMeshlet(geometryDrawParams);
@@ -193,6 +202,8 @@ namespace Raytracing
     void VulkanRenderer::DrawFrame(float deltaTime, Ref<Camera> camera)
     {
         UpdateTransformsBuffer(camera);
+        UpdateLightsBuffer(deltaTime);
+
         vulkanDevice->DrawFrame(vulkanSwapChain->GetSwapChain(), vulkanSwapChain->GetExtent(),
                                 [&](const VkCommandBuffer commandBuffer, uint32_t, const uint32_t imageIndex) {
                                     activeImage = imageIndex;
@@ -289,7 +300,7 @@ namespace Raytracing
 
     void VulkanRenderer::CreateTransformsBuffer()
     {
-        transformsBuffer = CreateRef<VulkanBuffer>(
+        descriptorBuffers.transformsBuffer = CreateRef<VulkanBuffer>(
             vulkanDevice.get(),
             sizeof(TransformsBuffer),
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
@@ -297,13 +308,32 @@ namespace Raytracing
             VMA_MEMORY_USAGE_CPU_TO_GPU);
 
         VkDescriptorBufferInfo info{};
-        info.buffer = transformsBuffer->GetBuffer();
+        info.buffer = descriptorBuffers.transformsBuffer->GetBuffer();
         info.offset = 0;
         info.range = sizeof(TransformsBuffer);
 
         VulkanDescriptorWriter(*descriptorSetLayouts.transformDescriptorSetLayout, vulkanDevice->GetShaderDescriptorPool())
                 .WriteBuffer(0, &info)
-                .Build(transformDescriptorSet);
+                .Build(descriptorSets.transformDescriptorSet);
+    }
+
+    void VulkanRenderer::CreateLightsBuffer()
+    {
+        descriptorBuffers.lightsBuffer = CreateRef<VulkanBuffer>(
+            vulkanDevice.get(),
+            sizeof(LightsBuffer),
+            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            VMA_MEMORY_USAGE_CPU_TO_GPU);
+
+        VkDescriptorBufferInfo info{};
+        info.buffer = descriptorBuffers.lightsBuffer->GetBuffer();
+        info.offset = 0;
+        info.range = sizeof(LightsBuffer);
+
+        VulkanDescriptorWriter(*descriptorSetLayouts.lightsDescriptorSetLayout, vulkanDevice->GetShaderDescriptorPool())
+                .WriteBuffer(0, &info)
+                .Build(descriptorSets.lightsDescriptorSet);
     }
 
     void VulkanRenderer::UpdateTransformsBuffer(const Ref<Camera>& camera) const
@@ -313,7 +343,28 @@ namespace Raytracing
         bufferData.view = camera->GetView();
         bufferData.proj = camera->GetProjection();
 
-        memcpy(transformsBuffer->GetMappedData(), &bufferData, sizeof(TransformsBuffer));
+        memcpy(descriptorBuffers.transformsBuffer->GetMappedData(), &bufferData, sizeof(TransformsBuffer));
+    }
+
+    void VulkanRenderer::UpdateLightsBuffer(float deltaTime)
+    {
+        LightsBuffer bufferData;
+
+        Transform lightTransform;
+        lightTransform.m_Rotation = glm::vec3(45.0f, 0.0f, 0.0f);
+
+        glm::vec3 direction = lightTransform.GetForwardDirection();
+
+        lightSpinningAngle += 90.0f * deltaTime;
+
+        glm::mat4 rot_mat = rotate(glm::mat4(1.0f), glm::radians(lightSpinningAngle), glm::vec3(0.0, 1.0, 0.0));
+        direction = glm::vec3(glm::vec4(direction, 1.0f) * rot_mat);
+
+        bufferData.direction = direction;
+        bufferData.ambientColor = glm::vec4(1.0f);
+        bufferData.ambientIntensity = 0.1f;
+
+        memcpy(descriptorBuffers.lightsBuffer->GetMappedData(), &bufferData, sizeof(LightsBuffer));
     }
 
     void VulkanRenderer::PrepareSkyboxPass()
@@ -328,6 +379,6 @@ namespace Raytracing
 
         writer.WriteImage(0, &info);
 
-        writer.Build(skyboxDescriptorSet);
+        writer.Build(descriptorSets.skyboxDescriptorSet);
     }
 }

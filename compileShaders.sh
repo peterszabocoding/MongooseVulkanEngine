@@ -10,9 +10,6 @@ mkdir -p ./shader/spv
 "$VULKAN_SDK"/bin/glslc ./shader/glsl/skybox.vert -o ./shader/spv/skybox.vert.spv
 "$VULKAN_SDK"/bin/glslc ./shader/glsl/skybox.frag -o ./shader/spv/skybox.frag.spv
 
-"$VULKAN_SDK"/bin/glslc ./shader/glsl/screen.vert -o ./shader/spv/screen.vert.spv
-"$VULKAN_SDK"/bin/glslc ./shader/glsl/screen.frag -o ./shader/spv/screen.frag.spv
-
 "$VULKAN_SDK"/bin/glslc ./shader/glsl/equirectangularToCubemap.vert -o ./shader/spv/equirectangularToCubemap.vert.spv
 "$VULKAN_SDK"/bin/glslc ./shader/glsl/equirectangularToCubemap.frag -o ./shader/spv/equirectangularToCubemap.frag.spv
 

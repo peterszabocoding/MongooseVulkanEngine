@@ -14,6 +14,18 @@ namespace Raytracing
         Ref<VulkanDescriptorSetLayout> skyboxDescriptorSetLayout;
         Ref<VulkanDescriptorSetLayout> materialDescriptorSetLayout;
         Ref<VulkanDescriptorSetLayout> transformDescriptorSetLayout;
+        Ref<VulkanDescriptorSetLayout> lightsDescriptorSetLayout;
+    };
+
+    struct DescriptorSets {
+        VkDescriptorSet skyboxDescriptorSet;
+        VkDescriptorSet transformDescriptorSet;
+        VkDescriptorSet lightsDescriptorSet;
+    };
+
+    struct DescriptorBuffers {
+        Ref<VulkanBuffer> transformsBuffer{};
+        Ref<VulkanBuffer> lightsBuffer{};
     };
 
     struct Pipelines {
@@ -30,6 +42,12 @@ namespace Raytracing
         glm::vec4 cameraPosition;
         glm::mat4 view;
         glm::mat4 proj;
+    };
+
+    struct LightsBuffer {
+        glm::vec3 direction = glm::vec3(0.0f, -1.0f, 0.0f);
+        glm::vec4 ambientColor = glm::vec4(1.0f);
+        float ambientIntensity = 0.1f;
     };
 
     class VulkanRenderer : public Renderer {
@@ -60,12 +78,18 @@ namespace Raytracing
 
         void ResizeSwapchain();
         void CreateTransformsBuffer();
-        void UpdateTransformsBuffer(const Ref<Camera>& camera) const;
+        void CreateLightsBuffer();
         void PrepareSkyboxPass();
+        void PrepareLightsDescriptorSet();
+
+        void UpdateTransformsBuffer(const Ref<Camera>& camera) const;
+        void UpdateLightsBuffer(float deltaTime);
 
     public:
         static Pipelines pipelines;
         static DescriptorSetLayouts descriptorSetLayouts;
+        static DescriptorBuffers descriptorBuffers;
+        static DescriptorSets descriptorSets;
         static Renderpass renderpasses;
 
     private:
@@ -88,17 +112,8 @@ namespace Raytracing
         std::vector<Ref<VulkanFramebuffer>> presentFramebuffers;
         std::array<Ref<VulkanFramebuffer>, 6> cubeMapFramebuffers;
 
-        Ref<VulkanTexture> hdrTexture;
         Ref<VulkanCubeMapTexture> cubemapTexture;
 
-        uint32_t cubemapResolution = 0;
-
-        std::vector<VkDescriptorSet> presentDescriptorSets{};
-        VkSampler presentSampler{};
-
-        Ref<VulkanBuffer> transformsBuffer{};
-
-        VkDescriptorSet skyboxDescriptorSet;
-        VkDescriptorSet transformDescriptorSet;
+        float lightSpinningAngle = 0.0f;
     };
 }

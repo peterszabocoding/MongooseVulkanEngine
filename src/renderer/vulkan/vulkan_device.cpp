@@ -53,10 +53,13 @@ namespace Raytracing
 
     void VulkanDevice::DrawMeshlet(const DrawCommandParams& params) const
     {
-        vkCmdPushConstants(params.commandBuffer,
+        if (params.pushConstantData)
+        {
+            vkCmdPushConstants(params.commandBuffer,
                            params.pipelineLayout,
                            params.pushConstantShaderStageFlags, 0,
                            params.pushConstantSize, params.pushConstantData);
+        }
 
         vkCmdBindPipeline(params.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, params.pipeline);
         vkCmdBindDescriptorSets(params.commandBuffer,

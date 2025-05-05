@@ -24,16 +24,17 @@ layout(set = 1, binding = 0) uniform Transforms {
     mat4 projection;
 } transforms;
 
+layout(set = 3, binding = 0) uniform Lights {
+    vec3 direction;
+    vec4 ambientColor;
+    float ambientIntensity;
+} lights;
+
 layout(set = 0, binding = 1) uniform sampler2D baseColorSampler;
 layout(set = 0, binding = 2) uniform sampler2D normalSampler;
 layout(set = 0, binding = 3) uniform sampler2D metallicRoughnessSampler;
 
 layout(set = 2, binding = 0) uniform samplerCube skyboxSampler;
-
-layout(push_constant) uniform Push {
-  mat4 transform;
-  mat4 modelMatrix;
-} push;
 
 
 layout(location = 0) out vec4 finalImage;
@@ -41,9 +42,6 @@ layout(location = 1) out vec4 baseColorImage;
 layout(location = 2) out vec4 normalImage;
 layout(location = 3) out vec4 metallicRoughnessImage;
 layout(location = 4) out vec4 worldPosition;
-
-const vec3 LIGHT_DIRECTION = normalize(vec3(0.0, 1.0, 1.0));
-const float AMBIENT = 0.05;
 
 vec3 CalcSurfaceNormal(vec3 normalFromTexture, mat3 TBN)
 {
@@ -73,8 +71,8 @@ void main() {
 
     vec3 normalMapColor = texture(normalSampler, fragTexCoord).rgb;
     vec3 normalWorldSpace = materialParams.useNormalMap
-                ? CalcSurfaceNormal(normalMapColor, TBN)
-                : fragNormal;
+    ? CalcSurfaceNormal(normalMapColor, TBN)
+    : fragNormal;
 
     vec4 diffuseColor = vec4(fragColor, 1.0) * materialParams.tint * color;
 
@@ -93,6 +91,6 @@ void main() {
     /////////////////////////////////////////////////////
 
     diffuseColor += 0.05 * vec4(reflectionColor, 1.0);
-    float diffuseFactor = AMBIENT + clamp(dot(normalWorldSpace, LIGHT_DIRECTION), 0.0, 1.0);
-    finalImage = diffuseFactor * diffuseColor;
+    float diffuseFactor = clamp(dot(normalWorldSpace, lights.direction), 0.0, 1.0);
+    finalImage = lights.ambientIntensity * lights.ambientColor + diffuseFactor * diffuseColor;
 }
