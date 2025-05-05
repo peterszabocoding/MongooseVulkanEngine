@@ -15,7 +15,7 @@ namespace Raytracing
 {
     DescriptorSetLayouts VulkanRenderer::descriptorSetLayouts;
     Pipelines VulkanRenderer::pipelines;
-    Renderpass VulkanRenderer::renderpass;
+    Renderpass VulkanRenderer::renderpasses;
 
     VulkanRenderer::~VulkanRenderer() {}
 
@@ -43,13 +43,6 @@ namespace Raytracing
 
         descriptorSetLayouts.materialDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice.get())
                 .AddBinding({0, DescriptorSetBindingType::UniformBuffer, {DescriptorSetShaderStage::FragmentShader}})
-                .AddBinding({1, DescriptorSetBindingType::TextureSampler, {DescriptorSetShaderStage::FragmentShader}})
-                .AddBinding({2, DescriptorSetBindingType::TextureSampler, {DescriptorSetShaderStage::FragmentShader}})
-                .AddBinding({3, DescriptorSetBindingType::TextureSampler, {DescriptorSetShaderStage::FragmentShader}})
-                .Build();
-
-        descriptorSetLayouts.lightingDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice.get())
-                .AddBinding({0, DescriptorSetBindingType::TextureSampler, {DescriptorSetShaderStage::FragmentShader}})
                 .AddBinding({1, DescriptorSetBindingType::TextureSampler, {DescriptorSetShaderStage::FragmentShader}})
                 .AddBinding({2, DescriptorSetBindingType::TextureSampler, {DescriptorSetShaderStage::FragmentShader}})
                 .AddBinding({3, DescriptorSetBindingType::TextureSampler, {DescriptorSetShaderStage::FragmentShader}})
@@ -89,7 +82,7 @@ namespace Raytracing
             skyboxPipelineConfig.enableDepthTest = false;
             skyboxPipelineConfig.depthAttachment = ImageFormat::DEPTH24_STENCIL8;
 
-            skyboxPipelineConfig.renderPass = renderpass.gBufferPass;
+            skyboxPipelineConfig.renderPass = renderpasses.geometryPass;
         }
         pipelines.skyBox = VulkanPipeline::Builder().Build(vulkanDevice.get(), skyboxPipelineConfig);
 
@@ -120,37 +113,13 @@ namespace Raytracing
             geometryPipelineConfig.enableDepthTest = true;
             geometryPipelineConfig.depthAttachment = ImageFormat::DEPTH24_STENCIL8;
 
-            geometryPipelineConfig.renderPass = renderpass.gBufferPass;
+            geometryPipelineConfig.renderPass = renderpasses.geometryPass;
 
             geometryPipelineConfig.pushConstantData.shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
             geometryPipelineConfig.pushConstantData.offset = 0;
             geometryPipelineConfig.pushConstantData.size = sizeof(SimplePushConstantData);
         }
-        pipelines.gBuffer = VulkanPipeline::Builder().Build(vulkanDevice.get(), geometryPipelineConfig);
-
-
-        LOG_TRACE("Building lighting pipeline");
-        PipelineConfig lightingPipelineConfig; {
-            lightingPipelineConfig.vertexShaderPath = "shader/spv/screen.vert.spv";
-            lightingPipelineConfig.fragmentShaderPath = "shader/spv/screen.frag.spv";
-
-            lightingPipelineConfig.cullMode = PipelineCullMode::Back;
-            lightingPipelineConfig.polygonMode = PipelinePolygonMode::Fill;
-            lightingPipelineConfig.frontFace = PipelineFrontFace::Clockwise;
-
-            lightingPipelineConfig.descriptorSetLayouts = {
-                descriptorSetLayouts.lightingDescriptorSetLayout
-            };
-
-            lightingPipelineConfig.colorAttachments = {
-                ImageFormat::RGBA8_UNORM,
-            };
-
-            lightingPipelineConfig.disableBlending = true;
-            lightingPipelineConfig.enableDepthTest = false;
-            lightingPipelineConfig.renderPass = renderpass.lightingPass;
-        }
-        pipelines.lighting = VulkanPipeline::Builder().Build(vulkanDevice.get(), lightingPipelineConfig);
+        pipelines.geometry = VulkanPipeline::Builder().Build(vulkanDevice.get(), geometryPipelineConfig);
 
         cubeMesh = ResourceManager::LoadMesh(vulkanDevice.get(), "resources/models/cube.obj");
 
@@ -160,7 +129,6 @@ namespace Raytracing
         //cubemapTexture = ResourceManager::LoadHDRCubeMap(vulkanDevice.get(), "resources/environment/champagne_castle_1_4k.hdr");
 
         PrepareSkyboxPass();
-        PrepareLightingPass();
 
         screenRect = CreateScope<VulkanMeshlet>(vulkanDevice.get(), Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
 
@@ -174,51 +142,63 @@ namespace Raytracing
         transform.m_Position = glm::vec3(0.0f, 0.0f, -1.0f);
     }
 
-    void VulkanRenderer::DrawGeometryPass(float deltaTime, const Ref<Camera>& camera, const VkCommandBuffer commandBuffer) const
+    void VulkanRenderer::DrawGeometryPass(const Ref<Camera>& camera, const VkCommandBuffer commandBuffer) const
     {
-        renderpass.gBufferPass->Begin(commandBuffer, gbufferFramebuffers[activeImage], vulkanSwapChain->GetExtent());
+        renderpasses.geometryPass->Begin(commandBuffer, geometryFramebuffers[activeImage], vulkanSwapChain->GetExtent());
 
-        vulkanDevice->DrawMeshlet(commandBuffer,
-                                  cubeMesh->GetMeshlets()[0],
-                                  pipelines.skyBox->GetPipeline(),
-                                  pipelines.skyBox->GetPipelineLayout(), {skyboxDescriptorSet, transformDescriptorSet});
+
+        DrawCommandParams skyboxDrawParams{};
+        skyboxDrawParams.commandBuffer = commandBuffer;
+        skyboxDrawParams.meshlet = &cubeMesh->GetMeshlets()[0];
+        skyboxDrawParams.pipeline = pipelines.skyBox->GetPipeline();
+        skyboxDrawParams.pipelineLayout = pipelines.skyBox->GetPipelineLayout();
+        skyboxDrawParams.descriptorSets = {skyboxDescriptorSet, transformDescriptorSet};
+
+        vulkanDevice->DrawMeshlet(skyboxDrawParams);
+
+
+        DrawCommandParams geometryDrawParams{};
+        geometryDrawParams.commandBuffer = commandBuffer;
+        geometryDrawParams.pipeline = pipelines.geometry->GetPipeline();
+        geometryDrawParams.pipelineLayout = pipelines.geometry->GetPipelineLayout();
 
         for (size_t i = 0; i < completeScene.meshes.size(); i++)
         {
-            vulkanDevice->DrawMesh(commandBuffer,
-                                   camera,
-                                   completeScene.transforms[i],
-                                   completeScene.meshes[i],
-                                   pipelines.gBuffer, {transformDescriptorSet, skyboxDescriptorSet});
+            SimplePushConstantData pushConstantData;
+            pushConstantData.modelMatrix = completeScene.transforms[i].GetTransform();
+            pushConstantData.transform = camera->GetProjection() * camera->GetView() * pushConstantData.modelMatrix;
+
+            auto& materials = completeScene.meshes[i]->GetMaterials();
+
+            geometryDrawParams.pushConstantData = &pushConstantData;
+            geometryDrawParams.pushConstantSize = sizeof(SimplePushConstantData);
+            geometryDrawParams.pushConstantShaderStageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+
+            for (auto& meshlet: completeScene.meshes[i]->GetMeshlets())
+            {
+                geometryDrawParams.descriptorSets = {
+                    materials[meshlet.GetMaterialIndex()].descriptorSet,
+                    transformDescriptorSet,
+                    skyboxDescriptorSet
+                };
+                geometryDrawParams.meshlet = &meshlet;
+                vulkanDevice->DrawMeshlet(geometryDrawParams);
+            }
         }
 
-        renderpass.gBufferPass->End(commandBuffer);
+        renderpasses.geometryPass->End(commandBuffer);
     }
 
-    void VulkanRenderer::DrawLightingPass(VkCommandBuffer commandBuffer)
-    {
-        renderpass.lightingPass->Begin(commandBuffer, presentFramebuffers[activeImage],
-                                       vulkanSwapChain->GetExtent());
-
-        vulkanDevice->DrawMeshlet(commandBuffer, *screenRect,
-                                  pipelines.lighting->GetPipeline(),
-                                  pipelines.lighting->GetPipelineLayout(), { transformDescriptorSet });
-
-        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
-
-        renderpass.lightingPass->End(commandBuffer);
-    }
 
     void VulkanRenderer::DrawFrame(float deltaTime, Ref<Camera> camera)
     {
         UpdateTransformsBuffer(camera);
         vulkanDevice->DrawFrame(vulkanSwapChain->GetSwapChain(), vulkanSwapChain->GetExtent(),
-                                [&](VkCommandBuffer commandBuffer, uint32_t frameIndex, uint32_t imageIndex) {
+                                [&](const VkCommandBuffer commandBuffer, uint32_t, const uint32_t imageIndex) {
                                     activeImage = imageIndex;
 
-                                    DrawGeometryPass(deltaTime, camera, commandBuffer);
+                                    DrawGeometryPass(camera, commandBuffer);
                                     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
-                                    //DrawLightingPass(commandBuffer);
                                 }, std::bind(&VulkanRenderer::ResizeSwapchain, this));
     }
 
@@ -258,13 +238,13 @@ namespace Raytracing
     void VulkanRenderer::CreateFramebuffers()
     {
         const uint32_t imageCount = VulkanUtils::GetSwapchainImageCount(vulkanDevice->GetPhysicalDevice(), vulkanDevice->GetSurface());
-        gbufferFramebuffers.resize(imageCount);
+        geometryFramebuffers.resize(imageCount);
         presentFramebuffers.resize(imageCount);
 
         for (size_t i = 0; i < imageCount; i++)
         {
-            gbufferFramebuffers[i] = VulkanFramebuffer::Builder(vulkanDevice.get())
-                    .SetRenderpass(renderpass.gBufferPass)
+            geometryFramebuffers[i] = VulkanFramebuffer::Builder(vulkanDevice.get())
+                    .SetRenderpass(renderpasses.geometryPass)
                     .SetResolution(viewportWidth, viewportHeight)
                     .AddAttachment(vulkanSwapChain->GetImageViews()[i])
                     .AddAttachment(ImageFormat::RGBA8_UNORM)
@@ -274,40 +254,23 @@ namespace Raytracing
                     .AddAttachment(ImageFormat::DEPTH24_STENCIL8)
                     .Build();
         }
-
-        for (size_t i = 0; i < imageCount; i++)
-        {
-            presentFramebuffers[i] = VulkanFramebuffer::Builder(vulkanDevice.get())
-                    .SetRenderpass(renderpass.lightingPass)
-                    .SetResolution(viewportWidth, viewportHeight)
-                    .AddAttachment(vulkanSwapChain->GetImageViews()[i])
-                    .Build();
-        }
     }
 
-    void VulkanRenderer::CreateRenderPasses()
+    void VulkanRenderer::CreateRenderPasses() const
     {
         LOG_TRACE("Vulkan: create renderpass");
-        renderpass.cubeMapPass = VulkanRenderPass::Builder(vulkanDevice.get())
-                .AddColorAttachment(VK_FORMAT_R16G16B16A16_SFLOAT)
-                .Build();
-
-        renderpass.skyboxPass = VulkanRenderPass::Builder(vulkanDevice.get())
+        renderpasses.skyboxPass = VulkanRenderPass::Builder(vulkanDevice.get())
                 .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM)
                 .AddDepthAttachment()
                 .Build();
 
-        renderpass.gBufferPass = VulkanRenderPass::Builder(vulkanDevice.get())
+        renderpasses.geometryPass = VulkanRenderPass::Builder(vulkanDevice.get())
                 .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM)
                 .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM)
                 .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM)
                 .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM)
                 .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM)
                 .AddDepthAttachment()
-                .Build();
-
-        renderpass.lightingPass = VulkanRenderPass::Builder(vulkanDevice.get())
-                .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM, glm::vec4(1.0))
                 .Build();
     }
 
@@ -317,12 +280,11 @@ namespace Raytracing
         for (size_t i = 0; i < cubeMapFramebuffers.size(); i++)
             cubeMapFramebuffers[i] = nullptr;
 
-        gbufferFramebuffers.clear();
+        geometryFramebuffers.clear();
         presentFramebuffers.clear();
 
         CreateSwapchain();
         CreateFramebuffers();
-        PrepareLightingPass();
     }
 
     void VulkanRenderer::CreateTransformsBuffer()
@@ -344,7 +306,7 @@ namespace Raytracing
                 .Build(transformDescriptorSet);
     }
 
-    void VulkanRenderer::UpdateTransformsBuffer(const Ref<Camera>& camera)
+    void VulkanRenderer::UpdateTransformsBuffer(const Ref<Camera>& camera) const
     {
         TransformsBuffer bufferData;
         bufferData.cameraPosition = glm::vec4(camera->GetTransform().m_Position, 1.0f);
@@ -352,41 +314,6 @@ namespace Raytracing
         bufferData.proj = camera->GetProjection();
 
         memcpy(transformsBuffer->GetMappedData(), &bufferData, sizeof(TransformsBuffer));
-    }
-
-    void VulkanRenderer::PrepareLightingPass()
-    {
-        presentSampler = ImageSamplerBuilder(vulkanDevice.get()).Build();
-
-        VulkanDescriptorSetLayout& materialDescriptorSetLayoutLayout = *pipelines.lighting->GetDescriptorSetLayouts()[0];
-        VulkanDescriptorWriter writer = VulkanDescriptorWriter(materialDescriptorSetLayoutLayout, vulkanDevice->GetShaderDescriptorPool());
-
-        presentDescriptorSets.resize(gbufferFramebuffers.size());
-        for (size_t i = 0; i < gbufferFramebuffers.size(); i++)
-        {
-            VkDescriptorImageInfo info{};
-            info.sampler = presentSampler;
-            info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            info.imageView = gbufferFramebuffers[i]->GetAttachments()[0].imageView;
-
-            writer.WriteImage(0, &info);
-
-            VkDescriptorImageInfo info2{};
-            info2.sampler = presentSampler;
-            info2.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            info2.imageView = gbufferFramebuffers[i]->GetAttachments()[1].imageView;
-
-            writer.WriteImage(1, &info2);
-
-            VkDescriptorImageInfo info3{};
-            info3.sampler = presentSampler;
-            info3.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            info3.imageView = gbufferFramebuffers[i]->GetAttachments()[2].imageView;
-
-            writer.WriteImage(2, &info3);
-
-            writer.Build(presentDescriptorSets[i]);
-        }
     }
 
     void VulkanRenderer::PrepareSkyboxPass()

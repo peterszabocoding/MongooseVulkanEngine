@@ -31,7 +31,7 @@ namespace Raytracing
                 .SetFormat(format)
                 .Build();
 
-        const auto stagingBuffer = VulkanBuffer(device, size,
+        auto stagingBuffer = VulkanBuffer(device, size,
                                                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                                                 VMA_MEMORY_USAGE_CPU_ONLY);

@@ -20,14 +20,14 @@ namespace Raytracing
                      VmaMemoryUsage memoryUsage = VMA_MEMORY_USAGE_AUTO);
         ~VulkanBuffer();
 
-        VkBuffer GetBuffer() const { return allocatedBuffer.buffer; }
+        VkBuffer& GetBuffer() { return allocatedBuffer.buffer; }
         VkDeviceMemory GetBufferMemory() const { return allocatedBuffer.info.deviceMemory; }
         VkDeviceSize GetBufferSize() const { return allocatedBuffer.info.size; }
         VkDeviceAddress GetBufferAddress() const { return allocatedBuffer.address; }
         VkDeviceSize GetOffset() const { return allocatedBuffer.info.offset; }
         void* GetMappedData() const { return allocatedBuffer.info.pMappedData; }
 
-        static void CopyBuffer(const VulkanDevice* vulkanDevice, const VulkanBuffer* src, const VulkanBuffer* dst);
+        static void CopyBuffer(const VulkanDevice* vulkanDevice, VulkanBuffer* src, VulkanBuffer* dst);
 
     private:
         void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage);

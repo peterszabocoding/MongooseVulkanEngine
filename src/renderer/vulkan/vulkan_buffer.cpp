@@ -18,7 +18,7 @@ namespace Raytracing
         vmaDestroyBuffer(vulkanDevice->GetVmaAllocator(), allocatedBuffer.buffer, allocatedBuffer.allocation);
     }
 
-    void VulkanBuffer::CopyBuffer(const VulkanDevice* vulkanDevice, const VulkanBuffer* src, const VulkanBuffer* dst)
+    void VulkanBuffer::CopyBuffer(const VulkanDevice* vulkanDevice, VulkanBuffer* src, VulkanBuffer* dst)
     {
         LOG_INFO("COPY BUFFER");
         LOG_WARN("Src: " + std::to_string(src->GetBufferSize()));

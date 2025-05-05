@@ -25,18 +25,23 @@ namespace Raytracing
     typedef std::function<void(VkCommandBuffer commandBuffer, uint32_t frameIndex, uint32_t imageIndex)>&& DrawFrameFunction;
     typedef std::function<void()>&& OutOfDateErrorCallback;
 
+    struct DrawCommandParams {
+        VkCommandBuffer commandBuffer;
+        VulkanMeshlet* meshlet;
+        VkPipeline pipeline;
+        VkPipelineLayout pipelineLayout;
+        std::vector<VkDescriptorSet> descriptorSets{};
+        const void* pushConstantData = nullptr;
+        uint32_t pushConstantSize = 0;
+        VkShaderStageFlags pushConstantShaderStageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+    };
+
     class VulkanDevice {
     public:
         VulkanDevice(int width, int height, GLFWwindow* glfwWindow);
         ~VulkanDevice();
 
-        void DrawMesh(
-            VkCommandBuffer commandBuffer,
-            const Ref<Camera>& camera, const Transform& transform, const Ref<VulkanMesh>& mesh, Ref<VulkanPipeline> pipeline, std::vector<
-            VkDescriptorSet> _descriptorSets) const;
-
-        void DrawMeshlet(VkCommandBuffer commandBuffer, const VulkanMeshlet& meshlet, VkPipeline pipeline,
-                         VkPipelineLayout pipelineLayout, std::vector<VkDescriptorSet> descriptorSets) const;
+        void DrawMeshlet(const DrawCommandParams& params) const;
 
         void DrawFrame(VkSwapchainKHR swapchain, VkExtent2D extent, DrawFrameFunction draw, OutOfDateErrorCallback errorCallback);
 

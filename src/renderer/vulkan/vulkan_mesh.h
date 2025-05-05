@@ -51,7 +51,7 @@ namespace Raytracing
         ~VulkanMesh() = default;
 
         void AddMeshlet(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices, int materialIndex);
-        const std::vector<VulkanMeshlet>& GetMeshlets() const { return meshlets; }
+        std::vector<VulkanMeshlet>& GetMeshlets() { return meshlets; }
 
         void SetMaterials(const std::vector<VulkanMaterial>& _materials) { materials = _materials; }
         std::vector<VulkanMaterial>& GetMaterials() { return materials; }

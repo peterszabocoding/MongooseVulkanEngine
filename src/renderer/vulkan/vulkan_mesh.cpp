@@ -29,7 +29,7 @@ namespace Raytracing
 
         auto bufferSize = sizeof(vertices[0]) * vertices.size();
 
-        const auto stagingBuffer = VulkanBuffer(
+        auto stagingBuffer = VulkanBuffer(
             vulkanDevice,
             bufferSize,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
@@ -54,7 +54,7 @@ namespace Raytracing
     void VulkanMeshlet::CreateIndexBuffer(VulkanDevice* vulkanDevice)
     {
         auto bufferSize = sizeof(indices[0]) * indices.size();
-        const auto stagingBuffer = VulkanBuffer(
+        auto stagingBuffer = VulkanBuffer(
             vulkanDevice,
             bufferSize,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,

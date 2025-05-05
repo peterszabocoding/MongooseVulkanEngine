@@ -13,21 +13,17 @@ namespace Raytracing
     struct DescriptorSetLayouts {
         Ref<VulkanDescriptorSetLayout> skyboxDescriptorSetLayout;
         Ref<VulkanDescriptorSetLayout> materialDescriptorSetLayout;
-        Ref<VulkanDescriptorSetLayout> lightingDescriptorSetLayout;
         Ref<VulkanDescriptorSetLayout> transformDescriptorSetLayout;
     };
 
     struct Pipelines {
         Ref<VulkanPipeline> skyBox;
-        Ref<VulkanPipeline> gBuffer;
-        Ref<VulkanPipeline> lighting;
+        Ref<VulkanPipeline> geometry;
     };
 
     struct Renderpass {
-        Ref<VulkanRenderPass> cubeMapPass{};
         Ref<VulkanRenderPass> skyboxPass{};
-        Ref<VulkanRenderPass> gBufferPass{};
-        Ref<VulkanRenderPass> lightingPass{};
+        Ref<VulkanRenderPass> geometryPass{};
     };
 
     struct TransformsBuffer {
@@ -42,8 +38,7 @@ namespace Raytracing
         ~VulkanRenderer() override;
 
         virtual void Init(int width, int height) override;
-        void DrawGeometryPass(float deltaTime, const Ref<Camera>& camera, VkCommandBuffer commandBuffer) const;
-        void DrawLightingPass(VkCommandBuffer commandBuffer);
+        void DrawGeometryPass(const Ref<Camera>& camera, VkCommandBuffer commandBuffer) const;
 
         virtual void ProcessPixel(unsigned int pixelCount, vec3 pixelColor) override {}
         virtual void OnRenderBegin(const Camera& camera) override {}
@@ -55,24 +50,23 @@ namespace Raytracing
 
         VulkanDevice* GetVulkanDevice() const { return vulkanDevice.get(); }
 
-        [[nodiscard]] Ref<VulkanRenderPass> GetRenderPass() const { return renderpass.gBufferPass; }
-        [[nodiscard]] Ref<VulkanFramebuffer> GetGBuffer() const { return gbufferFramebuffers[activeImage]; }
+        [[nodiscard]] Ref<VulkanRenderPass> GetRenderPass() const { return renderpasses.geometryPass; }
+        [[nodiscard]] Ref<VulkanFramebuffer> GetGBuffer() const { return geometryFramebuffers[activeImage]; }
 
     private:
         void CreateSwapchain();
         void CreateFramebuffers();
-        void CreateRenderPasses();
+        void CreateRenderPasses() const;
 
         void ResizeSwapchain();
         void CreateTransformsBuffer();
-        void UpdateTransformsBuffer(const Ref<Camera>& camera);
-        void PrepareLightingPass();
+        void UpdateTransformsBuffer(const Ref<Camera>& camera) const;
         void PrepareSkyboxPass();
 
     public:
         static Pipelines pipelines;
         static DescriptorSetLayouts descriptorSetLayouts;
-        static Renderpass renderpass;
+        static Renderpass renderpasses;
 
     private:
         uint32_t viewportWidth, viewportHeight;
@@ -90,7 +84,7 @@ namespace Raytracing
 
         Scope<VulkanSwapchain> vulkanSwapChain;
 
-        std::vector<Ref<VulkanFramebuffer>> gbufferFramebuffers;
+        std::vector<Ref<VulkanFramebuffer>> geometryFramebuffers;
         std::vector<Ref<VulkanFramebuffer>> presentFramebuffers;
         std::array<Ref<VulkanFramebuffer>, 6> cubeMapFramebuffers;
 
