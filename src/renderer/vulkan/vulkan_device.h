@@ -67,6 +67,8 @@ namespace Raytracing
 
         VkSampleCountFlagBits GetMaxMSAASampleCount() const;
 
+        void SetViewportAndScissor(VkExtent2D extent, VkCommandBuffer commandBuffer) const;
+
     public:
         [[nodiscard]] inline VkPhysicalDevice PickPhysicalDevice() const;
         [[nodiscard]] inline VkDevice CreateLogicalDevice();
@@ -86,7 +88,7 @@ namespace Raytracing
         void CreateDescriptorPool();
         VkResult SetupNextFrame(VkSwapchainKHR swapchain);
         void SetViewportAndScissor(VkExtent2D extent2D) const;
-        void SetViewportAndScissor(VkExtent2D extent, VkCommandBuffer commandBuffer) const;
+
 
         VkResult SubmitDrawCommands(VkSemaphore* signalSemaphores) const;
         VkResult PresentFrame(VkSwapchainKHR swapchain, uint32_t imageIndex, const VkSemaphore* signalSemaphores) const;

@@ -13,5 +13,8 @@ mkdir -p ./shader/spv
 "$VULKAN_SDK"/bin/glslc ./shader/glsl/equirectangularToCubemap.vert -o ./shader/spv/equirectangularToCubemap.vert.spv
 "$VULKAN_SDK"/bin/glslc ./shader/glsl/equirectangularToCubemap.frag -o ./shader/spv/equirectangularToCubemap.frag.spv
 
+"$VULKAN_SDK"/bin/glslc ./shader/glsl/shadow_map.vert -o ./shader/spv/shadow_map.vert.spv
+"$VULKAN_SDK"/bin/glslc ./shader/glsl/empty.frag -o ./shader/spv/empty.frag.spv
+
 
 echo "Shader compilation finished"

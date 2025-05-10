@@ -32,18 +32,39 @@ namespace Raytracing
     };
 
     struct DirectionalLight : Light {
-        glm::vec3 direction = glm::vec3(0.0f, -1.0f, 0.0f);
-        glm::vec3 ambientColor = glm::vec3(1.0f);
-        float ambientIntensity = 0.1f;
+        glm::vec3 direction = normalize(glm::vec3(0.0f, -1.0f, 0.0f));
+        glm::vec3 color = glm::vec3(1.0f);
+        float ambientIntensity = 0.35f;
+        float intensity = 1.0f;
+        float nearPlane = 1.0f;
+        float farPlane = 50.0f;
+        float orthoSize = 20.0f;
+        float bias = 0.05f;
 
-        static glm::mat4 GetProjection()
+        glm::mat4 GetProjection() const
         {
-            return glm::ortho(-80.0f, 80.0f, -80.0f, 80.0f, -80.0f, 80.0f);
+            return glm::ortho(-orthoSize, orthoSize, -orthoSize, orthoSize, nearPlane, farPlane);
+        }
+
+        glm::mat4 GetView() const
+        {
+            // We need a position for the "camera" looking along the light direction.
+            // A simple trick is to choose an arbitrary world-space origin and look along -lightDir.
+            glm::vec3 lightPosition = -2.0f * 20.0f * direction; // Offset to see the scene
+            glm::vec3 upDirection = glm::vec3(0.0f, 1.0f, 0.0f); // Choose an appropriate up vector
+
+            // Handle the case where the light direction is almost parallel to the up direction
+            if (glm::abs(glm::dot(direction, upDirection)) > 0.99f) {
+                upDirection = glm::vec3(0.0f, 0.0f, 1.0f); // Use a different up vector
+            }
+
+            return lookAt(lightPosition, glm::vec3(0.0f), upDirection);
+            // lookAt(normalize(direction), glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         }
 
         glm::mat4 GetTransform() const
         {
-            return GetProjection() * lookAt(direction, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+            return GetProjection() * GetView();
         }
     };
 

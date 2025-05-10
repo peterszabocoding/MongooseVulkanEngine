@@ -25,6 +25,14 @@ namespace Raytracing
 
             return VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
         }
+
+        VkImageLayout GetLayoutFromFormat(ImageFormat format)
+        {
+            if (format == ImageFormat::DEPTH24_STENCIL8 || format == ImageFormat::DEPTH32)
+                return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+            return VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
+        }
     }
 
     VulkanFramebuffer::Builder& VulkanFramebuffer::Builder::AddAttachment(VkImageView imageAttachment)
@@ -41,11 +49,13 @@ namespace Raytracing
 
     VulkanFramebuffer::Builder& VulkanFramebuffer::Builder::AddAttachment(ImageFormat attachmentFormat)
     {
+        VkImageLayout imageLayout = ImageUtils::GetLayoutFromFormat(attachmentFormat);
         const AllocatedImage allocatedImage = ImageBuilder(device)
                 .SetResolution(width, height)
                 .SetTiling(VK_IMAGE_TILING_OPTIMAL)
                 .SetFormat(attachmentFormat)
                 .AddUsage(ImageUtils::GetUsageFromFormat(attachmentFormat))
+                .SetInitialLayout(imageLayout)
                 .Build();
 
         const VkImageView imageView = ImageViewBuilder(device)
@@ -54,9 +64,18 @@ namespace Raytracing
                 .SetImage(allocatedImage.image)
                 .Build();
 
+        const VkSampler sampler = ImageSamplerBuilder(device)
+                .SetFilter(VK_FILTER_LINEAR, VK_FILTER_LINEAR)
+                .SetFormat(attachmentFormat)
+                .SetAddressMode(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
+                .SetBorderColor(VK_BORDER_COLOR_INT_OPAQUE_BLACK)
+                .Build();
+
         attachments.push_back({
             allocatedImage,
             imageView,
+            sampler,
+            imageLayout,
             VulkanUtils::ConvertImageFormat(attachmentFormat)
         });
 

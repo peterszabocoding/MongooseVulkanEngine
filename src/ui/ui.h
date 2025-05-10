@@ -135,7 +135,102 @@ namespace Raytracing
 
     private:
         Ref<VulkanFramebuffer> gbuffer;
-        std::vector<VkDescriptorSet> gbufferAttachments;
+        std::vector<VkDescriptorSet> gbufferAttachments{};
         VkSampler sampler = VK_NULL_HANDLE;
+    };
+
+    class ShadowMapViewer : ImGuiWindow {
+    public:
+        struct FramebufferInfo {
+            VkDescriptorSet descriptorSet;
+            uint32_t width;
+            uint32_t height;
+        };
+
+    public:
+        explicit ShadowMapViewer(const Ref<VulkanRenderer>& _renderer): ImGuiWindow(_renderer)
+        {
+            sampler = ImageSamplerBuilder(renderer->GetVulkanDevice()).Build();
+        }
+
+        ~ShadowMapViewer() override
+        {
+            if (sampler) vkDestroySampler(renderer->GetVulkanDevice()->GetDevice(), sampler, nullptr);
+        }
+
+        void Init()
+        {
+            if (shadowMapAttachments.size() > 0)
+            {
+                for (int i = 0; i < shadowMapAttachments.size(); i++)
+                    ImGui_ImplVulkan_RemoveTexture(shadowMapAttachments[i]);
+                shadowMapAttachments.clear();
+            }
+
+            shadowMap = renderer->GetShadowMap();
+
+            if (shadowMap->GetImage())
+            {
+                auto descriptorSet = ImGui_ImplVulkan_AddTexture(sampler, shadowMap->GetImageView(), VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL);
+                shadowMapAttachments.push_back(descriptorSet);
+            }
+        }
+
+        virtual const char* GetTitle() override
+        {
+            return "Shadow Map Viewer";
+        }
+
+        virtual void Draw() override
+        {
+            Init();
+
+            const ImVec2 availableSpace = ImGui::GetContentRegionAvail();
+            const ImVec2 imageSize = {
+                std::min(availableSpace.x, availableSpace.y),
+                std::min(availableSpace.x, availableSpace.y),
+            };
+
+            if (shadowMapAttachments.size() > 0)
+            {
+                ImGui::Image(reinterpret_cast<ImTextureID>(shadowMapAttachments[0]), imageSize, ImVec2(0, 0), ImVec2(1, 1));
+            }
+        }
+
+        virtual void Resize() override
+        {
+            Init();
+        }
+
+    private:
+        Ref<VulkanShadowMap> shadowMap;
+        std::vector<VkDescriptorSet> shadowMapAttachments{};
+        VkSampler sampler = VK_NULL_HANDLE;
+    };
+
+    class LightSettingsWindow : ImGuiWindow {
+    public:
+        explicit LightSettingsWindow(const Ref<VulkanRenderer>& _renderer): ImGuiWindow(_renderer), light(renderer->GetLight()) {}
+
+        ~LightSettingsWindow() override = default;
+
+        virtual const char* GetTitle() override
+        {
+            return "Light Settings";
+        }
+
+        virtual void Draw() override
+        {
+            ImageUtils::DrawVec3Control("Direction", light->direction, true, 1.0f, 150.0f);
+            ImageUtils::DrawFloatControl("Intensity", light->intensity, 0.0f, 100.0f, 0.01f, 1.0f, 150.0f);
+            ImageUtils::DrawFloatControl("Ambient Intensity", light->ambientIntensity, 0.0f, 100.0f, 0.01f, 0.01f, 150.0f);
+            ImageUtils::DrawFloatControl("Near plane", light->nearPlane, 0.0f, 100.0f, 0.1f, 1.0f, 150.0f);
+            ImageUtils::DrawFloatControl("Far plane", light->farPlane, 0.0f, 100.0f, 0.1f, 50.0f, 150.0f);
+            ImageUtils::DrawFloatControl("Ortho size", light->orthoSize, 1.0f, 100.0f, 0.1f, 20.0f, 150.0f);
+            ImageUtils::DrawFloatControl("Bias", light->bias, 0.0001f, 1.0f, 0.0001f, 0.005f, 150.0f);
+        }
+
+    private:
+        DirectionalLight* light;
     };
 }

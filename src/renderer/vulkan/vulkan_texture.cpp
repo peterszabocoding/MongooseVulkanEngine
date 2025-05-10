@@ -1,6 +1,5 @@
 #include "vulkan_texture.h"
 
-#include <stdexcept>
 #include "vulkan_buffer.h"
 #include "vulkan_device.h"
 #include "vulkan_image.h"
@@ -17,6 +16,7 @@ namespace Raytracing
                 .SetResolution(width, height)
                 .SetTiling(tiling)
                 .AddUsage(usage)
+                .SetInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
                 .Build();
 
         imageView = ImageViewBuilder(device)
@@ -32,9 +32,9 @@ namespace Raytracing
                 .Build();
 
         auto stagingBuffer = VulkanBuffer(device, size,
-                                                VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-                                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                                VMA_MEMORY_USAGE_CPU_ONLY);
+                                          VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                                          VMA_MEMORY_USAGE_CPU_ONLY);
 
         memcpy(stagingBuffer.GetMappedData(), data, stagingBuffer.GetBufferSize());
 
@@ -61,6 +61,6 @@ namespace Raytracing
     {
         vkDestroySampler(device->GetDevice(), sampler, nullptr);
         vkDestroyImageView(device->GetDevice(), imageView, nullptr);
-        vmaDestroyImage(device->GetVmaAllocator(), allocatedImage.image ,allocatedImage.allocation);
+        vmaDestroyImage(device->GetVmaAllocator(), allocatedImage.image, allocatedImage.allocation);
     }
 }

@@ -90,8 +90,6 @@ namespace Raytracing
 
         VK_CHECK_MSG(vkBeginCommandBuffer(commandBuffers[currentFrame], &beginInfo), "Failed to begin recording command buffer.");
 
-        SetViewportAndScissor(extent);
-
         draw(commandBuffers[currentFrame], currentFrame, currentImageIndex);
 
         // End command buffer

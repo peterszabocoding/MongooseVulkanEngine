@@ -347,11 +347,13 @@ namespace Raytracing
         depthStencil.depthWriteEnable = VK_TRUE;
         depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
         depthStencil.depthBoundsTestEnable = VK_FALSE;
-        depthStencil.minDepthBounds = 0.0f; // Optional
-        depthStencil.maxDepthBounds = 1.0f; // Optional
+        depthStencil.minDepthBounds = 0.0f;
+        depthStencil.maxDepthBounds = 1.0f;
         depthStencil.stencilTestEnable = VK_FALSE;
-        depthStencil.front = {}; // Optional
-        depthStencil.back = {}; // Optional
+        depthStencil.back.failOp = VK_STENCIL_OP_KEEP;
+        depthStencil.back.passOp = VK_STENCIL_OP_KEEP;
+        depthStencil.back.compareOp = VK_COMPARE_OP_ALWAYS;
+        depthStencil.front = depthStencil.back;
         return *this;
     }
 

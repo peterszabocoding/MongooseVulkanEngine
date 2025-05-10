@@ -7,6 +7,7 @@ namespace Raytracing
     {
         void DrawFloatControl(const std::string& label, float& values, float min, float max, float steps, float resetValue,
                               float columnWidth);
+        void DrawVec3Control(const std::string& label, glm::vec3& values, bool normalizeVector, float resetValue, float columnWidth);
     }
 
     class ImGuiWindow {

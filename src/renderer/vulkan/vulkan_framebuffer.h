@@ -13,6 +13,8 @@ namespace Raytracing
     struct FramebufferAttachment {
         AllocatedImage allocatedImage;
         VkImageView imageView;
+        VkSampler sampler;
+        VkImageLayout imageLayout;
         VkFormat format;
     };
 

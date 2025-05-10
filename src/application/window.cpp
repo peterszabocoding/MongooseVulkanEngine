@@ -55,9 +55,10 @@ namespace Raytracing
 
         camera = CreateRef<Camera>();
         camera->SetResolution(width, height);
-        camera->GetTransform().m_Position = glm::vec3(0.0f, 0.0f, 2.0f);
+        camera->GetTransform().m_Position = glm::vec3(0.0f, 5.0f, 15.0f);
 
         cameraController.SetCamera(camera);
+
 
         imGuiVulkan->AddWindow(
             std::reinterpret_pointer_cast<ImGuiWindow>(
@@ -70,6 +71,14 @@ namespace Raytracing
         imGuiVulkan->AddWindow(
             std::reinterpret_pointer_cast<ImGuiWindow>(
                 CreateRef<FramebufferViewer>(CAST_REF(VulkanRenderer, renderer))));
+
+        imGuiVulkan->AddWindow(
+            std::reinterpret_pointer_cast<ImGuiWindow>(
+                CreateRef<LightSettingsWindow>(CAST_REF(VulkanRenderer, renderer))));
+
+        imGuiVulkan->AddWindow(
+            std::reinterpret_pointer_cast<ImGuiWindow>(
+                CreateRef<ShadowMapViewer>(CAST_REF(VulkanRenderer, renderer))));
     }
 
     void Window::OnUpdate(float deltaTime)

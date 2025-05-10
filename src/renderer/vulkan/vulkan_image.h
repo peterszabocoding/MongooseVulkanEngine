@@ -59,6 +59,12 @@ namespace Raytracing
             return *this;
         }
 
+        ImageBuilder& SetInitialLayout(VkImageLayout _initialLayout)
+        {
+            initialLayout = _initialLayout;
+            return *this;
+        }
+
         AllocatedImage Build();
 
     private:
@@ -70,6 +76,7 @@ namespace Raytracing
         VkFormat format{};
         VkImageUsageFlags usage = 0;
         VkImageCreateFlags flags = 0;
+        VkImageLayout initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         int arrayLayers = 1;
     };
 
@@ -162,6 +169,13 @@ namespace Raytracing
             return *this;
         }
 
+        ImageSamplerBuilder& SetCompareOp(bool _compareEnabled, VkCompareOp _compareOp)
+        {
+            compareEnabled = _compareEnabled;
+            compareOp = _compareOp;
+            return *this;
+        }
+
         VkSampler Build();
 
     private:
@@ -171,5 +185,9 @@ namespace Raytracing
         VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
         VkSamplerAddressMode addressMode = VK_SAMPLER_ADDRESS_MODE_REPEAT;
         VkBorderColor borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+
+        bool compareEnabled = false;
+        VkCompareOp compareOp = VK_COMPARE_OP_ALWAYS;
+
     };
 }

@@ -108,6 +108,7 @@ set(SOURCE_ONE_WEEKEND
         ./src/renderer/vulkan/vulkan_material.cpp
         ./src/renderer/vulkan/vulkan_texture.cpp
         ./src/renderer/vulkan/vulkan_cube_map_texture.cpp
+        ./src/renderer/vulkan/vulkan_shadow_map.cpp
         ./src/renderer/vulkan/imgui_vulkan.cpp
 
         ./src/resource/resource_manager.cpp
