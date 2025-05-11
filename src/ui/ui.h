@@ -116,16 +116,16 @@ namespace Raytracing
             ImGui::Text("Resolution: %d x %d", gbuffer->GetWidth(), gbuffer->GetHeight());
 
             ImGui::Text("Base color:");
-            ImGui::Image(reinterpret_cast<ImTextureID>(gbufferAttachments[0]), imageSize, ImVec2(0, 0), ImVec2(1, 1));
-
-            ImGui::Text("Worldspace normal:");
             ImGui::Image(reinterpret_cast<ImTextureID>(gbufferAttachments[1]), imageSize, ImVec2(0, 0), ImVec2(1, 1));
 
-            ImGui::Text("Metallic-Roughness:");
+            ImGui::Text("Worldspace normal:");
             ImGui::Image(reinterpret_cast<ImTextureID>(gbufferAttachments[2]), imageSize, ImVec2(0, 0), ImVec2(1, 1));
 
-            ImGui::Text("Position:");
+            ImGui::Text("Metallic-Roughness:");
             ImGui::Image(reinterpret_cast<ImTextureID>(gbufferAttachments[3]), imageSize, ImVec2(0, 0), ImVec2(1, 1));
+
+            ImGui::Text("Position:");
+            ImGui::Image(reinterpret_cast<ImTextureID>(gbufferAttachments[4]), imageSize, ImVec2(0, 0), ImVec2(1, 1));
         }
 
         virtual void Resize() override

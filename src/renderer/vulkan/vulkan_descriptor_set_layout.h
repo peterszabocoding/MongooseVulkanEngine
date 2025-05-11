@@ -28,7 +28,7 @@ namespace Raytracing
     struct DescriptorSetBinding {
         uint32_t location = 0;
         DescriptorSetBindingType type = DescriptorSetBindingType::Unknown;
-        std::vector<DescriptorSetShaderStage> stages = { DescriptorSetShaderStage::Unknown };
+        std::vector<DescriptorSetShaderStage> stages = {DescriptorSetShaderStage::Unknown};
     };
 
     class VulkanDescriptorSetLayout {
@@ -43,10 +43,12 @@ namespace Raytracing
         private:
             VulkanDevice* vulkanDevice;
             std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings;
+            std::unordered_map<uint32_t, VkDescriptorBindingFlags> bindingFlags;
         };
 
     public:
-        VulkanDescriptorSetLayout(VulkanDevice* vulkanDevice, std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings);
+        VulkanDescriptorSetLayout(VulkanDevice* vulkanDevice, std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings,
+                                  std::unordered_map<uint32_t, VkDescriptorBindingFlags> _bindingFlags);
         ~VulkanDescriptorSetLayout();
         VulkanDescriptorSetLayout(const VulkanDescriptorSetLayout&) = delete;
         VulkanDescriptorSetLayout& operator=(const VulkanDescriptorSetLayout&) = delete;
@@ -57,6 +59,7 @@ namespace Raytracing
         VulkanDevice* vulkanDevice;
         VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
         std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings;
+        std::unordered_map<uint32_t, VkDescriptorBindingFlags> bindingFlags;
 
         friend class VulkanDescriptorWriter;
     };

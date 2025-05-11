@@ -11,10 +11,12 @@ namespace Raytracing
     VulkanRenderPass::Builder::Builder(VulkanDevice* vulkanDevice): vulkanDevice(vulkanDevice) {}
 
     VulkanRenderPass::Builder& VulkanRenderPass::Builder::AddColorAttachment(const VkFormat imageFormat,
+                                                                             bool isSwapchainAttachment,
+                                                                             bool clearOnLoad,
                                                                              const glm::vec4 clearColor,
                                                                              const VkSampleCountFlagBits sampleCount)
     {
-        colorAttachments.push_back({imageFormat, sampleCount, clearColor});
+        colorAttachments.push_back({imageFormat, sampleCount, clearColor, clearOnLoad, isSwapchainAttachment});
         return *this;
     }
 
@@ -36,12 +38,12 @@ namespace Raytracing
             VkAttachmentDescription attachment{};
             attachment.format = colorAttachment.imageFormat;
             attachment.samples = colorAttachment.sampleCount;
-            attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+            attachment.loadOp = colorAttachment.clearOnLoad ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
             attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
             attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
             attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
             attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-            attachment.finalLayout = attachmentIndex == 0 ? VK_IMAGE_LAYOUT_PRESENT_SRC_KHR : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            attachment.finalLayout = colorAttachment.isSwapchainAttachment ? VK_IMAGE_LAYOUT_PRESENT_SRC_KHR : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
             attachmentDescriptions.push_back(attachment);
 

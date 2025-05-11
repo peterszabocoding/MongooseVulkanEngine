@@ -16,5 +16,8 @@ mkdir -p ./shader/spv
 "$VULKAN_SDK"/bin/glslc ./shader/glsl/shadow_map.vert -o ./shader/spv/shadow_map.vert.spv
 "$VULKAN_SDK"/bin/glslc ./shader/glsl/empty.frag -o ./shader/spv/empty.frag.spv
 
+"$VULKAN_SDK"/bin/glslc ./shader/glsl/quad.vert -o ./shader/spv/quad.vert.spv
+"$VULKAN_SDK"/bin/glslc ./shader/glsl/quad.frag -o ./shader/spv/quad.frag.spv
+
 
 echo "Shader compilation finished"

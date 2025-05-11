@@ -18,6 +18,8 @@ namespace Raytracing
                 VkFormat imageFormat;
                 VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT;
                 glm::vec4 clearColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+                bool clearOnLoad = true;
+                bool isSwapchainAttachment = false;
             };
 
             struct DepthAttachment {
@@ -26,7 +28,10 @@ namespace Raytracing
 
         public:
             explicit Builder(VulkanDevice* vulkanDevice);
-            Builder& AddColorAttachment(VkFormat imageFormat, glm::vec4 clearColor = glm::vec4(0.0, 0.0, 0.0, 1.0),
+            Builder& AddColorAttachment(VkFormat imageFormat,
+                                        bool isSwapchainAttachment,
+                                        bool clearOnLoad = true,
+                                        glm::vec4 clearColor = glm::vec4(0.0, 0.0, 0.0, 1.0),
                                         VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT);
             Builder& AddDepthAttachment(VkFormat depthFormat = VK_FORMAT_D24_UNORM_S8_UINT);
             Ref<VulkanRenderPass> Build();

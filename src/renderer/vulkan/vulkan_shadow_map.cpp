@@ -42,7 +42,7 @@ namespace Raytracing
     void VulkanShadowMap::PrepareToDepthRendering()
     {
         device->ImmediateSubmit([&](const VkCommandBuffer cmd) {
-            VulkanUtils::TransitionImageLayout(cmd, allocatedImage.image, VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT,
+            VulkanUtils::TransitionImageLayout(cmd, allocatedImage.image, VK_IMAGE_ASPECT_DEPTH_BIT,
                                                imageLayout,
                                                VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
         });
@@ -52,7 +52,7 @@ namespace Raytracing
     void VulkanShadowMap::PrepareToShadowRendering()
     {
         device->ImmediateSubmit([&](const VkCommandBuffer cmd) {
-            VulkanUtils::TransitionImageLayout(cmd, allocatedImage.image, VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT,
+            VulkanUtils::TransitionImageLayout(cmd, allocatedImage.image, VK_IMAGE_ASPECT_DEPTH_BIT,
                                                imageLayout,
                                                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         });

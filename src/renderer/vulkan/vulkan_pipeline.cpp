@@ -152,12 +152,6 @@ namespace Raytracing
 
         if (!pushConstantRanges.empty())
         {
-            if (pushConstantRanges[0].stageFlags & VK_SHADER_STAGE_VERTEX_BIT)
-                LOG_INFO("Push constant stage: Vertex");
-
-            if (pushConstantRanges[0].stageFlags & VK_SHADER_STAGE_FRAGMENT_BIT)
-                LOG_INFO("Push constant stage: Fragment");
-
             pipelineLayoutInfo.pushConstantRangeCount = pushConstantRanges.size();
             pipelineLayoutInfo.pPushConstantRanges = pushConstantRanges.data();
         }

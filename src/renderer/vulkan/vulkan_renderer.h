@@ -17,11 +17,13 @@ namespace Raytracing
         Ref<VulkanDescriptorSetLayout> materialDescriptorSetLayout;
         Ref<VulkanDescriptorSetLayout> transformDescriptorSetLayout;
         Ref<VulkanDescriptorSetLayout> lightsDescriptorSetLayout;
+        Ref<VulkanDescriptorSetLayout> presentDescriptorSetLayout;
     };
 
     struct DescriptorSets {
         VkDescriptorSet skyboxDescriptorSet;
         VkDescriptorSet transformDescriptorSet;
+        std::vector<VkDescriptorSet> presentDescriptorSets;
         std::vector<VkDescriptorSet> lightsDescriptorSets;
     };
 
@@ -34,12 +36,14 @@ namespace Raytracing
         Ref<VulkanPipeline> skyBox;
         Ref<VulkanPipeline> geometry;
         Ref<VulkanPipeline> directionalShadowMap;
+        Ref<VulkanPipeline> present;
     };
 
     struct Renderpass {
         Ref<VulkanRenderPass> skyboxPass{};
         Ref<VulkanRenderPass> geometryPass{};
         Ref<VulkanRenderPass> shadowMapPass{};
+        Ref<VulkanRenderPass> presentPass{};
     };
 
     struct TransformsBuffer {
@@ -75,7 +79,7 @@ namespace Raytracing
 
         VulkanDevice* GetVulkanDevice() const { return vulkanDevice.get(); }
 
-        [[nodiscard]] Ref<VulkanRenderPass> GetRenderPass() const { return renderpasses.geometryPass; }
+        [[nodiscard]] Ref<VulkanRenderPass> GetRenderPass() const { return renderpasses.presentPass; }
         [[nodiscard]] Ref<VulkanFramebuffer> GetGBuffer() const { return geometryFramebuffers[activeImage]; }
         [[nodiscard]] Ref<VulkanShadowMap> GetShadowMap() const { return directionalShadowMaps[activeImage]; }
 
@@ -85,6 +89,7 @@ namespace Raytracing
         void DrawDirectionalShadowMapPass(VkCommandBuffer commandBuffer);
         void DrawSkybox(VkCommandBuffer commandBuffer) const;
         void DrawGeometryPass(const Ref<Camera>& camera, VkCommandBuffer commandBuffer) const;
+        void DrawUIPass(VkCommandBuffer commandBuffer);
 
     private:
         void CreateSwapchain();
@@ -95,6 +100,7 @@ namespace Raytracing
         void CreateTransformsBuffer();
         void CreateLightsBuffer();
         void PrepareSkyboxPass();
+        void PreparePresentPass();
         void PrepareLightsDescriptorSet();
 
         void UpdateTransformsBuffer(const Ref<Camera>& camera) const;
@@ -124,6 +130,7 @@ namespace Raytracing
         std::vector<Ref<VulkanFramebuffer>> geometryFramebuffers;
         std::vector<Ref<VulkanShadowMap>> directionalShadowMaps;
         std::vector<Ref<VulkanFramebuffer>> shadowMapFramebuffers;
+        std::vector<Ref<VulkanFramebuffer>> presentFramebuffers;
 
         Ref<VulkanCubeMapTexture> cubemapTexture;
 

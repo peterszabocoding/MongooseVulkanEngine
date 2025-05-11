@@ -361,6 +361,8 @@ namespace Raytracing
         VkPhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures{};
         descriptorIndexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
         descriptorIndexingFeatures.pNext = nullptr;
+        descriptorIndexingFeatures.descriptorBindingPartiallyBound = VK_TRUE;
+        descriptorIndexingFeatures.descriptorBindingVariableDescriptorCount = VK_TRUE;
 
         VkPhysicalDeviceBufferDeviceAddressFeatures bufferDeviceAddressFeatures{};
         bufferDeviceAddressFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
