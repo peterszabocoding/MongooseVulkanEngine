@@ -210,7 +210,7 @@ namespace Raytracing
             for (const tinygltf::Material& material: model.materials)
             {
                 VulkanMaterialBuilder builder(device);
-                builder.SetDescriptorSetLayout(VulkanRenderer::descriptorSetLayouts.materialDescriptorSetLayout);
+                builder.SetDescriptorSetLayout(ShaderCache::descriptorSetLayouts.materialDescriptorSetLayout);
 
                 if (material.pbrMetallicRoughness.baseColorTexture.index >= 0)
                     builder.SetBaseColorTexture(textures[material.pbrMetallicRoughness.baseColorTexture.index]);

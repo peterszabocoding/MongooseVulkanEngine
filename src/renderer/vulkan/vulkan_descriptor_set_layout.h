@@ -17,7 +17,7 @@ namespace Raytracing
         TextureSampler = 2,
     };
 
-    enum class DescriptorSetShaderStage {
+    enum class ShaderStage {
         Unknown = 0,
         VertexShader,
         FragmentShader,
@@ -28,7 +28,7 @@ namespace Raytracing
     struct DescriptorSetBinding {
         uint32_t location = 0;
         DescriptorSetBindingType type = DescriptorSetBindingType::Unknown;
-        std::vector<DescriptorSetShaderStage> stages = {DescriptorSetShaderStage::Unknown};
+        std::vector<ShaderStage> stages = {ShaderStage::Unknown};
     };
 
     class VulkanDescriptorSetLayout {

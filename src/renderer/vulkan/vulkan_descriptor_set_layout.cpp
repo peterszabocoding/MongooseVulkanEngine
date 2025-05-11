@@ -21,20 +21,20 @@ namespace Raytracing
             }
         }
 
-        static VkShaderStageFlagBits ConvertShaderStage(const DescriptorSetShaderStage type)
+        static VkShaderStageFlagBits ConvertShaderStage(const ShaderStage type)
         {
             switch (type)
             {
-                case DescriptorSetShaderStage::VertexShader:
+                case ShaderStage::VertexShader:
                     return VK_SHADER_STAGE_VERTEX_BIT;
 
-                case DescriptorSetShaderStage::FragmentShader:
+                case ShaderStage::FragmentShader:
                     return VK_SHADER_STAGE_FRAGMENT_BIT;
 
-                case DescriptorSetShaderStage::GeometryShader:
+                case ShaderStage::GeometryShader:
                     return VK_SHADER_STAGE_GEOMETRY_BIT;
 
-                case DescriptorSetShaderStage::ComputeShader:
+                case ShaderStage::ComputeShader:
                     return VK_SHADER_STAGE_COMPUTE_BIT;
 
                 default:

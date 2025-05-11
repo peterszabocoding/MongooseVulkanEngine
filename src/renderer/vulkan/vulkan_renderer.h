@@ -9,41 +9,13 @@
 #include "vulkan_shadow_map.h"
 #include "vulkan_cube_map_texture.h"
 #include "renderer/Light.h"
+#include "renderer/shader_cache.h"
 
 namespace Raytracing
 {
-    struct DescriptorSetLayouts {
-        Ref<VulkanDescriptorSetLayout> skyboxDescriptorSetLayout;
-        Ref<VulkanDescriptorSetLayout> materialDescriptorSetLayout;
-        Ref<VulkanDescriptorSetLayout> transformDescriptorSetLayout;
-        Ref<VulkanDescriptorSetLayout> lightsDescriptorSetLayout;
-        Ref<VulkanDescriptorSetLayout> presentDescriptorSetLayout;
-    };
-
-    struct DescriptorSets {
-        VkDescriptorSet skyboxDescriptorSet;
-        VkDescriptorSet transformDescriptorSet;
-        std::vector<VkDescriptorSet> presentDescriptorSets;
-        std::vector<VkDescriptorSet> lightsDescriptorSets;
-    };
-
     struct DescriptorBuffers {
         Ref<VulkanBuffer> transformsBuffer{};
         Ref<VulkanBuffer> lightsBuffer{};
-    };
-
-    struct Pipelines {
-        Ref<VulkanPipeline> skyBox;
-        Ref<VulkanPipeline> geometry;
-        Ref<VulkanPipeline> directionalShadowMap;
-        Ref<VulkanPipeline> present;
-    };
-
-    struct Renderpass {
-        Ref<VulkanRenderPass> skyboxPass{};
-        Ref<VulkanRenderPass> geometryPass{};
-        Ref<VulkanRenderPass> shadowMapPass{};
-        Ref<VulkanRenderPass> presentPass{};
     };
 
     struct TransformsBuffer {
@@ -62,7 +34,7 @@ namespace Raytracing
         alignas(4) float bias = 0.005f;
     };
 
-    class VulkanRenderer : public Renderer {
+    class VulkanRenderer final : public Renderer {
     public:
         VulkanRenderer() = default;
         ~VulkanRenderer() override;
@@ -79,7 +51,7 @@ namespace Raytracing
 
         VulkanDevice* GetVulkanDevice() const { return vulkanDevice.get(); }
 
-        [[nodiscard]] Ref<VulkanRenderPass> GetRenderPass() const { return renderpasses.presentPass; }
+        [[nodiscard]] Ref<VulkanRenderPass> GetRenderPass() const { return shaderCache->renderpasses.presentPass; }
         [[nodiscard]] Ref<VulkanFramebuffer> GetGBuffer() const { return geometryFramebuffers[activeImage]; }
         [[nodiscard]] Ref<VulkanShadowMap> GetShadowMap() const { return directionalShadowMaps[activeImage]; }
 
@@ -94,30 +66,26 @@ namespace Raytracing
     private:
         void CreateSwapchain();
         void CreateFramebuffers();
-        void CreateRenderPasses() const;
 
         void ResizeSwapchain();
         void CreateTransformsBuffer();
         void CreateLightsBuffer();
         void PrepareSkyboxPass();
         void PreparePresentPass();
-        void PrepareLightsDescriptorSet();
 
         void UpdateTransformsBuffer(const Ref<Camera>& camera) const;
         void UpdateLightsBuffer(float deltaTime);
 
     public:
-        static Pipelines pipelines;
-        static DescriptorSetLayouts descriptorSetLayouts;
         static DescriptorBuffers descriptorBuffers;
-        static DescriptorSets descriptorSets;
-        static Renderpass renderpasses;
 
     private:
         uint32_t viewportWidth, viewportHeight;
         uint32_t activeImage = 0;
 
         Scope<VulkanDevice> vulkanDevice;
+
+        Scope<ShaderCache> shaderCache;
 
         Ref<VulkanMesh> scene;
         Scene completeScene;
