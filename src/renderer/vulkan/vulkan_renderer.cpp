@@ -85,7 +85,7 @@ namespace Raytracing
 
     void VulkanRenderer::DrawDirectionalShadowMapPass(const VkCommandBuffer commandBuffer)
     {
-        VkExtent2D extent = {2048, 2048};
+        VkExtent2D extent = {4096, 4096};
 
         vulkanDevice->SetViewportAndScissor(extent, commandBuffer);
         shaderCache->renderpasses.shadowMapPass->Begin(commandBuffer, shadowMapFramebuffers[activeImage], extent);
@@ -234,12 +234,12 @@ namespace Raytracing
                     .Build();
 
             directionalShadowMaps[i] = VulkanShadowMap::Builder()
-                    .SetResolution(2048, 2048)
+                    .SetResolution(4096, 4096)
                     .Build(vulkanDevice.get());
 
             shadowMapFramebuffers[i] = VulkanFramebuffer::Builder(vulkanDevice.get())
                     .SetRenderpass(shaderCache->renderpasses.shadowMapPass)
-                    .SetResolution(2048, 2048)
+                    .SetResolution(4096, 4096)
                     .AddAttachment(directionalShadowMaps[i]->GetImageView())
                     .Build();
 

@@ -56,9 +56,9 @@ namespace Raytracing
         if (params.pushConstantData)
         {
             vkCmdPushConstants(params.commandBuffer,
-                           params.pipelineLayout,
-                           params.pushConstantShaderStageFlags, 0,
-                           params.pushConstantSize, params.pushConstantData);
+                               params.pipelineLayout,
+                               params.pushConstantShaderStageFlags, 0,
+                               params.pushConstantSize, params.pushConstantData);
         }
 
         vkCmdBindPipeline(params.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, params.pipeline);
@@ -155,6 +155,8 @@ namespace Raytracing
         surface = CreateSurface(glfwWindow);
         physicalDevice = PickPhysicalDevice();
         device = CreateLogicalDevice();
+
+        msaaSamples = VulkanUtils::GetMaxMSAASampleCount(physicalDevice);
 
         vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
 
@@ -298,20 +300,6 @@ namespace Raytracing
         VK_CHECK_MSG(glfwCreateWindowSurface(instance, glfwWindow, nullptr, &surface), "Failed to create window surface.");
 
         return surface;
-    }
-
-    VkSampleCountFlagBits VulkanDevice::GetMaxMSAASampleCount() const
-    {
-        const VkSampleCountFlags counts = physicalDeviceProperties.limits.framebufferColorSampleCounts & physicalDeviceProperties.limits.
-                                          framebufferDepthSampleCounts;
-        if (counts & VK_SAMPLE_COUNT_64_BIT) { return VK_SAMPLE_COUNT_64_BIT; }
-        if (counts & VK_SAMPLE_COUNT_32_BIT) { return VK_SAMPLE_COUNT_32_BIT; }
-        if (counts & VK_SAMPLE_COUNT_16_BIT) { return VK_SAMPLE_COUNT_16_BIT; }
-        if (counts & VK_SAMPLE_COUNT_8_BIT) { return VK_SAMPLE_COUNT_8_BIT; }
-        if (counts & VK_SAMPLE_COUNT_4_BIT) { return VK_SAMPLE_COUNT_4_BIT; }
-        if (counts & VK_SAMPLE_COUNT_2_BIT) { return VK_SAMPLE_COUNT_2_BIT; }
-
-        return VK_SAMPLE_COUNT_1_BIT;
     }
 
     VkPhysicalDevice VulkanDevice::PickPhysicalDevice() const

@@ -124,5 +124,7 @@ namespace Raytracing
         Scope<VulkanDescriptorPool> globalUniformPool{};
         Scope<VulkanDescriptorPool> shaderDescriptorPool{};
         Scope<VulkanDescriptorPool> imguiDescriptorPool{};
+
+        VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
     };
 }

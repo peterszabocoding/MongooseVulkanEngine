@@ -76,6 +76,28 @@ float CalcShadowFactor(vec4 shadowCoord, vec2 off)
     return shadow;
 }
 
+float filterPCF(vec4 sc)
+{
+    ivec2 texDim = textureSize(shadowMap, 0);
+    float scale = 1.5;
+    float dx = scale * 1.0 / float(texDim.x);
+    float dy = scale * 1.0 / float(texDim.y);
+
+    float shadowFactor = 0.0;
+    int count = 0;
+    int range = 1;
+
+    for (int x = -range; x <= range; x++)
+    {
+        for (int y = -range; y <= range; y++)
+        {
+            shadowFactor += CalcShadowFactor(sc, vec2(dx*x, dy*y));
+            count++;
+        }
+    }
+    return shadowFactor / count;
+}
+
 void main() {
 
     vec4 color = materialParams.useBaseColorMap ? texture(baseColorSampler, fragTexCoord) : materialParams.baseColor;
@@ -119,6 +141,7 @@ void main() {
     vec3 lightDir = -lights.direction;
     float diffuseFactor = clamp(dot(normalWorldSpace, lightDir), 0.0, 1.0);
 
-    float shadowCoeff = CalcShadowFactor(shadowMapCoord, vec2(0.0));
+    //float shadowCoeff = CalcShadowFactor(shadowMapCoord, vec2(0.0));
+    float shadowCoeff = filterPCF(shadowMapCoord / shadowMapCoord.w);
     finalImage = (lights.ambientIntensity + shadowCoeff * lights.intensity * diffuseFactor) * diffuseColor;
 }
