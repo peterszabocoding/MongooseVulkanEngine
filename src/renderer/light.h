@@ -34,8 +34,8 @@ namespace Raytracing
     struct DirectionalLight : Light {
         glm::vec3 direction = normalize(glm::vec3(0.0f, -1.0f, 0.0f));
         glm::vec3 color = glm::vec3(1.0f);
-        float ambientIntensity = 0.35f;
-        float intensity = 1.0f;
+        float ambientIntensity = 0.05f;
+        float intensity = 2.0f;
         float nearPlane = 1.0f;
         float farPlane = 50.0f;
         float orthoSize = 20.0f;

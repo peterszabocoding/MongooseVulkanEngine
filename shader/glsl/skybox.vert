@@ -8,9 +8,9 @@ layout(location = 4) in vec3 inTangent;
 layout(location = 5) in vec3 inBitangent;
 
 layout(set = 1, binding = 0) uniform Transforms {
-    vec4 cameraPosition;
-    mat4 view;
     mat4 projection;
+    mat4 view;
+    vec3 cameraPosition;
 } transforms;
 
 layout(location = 0) out vec3 WorldPos;

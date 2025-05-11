@@ -1,5 +1,9 @@
 #version 450
 #extension GL_EXT_scalar_block_layout : require
+#extension GL_ARB_shading_language_include : require
+
+#include <shadow_mapping.glslh>
+#include <pbr_functions.glslh>
 
 layout(location = 0) in vec3 fragPosition;
 layout(location = 1) in vec3 fragColor;
@@ -22,9 +26,9 @@ layout(set = 0, binding = 0) uniform MaterialParams {
 } materialParams;
 
 layout(set = 1, binding = 0) uniform Transforms {
-    vec4 cameraPosition;
-    mat4 view;
     mat4 projection;
+    mat4 view;
+    vec3 cameraPosition;
 } transforms;
 
 layout(std430, set = 3, binding = 0) uniform Lights {
@@ -49,9 +53,10 @@ layout(location = 0) out vec4 finalImage;
 layout(location = 1) out vec4 baseColorImage;
 layout(location = 2) out vec4 normalImage;
 layout(location = 3) out vec4 metallicRoughnessImage;
-layout(location = 4) out vec4 worldPosition;
+layout(location = 4) out vec4 outWorldPosition;
 
-vec3 normalWorldSpace;
+vec3 N;
+vec3 V;
 
 vec3 CalcSurfaceNormal(vec3 normalFromTexture, mat3 TBN)
 {
@@ -62,46 +67,20 @@ vec3 CalcSurfaceNormal(vec3 normalFromTexture, mat3 TBN)
     return normalize(TBN * normal);
 }
 
-float CalcShadowFactor(vec4 shadowCoord, vec2 off)
+vec3 CalcDirectionalLightRadiance(vec3 direction)
 {
-    float shadow = 1.0;
-    if ( shadowCoord.z > -1.0 && shadowCoord.z < 1.0 )
-    {
-        float dist = texture(shadowMap, shadowCoord.st + off).r;
-        if ( shadowCoord.w > 0.0 && dist < shadowCoord.z - 0.005 )
-        {
-            shadow = 0.0;
-        }
-    }
-    return shadow;
-}
+    vec3 lightDir = direction;
+    float diffuseFactor = clamp(dot(N, lightDir), 0.0, 1.0);
 
-float filterPCF(vec4 sc)
-{
-    ivec2 texDim = textureSize(shadowMap, 0);
-    float scale = 1.5;
-    float dx = scale * 1.0 / float(texDim.x);
-    float dy = scale * 1.0 / float(texDim.y);
-
-    float shadowFactor = 0.0;
-    int count = 0;
-    int range = 1;
-
-    for (int x = -range; x <= range; x++)
-    {
-        for (int y = -range; y <= range; y++)
-        {
-            shadowFactor += CalcShadowFactor(sc, vec2(dx*x, dy*y));
-            count++;
-        }
-    }
-    return shadowFactor / count;
+    float shadowCoeff = filterPCF(shadowMap, shadowMapCoord / shadowMapCoord.w);
+    return shadowCoeff * lights.intensity * lights.color.rgb * diffuseFactor;
 }
 
 void main() {
 
-    vec4 color = materialParams.useBaseColorMap ? texture(baseColorSampler, fragTexCoord) : materialParams.baseColor;
+    vec4 baseColor = materialParams.useBaseColorMap ? texture(baseColorSampler, fragTexCoord) : materialParams.baseColor;
 
+    vec4 albedo = vec4(fragColor, 1.0) * materialParams.tint * baseColor;
     float metallic = materialParams.metallic;
     float roughness = materialParams.roughness;
     float occlusion = 1.0;
@@ -117,31 +96,46 @@ void main() {
 
     vec3 normalMapColor = texture(normalSampler, fragTexCoord).rgb;
 
-    normalWorldSpace = materialParams.useNormalMap
-    ? CalcSurfaceNormal(normalMapColor, TBN)
-    : fragNormal;
 
-    vec4 diffuseColor = vec4(fragColor, 1.0) * materialParams.tint * color;
+    N = materialParams.useNormalMap
+        ? CalcSurfaceNormal(normalMapColor, TBN)
+        : fragNormal;
+    V = normalize(transforms.cameraPosition - inWorldPosition.xyz);
+
+    vec3 lightPosition = vec3(0.0);
+   // vec3 L = normalize(lightPosition - inWorldPosition.xyz);
+    vec3 L = -lights.direction;
+    vec3 H = normalize(V + L);
+
+    vec3 F0 = vec3(0.04);
+    F0      = mix(F0, albedo.rgb, metallic);
+
+    //float distance    = length(lightPosition - inWorldPosition.xyz);
+    //float attenuation = 1.0 / (distance * distance);
+    //vec3 radiance     = lights.intensity * lights.color.rgb * attenuation;
+
+    vec3 radiance = CalcDirectionalLightRadiance(-lights.direction);
+    vec3 Lo = CalcLightRadiance(L, H, V, N, F0, albedo.rgb, roughness, metallic, radiance);
+
+    vec3 ambient = lights.ambientIntensity * albedo.rgb;
+    vec3 color = ambient + Lo;
 
     /////////////////   Reflection   /////////////////////
-    vec3 I = normalize(fragPosition - transforms.cameraPosition.xyz);
-    vec3 R = reflect(I, normalWorldSpace);
+    vec3 I = normalize(fragPosition - transforms.cameraPosition);
+    vec3 R = reflect(I, N);
     vec3 reflectionColor = texture(skyboxSampler, R).rgb;
     /////////////////////////////////////////////////////
 
     /////////////////   GBuffer   ////////////////////////
-    baseColorImage = diffuseColor;
-    normalImage = vec4(normalWorldSpace, 1.0);
+    baseColorImage = albedo;
+    normalImage = vec4(N, 1.0);
     metallicRoughnessImage = vec4(occlusion, metallic, roughness, 1.0);
-    worldPosition = inWorldPosition;
+    outWorldPosition = inWorldPosition;
     /////////////////////////////////////////////////////
 
-    diffuseColor += 0.05 * vec4(reflectionColor, 1.0);
+    color += 0.1 * (1.0 - roughness) * reflectionColor;
 
-    vec3 lightDir = -lights.direction;
-    float diffuseFactor = clamp(dot(normalWorldSpace, lightDir), 0.0, 1.0);
-
-    //float shadowCoeff = CalcShadowFactor(shadowMapCoord, vec2(0.0));
-    float shadowCoeff = filterPCF(shadowMapCoord / shadowMapCoord.w);
-    finalImage = (lights.ambientIntensity + shadowCoeff * lights.intensity * diffuseFactor) * diffuseColor;
+    //float shadowCoeff = filterPCF(shadowMap, shadowMapCoord / shadowMapCoord.w);
+    //finalImage = (lights.ambientIntensity + shadowCoeff * lights.intensity * diffuseFactor) * albedo;
+    finalImage = vec4(color, 1.0);
 }

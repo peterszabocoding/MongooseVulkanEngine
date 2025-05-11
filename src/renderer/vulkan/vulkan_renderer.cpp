@@ -45,11 +45,11 @@ namespace Raytracing
         PreparePresentPass();
 
         LOG_TRACE("Load scene");
-        completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/sponza/Sponza.gltf");
+        //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/sponza/Sponza.gltf");
         //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/vertex_color/vertex_color.gltf");
         //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/normal_tangent/NormalTangentTest.gltf");
         //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/gltf/multiple_spheres.gltf");
-        //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/chess/ABeautifulGame.gltf");
+        completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/chess/ABeautifulGame.gltf");
         //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/tests/orientation_test/orientation_test.gltf");
     }
 
@@ -336,7 +336,7 @@ namespace Raytracing
     void VulkanRenderer::UpdateTransformsBuffer(const Ref<Camera>& camera) const
     {
         TransformsBuffer bufferData;
-        bufferData.cameraPosition = glm::vec4(camera->GetTransform().m_Position, 1.0f);
+        bufferData.cameraPosition = camera->GetTransform().m_Position;
         bufferData.view = camera->GetView();
         bufferData.proj = camera->GetProjection();
 

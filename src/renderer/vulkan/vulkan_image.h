@@ -71,6 +71,12 @@ namespace Raytracing
             return *this;
         }
 
+        ImageBuilder& SetMSAASamples(VkSampleCountFlagBits _samples)
+        {
+            samples = _samples;
+            return *this;
+        }
+
         AllocatedImage Build();
 
     private:
@@ -85,6 +91,7 @@ namespace Raytracing
         VkImageLayout initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         int arrayLayers = 1;
         uint32_t mipLevels = 1;
+        VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT;
     };
 
     class ImageViewBuilder {

@@ -7,9 +7,9 @@ layout(push_constant) uniform Push {
 } push;
 
 layout(set = 1, binding = 0) uniform Transforms {
-    vec4 cameraPosition;
-    mat4 view;
     mat4 projection;
+    mat4 view;
+    vec3 cameraPosition;
 } transforms;
 
 layout(std430, set = 3, binding = 0) uniform Lights {
