@@ -16,7 +16,9 @@ namespace Raytracing
                 .SetResolution(width, height)
                 .SetTiling(tiling)
                 .AddUsage(usage)
+                .AddUsage(VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
                 .SetInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+                .SetMipLevels(mipLevels)
                 .Build();
 
         imageView = ImageViewBuilder(device)
@@ -24,11 +26,13 @@ namespace Raytracing
                 .SetImage(allocatedImage.image)
                 .SetViewType(VK_IMAGE_VIEW_TYPE_2D)
                 .SetAspectFlags(aspectFlags)
+                .SetMipLevels(mipLevels)
                 .Build();
 
         sampler = ImageSamplerBuilder(device)
                 .SetFilter(minFilter, magFilter)
                 .SetFormat(format)
+                .SetMipLevels(mipLevels)
                 .Build();
 
         auto stagingBuffer = VulkanBuffer(device, size,
@@ -39,9 +43,11 @@ namespace Raytracing
         memcpy(stagingBuffer.GetMappedData(), data, stagingBuffer.GetBufferSize());
 
         device->ImmediateSubmit([&](const VkCommandBuffer cmd) {
-            VulkanUtils::TransitionImageLayout(cmd, allocatedImage.image, VK_IMAGE_ASPECT_COLOR_BIT,
+            VulkanUtils::TransitionImageLayout(cmd, allocatedImage.image,
+                                               VK_IMAGE_ASPECT_COLOR_BIT,
                                                VK_IMAGE_LAYOUT_UNDEFINED,
-                                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+                                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                               mipLevels);
         });
 
         device->ImmediateSubmit([&](const VkCommandBuffer cmd) {
@@ -49,10 +55,25 @@ namespace Raytracing
         });
 
         device->ImmediateSubmit([&](const VkCommandBuffer cmd) {
-            VulkanUtils::TransitionImageLayout(cmd, allocatedImage.image, VK_IMAGE_ASPECT_COLOR_BIT,
-                                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            VulkanUtils::GenerateMipmaps(cmd,
+                                         device->GetPhysicalDevice(),
+                                         allocatedImage.image,
+                                         VulkanUtils::ConvertImageFormat(format),
+                                         width,
+                                         height,
+                                         mipLevels);
         });
+
+        /*
+                device->ImmediateSubmit([&](const VkCommandBuffer cmd) {
+                    VulkanUtils::TransitionImageLayout(cmd,
+                                                       allocatedImage.image,
+                                                       VK_IMAGE_ASPECT_COLOR_BIT,
+                                                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                                       VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                                                       mipLevels);
+                });
+                */
 
         return CreateRef<VulkanTexture>(device, allocatedImage, imageView, sampler, imageMemory, imageResource);
     }

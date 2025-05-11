@@ -65,6 +65,12 @@ namespace Raytracing
             return *this;
         }
 
+        ImageBuilder& SetMipLevels(uint32_t _mipLevels)
+        {
+            mipLevels = _mipLevels;
+            return *this;
+        }
+
         AllocatedImage Build();
 
     private:
@@ -78,6 +84,7 @@ namespace Raytracing
         VkImageCreateFlags flags = 0;
         VkImageLayout initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         int arrayLayers = 1;
+        uint32_t mipLevels = 1;
     };
 
     class ImageViewBuilder {
@@ -127,6 +134,12 @@ namespace Raytracing
             return *this;
         }
 
+        ImageViewBuilder& SetMipLevels(uint32_t _mipLevels)
+        {
+            mipLevels = _mipLevels;
+            return *this;
+        }
+
         VkImageView Build() const;
 
     private:
@@ -137,6 +150,7 @@ namespace Raytracing
         VkImageAspectFlags aspectFlags{};
         uint32_t layerCount = 1;
         uint32_t baseArrayLayer = 0;
+        uint32_t mipLevels = 1;
     };
 
     class ImageSamplerBuilder {
@@ -176,6 +190,12 @@ namespace Raytracing
             return *this;
         }
 
+        ImageSamplerBuilder& SetMipLevels(uint32_t _mipLevels)
+        {
+            mipLevels = _mipLevels;
+            return *this;
+        }
+
         VkSampler Build();
 
     private:
@@ -189,5 +209,6 @@ namespace Raytracing
         bool compareEnabled = false;
         VkCompareOp compareOp = VK_COMPARE_OP_ALWAYS;
 
+        uint32_t mipLevels = 1;
     };
 }

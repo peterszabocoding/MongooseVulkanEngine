@@ -105,6 +105,7 @@ namespace Raytracing
         LOG_INFO("Load Texture: " + textureImagePath);
         ImageResource imageResource = LoadImageResource(textureImagePath);
 
+        uint32_t mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(imageResource.width, imageResource.height)))) + 1;
         Ref<VulkanTexture> texture = VulkanTexture::Builder()
                 .SetData(imageResource.data, imageResource.size)
                 .SetResolution(imageResource.width, imageResource.height)
@@ -115,6 +116,7 @@ namespace Raytracing
                 .AddUsage(VK_IMAGE_USAGE_SAMPLED_BIT)
                 .AddAspectFlag(VK_IMAGE_ASPECT_COLOR_BIT)
                 .SetImageResource(imageResource)
+                .SetMipLevels(mipLevels)
                 .Build(device);
 
         ReleaseImage(imageResource);
