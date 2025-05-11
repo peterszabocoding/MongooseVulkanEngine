@@ -44,7 +44,7 @@ namespace Raytracing
     public:
         VulkanFramebuffer(VulkanDevice* device, const VkFramebuffer framebuffer): device(device), framebuffer(framebuffer) {}
 
-        VulkanFramebuffer(VulkanDevice* _device, const VkFramebuffer _framebuffer, int _width, int _height,
+        VulkanFramebuffer(VulkanDevice* _device, const VkFramebuffer _framebuffer, uint32_t _width, uint32_t _height,
                           const std::vector<FramebufferAttachment>& _attachments): device(_device),
                                                                         framebuffer(_framebuffer),
                                                                         width(_width), height(_height),
@@ -54,16 +54,16 @@ namespace Raytracing
 
         VkFramebuffer Get() const { return framebuffer; };
 
-        int GetWidth() const { return width; }
-        int GetHeight() const { return height; }
+        uint32_t GetWidth() const { return width; }
+        uint32_t GetHeight() const { return height; }
         std::vector<FramebufferAttachment> const& GetAttachments() const { return attachments; };
+
+    public:
+        uint32_t width = 0, height = 0;
+        std::vector<FramebufferAttachment> attachments{};
 
     private:
         VulkanDevice* device;
         VkFramebuffer framebuffer;
-
-        int width = 0, height = 0;
-
-        std::vector<FramebufferAttachment> attachments{};
     };
 }

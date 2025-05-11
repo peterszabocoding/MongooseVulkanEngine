@@ -30,20 +30,19 @@ namespace Raytracing
         shaderCache->Load();
 
         CreateFramebuffers();
-
         CreateTransformsBuffer();
+
+        directionalLight.direction = normalize(glm::vec3(0.0f, -2.0f, -1.0f));
         CreateLightsBuffer();
 
-        cubeMesh = ResourceManager::LoadMesh(vulkanDevice.get(), "resources/models/cube.obj");
-
         LOG_TRACE("Load skybox");
+        cubeMesh = ResourceManager::LoadMesh(vulkanDevice.get(), "resources/models/cube.obj");
         cubemapTexture = ResourceManager::LoadHDRCubeMap(vulkanDevice.get(), "resources/environment/newport_loft.hdr");
-        //cubemapTexture = ResourceManager::LoadHDRCubeMap(vulkanDevice.get(), "resources/environment/champagne_castle_1_4k.hdr");
-
         PrepareSkyboxPass();
-        PreparePresentPass();
+
 
         screenRect = CreateScope<VulkanMeshlet>(vulkanDevice.get(), Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
+        PreparePresentPass();
 
         LOG_TRACE("Load scene");
         //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/sponza/Sponza.gltf");
@@ -52,8 +51,6 @@ namespace Raytracing
         //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/gltf/multiple_spheres.gltf");
         //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/chess/ABeautifulGame.gltf");
         completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/tests/orientation_test/orientation_test.gltf");
-
-        directionalLight.direction = normalize(glm::vec3(0.0f, -2.0f, -1.0f));
     }
 
     void VulkanRenderer::DrawFrame(const float deltaTime, const Ref<Camera> camera)
@@ -122,8 +119,10 @@ namespace Raytracing
 
     void VulkanRenderer::DrawGeometryPass(const Ref<Camera>& camera, const VkCommandBuffer commandBuffer) const
     {
-        vulkanDevice->SetViewportAndScissor(vulkanSwapChain->GetExtent(), commandBuffer);
-        shaderCache->renderpasses.geometryPass->Begin(commandBuffer, geometryFramebuffers[activeImage], vulkanSwapChain->GetExtent());
+        VkExtent2D extent = {geometryFramebuffers[activeImage]->width, geometryFramebuffers[activeImage]->height};
+
+        vulkanDevice->SetViewportAndScissor(extent, commandBuffer);
+        shaderCache->renderpasses.geometryPass->Begin(commandBuffer, geometryFramebuffers[activeImage], extent);
 
         DrawSkybox(commandBuffer);
 
@@ -225,7 +224,7 @@ namespace Raytracing
         {
             geometryFramebuffers[i] = VulkanFramebuffer::Builder(vulkanDevice.get())
                     .SetRenderpass(shaderCache->renderpasses.geometryPass)
-                    .SetResolution(viewportWidth, viewportHeight)
+                    .SetResolution(viewportWidth * resolutionScale, viewportHeight * resolutionScale)
                     .AddAttachment(ImageFormat::RGBA8_UNORM)
                     .AddAttachment(ImageFormat::RGBA8_UNORM)
                     .AddAttachment(ImageFormat::RGBA8_UNORM)

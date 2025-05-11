@@ -83,6 +83,8 @@ namespace Raytracing
         uint32_t viewportWidth, viewportHeight;
         uint32_t activeImage = 0;
 
+        float resolutionScale = 1.0f;
+
         Scope<VulkanDevice> vulkanDevice;
 
         Scope<ShaderCache> shaderCache;
