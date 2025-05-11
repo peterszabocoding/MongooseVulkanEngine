@@ -91,7 +91,7 @@ namespace Raytracing
             {
                 if (!attachment.allocatedImage.image) continue;
 
-                auto descriptorSet = ImGui_ImplVulkan_AddTexture(sampler, attachment.imageView, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL);
+                auto descriptorSet = ImGui_ImplVulkan_AddTexture(sampler, attachment.imageView, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
                 gbufferAttachments.push_back(descriptorSet);
             }
         }
@@ -171,7 +171,7 @@ namespace Raytracing
 
             if (shadowMap->GetImage())
             {
-                auto descriptorSet = ImGui_ImplVulkan_AddTexture(sampler, shadowMap->GetImageView(), VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL);
+                auto descriptorSet = ImGui_ImplVulkan_AddTexture(sampler, shadowMap->GetImageView(), VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
                 shadowMapAttachments.push_back(descriptorSet);
             }
         }

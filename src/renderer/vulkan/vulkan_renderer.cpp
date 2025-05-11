@@ -436,6 +436,9 @@ namespace Raytracing
         IdleWait();
 
         geometryFramebuffers.clear();
+        geometryFramebuffers.clear();
+        geometryFramebuffers.clear();
+        presentFramebuffers.clear();
 
         CreateSwapchain();
         CreateFramebuffers();
@@ -568,7 +571,7 @@ namespace Raytracing
         {
             VkDescriptorImageInfo renderImageInfo{};
             renderImageInfo.sampler = geometryFramebuffers[i]->GetAttachments()[0].sampler;
-            renderImageInfo.imageLayout = geometryFramebuffers[i]->GetAttachments()[0].imageLayout;
+            renderImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             renderImageInfo.imageView = geometryFramebuffers[i]->GetAttachments()[0].imageView;
 
             auto writer = VulkanDescriptorWriter(*descriptorSetLayouts.presentDescriptorSetLayout, vulkanDevice->GetShaderDescriptorPool())
