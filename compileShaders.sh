@@ -22,4 +22,7 @@ mkdir -p ./shader/spv
 "$VULKAN_SDK"/bin/glslc -I ./shader/glsl/includes ./shader/glsl/brdf.vert -o ./shader/spv/brdf.vert.spv
 "$VULKAN_SDK"/bin/glslc -I ./shader/glsl/includes ./shader/glsl/brdf.frag -o ./shader/spv/brdf.frag.spv
 
+"$VULKAN_SDK"/bin/glslc -I ./shader/glsl/includes ./shader/glsl/cubemap.vert -o ./shader/spv/cubemap.vert.spv
+"$VULKAN_SDK"/bin/glslc -I ./shader/glsl/includes ./shader/glsl/irradiance_convolution.frag -o ./shader/spv/irradiance_convolution.frag.spv
+
 echo "Shader compilation finished"

@@ -21,6 +21,11 @@ namespace Raytracing
         glm::mat4 modelMatrix{1.f};
     };
 
+    struct TransformPushConstantData {
+        glm::mat4 projection{1.f};
+        glm::mat4 view{1.f};
+    };
+
     struct UniformBufferObject {
         glm::mat4 model;
         glm::mat4 view;

@@ -46,6 +46,7 @@ layout(set = 0, binding = 2) uniform sampler2D normalSampler;
 layout(set = 0, binding = 3) uniform sampler2D metallicRoughnessSampler;
 
 layout(set = 2, binding = 0) uniform samplerCube skyboxSampler;
+layout(set = 4, binding = 0) uniform samplerCube irradianceMap;
 
 layout(set = 3, binding = 1) uniform sampler2D shadowMap;
 
@@ -81,6 +82,8 @@ void main() {
     vec4 baseColor = materialParams.useBaseColorMap ? texture(baseColorSampler, fragTexCoord) : materialParams.baseColor;
 
     vec4 albedo = vec4(fragColor, 1.0) * materialParams.tint * baseColor;
+    baseColorImage = albedo;
+
     float metallic = materialParams.metallic;
     float roughness = materialParams.roughness;
     float occlusion = 1.0;
@@ -114,6 +117,9 @@ void main() {
     //float attenuation = 1.0 / (distance * distance);
     //vec3 radiance     = lights.intensity * lights.color.rgb * attenuation;
 
+    vec3 irradiance = texture(irradianceMap, N).rgb;
+    albedo = vec4(irradiance * albedo.rgb, 1.0);
+
     vec3 radiance = CalcDirectionalLightRadiance(-lights.direction);
     vec3 Lo = CalcLightRadiance(L, H, V, N, F0, albedo.rgb, roughness, metallic, radiance);
 
@@ -127,7 +133,6 @@ void main() {
     /////////////////////////////////////////////////////
 
     /////////////////   GBuffer   ////////////////////////
-    baseColorImage = albedo;
     normalImage = vec4(N, 1.0);
     metallicRoughnessImage = vec4(occlusion, metallic, roughness, 1.0);
     outWorldPosition = inWorldPosition;

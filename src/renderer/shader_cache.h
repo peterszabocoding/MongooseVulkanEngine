@@ -7,16 +7,18 @@
 namespace Raytracing
 {
     struct DescriptorSetLayouts {
-        Ref<VulkanDescriptorSetLayout> skyboxDescriptorSetLayout;
+        Ref<VulkanDescriptorSetLayout> cubemapDescriptorSetLayout;
         Ref<VulkanDescriptorSetLayout> materialDescriptorSetLayout;
         Ref<VulkanDescriptorSetLayout> transformDescriptorSetLayout;
         Ref<VulkanDescriptorSetLayout> lightsDescriptorSetLayout;
         Ref<VulkanDescriptorSetLayout> presentDescriptorSetLayout;
+        Ref<VulkanDescriptorSetLayout> pbrDescriptorSetLayout;
     };
 
     struct DescriptorSets {
-        VkDescriptorSet skyboxDescriptorSet;
+        VkDescriptorSet cubemapDescriptorSet;
         VkDescriptorSet transformDescriptorSet;
+        VkDescriptorSet pbrDescriptorSet;
         std::vector<VkDescriptorSet> presentDescriptorSets;
         std::vector<VkDescriptorSet> lightsDescriptorSets;
     };
@@ -27,6 +29,7 @@ namespace Raytracing
         Ref<VulkanPipeline> directionalShadowMap;
         Ref<VulkanPipeline> present;
         Ref<VulkanPipeline> ibl_brdf;
+        Ref<VulkanPipeline> ibl_irradianceMap;
     };
 
     struct Renderpass {
@@ -34,7 +37,7 @@ namespace Raytracing
         Ref<VulkanRenderPass> geometryPass{};
         Ref<VulkanRenderPass> shadowMapPass{};
         Ref<VulkanRenderPass> presentPass{};
-        Ref<VulkanRenderPass> iblBrdfPass{};
+        Ref<VulkanRenderPass> iblPreparePass{};
     };
 
     class ShaderCache {

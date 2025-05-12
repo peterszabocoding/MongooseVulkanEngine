@@ -33,7 +33,7 @@ namespace Raytracing
                 .AddBinding({3, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
                 .Build();
 
-        descriptorSetLayouts.skyboxDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice)
+        descriptorSetLayouts.cubemapDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice)
                 .AddBinding({0, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
                 .Build();
 
@@ -43,6 +43,11 @@ namespace Raytracing
                 .Build();
 
         descriptorSetLayouts.presentDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice)
+                .AddBinding({0, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
+                .Build();
+
+        descriptorSetLayouts.pbrDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice)
+                .AddBinding({0, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
                 .AddBinding({0, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
                 .Build();
     }
@@ -61,7 +66,7 @@ namespace Raytracing
             skyboxPipelineConfig.frontFace = PipelineFrontFace::Counter_clockwise;
 
             skyboxPipelineConfig.descriptorSetLayouts = {
-                descriptorSetLayouts.skyboxDescriptorSetLayout,
+                descriptorSetLayouts.cubemapDescriptorSetLayout,
                 descriptorSetLayouts.transformDescriptorSetLayout,
             };
 
@@ -89,8 +94,9 @@ namespace Raytracing
             geometryPipelineConfig.descriptorSetLayouts = {
                 descriptorSetLayouts.materialDescriptorSetLayout,
                 descriptorSetLayouts.transformDescriptorSetLayout,
-                descriptorSetLayouts.skyboxDescriptorSetLayout,
+                descriptorSetLayouts.cubemapDescriptorSetLayout,
                 descriptorSetLayouts.lightsDescriptorSetLayout,
+                descriptorSetLayouts.pbrDescriptorSetLayout,
             };
 
             geometryPipelineConfig.colorAttachments = {
@@ -180,9 +186,37 @@ namespace Raytracing
             iblBrdfPipelineConfig.disableBlending = true;
             iblBrdfPipelineConfig.enableDepthTest = false;
 
-            iblBrdfPipelineConfig.renderPass = renderpasses.iblBrdfPass;
+            iblBrdfPipelineConfig.renderPass = renderpasses.iblPreparePass;
         }
         pipelines.ibl_brdf = VulkanPipeline::Builder().Build(vulkanDevice, iblBrdfPipelineConfig);
+
+        LOG_TRACE("Building IBL Irradiance Map pipeline");
+        PipelineConfig iblIrradianceMapPipelineConfig; {
+            iblIrradianceMapPipelineConfig.vertexShaderPath = "shader/spv/cubemap.vert.spv";
+            iblIrradianceMapPipelineConfig.fragmentShaderPath = "shader/spv/irradiance_convolution.frag.spv";
+
+            iblIrradianceMapPipelineConfig.cullMode = PipelineCullMode::Back;
+            iblIrradianceMapPipelineConfig.polygonMode = PipelinePolygonMode::Fill;
+            iblIrradianceMapPipelineConfig.frontFace = PipelineFrontFace::Counter_clockwise;
+
+            iblIrradianceMapPipelineConfig.descriptorSetLayouts = {
+                descriptorSetLayouts.cubemapDescriptorSetLayout,
+            };
+
+            iblIrradianceMapPipelineConfig.colorAttachments = {
+                ImageFormat::RGBA16_SFLOAT,
+            };
+
+            iblIrradianceMapPipelineConfig.disableBlending = true;
+            iblIrradianceMapPipelineConfig.enableDepthTest = false;
+
+            iblIrradianceMapPipelineConfig.renderPass = renderpasses.iblPreparePass;
+
+            iblIrradianceMapPipelineConfig.pushConstantData.shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+            iblIrradianceMapPipelineConfig.pushConstantData.offset = 0;
+            iblIrradianceMapPipelineConfig.pushConstantData.size = sizeof(TransformPushConstantData);
+        }
+        pipelines.ibl_irradianceMap = VulkanPipeline::Builder().Build(vulkanDevice, iblIrradianceMapPipelineConfig);
     }
 
     void ShaderCache::LoadRenderpasses()
@@ -210,7 +244,7 @@ namespace Raytracing
                 .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM, true)
                 .Build();
 
-        renderpasses.iblBrdfPass = VulkanRenderPass::Builder(vulkanDevice)
+        renderpasses.iblPreparePass = VulkanRenderPass::Builder(vulkanDevice)
                 .AddColorAttachment(VK_FORMAT_R16G16B16A16_SFLOAT, false)
                 .Build();
     }

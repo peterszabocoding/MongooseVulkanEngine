@@ -20,6 +20,7 @@ namespace Raytracing
 
     struct Framebuffers {
         Ref<VulkanFramebuffer> iblBRDFFramebuffer;
+        std::vector<Ref<VulkanFramebuffer>> iblIrradianceFramebuffes;
         std::vector<Ref<VulkanFramebuffer>> geometryFramebuffers;
         std::vector<Ref<VulkanShadowMap>> directionalShadowMaps;
         std::vector<Ref<VulkanFramebuffer>> shadowMapFramebuffers;
@@ -48,7 +49,9 @@ namespace Raytracing
         ~VulkanRenderer() override;
 
         virtual void Init(int width, int height) override;
-        void ComputeIblBRDF();
+        void PrecomputeIBL();
+        void ComputeIblBRDF(VkCommandBuffer commandBuffer);
+        void ComputeIrradianceMap(VkCommandBuffer commandBuffer, size_t faceIndex);
 
         virtual void ProcessPixel(unsigned int pixelCount, vec3 pixelColor) override {}
         virtual void OnRenderBegin(const Camera& camera) override {}
@@ -79,8 +82,9 @@ namespace Raytracing
         void ResizeSwapchain();
         void CreateTransformsBuffer();
         void CreateLightsBuffer();
-        void PrepareSkyboxPass();
+        void UploadCubemapTexture(Ref<VulkanCubeMapTexture> cubemap);
         void PreparePresentPass();
+        void PreparePBR();
 
         void UpdateTransformsBuffer(const Ref<Camera>& camera) const;
         void UpdateLightsBuffer(float deltaTime);
@@ -88,6 +92,8 @@ namespace Raytracing
     public:
         static DescriptorBuffers descriptorBuffers;
         static Framebuffers framebuffers;
+
+
 
     private:
         uint32_t viewportWidth, viewportHeight;
@@ -105,7 +111,8 @@ namespace Raytracing
         Scope<VulkanMeshlet> screenRect;
         Ref<VulkanMesh> cubeMesh;
 
-        Ref<VulkanCubeMapTexture> cubemapTexture;
+        Ref<VulkanCubeMapTexture> skyboxTexture;
+        Ref<VulkanCubeMapTexture> irradianceMap;
 
         float lightSpinningAngle = 0.0f;
         DirectionalLight directionalLight;
