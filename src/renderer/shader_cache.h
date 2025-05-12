@@ -26,6 +26,7 @@ namespace Raytracing
         Ref<VulkanPipeline> geometry;
         Ref<VulkanPipeline> directionalShadowMap;
         Ref<VulkanPipeline> present;
+        Ref<VulkanPipeline> ibl_brdf;
     };
 
     struct Renderpass {
@@ -33,6 +34,7 @@ namespace Raytracing
         Ref<VulkanRenderPass> geometryPass{};
         Ref<VulkanRenderPass> shadowMapPass{};
         Ref<VulkanRenderPass> presentPass{};
+        Ref<VulkanRenderPass> iblBrdfPass{};
     };
 
     class ShaderCache {

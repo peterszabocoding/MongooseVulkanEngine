@@ -18,6 +18,14 @@ namespace Raytracing
         Ref<VulkanBuffer> lightsBuffer{};
     };
 
+    struct Framebuffers {
+        Ref<VulkanFramebuffer> iblBRDFFramebuffer;
+        std::vector<Ref<VulkanFramebuffer>> geometryFramebuffers;
+        std::vector<Ref<VulkanShadowMap>> directionalShadowMaps;
+        std::vector<Ref<VulkanFramebuffer>> shadowMapFramebuffers;
+        std::vector<Ref<VulkanFramebuffer>> presentFramebuffers;
+    };
+
     struct TransformsBuffer {
         glm::mat4 proj;
         glm::mat4 view;
@@ -40,6 +48,7 @@ namespace Raytracing
         ~VulkanRenderer() override;
 
         virtual void Init(int width, int height) override;
+        void ComputeIblBRDF();
 
         virtual void ProcessPixel(unsigned int pixelCount, vec3 pixelColor) override {}
         virtual void OnRenderBegin(const Camera& camera) override {}
@@ -52,8 +61,8 @@ namespace Raytracing
         VulkanDevice* GetVulkanDevice() const { return vulkanDevice.get(); }
 
         [[nodiscard]] Ref<VulkanRenderPass> GetRenderPass() const { return shaderCache->renderpasses.presentPass; }
-        [[nodiscard]] Ref<VulkanFramebuffer> GetGBuffer() const { return geometryFramebuffers[activeImage]; }
-        [[nodiscard]] Ref<VulkanShadowMap> GetShadowMap() const { return directionalShadowMaps[activeImage]; }
+        [[nodiscard]] Ref<VulkanFramebuffer> GetGBuffer() const { return framebuffers.geometryFramebuffers[activeImage]; }
+        [[nodiscard]] Ref<VulkanShadowMap> GetShadowMap() const { return framebuffers.directionalShadowMaps[activeImage]; }
 
         DirectionalLight* GetLight() { return &directionalLight; }
 
@@ -78,6 +87,7 @@ namespace Raytracing
 
     public:
         static DescriptorBuffers descriptorBuffers;
+        static Framebuffers framebuffers;
 
     private:
         uint32_t viewportWidth, viewportHeight;
@@ -86,21 +96,14 @@ namespace Raytracing
         float resolutionScale = 1.0f;
 
         Scope<VulkanDevice> vulkanDevice;
-
         Scope<ShaderCache> shaderCache;
+        Scope<VulkanSwapchain> vulkanSwapChain;
 
         Ref<VulkanMesh> scene;
         Scene completeScene;
 
         Scope<VulkanMeshlet> screenRect;
         Ref<VulkanMesh> cubeMesh;
-
-        Scope<VulkanSwapchain> vulkanSwapChain;
-
-        std::vector<Ref<VulkanFramebuffer>> geometryFramebuffers;
-        std::vector<Ref<VulkanShadowMap>> directionalShadowMaps;
-        std::vector<Ref<VulkanFramebuffer>> shadowMapFramebuffers;
-        std::vector<Ref<VulkanFramebuffer>> presentFramebuffers;
 
         Ref<VulkanCubeMapTexture> cubemapTexture;
 

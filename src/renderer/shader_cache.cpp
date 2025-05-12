@@ -161,6 +161,28 @@ namespace Raytracing
             presentPipelineConfig.renderPass = renderpasses.presentPass;
         }
         pipelines.present = VulkanPipeline::Builder().Build(vulkanDevice, presentPipelineConfig);
+
+        LOG_TRACE("Building IBL BRDF pipeline");
+        PipelineConfig iblBrdfPipelineConfig; {
+            iblBrdfPipelineConfig.vertexShaderPath = "shader/spv/brdf.vert.spv";
+            iblBrdfPipelineConfig.fragmentShaderPath = "shader/spv/brdf.frag.spv";
+
+            iblBrdfPipelineConfig.cullMode = PipelineCullMode::Front;
+            iblBrdfPipelineConfig.polygonMode = PipelinePolygonMode::Fill;
+            iblBrdfPipelineConfig.frontFace = PipelineFrontFace::Counter_clockwise;
+
+            iblBrdfPipelineConfig.descriptorSetLayouts = {};
+
+            iblBrdfPipelineConfig.colorAttachments = {
+                ImageFormat::RGBA16_SFLOAT,
+            };
+
+            iblBrdfPipelineConfig.disableBlending = true;
+            iblBrdfPipelineConfig.enableDepthTest = false;
+
+            iblBrdfPipelineConfig.renderPass = renderpasses.iblBrdfPass;
+        }
+        pipelines.ibl_brdf = VulkanPipeline::Builder().Build(vulkanDevice, iblBrdfPipelineConfig);
     }
 
     void ShaderCache::LoadRenderpasses()
@@ -186,6 +208,10 @@ namespace Raytracing
 
         renderpasses.presentPass = VulkanRenderPass::Builder(vulkanDevice)
                 .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM, true)
+                .Build();
+
+        renderpasses.iblBrdfPass = VulkanRenderPass::Builder(vulkanDevice)
+                .AddColorAttachment(VK_FORMAT_R16G16B16A16_SFLOAT, false)
                 .Build();
     }
 }

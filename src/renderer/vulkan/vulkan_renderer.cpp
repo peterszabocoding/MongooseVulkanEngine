@@ -14,6 +14,7 @@
 namespace Raytracing
 {
     DescriptorBuffers VulkanRenderer::descriptorBuffers;
+    Framebuffers VulkanRenderer::framebuffers;
 
     VulkanRenderer::~VulkanRenderer() {}
 
@@ -46,11 +47,37 @@ namespace Raytracing
 
         LOG_TRACE("Load scene");
         //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/sponza/Sponza.gltf");
+        completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/MetalRoughSpheres/MetalRoughSpheres.gltf");
         //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/vertex_color/vertex_color.gltf");
         //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/normal_tangent/NormalTangentTest.gltf");
         //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/gltf/multiple_spheres.gltf");
-        completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/chess/ABeautifulGame.gltf");
+        //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/chess/ABeautifulGame.gltf");
         //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/tests/orientation_test/orientation_test.gltf");
+
+        ComputeIblBRDF();
+    }
+
+    void VulkanRenderer::ComputeIblBRDF()
+    {
+        vulkanDevice->DrawFrame(vulkanSwapChain->GetSwapChain(), vulkanSwapChain->GetExtent(),
+                                [&](const VkCommandBuffer commandBuffer, uint32_t, const uint32_t imageIndex) {
+                                    activeImage = imageIndex;
+
+                                    VkExtent2D extent = {framebuffers.iblBRDFFramebuffer->width, framebuffers.iblBRDFFramebuffer->height};
+
+                                    vulkanDevice->SetViewportAndScissor(extent, commandBuffer);
+                                    shaderCache->renderpasses.iblBrdfPass->Begin(commandBuffer, framebuffers.iblBRDFFramebuffer, extent);
+
+                                    DrawCommandParams drawCommandParams{};
+                                    drawCommandParams.commandBuffer = commandBuffer;
+                                    drawCommandParams.pipeline = shaderCache->pipelines.ibl_brdf->GetPipeline();
+                                    drawCommandParams.pipelineLayout = shaderCache->pipelines.ibl_brdf->GetPipelineLayout();
+                                    drawCommandParams.meshlet = screenRect.get();
+
+                                    vulkanDevice->DrawMeshlet(drawCommandParams);
+
+                                    shaderCache->renderpasses.iblBrdfPass->End(commandBuffer);
+                                }, std::bind(&VulkanRenderer::ResizeSwapchain, this));
     }
 
     void VulkanRenderer::DrawFrame(const float deltaTime, const Ref<Camera> camera)
@@ -62,9 +89,9 @@ namespace Raytracing
                                 [&](const VkCommandBuffer commandBuffer, uint32_t, const uint32_t imageIndex) {
                                     activeImage = imageIndex;
 
-                                    directionalShadowMaps[activeImage]->PrepareToDepthRendering();
+                                    framebuffers.directionalShadowMaps[activeImage]->PrepareToDepthRendering();
                                     DrawDirectionalShadowMapPass(commandBuffer);
-                                    directionalShadowMaps[activeImage]->PrepareToShadowRendering();
+                                    framebuffers.directionalShadowMaps[activeImage]->PrepareToShadowRendering();
 
                                     DrawGeometryPass(camera, commandBuffer);
                                     DrawUIPass(commandBuffer);
@@ -78,7 +105,9 @@ namespace Raytracing
         skyboxDrawParams.meshlet = &cubeMesh->GetMeshlets()[0];
         skyboxDrawParams.pipeline = shaderCache->pipelines.skyBox->GetPipeline();
         skyboxDrawParams.pipelineLayout = shaderCache->pipelines.skyBox->GetPipelineLayout();
-        skyboxDrawParams.descriptorSets = {shaderCache->descriptorSets.skyboxDescriptorSet, shaderCache->descriptorSets.transformDescriptorSet};
+        skyboxDrawParams.descriptorSets = {
+            shaderCache->descriptorSets.skyboxDescriptorSet, shaderCache->descriptorSets.transformDescriptorSet
+        };
 
         vulkanDevice->DrawMeshlet(skyboxDrawParams);
     }
@@ -88,7 +117,7 @@ namespace Raytracing
         VkExtent2D extent = {4096, 4096};
 
         vulkanDevice->SetViewportAndScissor(extent, commandBuffer);
-        shaderCache->renderpasses.shadowMapPass->Begin(commandBuffer, shadowMapFramebuffers[activeImage], extent);
+        shaderCache->renderpasses.shadowMapPass->Begin(commandBuffer, framebuffers.shadowMapFramebuffers[activeImage], extent);
 
         DrawCommandParams geometryDrawParams{};
         geometryDrawParams.commandBuffer = commandBuffer;
@@ -119,10 +148,10 @@ namespace Raytracing
 
     void VulkanRenderer::DrawGeometryPass(const Ref<Camera>& camera, const VkCommandBuffer commandBuffer) const
     {
-        VkExtent2D extent = {geometryFramebuffers[activeImage]->width, geometryFramebuffers[activeImage]->height};
+        VkExtent2D extent = {framebuffers.geometryFramebuffers[activeImage]->width, framebuffers.geometryFramebuffers[activeImage]->height};
 
         vulkanDevice->SetViewportAndScissor(extent, commandBuffer);
-        shaderCache->renderpasses.geometryPass->Begin(commandBuffer, geometryFramebuffers[activeImage], extent);
+        shaderCache->renderpasses.geometryPass->Begin(commandBuffer, framebuffers.geometryFramebuffers[activeImage], extent);
 
         DrawSkybox(commandBuffer);
 
@@ -162,7 +191,8 @@ namespace Raytracing
     void VulkanRenderer::DrawUIPass(const VkCommandBuffer commandBuffer)
     {
         vulkanDevice->SetViewportAndScissor(vulkanSwapChain->GetExtent(), commandBuffer);
-        shaderCache->renderpasses.presentPass->Begin(commandBuffer, presentFramebuffers[activeImage], vulkanSwapChain->GetExtent());
+        shaderCache->renderpasses.presentPass->Begin(commandBuffer, framebuffers.presentFramebuffers[activeImage],
+                                                     vulkanSwapChain->GetExtent());
 
         DrawCommandParams screenRectDrawParams{};
         screenRectDrawParams.commandBuffer = commandBuffer;
@@ -215,14 +245,14 @@ namespace Raytracing
     void VulkanRenderer::CreateFramebuffers()
     {
         const uint32_t imageCount = VulkanUtils::GetSwapchainImageCount(vulkanDevice->GetPhysicalDevice(), vulkanDevice->GetSurface());
-        geometryFramebuffers.resize(imageCount);
-        shadowMapFramebuffers.resize(imageCount);
-        directionalShadowMaps.resize(imageCount);
-        presentFramebuffers.resize(imageCount);
+        framebuffers.geometryFramebuffers.resize(imageCount);
+        framebuffers.shadowMapFramebuffers.resize(imageCount);
+        framebuffers.directionalShadowMaps.resize(imageCount);
+        framebuffers.presentFramebuffers.resize(imageCount);
 
         for (size_t i = 0; i < imageCount; i++)
         {
-            geometryFramebuffers[i] = VulkanFramebuffer::Builder(vulkanDevice.get())
+            framebuffers.geometryFramebuffers[i] = VulkanFramebuffer::Builder(vulkanDevice.get())
                     .SetRenderpass(shaderCache->renderpasses.geometryPass)
                     .SetResolution(viewportWidth * resolutionScale, viewportHeight * resolutionScale)
                     .AddAttachment(ImageFormat::RGBA8_UNORM)
@@ -233,30 +263,36 @@ namespace Raytracing
                     .AddAttachment(ImageFormat::DEPTH24_STENCIL8)
                     .Build();
 
-            directionalShadowMaps[i] = VulkanShadowMap::Builder()
+            framebuffers.directionalShadowMaps[i] = VulkanShadowMap::Builder()
                     .SetResolution(4096, 4096)
                     .Build(vulkanDevice.get());
 
-            shadowMapFramebuffers[i] = VulkanFramebuffer::Builder(vulkanDevice.get())
+            framebuffers.shadowMapFramebuffers[i] = VulkanFramebuffer::Builder(vulkanDevice.get())
                     .SetRenderpass(shaderCache->renderpasses.shadowMapPass)
                     .SetResolution(4096, 4096)
-                    .AddAttachment(directionalShadowMaps[i]->GetImageView())
+                    .AddAttachment(framebuffers.directionalShadowMaps[i]->GetImageView())
                     .Build();
 
-            presentFramebuffers[i] = VulkanFramebuffer::Builder(vulkanDevice.get())
+            framebuffers.presentFramebuffers[i] = VulkanFramebuffer::Builder(vulkanDevice.get())
                     .SetRenderpass(shaderCache->renderpasses.presentPass)
                     .SetResolution(viewportWidth, viewportHeight)
                     .AddAttachment(vulkanSwapChain->GetImageViews()[i])
                     .Build();
         }
+
+        framebuffers.iblBRDFFramebuffer = VulkanFramebuffer::Builder(vulkanDevice.get())
+                .SetRenderpass(shaderCache->renderpasses.iblBrdfPass)
+                .SetResolution(512, 512)
+                .AddAttachment(ImageFormat::RGBA16_SFLOAT)
+                .Build();
     }
 
     void VulkanRenderer::ResizeSwapchain()
     {
         IdleWait();
 
-        geometryFramebuffers.clear();
-        presentFramebuffers.clear();
+        framebuffers.geometryFramebuffers.clear();
+        framebuffers.presentFramebuffers.clear();
 
         CreateSwapchain();
         CreateFramebuffers();
@@ -305,11 +341,12 @@ namespace Raytracing
             for (size_t i = 0; i < imageCount; i++)
             {
                 VkDescriptorImageInfo shadowMapInfo{};
-                shadowMapInfo.sampler = directionalShadowMaps[i]->GetSampler();
+                shadowMapInfo.sampler = framebuffers.directionalShadowMaps[i]->GetSampler();
                 shadowMapInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                shadowMapInfo.imageView = directionalShadowMaps[i]->GetImageView();
+                shadowMapInfo.imageView = framebuffers.directionalShadowMaps[i]->GetImageView();
 
-                VulkanDescriptorWriter(*shaderCache->descriptorSetLayouts.lightsDescriptorSetLayout, vulkanDevice->GetShaderDescriptorPool())
+                VulkanDescriptorWriter(*shaderCache->descriptorSetLayouts.lightsDescriptorSetLayout,
+                                       vulkanDevice->GetShaderDescriptorPool())
                         .WriteBuffer(0, &info)
                         .WriteImage(1, &shadowMapInfo)
                         .Build(shaderCache->descriptorSets.lightsDescriptorSets[i]);
@@ -322,11 +359,12 @@ namespace Raytracing
             for (size_t i = 0; i < imageCount; i++)
             {
                 VkDescriptorImageInfo shadowMapInfo{};
-                shadowMapInfo.sampler = directionalShadowMaps[i]->GetSampler();
+                shadowMapInfo.sampler = framebuffers.directionalShadowMaps[i]->GetSampler();
                 shadowMapInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                shadowMapInfo.imageView = directionalShadowMaps[i]->GetImageView();
+                shadowMapInfo.imageView = framebuffers.directionalShadowMaps[i]->GetImageView();
 
-                VulkanDescriptorWriter(*shaderCache->descriptorSetLayouts.lightsDescriptorSetLayout, vulkanDevice->GetShaderDescriptorPool())
+                VulkanDescriptorWriter(*shaderCache->descriptorSetLayouts.lightsDescriptorSetLayout,
+                                       vulkanDevice->GetShaderDescriptorPool())
                         .WriteImage(1, &shadowMapInfo)
                         .Overwrite(shaderCache->descriptorSets.lightsDescriptorSets[i]);
             }
@@ -388,11 +426,12 @@ namespace Raytracing
         for (size_t i = 0; i < imageCount; i++)
         {
             VkDescriptorImageInfo renderImageInfo{};
-            renderImageInfo.sampler = geometryFramebuffers[i]->GetAttachments()[0].sampler;
+            renderImageInfo.sampler = framebuffers.geometryFramebuffers[i]->GetAttachments()[0].sampler;
             renderImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            renderImageInfo.imageView = geometryFramebuffers[i]->GetAttachments()[0].imageView;
+            renderImageInfo.imageView = framebuffers.geometryFramebuffers[i]->GetAttachments()[0].imageView;
 
-            auto writer = VulkanDescriptorWriter(*shaderCache->descriptorSetLayouts.presentDescriptorSetLayout, vulkanDevice->GetShaderDescriptorPool())
+            auto writer = VulkanDescriptorWriter(*shaderCache->descriptorSetLayouts.presentDescriptorSetLayout,
+                                                 vulkanDevice->GetShaderDescriptorPool())
                     .WriteImage(0, &renderImageInfo);
 
             if (!shaderCache->descriptorSets.presentDescriptorSets[i])
