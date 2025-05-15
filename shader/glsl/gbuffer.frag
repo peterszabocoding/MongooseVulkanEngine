@@ -63,7 +63,7 @@ layout(location = 4)            out vec4 outWorldPosition;
 vec3 N;
 vec3 V;
 
-float MAX_REFLECTION_LOD = 4.0;
+float MAX_REFLECTION_LOD = 6.0;
 
 vec3 CalcSurfaceNormal(vec3 normalFromTexture, mat3 TBN)
 {
@@ -122,40 +122,28 @@ void main() {
     //float attenuation = 1.0 / (distance * distance);
     //vec3 radiance     = lights.intensity * lights.color.rgb * attenuation;
 
-
     vec3 baseReflectivity = vec3(0.04);
     baseReflectivity = mix(baseReflectivity, albedo, metallic);
 
     float NdotV = max(dot(N, V), 0.000001);
-    vec3 F = fresnelSchlick(NdotV, baseReflectivity);
+    vec3 F = fresnelSchlickRoughness(NdotV, baseReflectivity, roughness);
     vec3 kD = (1.0 - F) * (1.0 - metallic);
 
     vec3 irradiance = texture(irradianceMap, N).rgb;
-    vec3 diffuse = irradiance * albedo * kD;
+    vec3 diffuse = irradiance * albedo;
 
-    vec3 radiance = CalcDirectionalLightRadiance(-lights.direction);
-    vec3 Lo = CalcLightRadiance(L, H, V, N, F0, albedo, roughness, metallic, radiance);
-
-    vec3 ambient = lights.ambientIntensity * diffuse;
-    vec3 color = ambient + Lo;
-
-
-
-    /////////////////   Reflection   /////////////////////
-    vec3 I = normalize(fragPosition - transforms.cameraPosition);
-    vec3 R = reflect(I, N);
-    vec3 reflectionColor = texture(skyboxSampler, R).rgb;
-
-
+    vec3 R = reflect(-V, N);
     // sample both the pre-filter map and the BRDF lut and combine them together as per the Split-Sum approximation to get the IBL specular part.
     vec3 prefilteredColor = textureLod(prefilterMap, R,  roughness * MAX_REFLECTION_LOD).rgb;
     vec2 brdf  = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
     vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
 
-    color += 0.125 * specular;
+    vec3 radiance = CalcDirectionalLightRadiance(-lights.direction);
+    vec3 Lo = CalcLightRadiance(L, H, V, N, F0, albedo, roughness, metallic, radiance);
 
+    vec3 ambient = lights.ambientIntensity * (kD * diffuse + specular);
+    vec3 color = ambient + Lo;
 
-    /////////////////////////////////////////////////////
 
     /////////////////   GBuffer   ////////////////////////
     normalImage = vec4(N, 1.0);
