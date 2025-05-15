@@ -30,6 +30,7 @@ namespace Raytracing
         Ref<VulkanPipeline> present;
         Ref<VulkanPipeline> ibl_brdf;
         Ref<VulkanPipeline> ibl_irradianceMap;
+        Ref<VulkanPipeline> ibl_prefilter;
     };
 
     struct Renderpass {

@@ -147,6 +147,12 @@ namespace Raytracing
             return *this;
         }
 
+        ImageViewBuilder& SetBaseMipLevel(uint32_t _baseMipLevel)
+        {
+            baseMipLevel = _baseMipLevel;
+            return *this;
+        }
+
         VkImageView Build() const;
 
     private:
@@ -158,6 +164,7 @@ namespace Raytracing
         uint32_t layerCount = 1;
         uint32_t baseArrayLayer = 0;
         uint32_t mipLevels = 1;
+        uint32_t baseMipLevel = 0;
     };
 
     class ImageSamplerBuilder {

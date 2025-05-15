@@ -21,6 +21,7 @@ namespace Raytracing
     struct Framebuffers {
         Ref<VulkanFramebuffer> iblBRDFFramebuffer;
         std::vector<Ref<VulkanFramebuffer>> iblIrradianceFramebuffes;
+        std::vector<std::vector<Ref<VulkanFramebuffer>>> iblPrefilterFramebuffes;
         std::vector<Ref<VulkanFramebuffer>> geometryFramebuffers;
         std::vector<Ref<VulkanShadowMap>> directionalShadowMaps;
         std::vector<Ref<VulkanFramebuffer>> shadowMapFramebuffers;
@@ -52,6 +53,7 @@ namespace Raytracing
         void PrecomputeIBL();
         void ComputeIblBRDF(VkCommandBuffer commandBuffer);
         void ComputeIrradianceMap(VkCommandBuffer commandBuffer, size_t faceIndex);
+        void ComputePrefilterMap(VkCommandBuffer commandBuffer, size_t faceIndex, uint32_t miplevel, float roughness);
 
         virtual void ProcessPixel(unsigned int pixelCount, vec3 pixelColor) override {}
         virtual void OnRenderBegin(const Camera& camera) override {}
@@ -90,10 +92,8 @@ namespace Raytracing
         void UpdateLightsBuffer(float deltaTime);
 
     public:
-        static DescriptorBuffers descriptorBuffers;
-        static Framebuffers framebuffers;
-
-
+        DescriptorBuffers descriptorBuffers;
+        Framebuffers framebuffers;
 
     private:
         uint32_t viewportWidth, viewportHeight;
@@ -113,6 +113,7 @@ namespace Raytracing
 
         Ref<VulkanCubeMapTexture> skyboxTexture;
         Ref<VulkanCubeMapTexture> irradianceMap;
+        Ref<VulkanCubeMapTexture> prefilterMap;
 
         float lightSpinningAngle = 0.0f;
         DirectionalLight directionalLight;

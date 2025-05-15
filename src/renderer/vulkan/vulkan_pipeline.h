@@ -26,6 +26,12 @@ namespace Raytracing
         glm::mat4 view{1.f};
     };
 
+    struct PrefilterData {
+        glm::mat4 projection{1.f};
+        glm::mat4 view{1.f};
+        float roughness = 1.0f;
+    };
+
     struct UniformBufferObject {
         glm::mat4 model;
         glm::mat4 view;

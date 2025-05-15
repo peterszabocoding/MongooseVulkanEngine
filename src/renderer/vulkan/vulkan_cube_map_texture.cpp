@@ -12,6 +12,11 @@ namespace Raytracing
     {
         ASSERT(data && size > 0, "Texture data is NULL or size is 0.")
 
+        constexpr uint32_t MAX_MIP_LEVEL = 6;
+
+        uint32_t mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
+        mipLevels = std::min(mipLevels, MAX_MIP_LEVEL);
+
         allocatedImage = ImageBuilder(device)
                 .SetFormat(format)
                 .SetResolution(width, height)
@@ -19,6 +24,7 @@ namespace Raytracing
                 .AddUsage(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
                 .SetArrayLayers(6)
                 .SetFlags(VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT)
+                .SetMipLevels(mipLevels)
                 .Build();
 
         imageView = ImageViewBuilder(device)
@@ -27,18 +33,25 @@ namespace Raytracing
                 .SetViewType(VK_IMAGE_VIEW_TYPE_CUBE)
                 .SetAspectFlags(VK_IMAGE_ASPECT_COLOR_BIT)
                 .SetLayerCount(6)
+                .SetMipLevels(mipLevels)
                 .Build();
 
-        for (size_t i = 0; i < 6; i++)
+
+        mipmapFaceImageViews.resize(mipLevels);
+        for (size_t miplevel = 0; miplevel < mipLevels; miplevel++)
         {
-            faceImageViews[i] = ImageViewBuilder(device)
-                    .SetFormat(format)
-                    .SetImage(allocatedImage.image)
-                    .SetViewType(VK_IMAGE_VIEW_TYPE_2D)
-                    .SetAspectFlags(VK_IMAGE_ASPECT_COLOR_BIT)
-                    .SetLayerCount(1)
-                    .SetBaseArrayLayer(i)
-                    .Build();
+            for (size_t faceindex = 0; faceindex < 6; faceindex++)
+            {
+                mipmapFaceImageViews[miplevel][faceindex] = ImageViewBuilder(device)
+                        .SetFormat(format)
+                        .SetImage(allocatedImage.image)
+                        .SetViewType(VK_IMAGE_VIEW_TYPE_2D)
+                        .SetAspectFlags(VK_IMAGE_ASPECT_COLOR_BIT)
+                        .SetLayerCount(1)
+                        .SetBaseArrayLayer(faceindex)
+                        .SetBaseMipLevel(miplevel)
+                        .Build();
+            }
         }
 
         sampler = ImageSamplerBuilder(device)
@@ -46,15 +59,16 @@ namespace Raytracing
                 .SetAddressMode(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
                 .SetFormat(format)
                 .SetBorderColor(VK_BORDER_COLOR_INT_OPAQUE_WHITE)
+                .SetMipLevels(mipLevels)
                 .Build();
 
 
         if (cubemap)
         {
             auto stagingBuffer = VulkanBuffer(device, cubemap->pixelData.size(),
-                                                    VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-                                                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                                    VMA_MEMORY_USAGE_CPU_ONLY);
+                                              VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                                              VMA_MEMORY_USAGE_CPU_ONLY);
 
             memcpy(stagingBuffer.GetMappedData(), cubemap->pixelData.data(), cubemap->pixelData.size());
 
@@ -90,13 +104,17 @@ namespace Raytracing
             });
 
             device->ImmediateSubmit([&](const VkCommandBuffer cmd) {
-                VulkanUtils::TransitionImageLayout(cmd, allocatedImage.image, VK_IMAGE_ASPECT_COLOR_BIT,
-                                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+                VulkanUtils::GenerateCubemapMipmaps(cmd,
+                                                    device->GetPhysicalDevice(),
+                                                    allocatedImage.image,
+                                                    VulkanUtils::ConvertImageFormat(format),
+                                                    width,
+                                                    height,
+                                                    mipLevels);
             });
         }
 
-        return CreateRef<VulkanCubeMapTexture>(device, allocatedImage, imageView, faceImageViews, sampler, imageMemory);
+        return CreateRef<VulkanCubeMapTexture>(device, allocatedImage, imageView, mipmapFaceImageViews, sampler, imageMemory);
     }
 
     VulkanCubeMapTexture::~VulkanCubeMapTexture()
@@ -104,9 +122,13 @@ namespace Raytracing
         vkDestroySampler(device->GetDevice(), sampler, nullptr);
         vkDestroyImageView(device->GetDevice(), imageView, nullptr);
 
-        for (size_t i = 0; i < 6; i++)
+
+        for (size_t j = 0; j < mipmapFaceImageViews.size(); j++)
         {
-            vkDestroyImageView(device->GetDevice(), faceImageViews[i], nullptr);
+            for (size_t i = 0; i < 6; i++)
+            {
+                vkDestroyImageView(device->GetDevice(), mipmapFaceImageViews[j][i], nullptr);
+            }
         }
 
         vmaDestroyImage(device->GetVmaAllocator(), allocatedImage.image, allocatedImage.allocation);

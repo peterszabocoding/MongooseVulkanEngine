@@ -52,11 +52,13 @@ namespace Raytracing
 
         ~VulkanFramebuffer();
 
+        void Resize(uint32_t newWidth, uint32_t newHeight);
+
         VkFramebuffer Get() const { return framebuffer; };
 
         uint32_t GetWidth() const { return width; }
         uint32_t GetHeight() const { return height; }
-        std::vector<FramebufferAttachment> const& GetAttachments() const { return attachments; };
+        std::vector<FramebufferAttachment> const& GetAttachments() const { return attachments; }
 
     public:
         uint32_t width = 0, height = 0;

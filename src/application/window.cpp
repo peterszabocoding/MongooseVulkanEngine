@@ -85,8 +85,8 @@ namespace Raytracing
     {
         if (glfwWindowShouldClose(glfwWindow))
         {
-            windowCloseCallback();
             renderer->IdleWait();
+            windowCloseCallback();
             return;
         }
 

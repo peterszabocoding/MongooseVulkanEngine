@@ -41,7 +41,8 @@ namespace Raytracing
 
             AllocatedImage allocatedImage{};
             VkImageView imageView{};
-            std::array<VkImageView, 6> faceImageViews{};
+            //std::array<VkImageView, 6> faceImageViews{};
+            std::vector<std::array<VkImageView, 6>> mipmapFaceImageViews;
             VkDeviceMemory imageMemory{};
             VkSampler sampler{};
             ImageResource imageResource{};
@@ -49,11 +50,11 @@ namespace Raytracing
 
     public:
         VulkanCubeMapTexture(VulkanDevice* _device, const AllocatedImage _image, const VkImageView _imageView,
-                             const std::array<VkImageView, 6> _faceImageViews, const VkSampler _sampler,
+                             const std::vector<std::array<VkImageView, 6>> _mipmapFaceImageViews, const VkSampler _sampler,
                              const VkDeviceMemory _imageMemory): device(_device),
                                                                  allocatedImage(_image),
                                                                  imageView(_imageView),
-                                                                 faceImageViews(_faceImageViews),
+                                                                 mipmapFaceImageViews(_mipmapFaceImageViews),
                                                                  imageMemory(_imageMemory),
                                                                  sampler(_sampler) {}
 
@@ -61,7 +62,7 @@ namespace Raytracing
 
         VkImage GetImage() const { return allocatedImage.image; };
         VkImageView GetImageView() const { return imageView; }
-        VkImageView GetFaceImageView(size_t faceIndex) const { return faceImageViews[faceIndex]; }
+        VkImageView GetFaceImageView(size_t faceIndex, uint32_t mipLevel) const { return mipmapFaceImageViews[mipLevel][faceIndex]; }
         VkSampler GetSampler() const { return sampler; }
 
     private:
@@ -69,7 +70,9 @@ namespace Raytracing
 
         AllocatedImage allocatedImage{};
         VkImageView imageView{};
-        std::array<VkImageView, 6> faceImageViews{};
+        //std::array<VkImageView, 6> faceImageViews{};
+
+        std::vector<std::array<VkImageView, 6>> mipmapFaceImageViews;
         VkDeviceMemory imageMemory{};
         VkSampler sampler{};
     };

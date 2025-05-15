@@ -17,6 +17,7 @@ layout(location = 7) in mat3 TBN;
 layout(set = 0, binding = 0) uniform MaterialParams {
     vec4 tint;
     vec4 baseColor;
+
     float metallic;
     float roughness;
 
@@ -41,23 +42,28 @@ layout(std430, set = 3, binding = 0) uniform Lights {
     float bias;
 } lights;
 
-layout(set = 0, binding = 1) uniform sampler2D baseColorSampler;
-layout(set = 0, binding = 2) uniform sampler2D normalSampler;
-layout(set = 0, binding = 3) uniform sampler2D metallicRoughnessSampler;
+layout(set = 0, binding = 1)    uniform sampler2D baseColorSampler;
+layout(set = 0, binding = 2)    uniform sampler2D normalSampler;
+layout(set = 0, binding = 3)    uniform sampler2D metallicRoughnessSampler;
 
-layout(set = 2, binding = 0) uniform samplerCube skyboxSampler;
-layout(set = 4, binding = 0) uniform samplerCube irradianceMap;
+layout(set = 2, binding = 0)    uniform samplerCube skyboxSampler;
 
-layout(set = 3, binding = 1) uniform sampler2D shadowMap;
+layout(set = 3, binding = 1)    uniform sampler2D shadowMap;
 
-layout(location = 0) out vec4 finalImage;
-layout(location = 1) out vec4 baseColorImage;
-layout(location = 2) out vec4 normalImage;
-layout(location = 3) out vec4 metallicRoughnessImage;
-layout(location = 4) out vec4 outWorldPosition;
+layout(set = 4, binding = 0)    uniform samplerCube irradianceMap;
+layout(set = 4, binding = 1)    uniform samplerCube prefilterMap;
+layout(set = 4, binding = 2)    uniform sampler2D brdfLUT;
+
+layout(location = 0)            out vec4 finalImage;
+layout(location = 1)            out vec4 baseColorImage;
+layout(location = 2)            out vec4 normalImage;
+layout(location = 3)            out vec4 metallicRoughnessImage;
+layout(location = 4)            out vec4 outWorldPosition;
 
 vec3 N;
 vec3 V;
+
+float MAX_REFLECTION_LOD = 4.0;
 
 vec3 CalcSurfaceNormal(vec3 normalFromTexture, mat3 TBN)
 {
@@ -78,11 +84,10 @@ vec3 CalcDirectionalLightRadiance(vec3 direction)
 }
 
 void main() {
+    vec3 baseColor = materialParams.useBaseColorMap ? pow(texture(baseColorSampler, fragTexCoord).rgb, vec3(2.2)) : materialParams.baseColor.rgb;
 
-    vec4 baseColor = materialParams.useBaseColorMap ? texture(baseColorSampler, fragTexCoord) : materialParams.baseColor;
-
-    vec4 albedo = vec4(fragColor, 1.0) * materialParams.tint * baseColor;
-    baseColorImage = albedo;
+    vec3 albedo = fragColor * materialParams.tint.rgb * baseColor;
+    baseColorImage = vec4(albedo, 1.0);
 
     float metallic = materialParams.metallic;
     float roughness = materialParams.roughness;
@@ -111,25 +116,45 @@ void main() {
     vec3 H = normalize(V + L);
 
     vec3 F0 = vec3(0.04);
-    F0      = mix(F0, albedo.rgb, metallic);
+    F0      = mix(F0, albedo, metallic);
 
     //float distance    = length(lightPosition - inWorldPosition.xyz);
     //float attenuation = 1.0 / (distance * distance);
     //vec3 radiance     = lights.intensity * lights.color.rgb * attenuation;
 
+
+    vec3 baseReflectivity = vec3(0.04);
+    baseReflectivity = mix(baseReflectivity, albedo, metallic);
+
+    float NdotV = max(dot(N, V), 0.000001);
+    vec3 F = fresnelSchlick(NdotV, baseReflectivity);
+    vec3 kD = (1.0 - F) * (1.0 - metallic);
+
     vec3 irradiance = texture(irradianceMap, N).rgb;
-    albedo = vec4(irradiance * albedo.rgb, 1.0);
+    vec3 diffuse = irradiance * albedo * kD;
 
     vec3 radiance = CalcDirectionalLightRadiance(-lights.direction);
-    vec3 Lo = CalcLightRadiance(L, H, V, N, F0, albedo.rgb, roughness, metallic, radiance);
+    vec3 Lo = CalcLightRadiance(L, H, V, N, F0, albedo, roughness, metallic, radiance);
 
-    vec3 ambient = lights.ambientIntensity * albedo.rgb;
+    vec3 ambient = lights.ambientIntensity * diffuse;
     vec3 color = ambient + Lo;
+
+
 
     /////////////////   Reflection   /////////////////////
     vec3 I = normalize(fragPosition - transforms.cameraPosition);
     vec3 R = reflect(I, N);
     vec3 reflectionColor = texture(skyboxSampler, R).rgb;
+
+
+    // sample both the pre-filter map and the BRDF lut and combine them together as per the Split-Sum approximation to get the IBL specular part.
+    vec3 prefilteredColor = textureLod(prefilterMap, R,  roughness * MAX_REFLECTION_LOD).rgb;
+    vec2 brdf  = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
+    vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
+
+    color += 0.125 * specular;
+
+
     /////////////////////////////////////////////////////
 
     /////////////////   GBuffer   ////////////////////////
@@ -138,9 +163,13 @@ void main() {
     outWorldPosition = inWorldPosition;
     /////////////////////////////////////////////////////
 
-    color += 0.1 * (1.0 - roughness) * reflectionColor;
+    //color += 0.1 * (1.0 - roughness) * reflectionColor;
 
     //float shadowCoeff = filterPCF(shadowMap, shadowMapCoord / shadowMapCoord.w);
     //finalImage = (lights.ambientIntensity + shadowCoeff * lights.intensity * diffuseFactor) * albedo;
+
+    color =  color / (color + vec3(1.0));
+    color = pow(color, vec3(1.0/2.2));
+
     finalImage = vec4(color, 1.0);
 }

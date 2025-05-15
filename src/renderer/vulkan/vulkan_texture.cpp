@@ -64,17 +64,6 @@ namespace Raytracing
                                          mipLevels);
         });
 
-        /*
-                device->ImmediateSubmit([&](const VkCommandBuffer cmd) {
-                    VulkanUtils::TransitionImageLayout(cmd,
-                                                       allocatedImage.image,
-                                                       VK_IMAGE_ASPECT_COLOR_BIT,
-                                                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                                       VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                                                       mipLevels);
-                });
-                */
-
         return CreateRef<VulkanTexture>(device, allocatedImage, imageView, sampler, imageMemory, imageResource);
     }
 

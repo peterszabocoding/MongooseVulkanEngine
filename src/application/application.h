@@ -35,7 +35,7 @@ namespace Raytracing
 		AppInfo applicationInfo;
 
 		static Application* s_Instance;
-		Window* window;
+		Scope<Window> window;
 
 		bool isRunning;
 

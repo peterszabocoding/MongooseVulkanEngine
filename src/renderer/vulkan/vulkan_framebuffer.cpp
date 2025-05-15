@@ -135,4 +135,9 @@ namespace Raytracing
         LOG_INFO("Destroy framebuffer");
         vkDestroyFramebuffer(device->GetDevice(), framebuffer, nullptr);
     }
+
+    void VulkanFramebuffer::Resize(uint32_t newWidth, uint32_t newHeight)
+    {
+
+    }
 }
