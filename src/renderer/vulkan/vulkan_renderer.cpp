@@ -72,9 +72,11 @@ namespace Raytracing
                 .SetResolution(32, 32)
                 .Build(vulkanDevice.get());
 
+        uint32_t mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(128, 128)))) + 1;
         prefilterMap = VulkanCubeMapTexture::Builder()
                 .SetFormat(ImageFormat::RGBA16_SFLOAT)
                 .SetResolution(128, 128)
+                .SetMipLevels(mipLevels)
                 .Build(vulkanDevice.get());
 
         framebuffers.iblBRDFFramebuffer = VulkanFramebuffer::Builder(vulkanDevice.get())
@@ -564,7 +566,8 @@ namespace Raytracing
             renderImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             renderImageInfo.imageView = framebuffers.geometryFramebuffers[i]->GetAttachments()[0].imageView;
 
-            auto writer = VulkanDescriptorWriter(*shaderCache->descriptorSetLayouts.presentDescriptorSetLayout, vulkanDevice->GetShaderDescriptorPool())
+            auto writer = VulkanDescriptorWriter(*shaderCache->descriptorSetLayouts.presentDescriptorSetLayout,
+                                                 vulkanDevice->GetShaderDescriptorPool())
                     .WriteImage(0, &renderImageInfo);
 
             if (!shaderCache->descriptorSets.presentDescriptorSets[i])

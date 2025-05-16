@@ -144,7 +144,6 @@ void main() {
     vec3 ambient = lights.ambientIntensity * (kD * diffuse + specular);
     vec3 color = ambient + Lo;
 
-
     /////////////////   GBuffer   ////////////////////////
     normalImage = vec4(N, 1.0);
     metallicRoughnessImage = vec4(occlusion, metallic, roughness, 1.0);

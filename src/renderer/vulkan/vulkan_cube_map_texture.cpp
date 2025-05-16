@@ -14,7 +14,6 @@ namespace Raytracing
 
         constexpr uint32_t MAX_MIP_LEVEL = 6;
 
-        uint32_t mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
         mipLevels = std::min(mipLevels, MAX_MIP_LEVEL);
 
         allocatedImage = ImageBuilder(device)

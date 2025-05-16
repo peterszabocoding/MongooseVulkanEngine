@@ -31,6 +31,12 @@ namespace Raytracing
                 return *this;
             }
 
+            Builder& SetMipLevels(uint32_t _miplevels)
+            {
+                mipLevels = _miplevels;
+                return *this;
+            }
+
             Ref<VulkanCubeMapTexture> Build(VulkanDevice* device);
 
         private:
@@ -38,6 +44,8 @@ namespace Raytracing
             uint32_t width = 0;
             uint32_t height = 0;
             ImageFormat format = ImageFormat::Unknown;
+
+            uint32_t mipLevels = 1;
 
             AllocatedImage allocatedImage{};
             VkImageView imageView{};
