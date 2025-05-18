@@ -2,6 +2,7 @@
 
 #include "renderer/shader_cache.h"
 #include "resource/resource_manager.h"
+#include "util/log.h"
 
 namespace Raytracing
 {
@@ -17,6 +18,7 @@ namespace Raytracing
                 .Build();
 
         cubeMesh = ResourceManager::LoadMesh(device, "resources/models/cube.obj");
+        LoadPipelines();
     }
 
     void RenderPass::SetCamera(const Camera& _camera)
@@ -38,8 +40,8 @@ namespace Raytracing
         geometryDrawParams.commandBuffer = commandBuffer;
         geometryDrawParams.pipelineParams =
         {
-            ShaderCache::pipelines.geometry->GetPipeline(),
-            ShaderCache::pipelines.geometry->GetPipelineLayout()
+            geometryPipeline->GetPipeline(),
+            geometryPipeline->GetPipelineLayout()
         };
 
         for (size_t i = 0; i < scene.meshes.size(); i++)
@@ -77,8 +79,8 @@ namespace Raytracing
         skyboxDrawParams.meshlet = &cubeMesh->GetMeshlets()[0];
 
         skyboxDrawParams.pipelineParams = {
-            ShaderCache::pipelines.skyBox->GetPipeline(),
-            ShaderCache::pipelines.skyBox->GetPipelineLayout()
+            skyBoxPipeline->GetPipeline(),
+            skyBoxPipeline->GetPipelineLayout()
         };
 
         skyboxDrawParams.descriptorSets = {
@@ -87,5 +89,71 @@ namespace Raytracing
         };
 
         device->DrawMeshlet(skyboxDrawParams);
+    }
+
+    void RenderPass::LoadPipelines()
+    {
+        LOG_TRACE("Building skybox pipeline");
+        PipelineConfig skyboxPipelineConfig; {
+            skyboxPipelineConfig.vertexShaderPath = "shader/spv/skybox.vert.spv";
+            skyboxPipelineConfig.fragmentShaderPath = "shader/spv/skybox.frag.spv";
+
+            skyboxPipelineConfig.cullMode = PipelineCullMode::Front;
+            skyboxPipelineConfig.polygonMode = PipelinePolygonMode::Fill;
+            skyboxPipelineConfig.frontFace = PipelineFrontFace::Counter_clockwise;
+
+            skyboxPipelineConfig.descriptorSetLayouts = {
+                ShaderCache::descriptorSetLayouts.cubemapDescriptorSetLayout,
+                ShaderCache::descriptorSetLayouts.transformDescriptorSetLayout,
+            };
+
+            skyboxPipelineConfig.colorAttachments = {
+                ImageFormat::RGBA8_UNORM,
+            };
+
+            skyboxPipelineConfig.disableBlending = true;
+            skyboxPipelineConfig.enableDepthTest = false;
+            skyboxPipelineConfig.depthAttachment = ImageFormat::DEPTH24_STENCIL8;
+
+            skyboxPipelineConfig.renderPass = renderPass;
+        }
+        skyBoxPipeline = VulkanPipeline::Builder().Build(device, skyboxPipelineConfig);
+
+        LOG_TRACE("Building geometry pipeline");
+        PipelineConfig geometryPipelineConfig; {
+            geometryPipelineConfig.vertexShaderPath = "shader/spv/gbuffer.vert.spv";
+            geometryPipelineConfig.fragmentShaderPath = "shader/spv/gbuffer.frag.spv";
+
+            geometryPipelineConfig.cullMode = PipelineCullMode::Back;
+            geometryPipelineConfig.polygonMode = PipelinePolygonMode::Fill;
+            geometryPipelineConfig.frontFace = PipelineFrontFace::Counter_clockwise;
+
+            geometryPipelineConfig.descriptorSetLayouts = {
+                ShaderCache::descriptorSetLayouts.materialDescriptorSetLayout,
+                ShaderCache::descriptorSetLayouts.transformDescriptorSetLayout,
+                ShaderCache::descriptorSetLayouts.cubemapDescriptorSetLayout,
+                ShaderCache::descriptorSetLayouts.lightsDescriptorSetLayout,
+                ShaderCache::descriptorSetLayouts.pbrDescriptorSetLayout,
+            };
+
+            geometryPipelineConfig.colorAttachments = {
+                ImageFormat::RGBA8_UNORM,
+                ImageFormat::RGBA8_UNORM,
+                ImageFormat::RGBA8_UNORM,
+                ImageFormat::RGBA8_UNORM,
+                ImageFormat::RGBA8_UNORM,
+            };
+
+            geometryPipelineConfig.disableBlending = true;
+            geometryPipelineConfig.enableDepthTest = true;
+            geometryPipelineConfig.depthAttachment = ImageFormat::DEPTH24_STENCIL8;
+
+            geometryPipelineConfig.renderPass = renderPass;
+
+            geometryPipelineConfig.pushConstantData.shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+            geometryPipelineConfig.pushConstantData.offset = 0;
+            geometryPipelineConfig.pushConstantData.size = sizeof(SimplePushConstantData);
+        }
+        geometryPipeline = VulkanPipeline::Builder().Build(device, geometryPipelineConfig);
     }
 }

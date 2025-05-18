@@ -8,6 +8,7 @@
 #include "vulkan_shadow_map.h"
 #include "vulkan_cube_map_texture.h"
 #include "pass/render_pass.h"
+#include "pass/shadow_map_pass.h"
 #include "renderer/Light.h"
 #include "renderer/shader_cache.h"
 
@@ -63,7 +64,7 @@ namespace Raytracing
         virtual void Resize(int width, int height) override;
         virtual void DrawFrame(float deltaTime, Ref<Camera> camera) override;
 
-        VulkanDevice* GetVulkanDevice() const { return vulkanDevice.get(); }
+        VulkanDevice* GetVulkanDevice() const { return device.get(); }
 
         [[nodiscard]] Ref<VulkanRenderPass> GetRenderPass() const { return shaderCache->renderpasses.presentPass; }
         [[nodiscard]] Ref<VulkanFramebuffer> GetGBuffer() const { return framebuffers.geometryFramebuffers[activeImage]; }
@@ -72,7 +73,6 @@ namespace Raytracing
         DirectionalLight* GetLight() { return &directionalLight; }
 
     private:
-        void DrawDirectionalShadowMapPass(VkCommandBuffer commandBuffer);
         void DrawUIPass(VkCommandBuffer commandBuffer);
 
     private:
@@ -98,7 +98,7 @@ namespace Raytracing
 
         float resolutionScale = 1.0f;
 
-        Scope<VulkanDevice> vulkanDevice;
+        Scope<VulkanDevice> device;
         Scope<ShaderCache> shaderCache;
         Scope<VulkanSwapchain> vulkanSwapChain;
 
@@ -114,5 +114,6 @@ namespace Raytracing
         DirectionalLight directionalLight;
 
         Scope<RenderPass> renderPass;
+        Scope<ShadowMapPass> shadowMapPass;
     };
 }

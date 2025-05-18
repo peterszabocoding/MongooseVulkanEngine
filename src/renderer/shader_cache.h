@@ -24,9 +24,6 @@ namespace Raytracing
     };
 
     struct Pipelines {
-        Ref<VulkanPipeline> skyBox;
-        Ref<VulkanPipeline> geometry;
-        Ref<VulkanPipeline> directionalShadowMap;
         Ref<VulkanPipeline> present;
         Ref<VulkanPipeline> ibl_brdf;
         Ref<VulkanPipeline> ibl_irradianceMap;
@@ -34,16 +31,13 @@ namespace Raytracing
     };
 
     struct Renderpass {
-        Ref<VulkanRenderPass> skyboxPass{};
-        Ref<VulkanRenderPass> geometryPass{};
-        Ref<VulkanRenderPass> shadowMapPass{};
         Ref<VulkanRenderPass> presentPass{};
         Ref<VulkanRenderPass> iblPreparePass{};
     };
 
     class ShaderCache {
     public:
-        ShaderCache(VulkanDevice* _vulkanDevice): vulkanDevice(_vulkanDevice) {}
+        ShaderCache(VulkanDevice* _vulkanDevice): vulkanDevice(_vulkanDevice) { Load(); }
         ~ShaderCache() = default;
 
         ShaderCache(const ShaderCache& other) = delete;
@@ -61,6 +55,7 @@ namespace Raytracing
         void LoadDescriptorLayouts();
         void LoadPipelines();
         void LoadRenderpasses();
+
     private:
         VulkanDevice* vulkanDevice;
     };

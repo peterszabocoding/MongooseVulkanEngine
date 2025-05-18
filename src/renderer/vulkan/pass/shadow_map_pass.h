@@ -5,18 +5,15 @@
 
 namespace Raytracing
 {
-    class RenderPass : public VulkanPass {
+    class ShadowMapPass : public VulkanPass {
     public:
-        explicit RenderPass(VulkanDevice* vulkanDevice, Scene& scene);
-        virtual ~RenderPass() override = default;
-
-        void SetCamera(const Camera& camera);
+        explicit ShadowMapPass(VulkanDevice* vulkanDevice, Scene& scene);
+        virtual ~ShadowMapPass() override = default;
 
         virtual void Render(VkCommandBuffer commandBuffer,
                             uint32_t imageIndex,
                             Ref<VulkanFramebuffer> writeBuffer,
                             Ref<VulkanFramebuffer> readBuffer) override;
-        void DrawSkybox(VkCommandBuffer commandBuffer) const;
 
         Ref<VulkanRenderPass> GetRenderPass() { return renderPass; }
 
@@ -25,12 +22,7 @@ namespace Raytracing
 
     private:
         Scene& scene;
-        Camera camera;
-
         Ref<VulkanRenderPass> renderPass{};
-        Ref<VulkanMesh> cubeMesh;
-
-        Ref<VulkanPipeline> skyBoxPipeline;
-        Ref<VulkanPipeline> geometryPipeline;
+        Ref<VulkanPipeline> directionalShadowMapPipeline;
     };
 }
