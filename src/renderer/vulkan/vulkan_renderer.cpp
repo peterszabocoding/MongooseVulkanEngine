@@ -66,11 +66,51 @@ namespace Raytracing
 
     void VulkanRenderer::PrecomputeIBL()
     {
+        PrepareIrradianceMap();
+        PrepareReflectionProbe();
+    }
+
+    void VulkanRenderer::PrepareIrradianceMap()
+    {
         irradianceMap = VulkanCubeMapTexture::Builder()
                 .SetFormat(ImageFormat::RGBA16_SFLOAT)
                 .SetResolution(32, 32)
                 .Build(device.get());
 
+        framebuffers.iblIrradianceFramebuffes.resize(6);
+        for (size_t i = 0; i < 6; i++)
+        {
+            framebuffers.iblIrradianceFramebuffes[i] = VulkanFramebuffer::Builder(device.get())
+                    .SetRenderpass(shaderCache->renderpasses.iblPreparePass)
+                    .SetResolution(32, 32)
+                    .AddAttachment(irradianceMap->GetFaceImageView(i, 0))
+                    .Build();
+        }
+
+        device->DrawFrame(vulkanSwapChain->GetSwapChain(), vulkanSwapChain->GetExtent(),
+                          [&](const VkCommandBuffer commandBuffer, uint32_t, const uint32_t imageIndex) {
+                              activeImage = imageIndex;
+
+                              for (size_t i = 0; i < 6; i++)
+                              {
+                                  ComputeIrradianceMap(commandBuffer, i);
+                              }
+
+                              shaderCache->renderpasses.iblPreparePass->End(commandBuffer);
+                          }, std::bind(&VulkanRenderer::ResizeSwapchain, this));
+
+        VkDescriptorImageInfo irradianceMapInfo{};
+        irradianceMapInfo.sampler = irradianceMap->GetSampler();
+        irradianceMapInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        irradianceMapInfo.imageView = irradianceMap->GetImageView();
+
+        VulkanDescriptorWriter(*shaderCache->descriptorSetLayouts.irradianceDescriptorSetLayout, device->GetShaderDescriptorPool())
+                .WriteImage(0, &irradianceMapInfo)
+                .Build(shaderCache->descriptorSets.irradianceDescriptorSet);
+    }
+
+    void VulkanRenderer::PrepareReflectionProbe()
+    {
         uint32_t mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(128, 128)))) + 1;
         prefilterMap = VulkanCubeMapTexture::Builder()
                 .SetFormat(ImageFormat::RGBA16_SFLOAT)
@@ -83,16 +123,6 @@ namespace Raytracing
                 .SetResolution(512, 512)
                 .AddAttachment(ImageFormat::RGBA16_SFLOAT)
                 .Build();
-
-        framebuffers.iblIrradianceFramebuffes.resize(6);
-        for (size_t i = 0; i < 6; i++)
-        {
-            framebuffers.iblIrradianceFramebuffes[i] = VulkanFramebuffer::Builder(device.get())
-                    .SetRenderpass(shaderCache->renderpasses.iblPreparePass)
-                    .SetResolution(32, 32)
-                    .AddAttachment(irradianceMap->GetFaceImageView(i, 0))
-                    .Build();
-        }
 
         constexpr uint32_t PREFILTER_MIP_LEVELS = 6;
 
@@ -119,12 +149,6 @@ namespace Raytracing
 
                               ComputeIblBRDF(commandBuffer);
 
-                              for (size_t i = 0; i < 6; i++)
-                              {
-                                  ComputeIrradianceMap(commandBuffer, i);
-                              }
-
-
                               for (unsigned int mip = 0; mip < PREFILTER_MIP_LEVELS; ++mip)
                               {
                                   const float roughness = static_cast<float>(mip) / static_cast<float>(PREFILTER_MIP_LEVELS - 1);
@@ -134,11 +158,23 @@ namespace Raytracing
                                   }
                               }
 
-
                               shaderCache->renderpasses.iblPreparePass->End(commandBuffer);
                           }, std::bind(&VulkanRenderer::ResizeSwapchain, this));
 
-        PreparePBR();
+        VkDescriptorImageInfo prefilterMapInfo{};
+        prefilterMapInfo.sampler = prefilterMap->GetSampler();
+        prefilterMapInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        prefilterMapInfo.imageView = prefilterMap->GetImageView();
+
+        VkDescriptorImageInfo brdfLUTInfo{};
+        brdfLUTInfo.sampler = framebuffers.iblBRDFFramebuffer->attachments[0].sampler;
+        brdfLUTInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        brdfLUTInfo.imageView = framebuffers.iblBRDFFramebuffer->attachments[0].imageView;
+
+        VulkanDescriptorWriter(*shaderCache->descriptorSetLayouts.reflectionDescriptorSetLayout, device->GetShaderDescriptorPool())
+                .WriteImage(0, &prefilterMapInfo)
+                .WriteImage(1, &brdfLUTInfo)
+                .Build(shaderCache->descriptorSets.reflectionDescriptorSet);
     }
 
     void VulkanRenderer::ComputeIblBRDF(VkCommandBuffer commandBuffer)
@@ -470,27 +506,4 @@ namespace Raytracing
         }
     }
 
-    void VulkanRenderer::PreparePBR()
-    {
-        VkDescriptorImageInfo irradianceMapInfo{};
-        irradianceMapInfo.sampler = irradianceMap->GetSampler();
-        irradianceMapInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        irradianceMapInfo.imageView = irradianceMap->GetImageView();
-
-        VkDescriptorImageInfo prefilterMapInfo{};
-        prefilterMapInfo.sampler = prefilterMap->GetSampler();
-        prefilterMapInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        prefilterMapInfo.imageView = prefilterMap->GetImageView();
-
-        VkDescriptorImageInfo brdfLUTInfo{};
-        brdfLUTInfo.sampler = framebuffers.iblBRDFFramebuffer->attachments[0].sampler;
-        brdfLUTInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        brdfLUTInfo.imageView = framebuffers.iblBRDFFramebuffer->attachments[0].imageView;
-
-        VulkanDescriptorWriter(*shaderCache->descriptorSetLayouts.pbrDescriptorSetLayout, device->GetShaderDescriptorPool())
-                .WriteImage(0, &irradianceMapInfo)
-                .WriteImage(1, &prefilterMapInfo)
-                .WriteImage(2, &brdfLUTInfo)
-                .Build(shaderCache->descriptorSets.pbrDescriptorSet);
-    }
 }

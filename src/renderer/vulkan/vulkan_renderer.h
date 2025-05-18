@@ -53,6 +53,8 @@ namespace Raytracing
 
         virtual void Init(int width, int height) override;
         void PrecomputeIBL();
+        void PrepareIrradianceMap();
+        void PrepareReflectionProbe();
         void ComputeIblBRDF(VkCommandBuffer commandBuffer);
         void ComputeIrradianceMap(VkCommandBuffer commandBuffer, size_t faceIndex);
         void ComputePrefilterMap(VkCommandBuffer commandBuffer, size_t faceIndex, uint32_t miplevel, float roughness);
@@ -78,12 +80,12 @@ namespace Raytracing
         void CreateFramebuffers();
 
         void ResizeSwapchain();
-        void CreateTransformsBuffer();
-        void CreateLightsBuffer();
         void PreparePresentPass();
-        void PreparePBR();
 
+        void CreateTransformsBuffer();
         void UpdateTransformsBuffer(const Ref<Camera>& camera) const;
+
+        void CreateLightsBuffer();
         void UpdateLightsBuffer(float deltaTime);
 
     public:

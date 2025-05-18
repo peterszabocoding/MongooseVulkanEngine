@@ -48,11 +48,15 @@ namespace Raytracing
                 .AddBinding({0, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
                 .Build();
 
-        // irradianceMap, prefilterMap, brdfLUT
-        descriptorSetLayouts.pbrDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice)
+        // irradianceMap
+        descriptorSetLayouts.irradianceDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice)
+                .AddBinding({0, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
+                .Build();
+
+        // prefilterMap, brdfLUT
+        descriptorSetLayouts.reflectionDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice)
                 .AddBinding({0, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
                 .AddBinding({1, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
-                .AddBinding({2, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
                 .Build();
     }
 
@@ -60,7 +64,6 @@ namespace Raytracing
     {
         LOG_TRACE("Build pipelines");
 
-        LOG_TRACE("Building IBL BRDF pipeline");
         PipelineConfig iblBrdfPipelineConfig; {
             iblBrdfPipelineConfig.vertexShaderPath = "shader/spv/brdf.vert.spv";
             iblBrdfPipelineConfig.fragmentShaderPath = "shader/spv/brdf.frag.spv";
@@ -82,7 +85,6 @@ namespace Raytracing
         }
         pipelines.ibl_brdf = VulkanPipeline::Builder().Build(vulkanDevice, iblBrdfPipelineConfig);
 
-        LOG_TRACE("Building IBL Irradiance Map pipeline");
         PipelineConfig iblIrradianceMapPipelineConfig; {
             iblIrradianceMapPipelineConfig.vertexShaderPath = "shader/spv/cubemap.vert.spv";
             iblIrradianceMapPipelineConfig.fragmentShaderPath = "shader/spv/irradiance_convolution.frag.spv";
@@ -110,7 +112,6 @@ namespace Raytracing
         }
         pipelines.ibl_irradianceMap = VulkanPipeline::Builder().Build(vulkanDevice, iblIrradianceMapPipelineConfig);
 
-        LOG_TRACE("Building IBL Prefilter pipeline");
         PipelineConfig iblPrefilterPipelineConfig; {
             iblPrefilterPipelineConfig.vertexShaderPath = "shader/spv/cubemap.vert.spv";
             iblPrefilterPipelineConfig.fragmentShaderPath = "shader/spv/prefilter.frag.spv";
@@ -137,9 +138,6 @@ namespace Raytracing
 
     void ShaderCache::LoadRenderpasses()
     {
-        LOG_TRACE("Vulkan: create renderpass");
-
-
         renderpasses.iblPreparePass = VulkanRenderPass::Builder(vulkanDevice)
                 .AddColorAttachment(VK_FORMAT_R16G16B16A16_SFLOAT, false)
                 .Build();

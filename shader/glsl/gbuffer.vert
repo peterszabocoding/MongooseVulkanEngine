@@ -12,7 +12,7 @@ layout(set = 1, binding = 0) uniform Transforms {
     vec3 cameraPosition;
 } transforms;
 
-layout(std430, set = 3, binding = 0) uniform Lights {
+layout(std430, set = 2, binding = 0) uniform Lights {
     mat4 lightView;
     mat4 lightProjection;
     vec3 direction;

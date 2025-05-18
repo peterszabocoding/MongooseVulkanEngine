@@ -60,9 +60,9 @@ namespace Raytracing
                 geometryDrawParams.descriptorSets = {
                     scene.meshes[i]->GetMaterial(meshlet).descriptorSet,
                     ShaderCache::descriptorSets.transformDescriptorSet,
-                    scene.skybox->descriptorSet,
                     ShaderCache::descriptorSets.lightsDescriptorSets[imageIndex],
-                    ShaderCache::descriptorSets.pbrDescriptorSet
+                    ShaderCache::descriptorSets.irradianceDescriptorSet,
+                    ShaderCache::descriptorSets.reflectionDescriptorSet,
                 };
                 geometryDrawParams.meshlet = &meshlet;
                 device->DrawMeshlet(geometryDrawParams);
@@ -131,9 +131,9 @@ namespace Raytracing
             geometryPipelineConfig.descriptorSetLayouts = {
                 ShaderCache::descriptorSetLayouts.materialDescriptorSetLayout,
                 ShaderCache::descriptorSetLayouts.transformDescriptorSetLayout,
-                ShaderCache::descriptorSetLayouts.cubemapDescriptorSetLayout,
                 ShaderCache::descriptorSetLayouts.lightsDescriptorSetLayout,
-                ShaderCache::descriptorSetLayouts.pbrDescriptorSetLayout,
+                ShaderCache::descriptorSetLayouts.irradianceDescriptorSetLayout,
+                ShaderCache::descriptorSetLayouts.reflectionDescriptorSetLayout,
             };
 
             geometryPipelineConfig.colorAttachments = {

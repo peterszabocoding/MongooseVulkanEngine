@@ -5,6 +5,10 @@
 #include <shadow_mapping.glslh>
 #include <pbr_functions.glslh>
 
+// ------------------------------------------------------------------
+// INPUT VARIABLES --------------------------------------------------
+// ------------------------------------------------------------------
+
 layout(location = 0) in vec3 fragPosition;
 layout(location = 1) in vec3 fragColor;
 layout(location = 2) in vec2 fragTexCoord;
@@ -14,6 +18,21 @@ layout(location = 5) in vec4 inWorldPosition;
 layout(location = 6) in vec4 shadowMapCoord;
 layout(location = 7) in mat3 TBN;
 
+// ------------------------------------------------------------------
+// OUTPUT VARIABLES -------------------------------------------------
+// ------------------------------------------------------------------
+
+layout(location = 0)            out vec4 finalImage;
+layout(location = 1)            out vec4 baseColorImage;
+layout(location = 2)            out vec4 normalImage;
+layout(location = 3)            out vec4 metallicRoughnessImage;
+layout(location = 4)            out vec4 outWorldPosition;
+
+// ------------------------------------------------------------------
+// UNIFORMS ---------------------------------------------------------
+// ------------------------------------------------------------------
+
+// Material uniforms
 layout(set = 0, binding = 0) uniform MaterialParams {
     vec4 tint;
     vec4 baseColor;
@@ -25,14 +44,20 @@ layout(set = 0, binding = 0) uniform MaterialParams {
     bool useNormalMap;
     bool useMetallicRoughnessMap;
 } materialParams;
+layout(set = 0, binding = 1) uniform sampler2D baseColorSampler;
+layout(set = 0, binding = 2) uniform sampler2D normalSampler;
+layout(set = 0, binding = 3) uniform sampler2D metallicRoughnessSampler;
 
+
+// Transform uniforms
 layout(set = 1, binding = 0) uniform Transforms {
     mat4 projection;
     mat4 view;
     vec3 cameraPosition;
 } transforms;
 
-layout(std430, set = 3, binding = 0) uniform Lights {
+// Light uniforms
+layout(std430, set = 2, binding = 0) uniform Lights {
     mat4 lightView;
     mat4 lightProjection;
     vec3 direction;
@@ -41,29 +66,29 @@ layout(std430, set = 3, binding = 0) uniform Lights {
     float intensity;
     float bias;
 } lights;
+layout(set = 2, binding = 1)    uniform sampler2D shadowMap;
 
-layout(set = 0, binding = 1)    uniform sampler2D baseColorSampler;
-layout(set = 0, binding = 2)    uniform sampler2D normalSampler;
-layout(set = 0, binding = 3)    uniform sampler2D metallicRoughnessSampler;
 
-layout(set = 2, binding = 0)    uniform samplerCube skyboxSampler;
+// Irradiance uniforms
+layout(set = 3, binding = 0)    uniform samplerCube irradianceMap;
 
-layout(set = 3, binding = 1)    uniform sampler2D shadowMap;
 
-layout(set = 4, binding = 0)    uniform samplerCube irradianceMap;
-layout(set = 4, binding = 1)    uniform samplerCube prefilterMap;
-layout(set = 4, binding = 2)    uniform sampler2D brdfLUT;
+// Reflection uniforms
+layout(set = 4, binding = 0)    uniform samplerCube prefilterMap;
+layout(set = 4, binding = 1)    uniform sampler2D brdfLUT;
 
-layout(location = 0)            out vec4 finalImage;
-layout(location = 1)            out vec4 baseColorImage;
-layout(location = 2)            out vec4 normalImage;
-layout(location = 3)            out vec4 metallicRoughnessImage;
-layout(location = 4)            out vec4 outWorldPosition;
 
+// ------------------------------------------------------------------
+// VARIABLES --------------------------------------------------------
+// ------------------------------------------------------------------
 vec3 N;
 vec3 V;
 
-float MAX_REFLECTION_LOD = 6.0;
+// ------------------------------------------------------------------
+// CONSTANTS --------------------------------------------------------
+// ------------------------------------------------------------------
+
+const float MAX_REFLECTION_LOD = 6.0;
 
 vec3 CalcSurfaceNormal(vec3 normalFromTexture, mat3 TBN)
 {
@@ -149,11 +174,6 @@ void main() {
     metallicRoughnessImage = vec4(occlusion, metallic, roughness, 1.0);
     outWorldPosition = inWorldPosition;
     /////////////////////////////////////////////////////
-
-    //color += 0.1 * (1.0 - roughness) * reflectionColor;
-
-    //float shadowCoeff = filterPCF(shadowMap, shadowMapCoord / shadowMapCoord.w);
-    //finalImage = (lights.ambientIntensity + shadowCoeff * lights.intensity * diffuseFactor) * albedo;
 
     color =  color / (color + vec3(1.0));
     color = pow(color, vec3(1.0/2.2));

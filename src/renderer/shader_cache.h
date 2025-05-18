@@ -12,13 +12,15 @@ namespace Raytracing
         Ref<VulkanDescriptorSetLayout> transformDescriptorSetLayout;
         Ref<VulkanDescriptorSetLayout> lightsDescriptorSetLayout;
         Ref<VulkanDescriptorSetLayout> presentDescriptorSetLayout;
-        Ref<VulkanDescriptorSetLayout> pbrDescriptorSetLayout;
+        Ref<VulkanDescriptorSetLayout> irradianceDescriptorSetLayout;
+        Ref<VulkanDescriptorSetLayout> reflectionDescriptorSetLayout;
     };
 
     struct DescriptorSets {
         VkDescriptorSet cubemapDescriptorSet;
         VkDescriptorSet transformDescriptorSet;
-        VkDescriptorSet pbrDescriptorSet;
+        VkDescriptorSet irradianceDescriptorSet;
+        VkDescriptorSet reflectionDescriptorSet;
         std::vector<VkDescriptorSet> presentDescriptorSets;
         std::vector<VkDescriptorSet> lightsDescriptorSets;
     };
