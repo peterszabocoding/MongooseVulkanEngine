@@ -1,7 +1,3 @@
-//
-// Created by peter on 2025. 05. 11..
-//
-
 #include "shader_cache.h"
 
 #include "util/log.h"
@@ -63,30 +59,6 @@ namespace Raytracing
     void ShaderCache::LoadPipelines()
     {
         LOG_TRACE("Build pipelines");
-
-        LOG_TRACE("Building present pipeline");
-        PipelineConfig presentPipelineConfig; {
-            presentPipelineConfig.vertexShaderPath = "shader/spv/quad.vert.spv";
-            presentPipelineConfig.fragmentShaderPath = "shader/spv/quad.frag.spv";
-
-            presentPipelineConfig.cullMode = PipelineCullMode::Front;
-            presentPipelineConfig.polygonMode = PipelinePolygonMode::Fill;
-            presentPipelineConfig.frontFace = PipelineFrontFace::Counter_clockwise;
-
-            presentPipelineConfig.descriptorSetLayouts = {
-                descriptorSetLayouts.presentDescriptorSetLayout
-            };
-
-            presentPipelineConfig.colorAttachments = {
-                ImageFormat::RGBA8_UNORM,
-            };
-
-            presentPipelineConfig.disableBlending = true;
-            presentPipelineConfig.enableDepthTest = false;
-
-            presentPipelineConfig.renderPass = renderpasses.presentPass;
-        }
-        pipelines.present = VulkanPipeline::Builder().Build(vulkanDevice, presentPipelineConfig);
 
         LOG_TRACE("Building IBL BRDF pipeline");
         PipelineConfig iblBrdfPipelineConfig; {
@@ -166,9 +138,7 @@ namespace Raytracing
     void ShaderCache::LoadRenderpasses()
     {
         LOG_TRACE("Vulkan: create renderpass");
-        renderpasses.presentPass = VulkanRenderPass::Builder(vulkanDevice)
-                .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM, true)
-                .Build();
+
 
         renderpasses.iblPreparePass = VulkanRenderPass::Builder(vulkanDevice)
                 .AddColorAttachment(VK_FORMAT_R16G16B16A16_SFLOAT, false)

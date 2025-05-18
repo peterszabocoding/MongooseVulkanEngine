@@ -7,6 +7,7 @@
 #include "vulkan_swapchain.h"
 #include "vulkan_shadow_map.h"
 #include "vulkan_cube_map_texture.h"
+#include "pass/present_pass.h"
 #include "pass/render_pass.h"
 #include "pass/shadow_map_pass.h"
 #include "renderer/Light.h"
@@ -66,14 +67,11 @@ namespace Raytracing
 
         VulkanDevice* GetVulkanDevice() const { return device.get(); }
 
-        [[nodiscard]] Ref<VulkanRenderPass> GetRenderPass() const { return shaderCache->renderpasses.presentPass; }
+        [[nodiscard]] Ref<VulkanRenderPass> GetRenderPass() const { return presentPass->GetRenderPass(); }
         [[nodiscard]] Ref<VulkanFramebuffer> GetGBuffer() const { return framebuffers.geometryFramebuffers[activeImage]; }
         [[nodiscard]] Ref<VulkanShadowMap> GetShadowMap() const { return framebuffers.directionalShadowMaps[activeImage]; }
 
         DirectionalLight* GetLight() { return &directionalLight; }
-
-    private:
-        void DrawUIPass(VkCommandBuffer commandBuffer);
 
     private:
         void CreateSwapchain();
@@ -115,5 +113,6 @@ namespace Raytracing
 
         Scope<RenderPass> renderPass;
         Scope<ShadowMapPass> shadowMapPass;
+        Scope<PresentPass> presentPass;
     };
 }

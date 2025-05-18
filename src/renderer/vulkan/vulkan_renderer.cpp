@@ -53,6 +53,7 @@ namespace Raytracing
 
         renderPass = CreateScope<RenderPass>(device.get(), scene);
         shadowMapPass = CreateScope<ShadowMapPass>(device.get(), scene);
+        presentPass = CreateScope<PresentPass>(device.get());
 
         CreateSwapchain();
         CreateFramebuffers();
@@ -253,33 +254,9 @@ namespace Raytracing
                                   framebuffers.geometryFramebuffers[activeImage]->height);
                               renderPass->Render(commandBuffer, activeImage, framebuffers.geometryFramebuffers[activeImage], nullptr);
 
-                              DrawUIPass(commandBuffer);
+                              presentPass->SetSize(vulkanSwapChain->GetExtent().width, vulkanSwapChain->GetExtent().height);
+                              presentPass->Render(commandBuffer, activeImage, framebuffers.presentFramebuffers[activeImage], nullptr);
                           }, std::bind(&VulkanRenderer::ResizeSwapchain, this));
-    }
-
-    void VulkanRenderer::DrawUIPass(const VkCommandBuffer commandBuffer)
-    {
-        device->SetViewportAndScissor(vulkanSwapChain->GetExtent(), commandBuffer);
-        shaderCache->renderpasses.presentPass->Begin(commandBuffer, framebuffers.presentFramebuffers[activeImage],
-                                                     vulkanSwapChain->GetExtent());
-
-        DrawCommandParams screenRectDrawParams{};
-        screenRectDrawParams.commandBuffer = commandBuffer;
-
-        screenRectDrawParams.pipelineParams = {
-            shaderCache->pipelines.present->GetPipeline(),
-            shaderCache->pipelines.present->GetPipelineLayout()
-        };
-
-        screenRectDrawParams.descriptorSets = {
-            shaderCache->descriptorSets.presentDescriptorSets[activeImage],
-        };
-        screenRectDrawParams.meshlet = screenRect.get();
-
-        device->DrawMeshlet(screenRectDrawParams);
-        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
-
-        shaderCache->renderpasses.presentPass->End(commandBuffer);
     }
 
     void VulkanRenderer::IdleWait()
@@ -347,7 +324,7 @@ namespace Raytracing
                     .Build();
 
             framebuffers.presentFramebuffers[i] = VulkanFramebuffer::Builder(device.get())
-                    .SetRenderpass(shaderCache->renderpasses.presentPass)
+                    .SetRenderpass(presentPass->GetRenderPass())
                     .SetResolution(viewportWidth, viewportHeight)
                     .AddAttachment(vulkanSwapChain->GetImageViews()[i])
                     .Build();
