@@ -9,6 +9,7 @@
 #include "vulkan_pipeline.h"
 #include "vulkan_device.h"
 #include "vulkan_mesh.h"
+#include "lighting/irradiance_map_generator.h"
 #include "util/log.h"
 
 namespace Raytracing
@@ -61,6 +62,7 @@ namespace Raytracing
 
         CreateLightsBuffer();
         PreparePresentPass();
+
         PrecomputeIBL();
     }
 
@@ -72,32 +74,7 @@ namespace Raytracing
 
     void VulkanRenderer::PrepareIrradianceMap()
     {
-        irradianceMap = VulkanCubeMapTexture::Builder()
-                .SetFormat(ImageFormat::RGBA16_SFLOAT)
-                .SetResolution(32, 32)
-                .Build(device.get());
-
-        framebuffers.iblIrradianceFramebuffes.resize(6);
-        for (size_t i = 0; i < 6; i++)
-        {
-            framebuffers.iblIrradianceFramebuffes[i] = VulkanFramebuffer::Builder(device.get())
-                    .SetRenderpass(shaderCache->renderpasses.iblPreparePass)
-                    .SetResolution(32, 32)
-                    .AddAttachment(irradianceMap->GetFaceImageView(i, 0))
-                    .Build();
-        }
-
-        device->DrawFrame(vulkanSwapChain->GetSwapChain(), vulkanSwapChain->GetExtent(),
-                          [&](const VkCommandBuffer commandBuffer, uint32_t, const uint32_t imageIndex) {
-                              activeImage = imageIndex;
-
-                              for (size_t i = 0; i < 6; i++)
-                              {
-                                  ComputeIrradianceMap(commandBuffer, i);
-                              }
-
-                              shaderCache->renderpasses.iblPreparePass->End(commandBuffer);
-                          }, std::bind(&VulkanRenderer::ResizeSwapchain, this));
+        irradianceMap = IrradianceMapGenerator(device.get()).FromCubemapTexture(scene.skybox->GetCubemap());
 
         VkDescriptorImageInfo irradianceMapInfo{};
         irradianceMapInfo.sampler = irradianceMap->GetSampler();
@@ -118,24 +95,33 @@ namespace Raytracing
                 .SetMipLevels(mipLevels)
                 .Build(device.get());
 
-        framebuffers.iblBRDFFramebuffer = VulkanFramebuffer::Builder(device.get())
+        brdfLUT = VulkanTexture::Builder()
+                .SetResolution(512, 512)
+                .SetFormat(ImageFormat::RGBA16_SFLOAT)
+                .AddAspectFlag(VK_IMAGE_ASPECT_COLOR_BIT)
+                .AddUsage(VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
+                .Build(device.get());
+
+        auto iblBRDFFramebuffer = VulkanFramebuffer::Builder(device.get())
                 .SetRenderpass(shaderCache->renderpasses.iblPreparePass)
                 .SetResolution(512, 512)
-                .AddAttachment(ImageFormat::RGBA16_SFLOAT)
+                .AddAttachment(brdfLUT->GetImageView())
                 .Build();
 
         constexpr uint32_t PREFILTER_MIP_LEVELS = 6;
 
-        framebuffers.iblPrefilterFramebuffes.resize(PREFILTER_MIP_LEVELS);
+        std::vector<std::vector<Ref<VulkanFramebuffer>>> iblPrefilterFramebuffes;
+        iblPrefilterFramebuffes.resize(PREFILTER_MIP_LEVELS);
+
         for (unsigned int mip = 0; mip < PREFILTER_MIP_LEVELS; ++mip)
         {
             const unsigned int mipWidth = static_cast<unsigned int>(128 * std::pow(0.5, mip));
             const unsigned int mipHeight = static_cast<unsigned int>(128 * std::pow(0.5, mip));
 
-            framebuffers.iblPrefilterFramebuffes[mip].resize(6);
+            iblPrefilterFramebuffes[mip].resize(6);
             for (size_t i = 0; i < 6; i++)
             {
-                framebuffers.iblPrefilterFramebuffes[mip][i] = VulkanFramebuffer::Builder(device.get())
+                iblPrefilterFramebuffes[mip][i] = VulkanFramebuffer::Builder(device.get())
                         .SetRenderpass(shaderCache->renderpasses.iblPreparePass)
                         .SetResolution(mipWidth, mipHeight)
                         .AddAttachment(prefilterMap->GetFaceImageView(i, mip))
@@ -143,23 +129,19 @@ namespace Raytracing
             }
         }
 
-        device->DrawFrame(vulkanSwapChain->GetSwapChain(), vulkanSwapChain->GetExtent(),
-                          [&](const VkCommandBuffer commandBuffer, uint32_t, const uint32_t imageIndex) {
-                              activeImage = imageIndex;
+        device->ImmediateSubmit([&](VkCommandBuffer commandBuffer) {
+            ComputeIblBRDF(commandBuffer, iblBRDFFramebuffer);
 
-                              ComputeIblBRDF(commandBuffer);
+            for (unsigned int mip = 0; mip < PREFILTER_MIP_LEVELS; ++mip)
+            {
+                const float roughness = static_cast<float>(mip) / static_cast<float>(PREFILTER_MIP_LEVELS - 1);
+                for (size_t i = 0; i < 6; i++)
+                {
+                    ComputePrefilterMap(commandBuffer, i, roughness, iblPrefilterFramebuffes[mip][i]);
+                }
+            }
+        });
 
-                              for (unsigned int mip = 0; mip < PREFILTER_MIP_LEVELS; ++mip)
-                              {
-                                  const float roughness = static_cast<float>(mip) / static_cast<float>(PREFILTER_MIP_LEVELS - 1);
-                                  for (size_t i = 0; i < 6; i++)
-                                  {
-                                      ComputePrefilterMap(commandBuffer, i, mip, roughness);
-                                  }
-                              }
-
-                              shaderCache->renderpasses.iblPreparePass->End(commandBuffer);
-                          }, std::bind(&VulkanRenderer::ResizeSwapchain, this));
 
         VkDescriptorImageInfo prefilterMapInfo{};
         prefilterMapInfo.sampler = prefilterMap->GetSampler();
@@ -167,9 +149,9 @@ namespace Raytracing
         prefilterMapInfo.imageView = prefilterMap->GetImageView();
 
         VkDescriptorImageInfo brdfLUTInfo{};
-        brdfLUTInfo.sampler = framebuffers.iblBRDFFramebuffer->attachments[0].sampler;
+        brdfLUTInfo.sampler = brdfLUT->GetSampler();
         brdfLUTInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        brdfLUTInfo.imageView = framebuffers.iblBRDFFramebuffer->attachments[0].imageView;
+        brdfLUTInfo.imageView = brdfLUT->GetImageView();
 
         VulkanDescriptorWriter(*shaderCache->descriptorSetLayouts.reflectionDescriptorSetLayout, device->GetShaderDescriptorPool())
                 .WriteImage(0, &prefilterMapInfo)
@@ -177,12 +159,12 @@ namespace Raytracing
                 .Build(shaderCache->descriptorSets.reflectionDescriptorSet);
     }
 
-    void VulkanRenderer::ComputeIblBRDF(VkCommandBuffer commandBuffer)
+    void VulkanRenderer::ComputeIblBRDF(VkCommandBuffer commandBuffer, Ref<VulkanFramebuffer> framebuffer)
     {
-        VkExtent2D extent = {framebuffers.iblBRDFFramebuffer->width, framebuffers.iblBRDFFramebuffer->height};
+        VkExtent2D extent = {framebuffer->width, framebuffer->height};
 
         device->SetViewportAndScissor(extent, commandBuffer);
-        shaderCache->renderpasses.iblPreparePass->Begin(commandBuffer, framebuffers.iblBRDFFramebuffer, extent);
+        shaderCache->renderpasses.iblPreparePass->Begin(commandBuffer, framebuffer, extent);
 
         DrawCommandParams drawCommandParams{};
         drawCommandParams.commandBuffer = commandBuffer;
@@ -198,51 +180,16 @@ namespace Raytracing
         device->DrawMeshlet(drawCommandParams);
     }
 
-    void VulkanRenderer::ComputeIrradianceMap(VkCommandBuffer commandBuffer, size_t faceIndex)
+    void VulkanRenderer::ComputePrefilterMap(VkCommandBuffer commandBuffer, size_t faceIndex, float roughness,
+                                             Ref<VulkanFramebuffer> framebuffer)
     {
         VkExtent2D extent = {
-            framebuffers.iblIrradianceFramebuffes[faceIndex]->width,
-            framebuffers.iblIrradianceFramebuffes[faceIndex]->height
+            framebuffer->width,
+            framebuffer->height
         };
 
         device->SetViewportAndScissor(extent, commandBuffer);
-        shaderCache->renderpasses.iblPreparePass->Begin(commandBuffer, framebuffers.iblIrradianceFramebuffes[faceIndex], extent);
-
-        DrawCommandParams drawCommandParams{};
-        drawCommandParams.commandBuffer = commandBuffer;
-
-        drawCommandParams.pipelineParams = {
-            shaderCache->pipelines.ibl_irradianceMap->GetPipeline(),
-            shaderCache->pipelines.ibl_irradianceMap->GetPipelineLayout()
-        };
-
-        drawCommandParams.meshlet = &cubeMesh->GetMeshlets()[0];
-
-        drawCommandParams.descriptorSets = {
-            scene.skybox->descriptorSet,
-        };
-
-        TransformPushConstantData pushConstantData;
-        pushConstantData.projection = m_CaptureProjection;
-        pushConstantData.view = m_CaptureViews[faceIndex];
-
-        drawCommandParams.pushConstantParams = {
-            &pushConstantData,
-            sizeof(TransformPushConstantData)
-        };
-
-        device->DrawMeshlet(drawCommandParams);
-    }
-
-    void VulkanRenderer::ComputePrefilterMap(VkCommandBuffer commandBuffer, size_t faceIndex, uint32_t miplevel, float roughness)
-    {
-        VkExtent2D extent = {
-            framebuffers.iblPrefilterFramebuffes[miplevel][faceIndex]->width,
-            framebuffers.iblPrefilterFramebuffes[miplevel][faceIndex]->height
-        };
-
-        device->SetViewportAndScissor(extent, commandBuffer);
-        shaderCache->renderpasses.iblPreparePass->Begin(commandBuffer, framebuffers.iblPrefilterFramebuffes[miplevel][faceIndex], extent);
+        shaderCache->renderpasses.iblPreparePass->Begin(commandBuffer, framebuffer, extent);
 
         DrawCommandParams drawCommandParams{};
         drawCommandParams.commandBuffer = commandBuffer;
@@ -269,6 +216,8 @@ namespace Raytracing
         };
 
         device->DrawMeshlet(drawCommandParams);
+
+        shaderCache->renderpasses.iblPreparePass->End(commandBuffer);
     }
 
     void VulkanRenderer::DrawFrame(const float deltaTime, const Ref<Camera> camera)
@@ -505,5 +454,4 @@ namespace Raytracing
                 writer.Overwrite(shaderCache->descriptorSets.presentDescriptorSets[i]);
         }
     }
-
 }

@@ -27,7 +27,6 @@ namespace Raytracing
 
     struct Pipelines {
         Ref<VulkanPipeline> ibl_brdf;
-        Ref<VulkanPipeline> ibl_irradianceMap;
         Ref<VulkanPipeline> ibl_prefilter;
     };
 

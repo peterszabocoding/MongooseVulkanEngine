@@ -7,7 +7,7 @@ namespace Raytracing
 {
     class RenderPass : public VulkanPass {
     public:
-        explicit RenderPass(VulkanDevice* vulkanDevice, Scene& scene);
+        explicit RenderPass(VulkanDevice* vulkanDevice, Scene& _scene);
         virtual ~RenderPass() override = default;
 
         void SetCamera(const Camera& camera);

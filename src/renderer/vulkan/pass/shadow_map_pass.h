@@ -7,7 +7,7 @@ namespace Raytracing
 {
     class ShadowMapPass : public VulkanPass {
     public:
-        explicit ShadowMapPass(VulkanDevice* vulkanDevice, Scene& scene);
+        explicit ShadowMapPass(VulkanDevice* vulkanDevice, Scene& _scene);
         virtual ~ShadowMapPass() override = default;
 
         virtual void Render(VkCommandBuffer commandBuffer,

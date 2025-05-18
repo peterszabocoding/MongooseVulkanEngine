@@ -95,6 +95,7 @@ set(SOURCE_ONE_WEEKEND
         ./src/renderer/camera.cpp
         ./src/renderer/shader_cache.cpp
         ./src/renderer/skybox.cpp
+
         ./src/renderer/vulkan/vulkan_renderer.cpp
         ./src/renderer/vulkan/vulkan_pipeline.cpp
         ./src/renderer/vulkan/vulkan_device.cpp
@@ -111,10 +112,13 @@ set(SOURCE_ONE_WEEKEND
         ./src/renderer/vulkan/vulkan_texture.cpp
         ./src/renderer/vulkan/vulkan_cube_map_texture.cpp
         ./src/renderer/vulkan/vulkan_shadow_map.cpp
+        ./src/renderer/vulkan/imgui_vulkan.cpp
+
         ./src/renderer/vulkan/pass/render_pass.cpp
         ./src/renderer/vulkan/pass/shadow_map_pass.cpp
         ./src/renderer/vulkan/pass/present_pass.cpp
-        ./src/renderer/vulkan/imgui_vulkan.cpp
+
+        ./src/renderer/vulkan/lighting/irradiance_map_generator.cpp
 
         ./src/resource/resource_manager.cpp
         ./src/resource/loaders/obj_loader.cpp

@@ -6,7 +6,7 @@
 
 namespace Raytracing
 {
-    RenderPass::RenderPass(VulkanDevice* vulkanDevice, Scene& scene): VulkanPass(vulkanDevice), scene(scene)
+    RenderPass::RenderPass(VulkanDevice* vulkanDevice, Scene& _scene): VulkanPass(vulkanDevice), scene(_scene)
     {
         renderPass = VulkanRenderPass::Builder(vulkanDevice)
                 .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM, false)

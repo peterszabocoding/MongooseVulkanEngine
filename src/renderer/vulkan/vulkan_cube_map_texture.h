@@ -49,11 +49,11 @@ namespace Raytracing
 
             AllocatedImage allocatedImage{};
             VkImageView imageView{};
-            //std::array<VkImageView, 6> faceImageViews{};
-            std::vector<std::array<VkImageView, 6>> mipmapFaceImageViews;
             VkDeviceMemory imageMemory{};
             VkSampler sampler{};
             ImageResource imageResource{};
+
+            std::vector<std::array<VkImageView, 6>> mipmapFaceImageViews;
         };
 
     public:
@@ -78,8 +78,6 @@ namespace Raytracing
 
         AllocatedImage allocatedImage{};
         VkImageView imageView{};
-        //std::array<VkImageView, 6> faceImageViews{};
-
         std::vector<std::array<VkImageView, 6>> mipmapFaceImageViews;
         VkDeviceMemory imageMemory{};
         VkSampler sampler{};

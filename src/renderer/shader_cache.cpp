@@ -63,7 +63,6 @@ namespace Raytracing
     void ShaderCache::LoadPipelines()
     {
         LOG_TRACE("Build pipelines");
-
         PipelineConfig iblBrdfPipelineConfig; {
             iblBrdfPipelineConfig.vertexShaderPath = "shader/spv/brdf.vert.spv";
             iblBrdfPipelineConfig.fragmentShaderPath = "shader/spv/brdf.frag.spv";
@@ -84,33 +83,6 @@ namespace Raytracing
             iblBrdfPipelineConfig.renderPass = renderpasses.iblPreparePass;
         }
         pipelines.ibl_brdf = VulkanPipeline::Builder().Build(vulkanDevice, iblBrdfPipelineConfig);
-
-        PipelineConfig iblIrradianceMapPipelineConfig; {
-            iblIrradianceMapPipelineConfig.vertexShaderPath = "shader/spv/cubemap.vert.spv";
-            iblIrradianceMapPipelineConfig.fragmentShaderPath = "shader/spv/irradiance_convolution.frag.spv";
-
-            iblIrradianceMapPipelineConfig.cullMode = PipelineCullMode::Back;
-            iblIrradianceMapPipelineConfig.polygonMode = PipelinePolygonMode::Fill;
-            iblIrradianceMapPipelineConfig.frontFace = PipelineFrontFace::Counter_clockwise;
-
-            iblIrradianceMapPipelineConfig.descriptorSetLayouts = {
-                descriptorSetLayouts.cubemapDescriptorSetLayout,
-            };
-
-            iblIrradianceMapPipelineConfig.colorAttachments = {
-                ImageFormat::RGBA16_SFLOAT,
-            };
-
-            iblIrradianceMapPipelineConfig.disableBlending = true;
-            iblIrradianceMapPipelineConfig.enableDepthTest = false;
-
-            iblIrradianceMapPipelineConfig.renderPass = renderpasses.iblPreparePass;
-
-            iblIrradianceMapPipelineConfig.pushConstantData.shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-            iblIrradianceMapPipelineConfig.pushConstantData.offset = 0;
-            iblIrradianceMapPipelineConfig.pushConstantData.size = sizeof(TransformPushConstantData);
-        }
-        pipelines.ibl_irradianceMap = VulkanPipeline::Builder().Build(vulkanDevice, iblIrradianceMapPipelineConfig);
 
         PipelineConfig iblPrefilterPipelineConfig; {
             iblPrefilterPipelineConfig.vertexShaderPath = "shader/spv/cubemap.vert.spv";
