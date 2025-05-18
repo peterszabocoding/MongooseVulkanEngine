@@ -56,6 +56,9 @@ namespace Raytracing
         void SetMaterials(const std::vector<VulkanMaterial>& _materials) { materials = _materials; }
         std::vector<VulkanMaterial>& GetMaterials() { return materials; }
 
+        VulkanMaterial& GetMaterial(uint32_t index) { return materials[index]; }
+        VulkanMaterial& GetMaterial(VulkanMeshlet& meshlet) { return materials[meshlet.materialIndex]; }
+
     private:
         VulkanDevice* vulkanDevice;
         std::vector<VulkanMeshlet> meshlets;

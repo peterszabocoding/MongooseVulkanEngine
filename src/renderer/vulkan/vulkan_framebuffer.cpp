@@ -3,6 +3,7 @@
 #include <array>
 
 #include "vulkan_device.h"
+#include "vulkan_renderpass.h"
 #include "vulkan_utils.h"
 #include "util/log.h"
 

@@ -1,7 +1,6 @@
 #pragma once
 #include <vector>
 #include <vulkan/vulkan_core.h>
-#include "vulkan_renderpass.h"
 
 #define GLFW_INCLUDE_VULKAN
 
@@ -25,15 +24,23 @@ namespace Raytracing
     typedef std::function<void(VkCommandBuffer commandBuffer, uint32_t frameIndex, uint32_t imageIndex)>&& DrawFrameFunction;
     typedef std::function<void()>&& OutOfDateErrorCallback;
 
+    struct DrawPipelineParams {
+        VkPipeline pipeline;
+        VkPipelineLayout pipelineLayout;
+    };
+
+    struct DrawPushConstantParams {
+        void* data;
+        uint32_t size;
+        VkShaderStageFlags shaderStageFlags  = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+    };
+
     struct DrawCommandParams {
         VkCommandBuffer commandBuffer;
         VulkanMeshlet* meshlet;
-        VkPipeline pipeline;
-        VkPipelineLayout pipelineLayout;
+        DrawPipelineParams pipelineParams;
+        DrawPushConstantParams pushConstantParams;
         std::vector<VkDescriptorSet> descriptorSets{};
-        const void* pushConstantData = nullptr;
-        uint32_t pushConstantSize = 0;
-        VkShaderStageFlags pushConstantShaderStageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
     };
 
     class VulkanDevice {

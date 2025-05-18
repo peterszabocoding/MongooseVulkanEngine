@@ -4,10 +4,10 @@
 #include "renderer/scene.h"
 #include "renderer/transform.h"
 #include "vulkan_device.h"
-#include "vulkan_material.h"
 #include "vulkan_swapchain.h"
 #include "vulkan_shadow_map.h"
 #include "vulkan_cube_map_texture.h"
+#include "pass/render_pass.h"
 #include "renderer/Light.h"
 #include "renderer/shader_cache.h"
 
@@ -73,8 +73,6 @@ namespace Raytracing
 
     private:
         void DrawDirectionalShadowMapPass(VkCommandBuffer commandBuffer);
-        void DrawSkybox(VkCommandBuffer commandBuffer) const;
-        void DrawGeometryPass(const Ref<Camera>& camera, VkCommandBuffer commandBuffer) const;
         void DrawUIPass(VkCommandBuffer commandBuffer);
 
     private:
@@ -84,7 +82,6 @@ namespace Raytracing
         void ResizeSwapchain();
         void CreateTransformsBuffer();
         void CreateLightsBuffer();
-        void UploadCubemapTexture(Ref<VulkanCubeMapTexture> cubemap);
         void PreparePresentPass();
         void PreparePBR();
 
@@ -105,17 +102,17 @@ namespace Raytracing
         Scope<ShaderCache> shaderCache;
         Scope<VulkanSwapchain> vulkanSwapChain;
 
-        Ref<VulkanMesh> scene;
-        Scene completeScene;
+        Scene scene;
 
         Scope<VulkanMeshlet> screenRect;
         Ref<VulkanMesh> cubeMesh;
 
-        Ref<VulkanCubeMapTexture> skyboxTexture;
         Ref<VulkanCubeMapTexture> irradianceMap;
         Ref<VulkanCubeMapTexture> prefilterMap;
 
         float lightSpinningAngle = 0.0f;
         DirectionalLight directionalLight;
+
+        Scope<RenderPass> renderPass;
     };
 }

@@ -174,8 +174,11 @@ namespace Raytracing
         delete out;
     }
 
-    Scene ResourceManager::LoadScene(VulkanDevice* device, const std::string& scenePath)
+    Scene ResourceManager::LoadScene(VulkanDevice* device, const std::string& scenePath, const std::string& skyboxPath)
     {
-        return GLTFLoader::LoadScene(device, scenePath);
+        Scene scene = GLTFLoader::LoadScene(device, scenePath);
+        scene.skybox = CreateScope<Skybox>(device, LoadHDRCubeMap(device, skyboxPath));
+
+        return scene;
     }
 }

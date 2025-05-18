@@ -35,6 +35,6 @@ namespace Raytracing
         static Ref<VulkanCubeMapTexture> LoadHDRCubeMap(VulkanDevice* device, const std::string& hdrPath);
         static void LoadAndSaveHDR(const std::string& hdrPath);
 
-        static Scene LoadScene(VulkanDevice* device, const std::string& scenePath);
+        static Scene LoadScene(VulkanDevice* device, const std::string& scenePath, const std::string& skyboxPath);
     };
 }
