@@ -1,12 +1,12 @@
 #pragma once
-#include "vulkan/vulkan_cube_map_texture.h"
+#include "vulkan_cube_map_texture.h"
 
 namespace Raytracing
 {
-    class Skybox {
+    class VulkanSkybox {
     public:
-        Skybox(VulkanDevice* vulkanDevice, Ref<VulkanCubeMapTexture> cubemap);
-        ~Skybox();
+        VulkanSkybox(VulkanDevice* vulkanDevice, const Ref<VulkanCubeMapTexture>& cubemap);
+        ~VulkanSkybox();
 
         Ref<VulkanCubeMapTexture> GetCubemap() { return cubemap; }
 

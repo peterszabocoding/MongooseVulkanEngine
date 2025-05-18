@@ -1,10 +1,11 @@
 #pragma once
 #include <vector>
 
-#include "skybox.h"
+#include "vulkan/vulkan_skybox.h"
 #include "transform.h"
 #include "vulkan/vulkan_material.h"
 #include "vulkan/vulkan_mesh.h"
+#include "vulkan/vulkan_reflection_probe.h"
 
 namespace Raytracing
 {
@@ -24,6 +25,8 @@ namespace Raytracing
         std::vector<Ref<VulkanMesh>> meshes;
         std::vector<Transform> transforms;
 
-        Scope<Skybox> skybox;
+        Scope<VulkanSkybox> skybox;
+
+        Ref<VulkanReflectionProbe> reflectionProbe;
     };
 }

@@ -7,6 +7,7 @@
 #include "vulkan_swapchain.h"
 #include "vulkan_shadow_map.h"
 #include "vulkan_cube_map_texture.h"
+#include "vulkan_reflection_probe.h"
 #include "pass/present_pass.h"
 #include "pass/render_pass.h"
 #include "pass/shadow_map_pass.h"
@@ -50,10 +51,6 @@ namespace Raytracing
 
         virtual void Init(int width, int height) override;
         void PrecomputeIBL();
-        void PrepareIrradianceMap();
-        void PrepareReflectionProbe();
-        void ComputeIblBRDF(VkCommandBuffer commandBuffer, Ref<VulkanFramebuffer> framebuffer);
-        void ComputePrefilterMap(VkCommandBuffer commandBuffer, size_t faceIndex, float roughness, Ref<VulkanFramebuffer> framebuffer);
 
         virtual void ProcessPixel(unsigned int pixelCount, vec3 pixelColor) override {}
         virtual void OnRenderBegin(const Camera& camera) override {}
@@ -104,8 +101,6 @@ namespace Raytracing
         Ref<VulkanMesh> cubeMesh;
 
         Ref<VulkanCubeMapTexture> irradianceMap;
-        Ref<VulkanCubeMapTexture> prefilterMap;
-        Ref<VulkanTexture> brdfLUT;
 
         float lightSpinningAngle = 0.0f;
         DirectionalLight directionalLight;

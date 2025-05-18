@@ -1,19 +1,20 @@
-#include "skybox.h"
+#include "vulkan_skybox.h"
 
-#include "shader_cache.h"
-#include "vulkan/vulkan_descriptor_writer.h"
+#include "../shader_cache.h"
+#include "vulkan_descriptor_writer.h"
 
-Raytracing::Skybox::Skybox(VulkanDevice* vulkanDevice, Ref<VulkanCubeMapTexture> cubemap): vulkanDevice(vulkanDevice), cubemap(cubemap)
+Raytracing::VulkanSkybox::VulkanSkybox(VulkanDevice* vulkanDevice, const Ref<VulkanCubeMapTexture>& _cubemap): vulkanDevice(vulkanDevice),
+    cubemap(_cubemap)
 {
     InitDescriptorSets();
 }
 
-Raytracing::Skybox::~Skybox()
+Raytracing::VulkanSkybox::~VulkanSkybox()
 {
     vkFreeDescriptorSets(vulkanDevice->GetDevice(), vulkanDevice->GetShaderDescriptorPool().GetDescriptorPool(), 1, &descriptorSet);
 }
 
-void Raytracing::Skybox::InitDescriptorSets()
+void Raytracing::VulkanSkybox::InitDescriptorSets()
 {
     VkDescriptorImageInfo info{
         cubemap->GetSampler(),

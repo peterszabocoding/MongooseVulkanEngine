@@ -1,7 +1,5 @@
 #include "vulkan_renderer.h"
 
-#include <backends/imgui_impl_vulkan.h>
-
 #include "imgui.h"
 #include "vulkan_descriptor_writer.h"
 #include "vulkan_framebuffer.h"
@@ -10,6 +8,7 @@
 #include "vulkan_device.h"
 #include "vulkan_mesh.h"
 #include "lighting/irradiance_map_generator.h"
+#include "lighting/reflection_probe_generator.h"
 #include "util/log.h"
 
 namespace Raytracing
@@ -41,7 +40,8 @@ namespace Raytracing
         screenRect = CreateScope<VulkanMeshlet>(device.get(), Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
 
         LOG_TRACE("Load scene");
-        scene = ResourceManager::LoadScene(device.get(), "resources/PBRCheck/pbr_check.gltf", "resources/environment/newport_loft.hdr");
+        //scene = ResourceManager::LoadScene(device.get(), "resources/PBRCheck/pbr_check.gltf", "resources/environment/newport_loft.hdr");
+        scene = ResourceManager::LoadScene(device.get(), "resources/cannon/cannon.gltf", "resources/environment/newport_loft.hdr");
         //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/sponza/Sponza.gltf");
         //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/MetalRoughSpheres/MetalRoughSpheres.gltf");
         //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/vertex_color/vertex_color.gltf");
@@ -68,12 +68,6 @@ namespace Raytracing
 
     void VulkanRenderer::PrecomputeIBL()
     {
-        PrepareIrradianceMap();
-        PrepareReflectionProbe();
-    }
-
-    void VulkanRenderer::PrepareIrradianceMap()
-    {
         irradianceMap = IrradianceMapGenerator(device.get()).FromCubemapTexture(scene.skybox->GetCubemap());
 
         VkDescriptorImageInfo irradianceMapInfo{};
@@ -84,140 +78,8 @@ namespace Raytracing
         VulkanDescriptorWriter(*shaderCache->descriptorSetLayouts.irradianceDescriptorSetLayout, device->GetShaderDescriptorPool())
                 .WriteImage(0, &irradianceMapInfo)
                 .Build(shaderCache->descriptorSets.irradianceDescriptorSet);
-    }
 
-    void VulkanRenderer::PrepareReflectionProbe()
-    {
-        uint32_t mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(128, 128)))) + 1;
-        prefilterMap = VulkanCubeMapTexture::Builder()
-                .SetFormat(ImageFormat::RGBA16_SFLOAT)
-                .SetResolution(128, 128)
-                .SetMipLevels(mipLevels)
-                .Build(device.get());
-
-        brdfLUT = VulkanTexture::Builder()
-                .SetResolution(512, 512)
-                .SetFormat(ImageFormat::RGBA16_SFLOAT)
-                .AddAspectFlag(VK_IMAGE_ASPECT_COLOR_BIT)
-                .AddUsage(VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
-                .Build(device.get());
-
-        auto iblBRDFFramebuffer = VulkanFramebuffer::Builder(device.get())
-                .SetRenderpass(shaderCache->renderpasses.iblPreparePass)
-                .SetResolution(512, 512)
-                .AddAttachment(brdfLUT->GetImageView())
-                .Build();
-
-        constexpr uint32_t PREFILTER_MIP_LEVELS = 6;
-
-        std::vector<std::vector<Ref<VulkanFramebuffer>>> iblPrefilterFramebuffes;
-        iblPrefilterFramebuffes.resize(PREFILTER_MIP_LEVELS);
-
-        for (unsigned int mip = 0; mip < PREFILTER_MIP_LEVELS; ++mip)
-        {
-            const unsigned int mipWidth = static_cast<unsigned int>(128 * std::pow(0.5, mip));
-            const unsigned int mipHeight = static_cast<unsigned int>(128 * std::pow(0.5, mip));
-
-            iblPrefilterFramebuffes[mip].resize(6);
-            for (size_t i = 0; i < 6; i++)
-            {
-                iblPrefilterFramebuffes[mip][i] = VulkanFramebuffer::Builder(device.get())
-                        .SetRenderpass(shaderCache->renderpasses.iblPreparePass)
-                        .SetResolution(mipWidth, mipHeight)
-                        .AddAttachment(prefilterMap->GetFaceImageView(i, mip))
-                        .Build();
-            }
-        }
-
-        device->ImmediateSubmit([&](VkCommandBuffer commandBuffer) {
-            ComputeIblBRDF(commandBuffer, iblBRDFFramebuffer);
-
-            for (unsigned int mip = 0; mip < PREFILTER_MIP_LEVELS; ++mip)
-            {
-                const float roughness = static_cast<float>(mip) / static_cast<float>(PREFILTER_MIP_LEVELS - 1);
-                for (size_t i = 0; i < 6; i++)
-                {
-                    ComputePrefilterMap(commandBuffer, i, roughness, iblPrefilterFramebuffes[mip][i]);
-                }
-            }
-        });
-
-
-        VkDescriptorImageInfo prefilterMapInfo{};
-        prefilterMapInfo.sampler = prefilterMap->GetSampler();
-        prefilterMapInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        prefilterMapInfo.imageView = prefilterMap->GetImageView();
-
-        VkDescriptorImageInfo brdfLUTInfo{};
-        brdfLUTInfo.sampler = brdfLUT->GetSampler();
-        brdfLUTInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        brdfLUTInfo.imageView = brdfLUT->GetImageView();
-
-        VulkanDescriptorWriter(*shaderCache->descriptorSetLayouts.reflectionDescriptorSetLayout, device->GetShaderDescriptorPool())
-                .WriteImage(0, &prefilterMapInfo)
-                .WriteImage(1, &brdfLUTInfo)
-                .Build(shaderCache->descriptorSets.reflectionDescriptorSet);
-    }
-
-    void VulkanRenderer::ComputeIblBRDF(VkCommandBuffer commandBuffer, Ref<VulkanFramebuffer> framebuffer)
-    {
-        VkExtent2D extent = {framebuffer->width, framebuffer->height};
-
-        device->SetViewportAndScissor(extent, commandBuffer);
-        shaderCache->renderpasses.iblPreparePass->Begin(commandBuffer, framebuffer, extent);
-
-        DrawCommandParams drawCommandParams{};
-        drawCommandParams.commandBuffer = commandBuffer;
-
-        drawCommandParams.pipelineParams =
-        {
-            shaderCache->pipelines.ibl_brdf->GetPipeline(),
-            shaderCache->pipelines.ibl_brdf->GetPipelineLayout()
-        };
-
-        drawCommandParams.meshlet = screenRect.get();
-
-        device->DrawMeshlet(drawCommandParams);
-    }
-
-    void VulkanRenderer::ComputePrefilterMap(VkCommandBuffer commandBuffer, size_t faceIndex, float roughness,
-                                             Ref<VulkanFramebuffer> framebuffer)
-    {
-        VkExtent2D extent = {
-            framebuffer->width,
-            framebuffer->height
-        };
-
-        device->SetViewportAndScissor(extent, commandBuffer);
-        shaderCache->renderpasses.iblPreparePass->Begin(commandBuffer, framebuffer, extent);
-
-        DrawCommandParams drawCommandParams{};
-        drawCommandParams.commandBuffer = commandBuffer;
-
-        drawCommandParams.pipelineParams = {
-            shaderCache->pipelines.ibl_prefilter->GetPipeline(),
-            shaderCache->pipelines.ibl_prefilter->GetPipelineLayout()
-        };
-
-        drawCommandParams.meshlet = &cubeMesh->GetMeshlets()[0];
-
-        drawCommandParams.descriptorSets = {
-            scene.skybox->descriptorSet,
-        };
-
-        PrefilterData pushConstantData;
-        pushConstantData.projection = m_CaptureProjection;
-        pushConstantData.view = m_CaptureViews[faceIndex];
-        pushConstantData.roughness = roughness;
-
-        drawCommandParams.pushConstantParams = {
-            &pushConstantData,
-            sizeof(PrefilterData)
-        };
-
-        device->DrawMeshlet(drawCommandParams);
-
-        shaderCache->renderpasses.iblPreparePass->End(commandBuffer);
+        scene.reflectionProbe = ReflectionProbeGenerator(device.get()).FromCubemap(scene.skybox->GetCubemap());
     }
 
     void VulkanRenderer::DrawFrame(const float deltaTime, const Ref<Camera> camera)

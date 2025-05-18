@@ -62,8 +62,13 @@ namespace Raytracing
                     ShaderCache::descriptorSets.transformDescriptorSet,
                     ShaderCache::descriptorSets.lightsDescriptorSets[imageIndex],
                     ShaderCache::descriptorSets.irradianceDescriptorSet,
-                    ShaderCache::descriptorSets.reflectionDescriptorSet,
                 };
+
+                if (scene.reflectionProbe)
+                {
+                    geometryDrawParams.descriptorSets.push_back(scene.reflectionProbe->descriptorSet);
+                }
+
                 geometryDrawParams.meshlet = &meshlet;
                 device->DrawMeshlet(geometryDrawParams);
             }
