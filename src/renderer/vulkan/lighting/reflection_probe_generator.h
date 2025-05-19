@@ -14,8 +14,9 @@ namespace Raytracing
     private:
         void LoadPipeline();
         void GenerateBrdfLUT();
-        void ComputeIblBRDF(VkCommandBuffer commandBuffer, Ref<VulkanFramebuffer> framebuffer);
-        void ComputePrefilterMap(VkCommandBuffer commandBuffer, size_t faceIndex, float roughness, Ref<VulkanFramebuffer> framebuffer, VkDescriptorSet cubemapDescriptorSet);
+        void ComputeIblBRDF(VkCommandBuffer commandBuffer, const Ref<VulkanFramebuffer>& framebuffer);
+        void ComputePrefilterMap(VkCommandBuffer commandBuffer, VkExtent2D extent, size_t faceIndex, float roughness,
+                                 const Ref<VulkanFramebuffer>& framebuffer, VkDescriptorSet cubemapDescriptorSet);
 
     private:
         VulkanDevice* device = nullptr;

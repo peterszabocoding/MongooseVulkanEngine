@@ -49,6 +49,16 @@ namespace Raytracing::VulkanUtils
         std::vector<VkPresentModeKHR> presentModes;
     };
 
+    struct CopyParams {
+        uint32_t srcMipLevel;
+        uint32_t dstMipLevel;
+        uint32_t srcBaseArrayLayer;
+        uint32_t dstBaseArrayLayer;
+
+        uint32_t regionWidth;
+        uint32_t regionHeight;
+    };
+
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
         VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
         VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -529,6 +539,14 @@ namespace Raytracing::VulkanUtils
         {
             sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
             destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+        } else if (oldLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
+        {
+            sourceStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+            destinationStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+        } else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+        {
+            sourceStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+            destinationStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
         } else
         {
             throw std::invalid_argument("unsupported layout transition!");
@@ -562,6 +580,44 @@ namespace Raytracing::VulkanUtils
             1,
             &region
         );
+    }
+
+    static void CopyImage(const VkCommandBuffer commandBuffer, VkImage srcImage, VkImage dstImage, CopyParams params)
+    {
+        TransitionImageLayout(commandBuffer, srcImage,
+                              VK_IMAGE_ASPECT_COLOR_BIT,
+                              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                              VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                              1);
+
+        VkImageCopy copyRegion{};
+
+        copyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        copyRegion.srcSubresource.baseArrayLayer = params.srcBaseArrayLayer;
+        copyRegion.srcSubresource.mipLevel = params.srcMipLevel;
+        copyRegion.srcSubresource.layerCount = 1;
+        copyRegion.srcOffset = {0, 0, 0};
+
+        copyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        copyRegion.dstSubresource.baseArrayLayer = params.dstBaseArrayLayer;
+        copyRegion.dstSubresource.mipLevel = params.dstMipLevel;
+        copyRegion.dstSubresource.layerCount = 1;
+        copyRegion.dstOffset = {0, 0, 0};
+
+        copyRegion.extent.width = params.regionWidth;
+        copyRegion.extent.height = params.regionHeight;
+        copyRegion.extent.depth = 1;
+
+        vkCmdCopyImage(commandBuffer,
+                       srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                       dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                       1, &copyRegion);
+
+        TransitionImageLayout(commandBuffer, srcImage,
+                              VK_IMAGE_ASPECT_COLOR_BIT,
+                              VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                              1);
     }
 
     static VkDeviceMemory AllocateImageMemory(const VkDevice device, const VkPhysicalDevice physicalDevice, const VkImage image,

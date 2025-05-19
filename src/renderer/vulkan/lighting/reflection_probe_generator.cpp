@@ -38,32 +38,21 @@ namespace Raytracing
         if (!brdfLUT) GenerateBrdfLUT();
 
         constexpr uint32_t PREFILTER_MIP_LEVELS = 6;
-        uint32_t mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(128, 128)))) + 1;
+        constexpr uint32_t REFLECTION_RESOLUTION = 128;
+
+        uint32_t mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(REFLECTION_RESOLUTION, REFLECTION_RESOLUTION)))) + 1;
 
         Ref<VulkanCubeMapTexture> prefilterMap = VulkanCubeMapTexture::Builder()
                 .SetFormat(ImageFormat::RGBA16_SFLOAT)
-                .SetResolution(128, 128)
+                .SetResolution(REFLECTION_RESOLUTION, REFLECTION_RESOLUTION)
                 .SetMipLevels(mipLevels)
                 .Build(device);
 
-        std::vector<std::vector<Ref<VulkanFramebuffer>>> iblPrefilterFramebuffes;
-        iblPrefilterFramebuffes.resize(PREFILTER_MIP_LEVELS);
-
-        for (unsigned int mip = 0; mip < PREFILTER_MIP_LEVELS; ++mip)
-        {
-            const unsigned int mipWidth = static_cast<unsigned int>(128 * std::pow(0.5, mip));
-            const unsigned int mipHeight = static_cast<unsigned int>(128 * std::pow(0.5, mip));
-
-            iblPrefilterFramebuffes[mip].resize(6);
-            for (size_t i = 0; i < 6; i++)
-            {
-                iblPrefilterFramebuffes[mip][i] = VulkanFramebuffer::Builder(device)
-                        .SetRenderpass(renderPass)
-                        .SetResolution(mipWidth, mipHeight)
-                        .AddAttachment(prefilterMap->GetFaceImageView(i, mip))
-                        .Build();
-            }
-        }
+        Ref<VulkanFramebuffer> framebuffer = VulkanFramebuffer::Builder(device)
+                .SetRenderpass(renderPass)
+                .SetResolution(REFLECTION_RESOLUTION, REFLECTION_RESOLUTION)
+                .AddAttachment(ImageFormat::RGBA16_SFLOAT)
+                .Build();;
 
         VkDescriptorSet cubemapDescriptorSet;
         VkDescriptorImageInfo info{
@@ -76,21 +65,41 @@ namespace Raytracing
                 .WriteImage(0, &info)
                 .Build(cubemapDescriptorSet);
 
-        device->ImmediateSubmit([&](VkCommandBuffer commandBuffer) {
-            for (unsigned int mip = 0; mip < PREFILTER_MIP_LEVELS; ++mip)
+
+        for (unsigned int mip = 0; mip < PREFILTER_MIP_LEVELS; ++mip)
+        {
+            const float roughness = static_cast<float>(mip) / static_cast<float>(PREFILTER_MIP_LEVELS - 1);
+            const VkExtent2D extent = {
+                static_cast<unsigned int>(128 * std::pow(0.5, mip)),
+                static_cast<unsigned int>(128 * std::pow(0.5, mip))
+            };
+
+            for (size_t faceIndex = 0; faceIndex < 6; faceIndex++)
             {
-                const float roughness = static_cast<float>(mip) / static_cast<float>(PREFILTER_MIP_LEVELS - 1);
-                for (size_t i = 0; i < 6; i++)
-                {
-                    ComputePrefilterMap(commandBuffer, i, roughness, iblPrefilterFramebuffes[mip][i], cubemapDescriptorSet);
-                }
+                device->ImmediateSubmit([&](const VkCommandBuffer commandBuffer) {
+                    ComputePrefilterMap(commandBuffer, extent, faceIndex, roughness, framebuffer, cubemapDescriptorSet);
+
+                    VulkanUtils::CopyParams params{};
+                    params.srcMipLevel = 0;
+                    params.dstMipLevel = mip;
+                    params.srcBaseArrayLayer = 0;
+                    params.dstBaseArrayLayer = faceIndex;
+                    params.regionWidth = extent.width;
+                    params.regionHeight = extent.height;
+
+                    CopyImage(commandBuffer,
+                              framebuffer->GetAttachments()[0].allocatedImage.image,
+                              prefilterMap->GetImage(),
+                              params);
+                });
             }
-        });
+        }
 
         vkFreeDescriptorSets(device->GetDevice(), device->GetShaderDescriptorPool().GetDescriptorPool(), 1, &cubemapDescriptorSet);
 
         return CreateRef<VulkanReflectionProbe>(device, prefilterMap, brdfLUT);
     }
+
 
     void ReflectionProbeGenerator::LoadPipeline()
     {
@@ -154,14 +163,14 @@ namespace Raytracing
                 .AddAttachment(brdfLUT->GetImageView())
                 .Build();
 
-        device->ImmediateSubmit([&](VkCommandBuffer commandBuffer) {
+        device->ImmediateSubmit([&](const VkCommandBuffer commandBuffer) {
             ComputeIblBRDF(commandBuffer, iblBRDFFramebuffer);
         });
     }
 
-    void ReflectionProbeGenerator::ComputeIblBRDF(VkCommandBuffer commandBuffer, Ref<VulkanFramebuffer> framebuffer)
+    void ReflectionProbeGenerator::ComputeIblBRDF(const VkCommandBuffer commandBuffer, const Ref<VulkanFramebuffer>& framebuffer)
     {
-        VkExtent2D extent = {framebuffer->width, framebuffer->height};
+        VkExtent2D extent = {framebuffer->GetWidth(), framebuffer->GetHeight()};
 
         device->SetViewportAndScissor(extent, commandBuffer);
         renderPass->Begin(commandBuffer, framebuffer, extent);
@@ -182,14 +191,13 @@ namespace Raytracing
         renderPass->End(commandBuffer);
     }
 
-    void ReflectionProbeGenerator::ComputePrefilterMap(VkCommandBuffer commandBuffer, size_t faceIndex, float roughness,
-                                                       Ref<VulkanFramebuffer> framebuffer, VkDescriptorSet cubemapDescriptorSet)
+    void ReflectionProbeGenerator::ComputePrefilterMap(const VkCommandBuffer commandBuffer,
+                                                          const VkExtent2D extent,
+                                                          const size_t faceIndex,
+                                                          const float roughness,
+                                                          const Ref<VulkanFramebuffer>& framebuffer,
+                                                          VkDescriptorSet cubemapDescriptorSet)
     {
-        VkExtent2D extent = {
-            framebuffer->width,
-            framebuffer->height
-        };
-
         device->SetViewportAndScissor(extent, commandBuffer);
         renderPass->Begin(commandBuffer, framebuffer, extent);
 

@@ -50,7 +50,7 @@ namespace Raytracing
 
     VulkanFramebuffer::Builder& VulkanFramebuffer::Builder::AddAttachment(ImageFormat attachmentFormat)
     {
-        VkImageLayout imageLayout = ImageUtils::GetLayoutFromFormat(attachmentFormat);
+        const VkImageLayout imageLayout = ImageUtils::GetLayoutFromFormat(attachmentFormat);
         const AllocatedImage allocatedImage = ImageBuilder(device)
                 .SetResolution(width, height)
                 .SetTiling(VK_IMAGE_TILING_OPTIMAL)
@@ -89,7 +89,7 @@ namespace Raytracing
         return *this;
     }
 
-    VulkanFramebuffer::Builder& VulkanFramebuffer::Builder::SetResolution(int _width, int _height)
+    VulkanFramebuffer::Builder& VulkanFramebuffer::Builder::SetResolution(uint32_t _width, uint32_t _height)
     {
         width = _width;
         height = _height;
@@ -118,13 +118,20 @@ namespace Raytracing
         VK_CHECK_MSG(vkCreateFramebuffer(device->GetDevice(), &framebuffer_info, nullptr, &framebuffer),
                      "Failed to create framebuffer.");
 
-        return CreateRef<VulkanFramebuffer>(device, framebuffer, width, height, attachments);
+        Params params;
+        params.width = width;
+        params.height = height;
+        params.renderPass = renderPass->Get();
+        params.framebuffer = framebuffer;
+        params.attachments = attachments;
+
+        return CreateRef<VulkanFramebuffer>(device, params);
     }
 
     VulkanFramebuffer::~VulkanFramebuffer()
     {
         LOG_INFO("Destroy framebuffer images");
-        for (const auto& attachment: attachments)
+        for (const auto& attachment: params.attachments)
         {
             if (attachment.allocatedImage.image && attachment.imageView)
             {
@@ -134,11 +141,6 @@ namespace Raytracing
         }
 
         LOG_INFO("Destroy framebuffer");
-        vkDestroyFramebuffer(device->GetDevice(), framebuffer, nullptr);
-    }
-
-    void VulkanFramebuffer::Resize(uint32_t newWidth, uint32_t newHeight)
-    {
-
+        vkDestroyFramebuffer(device->GetDevice(), params.framebuffer, nullptr);
     }
 }

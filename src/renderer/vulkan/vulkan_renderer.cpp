@@ -97,8 +97,8 @@ namespace Raytracing
 
                               renderPass->SetCamera(*camera);
                               renderPass->SetSize(
-                                  framebuffers.geometryFramebuffers[activeImage]->width,
-                                  framebuffers.geometryFramebuffers[activeImage]->height);
+                                  framebuffers.geometryFramebuffers[activeImage]->GetWidth(),
+                                  framebuffers.geometryFramebuffers[activeImage]->GetHeight());
                               renderPass->Render(commandBuffer, activeImage, framebuffers.geometryFramebuffers[activeImage], nullptr);
 
                               presentPass->SetSize(vulkanSwapChain->GetExtent().width, vulkanSwapChain->GetExtent().height);

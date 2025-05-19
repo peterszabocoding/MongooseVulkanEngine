@@ -76,7 +76,7 @@ namespace Raytracing
                                                       const Ref<VulkanFramebuffer>& framebuffer,
                                                       VkDescriptorSet cubemapDescriptorSet)
     {
-        VkExtent2D extent = {framebuffer->width, framebuffer->height};
+        VkExtent2D extent = {framebuffer->GetWidth(), framebuffer->GetHeight()};
 
         device->SetViewportAndScissor(extent, commandBuffer);
         renderPass->Begin(commandBuffer, framebuffer, extent);
