@@ -7,28 +7,23 @@
 #include "vulkan_utils.h"
 #include "util/log.h"
 
-namespace Raytracing
-{
-    namespace ImageUtils
-    {
-        VkImageAspectFlagBits GetAspectFlagFromFormat(ImageFormat format)
-        {
+namespace Raytracing {
+    namespace ImageUtils {
+        VkImageAspectFlagBits GetAspectFlagFromFormat(ImageFormat format) {
             if (format == ImageFormat::DEPTH24_STENCIL8 || format == ImageFormat::DEPTH32)
                 return VK_IMAGE_ASPECT_DEPTH_BIT;
 
             return VK_IMAGE_ASPECT_COLOR_BIT;
         }
 
-        VkImageUsageFlags GetUsageFromFormat(ImageFormat format)
-        {
+        VkImageUsageFlags GetUsageFromFormat(ImageFormat format) {
             if (format == ImageFormat::DEPTH24_STENCIL8 || format == ImageFormat::DEPTH32)
                 return VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
             return VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
         }
 
-        VkImageLayout GetLayoutFromFormat(ImageFormat format)
-        {
+        VkImageLayout GetLayoutFromFormat(ImageFormat format) {
             if (format == ImageFormat::DEPTH24_STENCIL8 || format == ImageFormat::DEPTH32)
                 return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
@@ -36,8 +31,7 @@ namespace Raytracing
         }
     }
 
-    VulkanFramebuffer::Builder& VulkanFramebuffer::Builder::AddAttachment(VkImageView imageAttachment)
-    {
+    VulkanFramebuffer::Builder& VulkanFramebuffer::Builder::AddAttachment(VkImageView imageAttachment) {
         FramebufferAttachment attachment;
         attachment.allocatedImage.image = nullptr;
         attachment.allocatedImage.allocation = nullptr;
@@ -48,14 +42,14 @@ namespace Raytracing
         return *this;
     }
 
-    VulkanFramebuffer::Builder& VulkanFramebuffer::Builder::AddAttachment(ImageFormat attachmentFormat)
-    {
+    VulkanFramebuffer::Builder& VulkanFramebuffer::Builder::AddAttachment(ImageFormat attachmentFormat) {
         const VkImageLayout imageLayout = ImageUtils::GetLayoutFromFormat(attachmentFormat);
         const AllocatedImage allocatedImage = ImageBuilder(device)
                 .SetResolution(width, height)
                 .SetTiling(VK_IMAGE_TILING_OPTIMAL)
                 .SetFormat(attachmentFormat)
                 .AddUsage(ImageUtils::GetUsageFromFormat(attachmentFormat))
+                .AddUsage(VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
                 .SetInitialLayout(imageLayout)
                 .Build();
 
@@ -83,25 +77,21 @@ namespace Raytracing
         return *this;
     }
 
-    VulkanFramebuffer::Builder& VulkanFramebuffer::Builder::SetRenderpass(Ref<VulkanRenderPass> _renderPass)
-    {
+    VulkanFramebuffer::Builder& VulkanFramebuffer::Builder::SetRenderpass(Ref<VulkanRenderPass> _renderPass) {
         renderPass = _renderPass;
         return *this;
     }
 
-    VulkanFramebuffer::Builder& VulkanFramebuffer::Builder::SetResolution(uint32_t _width, uint32_t _height)
-    {
+    VulkanFramebuffer::Builder& VulkanFramebuffer::Builder::SetResolution(uint32_t _width, uint32_t _height) {
         width = _width;
         height = _height;
         return *this;
     }
 
-    Ref<VulkanFramebuffer> VulkanFramebuffer::Builder::Build()
-    {
+    Ref<VulkanFramebuffer> VulkanFramebuffer::Builder::Build() {
         std::vector<VkImageView> imageViews;
 
-        for (int i = 0; i < attachments.size(); i++)
-        {
+        for (int i = 0; i < attachments.size(); i++) {
             imageViews.push_back(attachments[i].imageView);
         }
 
@@ -128,13 +118,10 @@ namespace Raytracing
         return CreateRef<VulkanFramebuffer>(device, params);
     }
 
-    VulkanFramebuffer::~VulkanFramebuffer()
-    {
+    VulkanFramebuffer::~VulkanFramebuffer() {
         LOG_INFO("Destroy framebuffer images");
-        for (const auto& attachment: params.attachments)
-        {
-            if (attachment.allocatedImage.image && attachment.imageView)
-            {
+        for (const auto& attachment: params.attachments) {
+            if (attachment.allocatedImage.image && attachment.imageView) {
                 vkDestroyImageView(device->GetDevice(), attachment.imageView, nullptr);
                 vmaDestroyImage(device->GetVmaAllocator(), attachment.allocatedImage.image, attachment.allocatedImage.allocation);
             }

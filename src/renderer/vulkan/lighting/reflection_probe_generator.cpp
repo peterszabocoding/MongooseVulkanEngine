@@ -10,8 +10,7 @@
 #include "renderer/vulkan/vulkan_pipeline.h"
 #include "resource/resource_manager.h"
 
-namespace Raytracing
-{
+namespace Raytracing {
     const glm::mat4 m_CaptureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
     const glm::mat4 m_CaptureViews[6] = {
         lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)),
@@ -22,8 +21,7 @@ namespace Raytracing
         lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f))
     };
 
-    ReflectionProbeGenerator::ReflectionProbeGenerator(VulkanDevice* _device): device(_device)
-    {
+    ReflectionProbeGenerator::ReflectionProbeGenerator(VulkanDevice* _device): device(_device) {
         renderPass = VulkanRenderPass::Builder(device)
                 .AddColorAttachment(VK_FORMAT_R16G16B16A16_SFLOAT, false)
                 .Build();
@@ -33,8 +31,7 @@ namespace Raytracing
         cubeMesh = ResourceManager::LoadMesh(device, "resources/models/cube.obj");
     }
 
-    Ref<VulkanReflectionProbe> ReflectionProbeGenerator::FromCubemap(const Ref<VulkanCubeMapTexture>& cubemap)
-    {
+    Ref<VulkanReflectionProbe> ReflectionProbeGenerator::FromCubemap(const Ref<VulkanCubeMapTexture>& cubemap) {
         if (!brdfLUT) GenerateBrdfLUT();
 
         constexpr uint32_t PREFILTER_MIP_LEVELS = 6;
@@ -48,11 +45,20 @@ namespace Raytracing
                 .SetMipLevels(mipLevels)
                 .Build(device);
 
+
+        device->ImmediateSubmit([&](const VkCommandBuffer commandBuffer) {
+            VulkanUtils::TransitionImageLayout(commandBuffer,
+                                               prefilterMap->GetImage(),
+                                               VK_IMAGE_ASPECT_COLOR_BIT,
+                                               VK_IMAGE_LAYOUT_UNDEFINED,
+                                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        });
+
         Ref<VulkanFramebuffer> framebuffer = VulkanFramebuffer::Builder(device)
                 .SetRenderpass(renderPass)
                 .SetResolution(REFLECTION_RESOLUTION, REFLECTION_RESOLUTION)
                 .AddAttachment(ImageFormat::RGBA16_SFLOAT)
-                .Build();;
+                .Build();
 
         VkDescriptorSet cubemapDescriptorSet;
         VkDescriptorImageInfo info{
@@ -66,16 +72,14 @@ namespace Raytracing
                 .Build(cubemapDescriptorSet);
 
 
-        for (unsigned int mip = 0; mip < PREFILTER_MIP_LEVELS; ++mip)
-        {
+        for (unsigned int mip = 0; mip < PREFILTER_MIP_LEVELS; ++mip) {
             const float roughness = static_cast<float>(mip) / static_cast<float>(PREFILTER_MIP_LEVELS - 1);
             const VkExtent2D extent = {
                 static_cast<unsigned int>(128 * std::pow(0.5, mip)),
                 static_cast<unsigned int>(128 * std::pow(0.5, mip))
             };
 
-            for (size_t faceIndex = 0; faceIndex < 6; faceIndex++)
-            {
+            for (size_t faceIndex = 0; faceIndex < 6; faceIndex++) {
                 device->ImmediateSubmit([&](const VkCommandBuffer commandBuffer) {
                     ComputePrefilterMap(commandBuffer, extent, faceIndex, roughness, framebuffer, cubemapDescriptorSet);
 
@@ -95,14 +99,21 @@ namespace Raytracing
             }
         }
 
+        device->ImmediateSubmit([&](const VkCommandBuffer commandBuffer) {
+            VulkanUtils::TransitionImageLayout(commandBuffer,
+                                               prefilterMap->GetImage(),
+                                               VK_IMAGE_ASPECT_COLOR_BIT,
+                                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        });
+
         vkFreeDescriptorSets(device->GetDevice(), device->GetShaderDescriptorPool().GetDescriptorPool(), 1, &cubemapDescriptorSet);
 
         return CreateRef<VulkanReflectionProbe>(device, prefilterMap, brdfLUT);
     }
 
 
-    void ReflectionProbeGenerator::LoadPipeline()
-    {
+    void ReflectionProbeGenerator::LoadPipeline() {
         PipelineConfig iblBrdfPipelineConfig; {
             iblBrdfPipelineConfig.vertexShaderPath = "shader/spv/brdf.vert.spv";
             iblBrdfPipelineConfig.fragmentShaderPath = "shader/spv/brdf.frag.spv";
@@ -143,13 +154,18 @@ namespace Raytracing
             iblPrefilterPipelineConfig.disableBlending = true;
             iblPrefilterPipelineConfig.enableDepthTest = false;
 
+            iblPrefilterPipelineConfig.pushConstantData = {
+                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                0,
+                sizeof(PrefilterData)
+            };
+
             iblPrefilterPipelineConfig.renderPass = renderPass;
         }
         prefilterPipeline = VulkanPipeline::Builder().Build(device, iblPrefilterPipelineConfig);
     }
 
-    void ReflectionProbeGenerator::GenerateBrdfLUT()
-    {
+    void ReflectionProbeGenerator::GenerateBrdfLUT() {
         brdfLUT = VulkanTexture::Builder()
                 .SetResolution(512, 512)
                 .SetFormat(ImageFormat::RGBA16_SFLOAT)
@@ -168,8 +184,7 @@ namespace Raytracing
         });
     }
 
-    void ReflectionProbeGenerator::ComputeIblBRDF(const VkCommandBuffer commandBuffer, const Ref<VulkanFramebuffer>& framebuffer)
-    {
+    void ReflectionProbeGenerator::ComputeIblBRDF(const VkCommandBuffer commandBuffer, const Ref<VulkanFramebuffer>& framebuffer) {
         VkExtent2D extent = {framebuffer->GetWidth(), framebuffer->GetHeight()};
 
         device->SetViewportAndScissor(extent, commandBuffer);
@@ -192,12 +207,11 @@ namespace Raytracing
     }
 
     void ReflectionProbeGenerator::ComputePrefilterMap(const VkCommandBuffer commandBuffer,
-                                                          const VkExtent2D extent,
-                                                          const size_t faceIndex,
-                                                          const float roughness,
-                                                          const Ref<VulkanFramebuffer>& framebuffer,
-                                                          VkDescriptorSet cubemapDescriptorSet)
-    {
+                                                       const VkExtent2D extent,
+                                                       const size_t faceIndex,
+                                                       const float roughness,
+                                                       const Ref<VulkanFramebuffer>& framebuffer,
+                                                       VkDescriptorSet cubemapDescriptorSet) {
         device->SetViewportAndScissor(extent, commandBuffer);
         renderPass->Begin(commandBuffer, framebuffer, extent);
 
@@ -222,7 +236,8 @@ namespace Raytracing
 
         drawCommandParams.pushConstantParams = {
             &pushConstantData,
-            sizeof(PrefilterData)
+            sizeof(PrefilterData),
+            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
         };
 
         device->DrawMeshlet(drawCommandParams);

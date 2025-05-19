@@ -57,12 +57,16 @@ namespace Raytracing
         {
             vkCmdPushConstants(params.commandBuffer,
                                params.pipelineParams.pipelineLayout,
-                               params.pushConstantParams.shaderStageFlags, 0,
-                               params.pushConstantParams.size, params.pushConstantParams.data);
+                               params.pushConstantParams.shaderStageFlags,
+                               0,
+                               params.pushConstantParams.size,
+                               params.pushConstantParams.data);
         }
 
         vkCmdBindPipeline(params.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, params.pipelineParams.pipeline);
-        vkCmdBindDescriptorSets(params.commandBuffer,
+
+        if (!params.descriptorSets.empty()) {
+            vkCmdBindDescriptorSets(params.commandBuffer,
                                 VK_PIPELINE_BIND_POINT_GRAPHICS,
                                 params.pipelineParams.pipelineLayout,
                                 0,
@@ -70,6 +74,7 @@ namespace Raytracing
                                 params.descriptorSets.data(),
                                 0,
                                 nullptr);
+        }
 
         params.meshlet->Bind(params.commandBuffer);
         vkCmdDrawIndexed(params.commandBuffer, params.meshlet->GetIndexCount(), 1, 0, 0, 0);
