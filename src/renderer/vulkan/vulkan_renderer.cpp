@@ -34,8 +34,6 @@ namespace Raytracing
         device = CreateScope<VulkanDevice>(width, height, glfwWindow);
         shaderCache = CreateScope<ShaderCache>(device.get());
 
-        directionalLight.direction = normalize(glm::vec3(0.0f, -2.0f, -1.0f));
-
         cubeMesh = ResourceManager::LoadMesh(device.get(), "resources/models/cube.obj");
         screenRect = CreateScope<VulkanMeshlet>(device.get(), Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
 
@@ -51,7 +49,9 @@ namespace Raytracing
         //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/SciFiHelmet/SciFiHelmet.gltf");
         //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/DamagedHelmet/DamagedHelmet.gltf");
         //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/tests/orientation_test/orientation_test.gltf");
+        scene.directionalLight.direction = normalize(glm::vec3(0.0f, -2.0f, -1.0f));
 
+        gbufferPass = CreateScope<GBufferPass>(device.get(), scene);
         renderPass = CreateScope<RenderPass>(device.get(), scene);
         shadowMapPass = CreateScope<ShadowMapPass>(device.get(), scene);
         presentPass = CreateScope<PresentPass>(device.get());
@@ -94,6 +94,13 @@ namespace Raytracing
                               framebuffers.directionalShadowMaps[activeImage]->PrepareToDepthRendering();
                               shadowMapPass->Render(commandBuffer, activeImage, framebuffers.shadowMapFramebuffers[activeImage], nullptr);
                               framebuffers.directionalShadowMaps[activeImage]->PrepareToShadowRendering();
+
+                              gbufferPass->SetCamera(*camera);
+                              gbufferPass->SetSize(
+                                  framebuffers.prepassFramebuffers[activeImage]->GetWidth(),
+                                  framebuffers.prepassFramebuffers[activeImage]->GetHeight()
+                              );
+                              gbufferPass->Render(commandBuffer, activeImage, framebuffers.prepassFramebuffers[activeImage], nullptr);
 
                               renderPass->SetCamera(*camera);
                               renderPass->SetSize(
@@ -142,6 +149,8 @@ namespace Raytracing
     void VulkanRenderer::CreateFramebuffers()
     {
         const uint32_t imageCount = VulkanUtils::GetSwapchainImageCount(device->GetPhysicalDevice(), device->GetSurface());
+
+        framebuffers.prepassFramebuffers.resize(imageCount);
         framebuffers.geometryFramebuffers.resize(imageCount);
         framebuffers.shadowMapFramebuffers.resize(imageCount);
         framebuffers.directionalShadowMaps.resize(imageCount);
@@ -157,6 +166,14 @@ namespace Raytracing
                     .AddAttachment(ImageFormat::RGBA8_UNORM)
                     .AddAttachment(ImageFormat::RGBA8_UNORM)
                     .AddAttachment(ImageFormat::RGBA8_UNORM)
+                    .AddAttachment(ImageFormat::DEPTH24_STENCIL8)
+                    .Build();
+
+            framebuffers.prepassFramebuffers[i] = VulkanFramebuffer::Builder(device.get())
+                    .SetRenderpass(renderPass->GetRenderPass())
+                    .SetResolution(viewportWidth * resolutionScale, viewportHeight * resolutionScale)
+                    .AddAttachment(ImageFormat::RGBA32_SFLOAT)
+                    .AddAttachment(ImageFormat::RGBA32_SFLOAT)
                     .AddAttachment(ImageFormat::DEPTH24_STENCIL8)
                     .Build();
 
@@ -280,15 +297,15 @@ namespace Raytracing
         lightTransform.m_Rotation = glm::vec3(45.0f, 0.0f, 0.0f);
 
         const glm::mat4 rot_mat = rotate(glm::mat4(1.0f), glm::radians(22.5f * deltaTime), glm::vec3(0.0, 1.0, 0.0));
-        directionalLight.direction = normalize(glm::vec3(glm::vec4(directionalLight.direction, 1.0f) * rot_mat));
+        scene.directionalLight.direction = normalize(glm::vec3(glm::vec4(scene.directionalLight.direction, 1.0f) * rot_mat));
 
-        bufferData.lightProjection = directionalLight.GetProjection();
-        bufferData.lightView = directionalLight.GetView();
-        bufferData.direction = glm::vec4(normalize(directionalLight.direction), 0.0);
-        bufferData.color = glm::vec4(directionalLight.color, 1.0f);
-        bufferData.intensity = directionalLight.intensity;
-        bufferData.ambientIntensity = directionalLight.ambientIntensity;
-        bufferData.bias = directionalLight.bias;
+        bufferData.lightProjection = scene.directionalLight.GetProjection();
+        bufferData.lightView = scene.directionalLight.GetView();
+        bufferData.direction = glm::vec4(normalize(scene.directionalLight.direction), 0.0);
+        bufferData.color = glm::vec4(scene.directionalLight.color, 1.0f);
+        bufferData.intensity = scene.directionalLight.intensity;
+        bufferData.ambientIntensity = scene.directionalLight.ambientIntensity;
+        bufferData.bias = scene.directionalLight.bias;
 
         memcpy(descriptorBuffers.lightsBuffer->GetMappedData(), &bufferData, sizeof(LightsBuffer));
     }

@@ -100,8 +100,20 @@ namespace Raytracing::VulkanUtils
             case ImageFormat::RGB32_SFLOAT:
                 return VK_FORMAT_R32G32B32_SFLOAT;
 
+            case ImageFormat::RGB32_UINT:
+                return VK_FORMAT_R32G32B32_UINT;
+
+            case ImageFormat::RGB32_SINT:
+                return VK_FORMAT_R32G32B32_SINT;
+
             case ImageFormat::RGBA32_SFLOAT:
                 return VK_FORMAT_R32G32B32A32_SFLOAT;
+
+            case ImageFormat::RGBA32_UINT:
+                return VK_FORMAT_R32G32B32A32_UINT;
+
+            case ImageFormat::RGBA32_SINT:
+                return VK_FORMAT_R32G32B32A32_SINT;
 
             case ImageFormat::DEPTH24_STENCIL8:
                 return VK_FORMAT_D24_UNORM_S8_UINT;

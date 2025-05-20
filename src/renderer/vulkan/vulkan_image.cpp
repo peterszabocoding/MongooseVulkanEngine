@@ -13,9 +13,12 @@ namespace Raytracing
             {
                 case VK_FORMAT_R8G8B8A8_SRGB:
                 case VK_FORMAT_R8G8B8A8_UNORM:
+                case VK_FORMAT_R32G32B32_UINT:
+                case VK_FORMAT_R32G32B32_SINT:
                     return VK_BORDER_COLOR_INT_OPAQUE_BLACK;
 
                 case VK_FORMAT_R32G32B32A32_SFLOAT:
+                case VK_FORMAT_R32G32B32_SFLOAT:
                     return VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
 
                 default:

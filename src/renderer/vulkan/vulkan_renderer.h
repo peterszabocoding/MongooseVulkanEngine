@@ -8,6 +8,7 @@
 #include "vulkan_shadow_map.h"
 #include "vulkan_cube_map_texture.h"
 #include "vulkan_reflection_probe.h"
+#include "pass/gbufferPass.h"
 #include "pass/present_pass.h"
 #include "pass/render_pass.h"
 #include "pass/shadow_map_pass.h"
@@ -22,6 +23,7 @@ namespace Raytracing
     };
 
     struct Framebuffers {
+        std::vector<Ref<VulkanFramebuffer>> prepassFramebuffers;
         std::vector<Ref<VulkanFramebuffer>> geometryFramebuffers;
         std::vector<Ref<VulkanShadowMap>> directionalShadowMaps;
         std::vector<Ref<VulkanFramebuffer>> shadowMapFramebuffers;
@@ -64,9 +66,10 @@ namespace Raytracing
 
         [[nodiscard]] Ref<VulkanRenderPass> GetRenderPass() const { return presentPass->GetRenderPass(); }
         [[nodiscard]] Ref<VulkanFramebuffer> GetGBuffer() const { return framebuffers.geometryFramebuffers[activeImage]; }
+        [[nodiscard]] Ref<VulkanFramebuffer> GetPrePassBuffer() const { return framebuffers.prepassFramebuffers[activeImage]; }
         [[nodiscard]] Ref<VulkanShadowMap> GetShadowMap() const { return framebuffers.directionalShadowMaps[activeImage]; }
 
-        DirectionalLight* GetLight() { return &directionalLight; }
+        DirectionalLight* GetLight() { return &scene.directionalLight; }
 
     private:
         void CreateSwapchain();
@@ -103,8 +106,8 @@ namespace Raytracing
         Ref<VulkanCubeMapTexture> irradianceMap;
 
         float lightSpinningAngle = 0.0f;
-        DirectionalLight directionalLight;
 
+        Scope<GBufferPass> gbufferPass;
         Scope<RenderPass> renderPass;
         Scope<ShadowMapPass> shadowMapPass;
         Scope<PresentPass> presentPass;

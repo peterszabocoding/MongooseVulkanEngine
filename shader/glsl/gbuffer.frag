@@ -22,11 +22,8 @@ layout(location = 7) in mat3 TBN;
 // OUTPUT VARIABLES -------------------------------------------------
 // ------------------------------------------------------------------
 
-layout(location = 0)            out vec4 finalImage;
-layout(location = 1)            out vec4 baseColorImage;
-layout(location = 2)            out vec4 normalImage;
-layout(location = 3)            out vec4 metallicRoughnessImage;
-layout(location = 4)            out vec4 outWorldPosition;
+layout(location = 0)            out vec4 normalImage;
+layout(location = 1)            out vec4 outWorldPosition;
 
 // ------------------------------------------------------------------
 // UNIFORMS ---------------------------------------------------------
@@ -44,51 +41,10 @@ layout(set = 0, binding = 0) uniform MaterialParams {
     bool useNormalMap;
     bool useMetallicRoughnessMap;
 } materialParams;
+
 layout(set = 0, binding = 1) uniform sampler2D baseColorSampler;
 layout(set = 0, binding = 2) uniform sampler2D normalSampler;
 layout(set = 0, binding = 3) uniform sampler2D metallicRoughnessSampler;
-
-
-// Transform uniforms
-layout(set = 1, binding = 0) uniform Transforms {
-    mat4 projection;
-    mat4 view;
-    vec3 cameraPosition;
-} transforms;
-
-// Light uniforms
-layout(std430, set = 2, binding = 0) uniform Lights {
-    mat4 lightView;
-    mat4 lightProjection;
-    vec3 direction;
-    float ambientIntensity;
-    vec4 color;
-    float intensity;
-    float bias;
-} lights;
-layout(set = 2, binding = 1)    uniform sampler2D shadowMap;
-
-
-// Irradiance uniforms
-layout(set = 3, binding = 0)    uniform samplerCube irradianceMap;
-
-
-// Reflection uniforms
-layout(set = 4, binding = 0)    uniform samplerCube prefilterMap;
-layout(set = 4, binding = 1)    uniform sampler2D brdfLUT;
-
-
-// ------------------------------------------------------------------
-// VARIABLES --------------------------------------------------------
-// ------------------------------------------------------------------
-vec3 N;
-vec3 V;
-
-// ------------------------------------------------------------------
-// CONSTANTS --------------------------------------------------------
-// ------------------------------------------------------------------
-
-const float MAX_REFLECTION_LOD = 6.0;
 
 vec3 CalcSurfaceNormal(vec3 normalFromTexture, mat3 TBN)
 {
@@ -99,21 +55,11 @@ vec3 CalcSurfaceNormal(vec3 normalFromTexture, mat3 TBN)
     return normalize(TBN * normal);
 }
 
-vec3 CalcDirectionalLightRadiance(vec3 direction)
-{
-    vec3 lightDir = direction;
-    float diffuseFactor = clamp(dot(N, lightDir), 0.0, 1.0);
-
-    float shadowCoeff = filterPCF(shadowMap, shadowMapCoord / shadowMapCoord.w);
-    return shadowCoeff * lights.intensity * lights.color.rgb * diffuseFactor;
-}
-
 void main() {
     vec3 baseColor = materialParams.useBaseColorMap ? pow(texture(baseColorSampler, fragTexCoord).rgb, vec3(2.2)) : materialParams.baseColor.rgb;
-
     vec3 albedo = fragColor * materialParams.tint.rgb * baseColor;
-    baseColorImage = vec4(albedo, 1.0);
 
+    /*
     float metallic = materialParams.metallic;
     float roughness = materialParams.roughness;
     float occlusion = 1.0;
@@ -126,57 +72,15 @@ void main() {
         metallic =  metallicRoughness.b;
         roughness = metallicRoughness.g;
     }
+    */
 
     vec3 normalMapColor = texture(normalSampler, fragTexCoord).rgb;
-
-
-    N = materialParams.useNormalMap
-        ? CalcSurfaceNormal(normalMapColor, TBN)
-        : fragNormal;
-    V = normalize(transforms.cameraPosition - inWorldPosition.xyz);
-
-    vec3 lightPosition = vec3(0.0);
-   // vec3 L = normalize(lightPosition - inWorldPosition.xyz);
-    vec3 L = -lights.direction;
-    vec3 H = normalize(V + L);
-
-    vec3 F0 = vec3(0.04);
-    F0      = mix(F0, albedo, metallic);
-
-    //float distance    = length(lightPosition - inWorldPosition.xyz);
-    //float attenuation = 1.0 / (distance * distance);
-    //vec3 radiance     = lights.intensity * lights.color.rgb * attenuation;
-
-    vec3 baseReflectivity = vec3(0.04);
-    baseReflectivity = mix(baseReflectivity, albedo, metallic);
-
-    float NdotV = max(dot(N, V), 0.000001);
-    vec3 F = fresnelSchlickRoughness(NdotV, baseReflectivity, roughness);
-    vec3 kD = (1.0 - F) * (1.0 - metallic);
-
-    vec3 irradiance = texture(irradianceMap, N).rgb;
-    vec3 diffuse = irradiance * albedo;
-
-    vec3 R = reflect(-V, N);
-    // sample both the pre-filter map and the BRDF lut and combine them together as per the Split-Sum approximation to get the IBL specular part.
-    vec3 prefilteredColor = textureLod(prefilterMap, R,  roughness * MAX_REFLECTION_LOD).rgb;
-    vec2 brdf  = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
-    vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
-
-    vec3 radiance = CalcDirectionalLightRadiance(-lights.direction);
-    vec3 Lo = CalcLightRadiance(L, H, V, N, F0, albedo, roughness, metallic, radiance);
-
-    vec3 ambient = lights.ambientIntensity * (kD * diffuse + specular);
-    vec3 color = ambient + Lo;
+    vec3 N = materialParams.useNormalMap ? CalcSurfaceNormal(normalMapColor, TBN) : fragNormal;
 
     /////////////////   GBuffer   ////////////////////////
+    //baseColorImage = vec4(albedo, 1.0);
     normalImage = vec4(N, 1.0);
-    metallicRoughnessImage = vec4(occlusion, metallic, roughness, 1.0);
-    outWorldPosition = inWorldPosition;
+    //metallicRoughnessImage = vec4(occlusion, metallic, roughness, 1.0);
+    outWorldPosition = vec4(inWorldPosition.xyz, 1.0);
     /////////////////////////////////////////////////////
-
-    color =  color / (color + vec3(1.0));
-    color = pow(color, vec3(1.0/2.2));
-
-    finalImage = vec4(color, 1.0);
 }

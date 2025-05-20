@@ -12,6 +12,16 @@ layout(set = 1, binding = 0) uniform Transforms {
     vec3 cameraPosition;
 } transforms;
 
+layout(std430, set = 2, binding = 0) uniform Lights {
+    mat4 lightView;
+    mat4 lightProjection;
+    vec3 direction;
+    float ambientIntensity;
+    vec4 color;
+    float intensity;
+    float bias;
+} lights;
+
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inColor;
 layout(location = 2) in vec2 inTexCoord;
@@ -28,9 +38,17 @@ layout(location = 5) out vec4 worldPosition;
 layout(location = 6) out vec4 shadowMapCoord;
 layout(location = 7) out mat3 TBN;
 
+const mat4 biasMat = mat4(
+    0.5, 0.0, 0.0, 0.0,
+    0.0, 0.5, 0.0, 0.0,
+    0.0, 0.0, 1.0, 0.0,
+    0.5, 0.5, 0.0, 1.0 );
+
+
 void main() {
     worldPosition = push.modelMatrix * vec4(inPosition, 1.0);
     fragPosition = worldPosition.xyz;
+    shadowMapCoord = (biasMat * lights.lightProjection * lights.lightView) * worldPosition;
 
     fragColor = inColor;
     fragTexCoord = inTexCoord;

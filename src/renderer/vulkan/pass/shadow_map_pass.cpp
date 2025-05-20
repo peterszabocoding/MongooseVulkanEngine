@@ -14,9 +14,9 @@ namespace Raytracing
     }
 
     void ShadowMapPass::Render(VkCommandBuffer commandBuffer, uint32_t imageIndex, Ref<VulkanFramebuffer> writeBuffer,
-        Ref<VulkanFramebuffer> readBuffer)
+                               Ref<VulkanFramebuffer> readBuffer)
     {
-        VkExtent2D extent = {4096, 4096};
+        constexpr VkExtent2D extent = {4096, 4096};
 
         device->SetViewportAndScissor(extent, commandBuffer);
         renderPass->Begin(commandBuffer, writeBuffer, extent);
@@ -32,6 +32,9 @@ namespace Raytracing
         for (size_t i = 0; i < scene.meshes.size(); i++)
         {
             SimplePushConstantData pushConstantData;
+            pushConstantData.transform = scene.directionalLight.GetProjection() *
+                                         scene.directionalLight.GetView() *
+                                         pushConstantData.modelMatrix;
             pushConstantData.modelMatrix = scene.transforms[i].GetTransform();
 
             geometryDrawParams.pushConstantParams = {
@@ -41,9 +44,6 @@ namespace Raytracing
 
             for (auto& meshlet: scene.meshes[i]->GetMeshlets())
             {
-                geometryDrawParams.descriptorSets = {
-                    ShaderCache::descriptorSets.lightsDescriptorSets[imageIndex]
-                };
                 geometryDrawParams.meshlet = &meshlet;
                 device->DrawMeshlet(geometryDrawParams);
             }
@@ -56,16 +56,12 @@ namespace Raytracing
     {
         LOG_TRACE("Building directional shadow map pipeline");
         PipelineConfig dirShadowMapPipelineConfig; {
-            dirShadowMapPipelineConfig.vertexShaderPath = "shader/spv/shadow_map.vert.spv";
+            dirShadowMapPipelineConfig.vertexShaderPath = "shader/spv/depth_only.vert.spv";
             dirShadowMapPipelineConfig.fragmentShaderPath = "shader/spv/empty.frag.spv";
 
             dirShadowMapPipelineConfig.cullMode = PipelineCullMode::Front;
             dirShadowMapPipelineConfig.polygonMode = PipelinePolygonMode::Fill;
             dirShadowMapPipelineConfig.frontFace = PipelineFrontFace::Counter_clockwise;
-
-            dirShadowMapPipelineConfig.descriptorSetLayouts = {
-                ShaderCache::descriptorSetLayouts.lightsDescriptorSetLayout,
-            };
 
             dirShadowMapPipelineConfig.disableBlending = true;
             dirShadowMapPipelineConfig.enableDepthTest = true;

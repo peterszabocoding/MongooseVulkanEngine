@@ -26,8 +26,7 @@ namespace Raytracing
     };
 
     struct Pipelines {
-        Ref<VulkanPipeline> ibl_brdf;
-        Ref<VulkanPipeline> ibl_prefilter;
+
     };
 
     struct Renderpass {

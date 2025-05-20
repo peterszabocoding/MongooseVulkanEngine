@@ -20,6 +20,11 @@ namespace Raytracing {
         RGBA16_SFLOAT,
 
         RGB32_SFLOAT,
+        RGB32_UINT,
+        RGB32_SINT,
+
+        RGBA32_UINT,
+        RGBA32_SINT,
         RGBA32_SFLOAT,
 
         DEPTH24_STENCIL8,

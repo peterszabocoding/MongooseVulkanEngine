@@ -79,26 +79,26 @@ namespace Raytracing
 
         void Init()
         {
-            if (gbufferAttachments.size() > 0)
+            if (prePassBufferAttachments.size() > 0)
             {
-                for (int i = 0; i < gbufferAttachments.size(); i++)
-                    ImGui_ImplVulkan_RemoveTexture(gbufferAttachments[i]);
-                gbufferAttachments.clear();
+                for (int i = 0; i < prePassBufferAttachments.size(); i++)
+                    ImGui_ImplVulkan_RemoveTexture(prePassBufferAttachments[i]);
+                prePassBufferAttachments.clear();
             }
 
-            gbuffer = renderer->GetGBuffer();
-            for (const auto attachment: gbuffer->GetAttachments())
+            prePassBuffer = renderer->GetPrePassBuffer();
+            for (const auto attachment: prePassBuffer->GetAttachments())
             {
                 if (!attachment.allocatedImage.image) continue;
 
                 auto descriptorSet = ImGui_ImplVulkan_AddTexture(sampler, attachment.imageView, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-                gbufferAttachments.push_back(descriptorSet);
+                prePassBufferAttachments.push_back(descriptorSet);
             }
         }
 
         virtual const char* GetTitle() override
         {
-            return "GBuffer Viewer";
+            return "Pre-Pass Viewer";
         }
 
         virtual void Draw() override
@@ -107,25 +107,22 @@ namespace Raytracing
 
             const ImVec2 availableSpace = ImGui::GetContentRegionAvail();
 
-            const float aspect = static_cast<float>(gbuffer->GetHeight()) / static_cast<float>(gbuffer->GetWidth());
+            const float aspect = static_cast<float>(prePassBuffer->GetHeight()) / static_cast<float>(prePassBuffer->GetWidth());
             const ImVec2 imageSize = {
                 std::min(availableSpace.x, availableSpace.y),
                 std::min(availableSpace.x, availableSpace.y) * aspect,
             };
 
-            ImGui::Text("Resolution: %d x %d", gbuffer->GetWidth(), gbuffer->GetHeight());
-
-            ImGui::Text("Base color:");
-            ImGui::Image(reinterpret_cast<ImTextureID>(gbufferAttachments[1]), imageSize, ImVec2(0, 0), ImVec2(1, 1));
+            ImGui::Text("Resolution: %d x %d", prePassBuffer->GetWidth(), prePassBuffer->GetHeight());
 
             ImGui::Text("Worldspace normal:");
-            ImGui::Image(reinterpret_cast<ImTextureID>(gbufferAttachments[2]), imageSize, ImVec2(0, 0), ImVec2(1, 1));
-
-            ImGui::Text("Metallic-Roughness:");
-            ImGui::Image(reinterpret_cast<ImTextureID>(gbufferAttachments[3]), imageSize, ImVec2(0, 0), ImVec2(1, 1));
+            ImGui::Image(reinterpret_cast<ImTextureID>(prePassBufferAttachments[0]), imageSize, ImVec2(0, 0), ImVec2(1, 1));
 
             ImGui::Text("Position:");
-            ImGui::Image(reinterpret_cast<ImTextureID>(gbufferAttachments[4]), imageSize, ImVec2(0, 0), ImVec2(1, 1));
+            ImGui::Image(reinterpret_cast<ImTextureID>(prePassBufferAttachments[1]), imageSize, ImVec2(0, 0), ImVec2(1, 1));
+
+            ImGui::Text("Depth Map:");
+            ImGui::Image(reinterpret_cast<ImTextureID>(prePassBufferAttachments[2]), imageSize, ImVec2(0, 0), ImVec2(1, 1));
         }
 
         virtual void Resize() override
@@ -134,8 +131,8 @@ namespace Raytracing
         }
 
     private:
-        Ref<VulkanFramebuffer> gbuffer;
-        std::vector<VkDescriptorSet> gbufferAttachments{};
+        Ref<VulkanFramebuffer> prePassBuffer;
+        std::vector<VkDescriptorSet> prePassBufferAttachments{};
         VkSampler sampler = VK_NULL_HANDLE;
     };
 
