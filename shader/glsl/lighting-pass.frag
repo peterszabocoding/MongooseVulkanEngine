@@ -63,15 +63,15 @@ layout(std430, set = 2, binding = 0) uniform Lights {
 } lights;
 layout(set = 2, binding = 1)    uniform sampler2D shadowMap;
 
-
 // Irradiance uniforms
 layout(set = 3, binding = 0)    uniform samplerCube irradianceMap;
 
+// Post Processing
+layout(set = 4, binding = 0)    uniform sampler2D SSAO;
 
 // Reflection uniforms
-layout(set = 4, binding = 0)    uniform samplerCube prefilterMap;
-layout(set = 4, binding = 1)    uniform sampler2D brdfLUT;
-
+layout(set = 5, binding = 0)    uniform samplerCube prefilterMap;
+layout(set = 5, binding = 1)    uniform sampler2D brdfLUT;
 
 // ------------------------------------------------------------------
 // VARIABLES --------------------------------------------------------
@@ -159,11 +159,18 @@ void main() {
     vec3 radiance = CalcDirectionalLightRadiance(-lights.direction);
     vec3 Lo = CalcLightRadiance(L, H, V, N, F0, albedo, roughness, metallic, radiance);
 
-    vec3 ambient = lights.ambientIntensity * (kD * diffuse + specular);
+    vec2 texSize = textureSize(SSAO, 0);
+    vec2 texCoord = ((gl_FragCoord.xy + vec2(1.0)) * 0.5) / texSize;
+    float SSAOValue = texture(SSAO, texCoord).r;
+
+    vec3 ambient = lights.ambientIntensity * SSAOValue * (kD * diffuse + specular);
+
     vec3 color = ambient + Lo;
 
     color =  color / (color + vec3(1.0));
     color = pow(color, vec3(1.0/2.2));
 
     finalImage = vec4(color, 1.0);
+    //finalImage = vec4(vec3(SSAOValue), 1.0);
+    //finalImage = vec4(texCoord, 0.0, 1.0);
 }

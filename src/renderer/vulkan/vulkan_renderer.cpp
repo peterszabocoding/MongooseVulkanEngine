@@ -39,8 +39,8 @@ namespace Raytracing
 
         LOG_TRACE("Load scene");
         //scene = ResourceManager::LoadScene(device.get(), "resources/PBRCheck/pbr_check.gltf", "resources/environment/newport_loft.hdr");
-        scene = ResourceManager::LoadScene(device.get(), "resources/cannon/cannon.gltf", "resources/environment/newport_loft.hdr");
-        //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/sponza/Sponza.gltf");
+        //scene = ResourceManager::LoadScene(device.get(), "resources/cannon/cannon.gltf", "resources/environment/newport_loft.hdr");
+        scene = ResourceManager::LoadScene(device.get(), "resources/sponza/Sponza.gltf", "resources/environment/newport_loft.hdr");
         //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/MetalRoughSpheres/MetalRoughSpheres.gltf");
         //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/vertex_color/vertex_color.gltf");
         //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/normal_tangent/NormalTangentTest.gltf");
@@ -230,6 +230,19 @@ namespace Raytracing
                     .WriteImage(1, &positionInfo)
                     .WriteImage(2, &depthInfo)
                     .Build(shaderCache->descriptorSets.gbufferDescriptorSets[i]);
+        }
+
+        shaderCache->descriptorSets.postProcessingDescriptorSets.resize(imageCount);
+        for (size_t i = 0; i < imageCount; i++)
+        {
+            VkDescriptorImageInfo ssaoInfo{};
+            ssaoInfo.sampler = framebuffers.ssaoFramebuffers[i]->GetAttachments()[0].sampler;
+            ssaoInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            ssaoInfo.imageView = framebuffers.ssaoFramebuffers[i]->GetAttachments()[0].imageView;
+
+            VulkanDescriptorWriter(*ShaderCache::descriptorSetLayouts.postProcessingDescriptorSetLayout, device->GetShaderDescriptorPool())
+                    .WriteImage(0, &ssaoInfo)
+                    .Build(shaderCache->descriptorSets.postProcessingDescriptorSets[i]);
         }
     }
 

@@ -65,5 +65,5 @@ void main()
     }
 
     occlusion = 1.0 - (occlusion / push.kernelSize);
-    FragColor = occlusion;
+    FragColor = pow(occlusion, 1.1);
 }

@@ -70,6 +70,11 @@ namespace Raytracing
                 .AddBinding({0, DescriptorSetBindingType::UniformBuffer, {ShaderStage::FragmentShader}})
                 .AddBinding({1, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
                 .Build();
+
+        // SSAO
+        descriptorSetLayouts.postProcessingDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice)
+                .AddBinding({0, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
+                .Build();
     }
 
     void ShaderCache::LoadPipelines()

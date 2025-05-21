@@ -24,7 +24,7 @@ namespace Raytracing
     struct SSAOPushConstantData {
         glm::vec2 resolution;
         int kernelSize = 64;
-        float radius = 0.5;
+        float radius = 0.25;
         float bias = 0.025;
     };
 

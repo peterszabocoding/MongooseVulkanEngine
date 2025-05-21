@@ -58,6 +58,7 @@ namespace Raytracing
                     ShaderCache::descriptorSets.transformDescriptorSet,
                     ShaderCache::descriptorSets.lightsDescriptorSets[imageIndex],
                     ShaderCache::descriptorSets.irradianceDescriptorSet,
+                    ShaderCache::descriptorSets.postProcessingDescriptorSets[imageIndex],
                 };
 
                 if (scene.reflectionProbe)
@@ -134,6 +135,7 @@ namespace Raytracing
                 ShaderCache::descriptorSetLayouts.transformDescriptorSetLayout,
                 ShaderCache::descriptorSetLayouts.lightsDescriptorSetLayout,
                 ShaderCache::descriptorSetLayouts.irradianceDescriptorSetLayout,
+                ShaderCache::descriptorSetLayouts.postProcessingDescriptorSetLayout,
                 ShaderCache::descriptorSetLayouts.reflectionDescriptorSetLayout,
             };
 
