@@ -52,9 +52,12 @@ namespace Raytracing
         scene.directionalLight.direction = normalize(glm::vec3(0.0f, -2.0f, -1.0f));
 
         gbufferPass = CreateScope<GBufferPass>(device.get(), scene);
+        gbufferPass->SetSize(viewportWidth * resolutionScale, viewportHeight * resolutionScale);
+
         renderPass = CreateScope<RenderPass>(device.get(), scene);
         shadowMapPass = CreateScope<ShadowMapPass>(device.get(), scene);
         presentPass = CreateScope<PresentPass>(device.get());
+        ssaoPass = CreateScope<SSAOPass>(device.get());
 
         CreateSwapchain();
         CreateFramebuffers();
@@ -97,10 +100,16 @@ namespace Raytracing
 
                               gbufferPass->SetCamera(*camera);
                               gbufferPass->SetSize(
-                                  framebuffers.prepassFramebuffers[activeImage]->GetWidth(),
-                                  framebuffers.prepassFramebuffers[activeImage]->GetHeight()
+                                  framebuffers.gbufferFramebuffers[activeImage]->GetWidth(),
+                                  framebuffers.gbufferFramebuffers[activeImage]->GetHeight()
                               );
-                              gbufferPass->Render(commandBuffer, activeImage, framebuffers.prepassFramebuffers[activeImage], nullptr);
+                              gbufferPass->Render(commandBuffer, activeImage, framebuffers.gbufferFramebuffers[activeImage], nullptr);
+
+                              ssaoPass->SetSize(
+                                  framebuffers.ssaoFramebuffers[activeImage]->GetWidth(),
+                                  framebuffers.ssaoFramebuffers[activeImage]->GetHeight()
+                              );
+                              ssaoPass->Render(commandBuffer, activeImage, framebuffers.ssaoFramebuffers[activeImage], nullptr);
 
                               renderPass->SetCamera(*camera);
                               renderPass->SetSize(
@@ -150,11 +159,12 @@ namespace Raytracing
     {
         const uint32_t imageCount = VulkanUtils::GetSwapchainImageCount(device->GetPhysicalDevice(), device->GetSurface());
 
-        framebuffers.prepassFramebuffers.resize(imageCount);
+        framebuffers.gbufferFramebuffers.resize(imageCount);
         framebuffers.geometryFramebuffers.resize(imageCount);
         framebuffers.shadowMapFramebuffers.resize(imageCount);
         framebuffers.directionalShadowMaps.resize(imageCount);
         framebuffers.presentFramebuffers.resize(imageCount);
+        framebuffers.ssaoFramebuffers.resize(imageCount);
 
         for (size_t i = 0; i < imageCount; i++)
         {
@@ -162,19 +172,21 @@ namespace Raytracing
                     .SetRenderpass(renderPass->GetRenderPass())
                     .SetResolution(viewportWidth * resolutionScale, viewportHeight * resolutionScale)
                     .AddAttachment(ImageFormat::RGBA8_UNORM)
-                    .AddAttachment(ImageFormat::RGBA8_UNORM)
-                    .AddAttachment(ImageFormat::RGBA8_UNORM)
-                    .AddAttachment(ImageFormat::RGBA8_UNORM)
-                    .AddAttachment(ImageFormat::RGBA8_UNORM)
                     .AddAttachment(ImageFormat::DEPTH24_STENCIL8)
                     .Build();
 
-            framebuffers.prepassFramebuffers[i] = VulkanFramebuffer::Builder(device.get())
-                    .SetRenderpass(renderPass->GetRenderPass())
+            framebuffers.gbufferFramebuffers[i] = VulkanFramebuffer::Builder(device.get())
+                    .SetRenderpass(gbufferPass->GetRenderPass())
                     .SetResolution(viewportWidth * resolutionScale, viewportHeight * resolutionScale)
                     .AddAttachment(ImageFormat::RGBA32_SFLOAT)
                     .AddAttachment(ImageFormat::RGBA32_SFLOAT)
                     .AddAttachment(ImageFormat::DEPTH24_STENCIL8)
+                    .Build();
+
+            framebuffers.ssaoFramebuffers[i] = VulkanFramebuffer::Builder(device.get())
+                    .SetRenderpass(ssaoPass->GetRenderPass())
+                    .SetResolution(viewportWidth * resolutionScale * 0.5, viewportHeight * resolutionScale * 0.5)
+                    .AddAttachment(ImageFormat::R8_UNORM)
                     .Build();
 
             framebuffers.directionalShadowMaps[i] = VulkanShadowMap::Builder()
@@ -192,6 +204,32 @@ namespace Raytracing
                     .SetResolution(viewportWidth, viewportHeight)
                     .AddAttachment(vulkanSwapChain->GetImageViews()[i])
                     .Build();
+        }
+
+        shaderCache->descriptorSets.gbufferDescriptorSets.resize(imageCount);
+        for (size_t i = 0; i < imageCount; i++)
+        {
+            VkDescriptorImageInfo worldSpaceNormalInfo{};
+            worldSpaceNormalInfo.sampler = framebuffers.gbufferFramebuffers[i]->GetAttachments()[0].sampler;
+            worldSpaceNormalInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            worldSpaceNormalInfo.imageView = framebuffers.gbufferFramebuffers[i]->GetAttachments()[0].imageView;
+
+            VkDescriptorImageInfo positionInfo{};
+            positionInfo.sampler = framebuffers.gbufferFramebuffers[i]->GetAttachments()[1].sampler;
+            positionInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            positionInfo.imageView = framebuffers.gbufferFramebuffers[i]->GetAttachments()[1].imageView;
+
+            VkDescriptorImageInfo depthInfo{};
+            depthInfo.sampler = framebuffers.gbufferFramebuffers[i]->GetAttachments()[2].sampler;
+            depthInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            depthInfo.imageView = framebuffers.gbufferFramebuffers[i]->GetAttachments()[2].imageView;
+
+            VulkanDescriptorWriter(*ShaderCache::descriptorSetLayouts.gBufferDescriptorSetLayout,
+                                   device->GetShaderDescriptorPool())
+                    .WriteImage(0, &worldSpaceNormalInfo)
+                    .WriteImage(1, &positionInfo)
+                    .WriteImage(2, &depthInfo)
+                    .Build(shaderCache->descriptorSets.gbufferDescriptorSets[i]);
         }
     }
 

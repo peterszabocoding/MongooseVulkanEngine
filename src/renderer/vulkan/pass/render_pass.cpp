@@ -10,10 +10,6 @@ namespace Raytracing
     {
         renderPass = VulkanRenderPass::Builder(vulkanDevice)
                 .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM, false)
-                .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM, false)
-                .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM, false)
-                .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM, false)
-                .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM, false)
                 .AddDepthAttachment()
                 .Build();
 
@@ -142,10 +138,6 @@ namespace Raytracing
             };
 
             geometryPipelineConfig.colorAttachments = {
-                ImageFormat::RGBA8_UNORM,
-                ImageFormat::RGBA8_UNORM,
-                ImageFormat::RGBA8_UNORM,
-                ImageFormat::RGBA8_UNORM,
                 ImageFormat::RGBA8_UNORM,
             };
 

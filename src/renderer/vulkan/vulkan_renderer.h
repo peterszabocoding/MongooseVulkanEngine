@@ -12,6 +12,7 @@
 #include "pass/present_pass.h"
 #include "pass/render_pass.h"
 #include "pass/shadow_map_pass.h"
+#include "pass/post_processing/ssao_pass.h"
 #include "renderer/Light.h"
 #include "renderer/shader_cache.h"
 
@@ -23,11 +24,12 @@ namespace Raytracing
     };
 
     struct Framebuffers {
-        std::vector<Ref<VulkanFramebuffer>> prepassFramebuffers;
+        std::vector<Ref<VulkanFramebuffer>> gbufferFramebuffers;
+        std::vector<Ref<VulkanFramebuffer>> ssaoFramebuffers;
         std::vector<Ref<VulkanFramebuffer>> geometryFramebuffers;
-        std::vector<Ref<VulkanShadowMap>> directionalShadowMaps;
         std::vector<Ref<VulkanFramebuffer>> shadowMapFramebuffers;
         std::vector<Ref<VulkanFramebuffer>> presentFramebuffers;
+        std::vector<Ref<VulkanShadowMap>> directionalShadowMaps;
     };
 
     struct TransformsBuffer {
@@ -65,8 +67,9 @@ namespace Raytracing
         VulkanDevice* GetVulkanDevice() const { return device.get(); }
 
         [[nodiscard]] Ref<VulkanRenderPass> GetRenderPass() const { return presentPass->GetRenderPass(); }
-        [[nodiscard]] Ref<VulkanFramebuffer> GetGBuffer() const { return framebuffers.geometryFramebuffers[activeImage]; }
-        [[nodiscard]] Ref<VulkanFramebuffer> GetPrePassBuffer() const { return framebuffers.prepassFramebuffers[activeImage]; }
+        [[nodiscard]] Ref<VulkanFramebuffer> GetRenderBuffer() const { return framebuffers.geometryFramebuffers[activeImage]; }
+        [[nodiscard]] Ref<VulkanFramebuffer> GetGBuffer() const { return framebuffers.gbufferFramebuffers[activeImage]; }
+        [[nodiscard]] Ref<VulkanFramebuffer> GetSSAOBuffer() const { return framebuffers.ssaoFramebuffers[activeImage]; }
         [[nodiscard]] Ref<VulkanShadowMap> GetShadowMap() const { return framebuffers.directionalShadowMaps[activeImage]; }
 
         DirectionalLight* GetLight() { return &scene.directionalLight; }
@@ -111,5 +114,6 @@ namespace Raytracing
         Scope<RenderPass> renderPass;
         Scope<ShadowMapPass> shadowMapPass;
         Scope<PresentPass> presentPass;
+        Scope<SSAOPass> ssaoPass;
     };
 }

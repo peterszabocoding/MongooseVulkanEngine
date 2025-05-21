@@ -79,21 +79,26 @@ namespace Raytracing
 
         void Init()
         {
-            if (prePassBufferAttachments.size() > 0)
+            if (debugTextures.size() > 0)
             {
-                for (int i = 0; i < prePassBufferAttachments.size(); i++)
-                    ImGui_ImplVulkan_RemoveTexture(prePassBufferAttachments[i]);
-                prePassBufferAttachments.clear();
+                for (int i = 0; i < debugTextures.size(); i++)
+                    ImGui_ImplVulkan_RemoveTexture(debugTextures[i]);
+                debugTextures.clear();
             }
 
-            prePassBuffer = renderer->GetPrePassBuffer();
-            for (const auto attachment: prePassBuffer->GetAttachments())
+            gbufferBuffer = renderer->GetGBuffer();
+            ssaoBuffer = renderer->GetSSAOBuffer();
+            for (const auto attachment: gbufferBuffer->GetAttachments())
             {
                 if (!attachment.allocatedImage.image) continue;
 
                 auto descriptorSet = ImGui_ImplVulkan_AddTexture(sampler, attachment.imageView, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-                prePassBufferAttachments.push_back(descriptorSet);
+                debugTextures.push_back(descriptorSet);
             }
+
+            auto ssaoDescriptorSet = ImGui_ImplVulkan_AddTexture(sampler, ssaoBuffer->GetAttachments()[0].imageView,
+                                                             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+            debugTextures.push_back(ssaoDescriptorSet);
         }
 
         virtual const char* GetTitle() override
@@ -107,22 +112,25 @@ namespace Raytracing
 
             const ImVec2 availableSpace = ImGui::GetContentRegionAvail();
 
-            const float aspect = static_cast<float>(prePassBuffer->GetHeight()) / static_cast<float>(prePassBuffer->GetWidth());
+            const float aspect = static_cast<float>(gbufferBuffer->GetHeight()) / static_cast<float>(gbufferBuffer->GetWidth());
             const ImVec2 imageSize = {
                 std::min(availableSpace.x, availableSpace.y),
                 std::min(availableSpace.x, availableSpace.y) * aspect,
             };
 
-            ImGui::Text("Resolution: %d x %d", prePassBuffer->GetWidth(), prePassBuffer->GetHeight());
+            ImGui::Text("Resolution: %d x %d", gbufferBuffer->GetWidth(), gbufferBuffer->GetHeight());
 
             ImGui::Text("Worldspace normal:");
-            ImGui::Image(reinterpret_cast<ImTextureID>(prePassBufferAttachments[0]), imageSize, ImVec2(0, 0), ImVec2(1, 1));
+            ImGui::Image(reinterpret_cast<ImTextureID>(debugTextures[0]), imageSize, ImVec2(0, 0), ImVec2(1, 1));
 
             ImGui::Text("Position:");
-            ImGui::Image(reinterpret_cast<ImTextureID>(prePassBufferAttachments[1]), imageSize, ImVec2(0, 0), ImVec2(1, 1));
+            ImGui::Image(reinterpret_cast<ImTextureID>(debugTextures[1]), imageSize, ImVec2(0, 0), ImVec2(1, 1));
 
             ImGui::Text("Depth Map:");
-            ImGui::Image(reinterpret_cast<ImTextureID>(prePassBufferAttachments[2]), imageSize, ImVec2(0, 0), ImVec2(1, 1));
+            ImGui::Image(reinterpret_cast<ImTextureID>(debugTextures[2]), imageSize, ImVec2(0, 0), ImVec2(1, 1));
+
+            ImGui::Text("SSAO:");
+            ImGui::Image(reinterpret_cast<ImTextureID>(debugTextures[3]), imageSize, ImVec2(0, 0), ImVec2(1, 1));
         }
 
         virtual void Resize() override
@@ -131,8 +139,9 @@ namespace Raytracing
         }
 
     private:
-        Ref<VulkanFramebuffer> prePassBuffer;
-        std::vector<VkDescriptorSet> prePassBufferAttachments{};
+        Ref<VulkanFramebuffer> gbufferBuffer;
+        Ref<VulkanFramebuffer> ssaoBuffer;
+        std::vector<VkDescriptorSet> debugTextures{};
         VkSampler sampler = VK_NULL_HANDLE;
     };
 
@@ -168,7 +177,8 @@ namespace Raytracing
 
             if (shadowMap->GetImage())
             {
-                auto descriptorSet = ImGui_ImplVulkan_AddTexture(sampler, shadowMap->GetImageView(), VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
+                auto descriptorSet = ImGui_ImplVulkan_AddTexture(sampler, shadowMap->GetImageView(),
+                                                                 VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
                 shadowMapAttachments.push_back(descriptorSet);
             }
         }

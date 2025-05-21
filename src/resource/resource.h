@@ -7,6 +7,20 @@ namespace Raytracing {
     enum class ImageFormat {
         Unknown = 0,
 
+        R8_UNORM,
+        R8_SNORM,
+        R8_UINT,
+        R8_SINT,
+
+        R16_UNORM,
+        R16_SNORM,
+        R16_UINT,
+        R16_SINT,
+
+        R32_SFLOAT,
+        R32_UINT,
+        R32_SINT,
+
         RGB8_UNORM,
         RGB8_SRGB,
 

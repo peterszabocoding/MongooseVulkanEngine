@@ -18,7 +18,6 @@ namespace Raytracing
 
     void ShaderCache::LoadDescriptorLayouts()
     {
-
         // transforms
         descriptorSetLayouts.transformDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice)
                 .AddBinding({0, DescriptorSetBindingType::UniformBuffer, {ShaderStage::VertexShader, ShaderStage::FragmentShader}})
@@ -58,14 +57,24 @@ namespace Raytracing
                 .AddBinding({0, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
                 .AddBinding({1, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
                 .Build();
+
+        // world-space normals, position, depth
+        descriptorSetLayouts.gBufferDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice)
+                .AddBinding({0, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
+                .AddBinding({1, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
+                .AddBinding({2, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
+                .Build();
+
+        // samples, noise texture
+        descriptorSetLayouts.ssaoDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice)
+                .AddBinding({0, DescriptorSetBindingType::UniformBuffer, {ShaderStage::FragmentShader}})
+                .AddBinding({1, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
+                .Build();
     }
 
     void ShaderCache::LoadPipelines()
     {
         LOG_TRACE("Build pipelines");
-
-
-
     }
 
     void ShaderCache::LoadRenderpasses()

@@ -118,7 +118,9 @@ set(SOURCE_ONE_WEEKEND
         ./src/renderer/vulkan/pass/render_pass.cpp
         ./src/renderer/vulkan/pass/shadow_map_pass.cpp
         ./src/renderer/vulkan/pass/present_pass.cpp
-        src/renderer/vulkan/pass/gbufferPass.cpp
+        ./src/renderer/vulkan/pass/gbufferPass.cpp
+
+        ./src/renderer/vulkan/pass/post_processing/ssao_pass.cpp
 
         ./src/renderer/vulkan/lighting/irradiance_map_generator.cpp
         ./src/renderer/vulkan/lighting/reflection_probe_generator.cpp

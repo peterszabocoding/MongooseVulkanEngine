@@ -15,12 +15,18 @@ namespace Raytracing
                             Ref<VulkanFramebuffer> writeBuffer,
                             Ref<VulkanFramebuffer> readBuffer) = 0;
 
-        void SetSize(const uint32_t width, const uint32_t height)
+        virtual void SetSize(const uint32_t width, const uint32_t height)
         {
             ASSERT(width <= 0 || height <= 0, "Invalid pass size");
+
+            if (passWidth != width || passHeight != height)
+                OnResolutionChanged(width, height);
+
             passWidth = width;
             passHeight = height;
         }
+
+        virtual void OnResolutionChanged(const uint32_t width, const uint32_t height) {}
 
     protected:
         VulkanDevice* device;

@@ -14,6 +14,8 @@ namespace Raytracing
         Ref<VulkanDescriptorSetLayout> presentDescriptorSetLayout;
         Ref<VulkanDescriptorSetLayout> irradianceDescriptorSetLayout;
         Ref<VulkanDescriptorSetLayout> reflectionDescriptorSetLayout;
+        Ref<VulkanDescriptorSetLayout> gBufferDescriptorSetLayout;
+        Ref<VulkanDescriptorSetLayout> ssaoDescriptorSetLayout;
     };
 
     struct DescriptorSets {
@@ -23,6 +25,7 @@ namespace Raytracing
         VkDescriptorSet reflectionDescriptorSet;
         std::vector<VkDescriptorSet> presentDescriptorSets;
         std::vector<VkDescriptorSet> lightsDescriptorSets;
+        std::vector<VkDescriptorSet> gbufferDescriptorSets;
     };
 
     struct Pipelines {

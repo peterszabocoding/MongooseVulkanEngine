@@ -1,5 +1,8 @@
 #include "gbufferPass.h"
 
+#include <random>
+#include <glm/gtc/packing.inl>
+
 #include "renderer/shader_cache.h"
 #include "renderer/vulkan/vulkan_pipeline.h"
 #include "util/log.h"
@@ -22,7 +25,7 @@ namespace Raytracing
     }
 
     void GBufferPass::Render(VkCommandBuffer commandBuffer, uint32_t imageIndex, Ref<VulkanFramebuffer> writeBuffer,
-        Ref<VulkanFramebuffer> readBuffer)
+                             Ref<VulkanFramebuffer> readBuffer)
     {
         VkExtent2D extent = {passWidth, passHeight};
 

@@ -73,6 +73,39 @@ namespace Raytracing::VulkanUtils
     {
         switch (imageFormat)
         {
+            case ImageFormat::R8_UNORM:
+                return VK_FORMAT_R8_UNORM;
+
+            case ImageFormat::R8_SNORM:
+                return VK_FORMAT_R8_SNORM;
+
+            case ImageFormat::R8_UINT:
+                return VK_FORMAT_R8_UINT;
+
+            case ImageFormat::R8_SINT:
+                return VK_FORMAT_R8_SINT;
+
+            case ImageFormat::R16_UNORM:
+                return VK_FORMAT_R16_UNORM;
+
+            case ImageFormat::R16_SNORM:
+                return VK_FORMAT_R16_SNORM;
+
+            case ImageFormat::R16_UINT:
+                return VK_FORMAT_R16_UINT;
+
+            case ImageFormat::R16_SINT:
+                return VK_FORMAT_R16_SINT;
+
+            case ImageFormat::R32_SFLOAT:
+                return VK_FORMAT_R32_SFLOAT;
+
+            case ImageFormat::R32_UINT:
+                return VK_FORMAT_R32_UINT;
+
+            case ImageFormat::R32_SINT:
+                return VK_FORMAT_R32_SINT;
+
             case ImageFormat::RGB8_UNORM:
                 return VK_FORMAT_R8G8B8_UNORM;
 
