@@ -36,7 +36,7 @@ layout(push_constant) uniform Push {
 
 void main()
 {
-    vec3 fragPos   = vec3(transforms.view * vec4(texture(gPosition, TexCoords).xyz, 1.0));
+    vec3 fragPos   = texture(gPosition, TexCoords).xyz;
     vec3 normal    = texture(gNormal, TexCoords).rgb;
     vec3 randomVec = texture(texNoise, TexCoords * push.resolution).xyz;
 
@@ -57,7 +57,7 @@ void main()
         offset.xyz /= offset.w;               // perspective divide
         offset.xyz  = offset.xyz * 0.5 + 0.5; // transform to range 0.0 - 1.0
 
-        vec3 sampleFragPos = vec3(transforms.view * vec4(texture(gPosition, offset.xy).xyz, 1.0));
+        vec3 sampleFragPos = texture(gPosition, offset.xy).xyz;
         float sampleDepth = sampleFragPos.z;
 
         float rangeCheck = smoothstep(0.0, 1.0, push.radius / abs(fragPos.z - sampleDepth));

@@ -9,14 +9,11 @@
 // INPUT VARIABLES --------------------------------------------------
 // ------------------------------------------------------------------
 
-layout(location = 0) in vec3 fragPosition;
-layout(location = 1) in vec3 fragColor;
-layout(location = 2) in vec2 fragTexCoord;
-layout(location = 3) in vec3 fragNormal;
-layout(location = 4) in vec3 fragTangent;
-layout(location = 5) in vec4 inWorldPosition;
-layout(location = 6) in vec4 shadowMapCoord;
-layout(location = 7) in mat3 TBN;
+layout(location = 0) in vec3 fragColor;
+layout(location = 1) in vec2 fragTexCoord;
+layout(location = 2) in vec3 fragNormal;
+layout(location = 3) in vec4 inWorldPosition;
+layout(location = 4) in mat3 TBN;
 
 // ------------------------------------------------------------------
 // OUTPUT VARIABLES -------------------------------------------------

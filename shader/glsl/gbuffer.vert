@@ -19,23 +19,18 @@ layout(location = 3) in vec3 inNormal;
 layout(location = 4) in vec3 inTangent;
 layout(location = 5) in vec3 inBitangent;
 
-layout(location = 0) out vec3 fragPosition;
-layout(location = 1) out vec3 fragColor;
-layout(location = 2) out vec2 fragTexCoord;
-layout(location = 3) out vec3 fragNormal;
-layout(location = 4) out vec3 fragTangent;
-layout(location = 5) out vec4 worldPosition;
-layout(location = 6) out vec4 shadowMapCoord;
-layout(location = 7) out mat3 TBN;
+layout(location = 0) out vec3 fragColor;
+layout(location = 1) out vec2 fragTexCoord;
+layout(location = 2) out vec3 fragNormal;
+layout(location = 3) out vec4 viewSpacePosition;
+layout(location = 4) out mat3 TBN;
 
 void main() {
-    worldPosition = push.modelMatrix * vec4(inPosition, 1.0);
-    fragPosition = worldPosition.xyz;
+    viewSpacePosition = transforms.view * push.modelMatrix * vec4(inPosition, 1.0);
 
     fragColor = inColor;
     fragTexCoord = inTexCoord;
     fragNormal = normalize(transpose(inverse(mat3(push.modelMatrix))) * inNormal);
-    fragTangent = inTangent;
 
     vec3 N = normalize(vec3(push.modelMatrix * vec4(inNormal, 0.0)));
     vec3 T = normalize(vec3(push.modelMatrix * vec4(inTangent, 0.0)));
