@@ -180,13 +180,17 @@ namespace Raytracing
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
+        ImGui::Begin("Debug Window");
         for (const auto uiWindow: uiWindows)
         {
-            ImGui::Begin(uiWindow->GetTitle());
-            uiWindow->Draw();
-            ImGui::End();
-        }
+            if (ImGui::CollapsingHeader(uiWindow->GetTitle()))
+            {
+                uiWindow->Draw();
+            }
 
+            ImGui::Separator();
+        }
+        ImGui::End();
         // Rendering
         ImGui::Render();
     }

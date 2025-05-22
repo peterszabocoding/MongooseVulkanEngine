@@ -58,7 +58,7 @@ namespace Raytracing
         CameraController& controller;
     };
 
-    class FramebufferViewer : ImGuiWindow {
+    class GBufferViewer : ImGuiWindow {
     public:
         struct FramebufferInfo {
             VkDescriptorSet descriptorSet;
@@ -67,12 +67,12 @@ namespace Raytracing
         };
 
     public:
-        explicit FramebufferViewer(const Ref<VulkanRenderer>& _renderer): ImGuiWindow(_renderer)
+        explicit GBufferViewer(const Ref<VulkanRenderer>& _renderer): ImGuiWindow(_renderer)
         {
             sampler = ImageSamplerBuilder(renderer->GetVulkanDevice()).Build();
         }
 
-        ~FramebufferViewer() override
+        ~GBufferViewer() override
         {
             if (sampler) vkDestroySampler(renderer->GetVulkanDevice()->GetDevice(), sampler, nullptr);
         }
@@ -103,7 +103,7 @@ namespace Raytracing
 
         virtual const char* GetTitle() override
         {
-            return "Pre-Pass Viewer";
+            return "GBuffer Viewer";
         }
 
         virtual void Draw() override
@@ -194,8 +194,8 @@ namespace Raytracing
 
             const ImVec2 availableSpace = ImGui::GetContentRegionAvail();
             const ImVec2 imageSize = {
-                std::min(availableSpace.x, availableSpace.y),
-                std::min(availableSpace.x, availableSpace.y),
+                availableSpace.x,
+                availableSpace.x,
             };
 
             if (shadowMapAttachments.size() > 0)
