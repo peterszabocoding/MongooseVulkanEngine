@@ -31,6 +31,7 @@ layout(push_constant) uniform Push {
     int kernelSize;
     float radius;
     float bias;
+    float strength;
 } push;
 
 
@@ -65,5 +66,5 @@ void main()
     }
 
     occlusion = 1.0 - (occlusion / push.kernelSize);
-    FragColor = pow(occlusion, 1.1);
+    FragColor = pow(occlusion, push.strength);
 }

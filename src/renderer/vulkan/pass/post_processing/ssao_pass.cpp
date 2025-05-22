@@ -53,16 +53,13 @@ namespace Raytracing
 
         };
 
-        SSAOPushConstantData pushConstantData;
-        pushConstantData.resolution = glm::vec2(passWidth, passHeight);
-
+        ssaoParams.resolution = glm::vec2(passWidth, passHeight);
         drawParams.pushConstantParams = {
-            &pushConstantData,
-            sizeof(SSAOPushConstantData)
+            &ssaoParams,
+            sizeof(SSAOParams)
         };
 
         device->DrawMeshlet(drawParams);
-
         renderPass->End(commandBuffer);
     }
 
@@ -94,7 +91,7 @@ namespace Raytracing
 
             pipelineConfig.pushConstantData.shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
             pipelineConfig.pushConstantData.offset = 0;
-            pipelineConfig.pushConstantData.size = sizeof(SSAOPushConstantData);
+            pipelineConfig.pushConstantData.size = sizeof(SSAOParams);
         }
         ssaoPipeline = VulkanPipeline::Builder().Build(device, pipelineConfig);
     }

@@ -88,32 +88,31 @@ namespace Raytracing
         void UpdateLightsBuffer(float deltaTime);
 
     public:
-        DescriptorBuffers descriptorBuffers;
-        Framebuffers framebuffers;
-
-    private:
-        uint32_t viewportWidth, viewportHeight;
-        uint32_t activeImage = 0;
-
         float resolutionScale = 1.0f;
 
-        Scope<VulkanDevice> device;
-        Scope<ShaderCache> shaderCache;
-        Scope<VulkanSwapchain> vulkanSwapChain;
-
-        Scene scene;
-
-        Scope<VulkanMeshlet> screenRect;
-        Ref<VulkanMesh> cubeMesh;
-
-        Ref<VulkanCubeMapTexture> irradianceMap;
-
-        float lightSpinningAngle = 0.0f;
+        DescriptorBuffers descriptorBuffers;
+        Framebuffers framebuffers;
 
         Scope<GBufferPass> gbufferPass;
         Scope<RenderPass> renderPass;
         Scope<ShadowMapPass> shadowMapPass;
         Scope<PresentPass> presentPass;
         Scope<SSAOPass> ssaoPass;
+
+    private:
+        uint32_t viewportWidth, viewportHeight;
+        uint32_t activeImage = 0;
+
+        Scene scene;
+
+        Scope<VulkanDevice> device;
+        Scope<ShaderCache> shaderCache;
+        Scope<VulkanSwapchain> vulkanSwapChain;
+
+        Scope<VulkanMeshlet> screenRect;
+        Ref<VulkanMesh> cubeMesh;
+
+        Ref<VulkanCubeMapTexture> irradianceMap;
+        float lightSpinningAngle = 0.0f;
     };
 }

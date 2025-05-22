@@ -21,13 +21,6 @@ namespace Raytracing
         glm::mat4 modelMatrix{1.f};
     };
 
-    struct SSAOPushConstantData {
-        glm::vec2 resolution;
-        int kernelSize = 64;
-        float radius = 0.25;
-        float bias = 0.025;
-    };
-
     struct TransformPushConstantData {
         glm::mat4 projection{1.f};
         glm::mat4 view{1.f};

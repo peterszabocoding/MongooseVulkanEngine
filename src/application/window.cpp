@@ -74,6 +74,10 @@ namespace Raytracing
 
         imGuiVulkan->AddWindow(
             std::reinterpret_pointer_cast<ImGuiWindow>(
+                CreateRef<PostProcessingWindow>(CAST_REF(VulkanRenderer, renderer))));
+
+        imGuiVulkan->AddWindow(
+            std::reinterpret_pointer_cast<ImGuiWindow>(
                 CreateRef<GBufferViewer>(CAST_REF(VulkanRenderer, renderer))));
 
         imGuiVulkan->AddWindow(

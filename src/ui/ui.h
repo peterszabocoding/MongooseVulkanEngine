@@ -47,8 +47,8 @@ namespace Raytracing
         virtual void Draw() override
         {
             float cameraFov = camera->GetFOV();;
-            ImageUtils::DrawFloatControl("FOV", cameraFov, 0.0f, 180.0f, 0.1f, 45.0f, 150.0f);
-            ImageUtils::DrawFloatControl("Move speed", controller.movementSpeed, 0.0f, 10.0f, 0.001f, 1.0f, 150.0f);
+            ImGuiUtils::DrawFloatControl("FOV", cameraFov, 0.0f, 180.0f, 0.1f, 45.0f, 150.0f);
+            ImGuiUtils::DrawFloatControl("Move speed", controller.movementSpeed, 0.0f, 10.0f, 0.001f, 1.0f, 150.0f);
 
             camera->SetFOV(cameraFov);
         }
@@ -228,16 +228,36 @@ namespace Raytracing
 
         virtual void Draw() override
         {
-            ImageUtils::DrawVec3Control("Direction", light->direction, true, 1.0f, 150.0f);
-            ImageUtils::DrawFloatControl("Intensity", light->intensity, 0.0f, 100.0f, 0.01f, 1.0f, 150.0f);
-            ImageUtils::DrawFloatControl("Ambient Intensity", light->ambientIntensity, 0.0f, 100.0f, 0.01f, 0.01f, 150.0f);
-            ImageUtils::DrawFloatControl("Near plane", light->nearPlane, 0.0f, 100.0f, 0.1f, 1.0f, 150.0f);
-            ImageUtils::DrawFloatControl("Far plane", light->farPlane, 0.0f, 100.0f, 0.1f, 50.0f, 150.0f);
-            ImageUtils::DrawFloatControl("Ortho size", light->orthoSize, 1.0f, 100.0f, 0.1f, 20.0f, 150.0f);
-            ImageUtils::DrawFloatControl("Bias", light->bias, 0.0001f, 1.0f, 0.0001f, 0.005f, 150.0f);
+            ImGuiUtils::DrawVec3Control("Direction", light->direction, true, 1.0f, 150.0f);
+            ImGuiUtils::DrawFloatControl("Intensity", light->intensity, 0.0f, 100.0f, 0.01f, 1.0f, 150.0f);
+            ImGuiUtils::DrawFloatControl("Ambient Intensity", light->ambientIntensity, 0.0f, 100.0f, 0.01f, 0.01f, 150.0f);
+            ImGuiUtils::DrawFloatControl("Near plane", light->nearPlane, 0.0f, 100.0f, 0.1f, 1.0f, 150.0f);
+            ImGuiUtils::DrawFloatControl("Far plane", light->farPlane, 0.0f, 100.0f, 0.1f, 50.0f, 150.0f);
+            ImGuiUtils::DrawFloatControl("Ortho size", light->orthoSize, 1.0f, 100.0f, 0.1f, 20.0f, 150.0f);
+            ImGuiUtils::DrawFloatControl("Bias", light->bias, 0.0001f, 1.0f, 0.0001f, 0.005f, 150.0f);
         }
 
     private:
         DirectionalLight* light;
+    };
+
+    class PostProcessingWindow : ImGuiWindow {
+    public:
+        explicit PostProcessingWindow(const Ref<VulkanRenderer>& _renderer): ImGuiWindow(_renderer) {}
+        ~PostProcessingWindow() override = default;
+
+        virtual const char* GetTitle() override
+        {
+            return "Post Processing";
+        }
+
+        virtual void Draw() override
+        {
+            ImGuiUtils::DrawFloatControl("SSAO Strength", renderer->ssaoPass->ssaoParams.strength, 0.01f, 10.0f, 0.01f, 1.0f, 150.0f);
+            ImGuiUtils::DrawFloatControl("SSAO Radius", renderer->ssaoPass->ssaoParams.radius, 0.01f, 1.0f, 0.01f, 0.25f, 150.0f);
+            ImGuiUtils::DrawFloatControl("SSAO Bias", renderer->ssaoPass->ssaoParams.bias, 0.001f, 1.0f, 0.001f, 0.025f, 150.0f);
+            ImGuiUtils::DrawIntControl("SSAO Kernel Size", renderer->ssaoPass->ssaoParams.kernelSize, 1, 64, 24, 150.0f);
+        }
+
     };
 }

@@ -11,7 +11,7 @@
 
 namespace Raytracing
 {
-    namespace ImageUtils
+    namespace ImGuiUtils
     {
         void DrawFloatControl(const std::string& label, float& values, float min, float max, float steps, float resetValue,
                               float columnWidth)
@@ -31,6 +31,29 @@ namespace Raytracing
 
             ImGui::SetColumnWidth(1, columnWidth);
             ImGui::DragFloat("", &values, steps, min, max, "%.4f");
+
+            ImGui::Columns(1);
+
+            ImGui::PopID();
+        }
+
+        void DrawIntControl(const std::string& label, int& values, int min, int max, int resetValue, float columnWidth)
+        {
+            ImGuiIO& io = ImGui::GetIO();
+
+            ImGui::PushID(label.c_str());
+
+            auto labelSize = ImGui::CalcTextSize(label.c_str());
+
+            ImGui::Text(label.c_str());
+            ImGui::SameLine();
+
+            ImGui::Columns(2);
+            ImGui::SetColumnWidth(0, labelSize.x + 15.0);
+            ImGui::NextColumn();
+
+            ImGui::SetColumnWidth(1, columnWidth);
+            ImGui::DragInt("", &values, 1, min, max);
 
             ImGui::Columns(1);
 
