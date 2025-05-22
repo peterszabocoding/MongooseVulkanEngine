@@ -53,6 +53,8 @@ namespace Raytracing
 
             for (auto& meshlet: scene.meshes[i]->GetMeshlets())
             {
+                if (scene.meshes[i]->GetMaterial(meshlet).params.alphaTested) continue;
+
                 geometryDrawParams.descriptorSets = {
                     scene.meshes[i]->GetMaterial(meshlet).descriptorSet,
                     ShaderCache::descriptorSets.transformDescriptorSet,

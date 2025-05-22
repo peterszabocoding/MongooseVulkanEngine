@@ -69,6 +69,11 @@ namespace Raytracing
         return *this;
     }
 
+    VulkanMaterialBuilder& VulkanMaterialBuilder::SetAlphaTested(bool _alphaTested) {
+        isAlphaTested = _alphaTested;
+        return *this;
+    }
+
     VulkanMaterialBuilder& VulkanMaterialBuilder::SetParams(const MaterialParams& _params)
     {
         params = _params;
@@ -149,6 +154,8 @@ namespace Raytracing
         params.baseColor = baseColor;
         params.metallic = metallic;
         params.roughness = roughness;
+
+        params.alphaTested = isAlphaTested;
 
         VulkanMaterial material;
         material.index = 0;

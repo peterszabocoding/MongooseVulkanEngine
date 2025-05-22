@@ -22,6 +22,7 @@ namespace Raytracing
         int useBaseColorMap = 0;
         int useNormalMap = 0;
         int useMetallicRoughnessMap = 0;
+        int alphaTested = 0;
     };
 
     struct VulkanMaterial {
@@ -57,6 +58,8 @@ namespace Raytracing
         VulkanMaterialBuilder& SetMetallicRoughnessPath(const std::string& metallicRoughnessPath);
         VulkanMaterialBuilder& SetMetallicRoughnessTexture(const Ref<VulkanTexture>& metallicRoughnessTexture);
 
+        VulkanMaterialBuilder& SetAlphaTested(bool _alphaTested);
+
         VulkanMaterialBuilder& SetParams(const MaterialParams& params);
         VulkanMaterialBuilder& SetDescriptorSetLayout(Ref<VulkanDescriptorSetLayout> _descriptorSetLayout);
         VulkanMaterial Build();
@@ -79,5 +82,7 @@ namespace Raytracing
         glm::vec4 baseColor = {1.0f, 1.0f, 1.0f, 1.0f};
         float metallic = 0.0f;
         float roughness = 1.0f;
+
+        bool isAlphaTested = false;
     };
 }

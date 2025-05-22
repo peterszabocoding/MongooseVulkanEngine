@@ -224,6 +224,7 @@ namespace Raytracing
                 builder.SetBaseColor(glm::make_vec4(material.pbrMetallicRoughness.baseColorFactor.data()));
                 builder.SetMetallic(material.pbrMetallicRoughness.metallicFactor);
                 builder.SetRoughness(material.pbrMetallicRoughness.roughnessFactor);
+                builder.SetAlphaTested(material.alphaMode != "OPAQUE");
 
                 materials.push_back(builder.Build());
             }

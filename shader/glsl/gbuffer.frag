@@ -37,6 +37,7 @@ layout(set = 0, binding = 0) uniform MaterialParams {
     bool useBaseColorMap;
     bool useNormalMap;
     bool useMetallicRoughnessMap;
+    bool alphaTested;
 } materialParams;
 
 layout(set = 0, binding = 1) uniform sampler2D baseColorSampler;
@@ -53,31 +54,14 @@ vec3 CalcSurfaceNormal(vec3 normalFromTexture, mat3 TBN)
 }
 
 void main() {
-    vec3 baseColor = materialParams.useBaseColorMap ? pow(texture(baseColorSampler, fragTexCoord).rgb, vec3(2.2)) : materialParams.baseColor.rgb;
-    vec3 albedo = fragColor * materialParams.tint.rgb * baseColor;
-
-    /*
-    float metallic = materialParams.metallic;
-    float roughness = materialParams.roughness;
-    float occlusion = 1.0;
-
-    if (materialParams.useMetallicRoughnessMap)
-    {
-        vec4 metallicRoughness = texture(metallicRoughnessSampler, fragTexCoord);
-
-        occlusion =  metallicRoughness.r;
-        metallic =  metallicRoughness.b;
-        roughness = metallicRoughness.g;
-    }
-    */
+    vec4 baseColorSampled = texture(baseColorSampler, fragTexCoord);
+    vec3 baseColor = materialParams.useBaseColorMap ? pow(baseColorSampled.rgb, vec3(2.2)) : materialParams.baseColor.rgb;
 
     vec3 normalMapColor = texture(normalSampler, fragTexCoord).rgb;
     vec3 N = materialParams.useNormalMap ? CalcSurfaceNormal(normalMapColor, TBN) : fragNormal;
 
     /////////////////   GBuffer   ////////////////////////
-    //baseColorImage = vec4(albedo, 1.0);
-    normalImage = vec4(N, 1.0);
-    //metallicRoughnessImage = vec4(occlusion, metallic, roughness, 1.0);
+    normalImage = vec4(N, baseColorSampled.a);
     outWorldPosition = vec4(inWorldPosition.xyz, 1.0);
     /////////////////////////////////////////////////////
 }

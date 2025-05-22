@@ -39,7 +39,8 @@ namespace Raytracing
         resource.height = height;
         resource.data = pixels;
         resource.size = size;
-        resource.format = ImageFormat::RGB32_SFLOAT;
+        resource.channels = channels;
+        resource.format = ImageFormat::RGBA8_UNORM;
 
         return resource;
     }
@@ -109,7 +110,7 @@ namespace Raytracing
         Ref<VulkanTexture> texture = VulkanTexture::Builder()
                 .SetData(imageResource.data, imageResource.size)
                 .SetResolution(imageResource.width, imageResource.height)
-                .SetFormat(ImageFormat::RGBA8_UNORM)
+                .SetFormat(imageResource.format)
                 .SetFilter(VK_FILTER_LINEAR, VK_FILTER_LINEAR)
                 .SetTiling(VK_IMAGE_TILING_OPTIMAL)
                 .AddUsage(VK_IMAGE_USAGE_TRANSFER_DST_BIT)

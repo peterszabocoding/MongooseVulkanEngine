@@ -37,8 +37,16 @@ layout(push_constant) uniform Push {
 
 void main()
 {
+    vec4 normalSampled = texture(gNormal, TexCoords);
+    if (normalSampled.a < 0.5)
+    {
+        FragColor = 1.0;
+        return;
+    }
+
+    vec3 normal    = normalSampled.rgb;
+
     vec3 fragPos   = texture(gPosition, TexCoords).xyz;
-    vec3 normal    = texture(gNormal, TexCoords).rgb;
     vec3 randomVec = texture(texNoise, TexCoords * push.resolution).xyz;
 
     vec3 tangent   = normalize(randomVec - normal * dot(randomVec, normal));

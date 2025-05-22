@@ -39,6 +39,7 @@ layout(set = 0, binding = 0) uniform MaterialParams {
     bool useBaseColorMap;
     bool useNormalMap;
     bool useMetallicRoughnessMap;
+    bool alphaTested;
 } materialParams;
 layout(set = 0, binding = 1) uniform sampler2D baseColorSampler;
 layout(set = 0, binding = 2) uniform sampler2D normalSampler;
@@ -104,7 +105,10 @@ vec3 CalcDirectionalLightRadiance(vec3 direction)
 }
 
 void main() {
-    vec3 baseColor = materialParams.useBaseColorMap ? pow(texture(baseColorSampler, fragTexCoord).rgb, vec3(2.2)) : materialParams.baseColor.rgb;
+    vec4 baseColorSampled = texture(baseColorSampler, fragTexCoord);
+    if( baseColorSampled.a < 0.5 ){ discard; }
+
+    vec3 baseColor = materialParams.useBaseColorMap ? pow(baseColorSampled.rgb, vec3(2.2)) : materialParams.baseColor.rgb;
 
     vec3 albedo = fragColor * materialParams.tint.rgb * baseColor;
 
