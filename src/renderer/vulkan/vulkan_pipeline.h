@@ -112,7 +112,7 @@ namespace Raytracing
             Builder& SetMultisampling(VkSampleCountFlagBits sampleCountFlagBits = VK_SAMPLE_COUNT_1_BIT);
             Builder& AddDescriptorSetLayout(Ref<VulkanDescriptorSetLayout> _descriptorSetLayout);
             Builder& DisableBlending();
-            Builder& AddColorAttachment(ImageFormat format);
+            Builder& AddColorAttachment(ImageFormat format, VkPipelineColorBlendAttachmentState blendState = ALPHA_BLENDING);
             Builder& SetDepthFormat(ImageFormat format);
             Builder& EnableDepthTest();
             Builder& DisableDepthTest();
@@ -125,8 +125,11 @@ namespace Raytracing
         private:
             void clear();
 
-        private:
         public:
+            static VkPipelineColorBlendAttachmentState ADDITIVE_BLENDING;
+            static VkPipelineColorBlendAttachmentState ALPHA_BLENDING;
+
+        private:
             std::string vertexShaderPath;
             std::string fragmentShaderPath;
             VkPipelineInputAssemblyStateCreateInfo inputAssembly{};

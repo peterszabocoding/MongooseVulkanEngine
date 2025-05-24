@@ -24,6 +24,7 @@ namespace Raytracing
 
             struct DepthAttachment {
                 VkFormat depthFormat = VK_FORMAT_D24_UNORM_S8_UINT;
+                bool clearOnLoad = true;
             };
 
         public:
@@ -34,6 +35,7 @@ namespace Raytracing
                                         glm::vec4 clearColor = glm::vec4(0.0, 0.0, 0.0, 1.0),
                                         VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT);
             Builder& AddDepthAttachment(VkFormat depthFormat = VK_FORMAT_D24_UNORM_S8_UINT);
+            Builder& AddDepthAttachment(DepthAttachment depthAttachment);
             Ref<VulkanRenderPass> Build();
 
         private:

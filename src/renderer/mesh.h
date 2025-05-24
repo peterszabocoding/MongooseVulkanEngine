@@ -103,6 +103,17 @@ namespace Raytracing
             {{-1.0f, 1.0f, 0.0f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f},}
         };
 
+        const std::vector<uint32_t> GRID_INDICES = {
+            0, 2, 1, 2, 0, 3
+        };
+
+        const std::vector<Vertex> GRID_VERTICES = {
+            {{-1.0f, 0.0f, -1.0f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f},},
+            {{1.0f, 0.0f, -1.0f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 0.0f},},
+            {{1.0f, 0.0f, 1.0f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f},},
+            {{-1.0f, 0.0f, 1.0f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f},}
+        };
+
         const std::vector<uint32_t> CUBE_INDICES = {
             3, 0, 2,
             0, 3, 1,

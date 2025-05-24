@@ -1,0 +1,35 @@
+#pragma once
+#include "vulkan_pass.h"
+
+namespace Raytracing
+{
+    struct GridParams {
+        alignas(16) glm::vec3 gridColorThin = glm::vec3(0.5f, 0.5f, 0.5f);
+        alignas(16) glm::vec3 gridColorThick = glm::vec3(1.0f, 1.0f, 1.0f);
+        alignas(16) glm::vec3 origin = glm::vec3(0.0f, 0.001f, 0.0f);
+        float gridSize = 50.0f;
+        float gridCellSize = 1.0f;
+    };
+
+    class InfiniteGridPass : public VulkanPass {
+    public:
+        InfiniteGridPass(VulkanDevice* vulkanDevice);
+        ~InfiniteGridPass() override = default;
+
+        virtual void Render(VkCommandBuffer commandBuffer,
+                            uint32_t imageIndex,
+                            Ref<VulkanFramebuffer> writeBuffer,
+                            Ref<VulkanFramebuffer> readBuffer) override;
+
+    private:
+        void LoadPipelines();
+
+    public:
+        Ref<VulkanRenderPass> renderPass{};
+        Ref<VulkanPipeline> gridPipeline;
+        GridParams gridParams;
+
+    private:
+        Scope<VulkanMeshlet> screenRect;
+    };
+}

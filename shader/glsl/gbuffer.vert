@@ -37,5 +37,5 @@ void main() {
     vec3 B = normalize(vec3(push.modelMatrix * vec4(inBitangent, 0.0)));
     TBN = mat3(T, B, N);
 
-    gl_Position = transforms.projection * transforms.view * push.modelMatrix * vec4(inPosition, 1.0);
+    gl_Position = transforms.projection * viewSpacePosition;
 }

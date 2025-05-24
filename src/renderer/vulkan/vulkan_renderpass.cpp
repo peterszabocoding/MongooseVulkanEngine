@@ -26,6 +26,12 @@ namespace Raytracing
         return *this;
     }
 
+    VulkanRenderPass::Builder& VulkanRenderPass::Builder::AddDepthAttachment(DepthAttachment depthAttachment)
+    {
+        depthAttachments.push_back(depthAttachment);
+        return *this;
+    }
+
     Ref<VulkanRenderPass> VulkanRenderPass::Builder::Build()
     {
         uint32_t attachmentIndex = 0;
@@ -73,7 +79,7 @@ namespace Raytracing
             VkAttachmentDescription attachment{};
             attachment.format = depthAttachment.depthFormat;
             attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-            attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+            attachment.loadOp = depthAttachment.clearOnLoad ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
             attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
             attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
             attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;

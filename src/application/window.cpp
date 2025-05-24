@@ -70,6 +70,10 @@ namespace Raytracing
 
         imGuiVulkan->AddWindow(
             std::reinterpret_pointer_cast<ImGuiWindow>(
+                CreateRef<GridSettingsWindow>(CAST_REF(VulkanRenderer, renderer))));
+
+        imGuiVulkan->AddWindow(
+            std::reinterpret_pointer_cast<ImGuiWindow>(
                 CreateRef<LightSettingsWindow>(CAST_REF(VulkanRenderer, renderer))));
 
         imGuiVulkan->AddWindow(

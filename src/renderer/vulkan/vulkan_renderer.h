@@ -9,9 +9,11 @@
 #include "vulkan_cube_map_texture.h"
 #include "vulkan_reflection_probe.h"
 #include "pass/gbufferPass.h"
+#include "pass/infinite_grid_pass.h"
 #include "pass/present_pass.h"
 #include "pass/render_pass.h"
 #include "pass/shadow_map_pass.h"
+#include "pass/skybox_pass.h"
 #include "pass/post_processing/ssao_pass.h"
 #include "renderer/Light.h"
 #include "renderer/shader_cache.h"
@@ -94,10 +96,12 @@ namespace Raytracing
         Framebuffers framebuffers;
 
         Scope<GBufferPass> gbufferPass;
+        Scope<SkyboxPass> skyboxPass;
         Scope<RenderPass> renderPass;
         Scope<ShadowMapPass> shadowMapPass;
         Scope<PresentPass> presentPass;
         Scope<SSAOPass> ssaoPass;
+        Scope<InfiniteGridPass> gridPass;
 
     private:
         uint32_t viewportWidth, viewportHeight;

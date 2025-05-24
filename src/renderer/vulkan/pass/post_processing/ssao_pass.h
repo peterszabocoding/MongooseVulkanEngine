@@ -9,9 +9,9 @@ namespace Raytracing
 
     struct SSAOParams {
         glm::vec2 resolution;
-        int kernelSize = 24;
-        float radius = 0.25f;
-        float bias = 0.025f;
+        int kernelSize = 16;
+        float radius = 0.85f;
+        float bias = 0.075f;
         float strength = 2.0f;
     };
 

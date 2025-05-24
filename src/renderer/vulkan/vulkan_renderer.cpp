@@ -39,8 +39,8 @@ namespace Raytracing
 
         LOG_TRACE("Load scene");
         //scene = ResourceManager::LoadScene(device.get(), "resources/PBRCheck/pbr_check.gltf", "resources/environment/newport_loft.hdr");
-        //scene = ResourceManager::LoadScene(device.get(), "resources/cannon/cannon.gltf", "resources/environment/newport_loft.hdr");
-        scene = ResourceManager::LoadScene(device.get(), "resources/sponza/Sponza.gltf", "resources/environment/newport_loft.hdr");
+        scene = ResourceManager::LoadScene(device.get(), "resources/cannon/cannon.gltf", "resources/environment/newport_loft.hdr");
+        //scene = ResourceManager::LoadScene(device.get(), "resources/sponza/Sponza.gltf", "resources/environment/newport_loft.hdr");
         //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/MetalRoughSpheres/MetalRoughSpheres.gltf");
         //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/vertex_color/vertex_color.gltf");
         //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/normal_tangent/NormalTangentTest.gltf");
@@ -54,10 +54,12 @@ namespace Raytracing
         gbufferPass = CreateScope<GBufferPass>(device.get(), scene);
         gbufferPass->SetSize(viewportWidth * resolutionScale, viewportHeight * resolutionScale);
 
+        skyboxPass = CreateScope<SkyboxPass>(device.get(), scene);
         renderPass = CreateScope<RenderPass>(device.get(), scene);
         shadowMapPass = CreateScope<ShadowMapPass>(device.get(), scene);
         presentPass = CreateScope<PresentPass>(device.get());
         ssaoPass = CreateScope<SSAOPass>(device.get());
+        gridPass = CreateScope<InfiniteGridPass>(device.get());
 
         CreateSwapchain();
         CreateFramebuffers();
@@ -111,14 +113,24 @@ namespace Raytracing
                               );
                               ssaoPass->Render(commandBuffer, activeImage, framebuffers.ssaoFramebuffers[activeImage], nullptr);
 
+                              skyboxPass->SetSize(
+                                  framebuffers.geometryFramebuffers[activeImage]->GetWidth(),
+                                  framebuffers.geometryFramebuffers[activeImage]->GetHeight());
+                              skyboxPass->Render(commandBuffer, activeImage, framebuffers.geometryFramebuffers[activeImage], nullptr);
+
                               renderPass->SetCamera(*camera);
                               renderPass->SetSize(
                                   framebuffers.geometryFramebuffers[activeImage]->GetWidth(),
                                   framebuffers.geometryFramebuffers[activeImage]->GetHeight());
                               renderPass->Render(commandBuffer, activeImage, framebuffers.geometryFramebuffers[activeImage], nullptr);
 
+                              gridPass->SetSize(framebuffers.geometryFramebuffers[activeImage]->GetWidth(),
+                                                framebuffers.geometryFramebuffers[activeImage]->GetHeight());
+                              gridPass->Render(commandBuffer, activeImage, framebuffers.geometryFramebuffers[activeImage], nullptr);
+
                               presentPass->SetSize(vulkanSwapChain->GetExtent().width, vulkanSwapChain->GetExtent().height);
                               presentPass->Render(commandBuffer, activeImage, framebuffers.presentFramebuffers[activeImage], nullptr);
+
                           }, std::bind(&VulkanRenderer::ResizeSwapchain, this));
     }
 

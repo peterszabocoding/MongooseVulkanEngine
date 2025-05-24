@@ -61,6 +61,28 @@ namespace Raytracing
         }
     }
 
+    VkPipelineColorBlendAttachmentState VulkanPipeline::Builder::ADDITIVE_BLENDING = {
+        VK_TRUE,
+        VK_BLEND_FACTOR_SRC_ALPHA,
+        VK_BLEND_FACTOR_ONE,
+        VK_BLEND_OP_ADD,
+        VK_BLEND_FACTOR_ONE,
+        VK_BLEND_FACTOR_ZERO,
+        VK_BLEND_OP_ADD,
+        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
+    };
+
+    VkPipelineColorBlendAttachmentState VulkanPipeline::Builder::ALPHA_BLENDING = {
+        VK_TRUE,
+        VK_BLEND_FACTOR_SRC_ALPHA,
+        VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+        VK_BLEND_OP_ADD,
+        VK_BLEND_FACTOR_ONE,
+        VK_BLEND_FACTOR_ZERO,
+        VK_BLEND_OP_ADD,
+        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
+    };
+
     VulkanPipeline::~VulkanPipeline()
     {
         vkDestroyShaderModule(vulkanDevice->GetDevice(), params.vertexShaderModule, nullptr);
@@ -235,7 +257,7 @@ namespace Raytracing
 
         // Descriptor Set Layout
 
-        for (const auto& layout : config.descriptorSetLayouts)
+        for (const auto& layout: config.descriptorSetLayouts)
             AddDescriptorSetLayout(layout);
 
         // Color attachments
@@ -304,10 +326,10 @@ namespace Raytracing
         return *this;
     }
 
-    VulkanPipeline::Builder& VulkanPipeline::Builder::AddColorAttachment(const ImageFormat format)
+    VulkanPipeline::Builder& VulkanPipeline::Builder::AddColorAttachment(const ImageFormat format, VkPipelineColorBlendAttachmentState blendState)
     {
         colorAttachmentFormats.push_back(VulkanUtils::ConvertImageFormat(format));
-        colorBlendAttachments.push_back({});
+        colorBlendAttachments.push_back(blendState);
         return *this;
     }
 

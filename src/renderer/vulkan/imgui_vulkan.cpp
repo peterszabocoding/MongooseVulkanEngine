@@ -13,8 +13,7 @@ namespace Raytracing
 {
     namespace ImGuiUtils
     {
-        void DrawFloatControl(const std::string& label, float& values, float min, float max, float steps, float resetValue,
-                              float columnWidth)
+        void DrawFloatControl(const std::string& label, float& values, float min, float max, float steps, float columnWidth)
         {
             ImGuiIO& io = ImGui::GetIO();
 
@@ -37,7 +36,7 @@ namespace Raytracing
             ImGui::PopID();
         }
 
-        void DrawIntControl(const std::string& label, int& values, int min, int max, int resetValue, float columnWidth)
+        void DrawIntControl(const std::string& label, int& values, int min, int max, float columnWidth)
         {
             ImGuiIO& io = ImGui::GetIO();
 
@@ -127,6 +126,29 @@ namespace Raytracing
 
             if (normalizeVector)
                 values = glm::normalize(values);
+
+            ImGui::PopID();
+        }
+
+        void DrawRGBColorPicker(const std::string& label, glm::vec3& values, float columnWidth)
+        {
+            ImGuiIO& io = ImGui::GetIO();
+            auto boldFont = io.Fonts->Fonts[0];
+
+            ImGui::PushID(label.c_str());
+
+            ImGui::Dummy({ columnWidth , 1.0f });
+
+            ImGui::Columns(2);
+            ImGui::SetColumnWidth(0, columnWidth / 3);
+            ImGui::Text(label.c_str());
+            ImGui::NextColumn();
+
+            ImGui::SetColumnWidth(1, columnWidth);
+            ImGui::ColorEdit3("", &values[0], 0.1f);
+            ImGui::Dummy({ columnWidth , 1.0f });
+
+            ImGui::Columns(1);
 
             ImGui::PopID();
         }

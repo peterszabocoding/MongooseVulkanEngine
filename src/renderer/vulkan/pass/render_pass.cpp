@@ -9,11 +9,9 @@ namespace Raytracing
     RenderPass::RenderPass(VulkanDevice* vulkanDevice, Scene& _scene): VulkanPass(vulkanDevice), scene(_scene)
     {
         renderPass = VulkanRenderPass::Builder(vulkanDevice)
-                .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM, false)
+                .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM, false, false)
                 .AddDepthAttachment()
                 .Build();
-
-        cubeMesh = ResourceManager::LoadMesh(device, "resources/models/cube.obj");
         LoadPipelines();
     }
 
@@ -29,8 +27,6 @@ namespace Raytracing
 
         device->SetViewportAndScissor(extent, commandBuffer);
         renderPass->Begin(commandBuffer, writeBuffer, extent);
-
-        DrawSkybox(commandBuffer);
 
         DrawCommandParams geometryDrawParams{};
         geometryDrawParams.commandBuffer = commandBuffer;
@@ -74,53 +70,8 @@ namespace Raytracing
         renderPass->End(commandBuffer);
     }
 
-    void RenderPass::DrawSkybox(const VkCommandBuffer commandBuffer) const
-    {
-        DrawCommandParams skyboxDrawParams{};
-        skyboxDrawParams.commandBuffer = commandBuffer;
-        skyboxDrawParams.meshlet = &cubeMesh->GetMeshlets()[0];
-
-        skyboxDrawParams.pipelineParams = {
-            skyBoxPipeline->GetPipeline(),
-            skyBoxPipeline->GetPipelineLayout()
-        };
-
-        skyboxDrawParams.descriptorSets = {
-            scene.skybox->descriptorSet,
-            ShaderCache::descriptorSets.transformDescriptorSet
-        };
-
-        device->DrawMeshlet(skyboxDrawParams);
-    }
-
     void RenderPass::LoadPipelines()
     {
-        LOG_TRACE("Building skybox pipeline");
-        PipelineConfig skyboxPipelineConfig; {
-            skyboxPipelineConfig.vertexShaderPath = "shader/spv/skybox.vert.spv";
-            skyboxPipelineConfig.fragmentShaderPath = "shader/spv/skybox.frag.spv";
-
-            skyboxPipelineConfig.cullMode = PipelineCullMode::Front;
-            skyboxPipelineConfig.polygonMode = PipelinePolygonMode::Fill;
-            skyboxPipelineConfig.frontFace = PipelineFrontFace::Counter_clockwise;
-
-            skyboxPipelineConfig.descriptorSetLayouts = {
-                ShaderCache::descriptorSetLayouts.cubemapDescriptorSetLayout,
-                ShaderCache::descriptorSetLayouts.transformDescriptorSetLayout,
-            };
-
-            skyboxPipelineConfig.colorAttachments = {
-                ImageFormat::RGBA8_UNORM,
-            };
-
-            skyboxPipelineConfig.disableBlending = true;
-            skyboxPipelineConfig.enableDepthTest = false;
-            skyboxPipelineConfig.depthAttachment = ImageFormat::DEPTH24_STENCIL8;
-
-            skyboxPipelineConfig.renderPass = renderPass;
-        }
-        skyBoxPipeline = VulkanPipeline::Builder().Build(device, skyboxPipelineConfig);
-
         LOG_TRACE("Building geometry pipeline");
         PipelineConfig geometryPipelineConfig; {
             geometryPipelineConfig.vertexShaderPath = "shader/spv/base-pass.vert.spv";

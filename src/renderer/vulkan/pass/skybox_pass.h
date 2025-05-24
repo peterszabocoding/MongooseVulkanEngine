@@ -1,22 +1,18 @@
 #pragma once
-
-#include "renderer/scene.h"
 #include "vulkan_pass.h"
+#include "renderer/scene.h"
 
-namespace Raytracing
-{
-    class RenderPass : public VulkanPass {
+namespace Raytracing {
+
+    class SkyboxPass : public VulkanPass {
     public:
-        explicit RenderPass(VulkanDevice* vulkanDevice, Scene& _scene);
-        virtual ~RenderPass() override = default;
-
-        void SetCamera(const Camera& camera);
+        SkyboxPass(VulkanDevice* vulkanDevice, Scene& _scene);
+        ~SkyboxPass() override = default;
 
         virtual void Render(VkCommandBuffer commandBuffer,
                             uint32_t imageIndex,
                             Ref<VulkanFramebuffer> writeBuffer,
                             Ref<VulkanFramebuffer> readBuffer) override;
-        void DrawSkybox(VkCommandBuffer commandBuffer) const;
 
         Ref<VulkanRenderPass> GetRenderPass() { return renderPass; }
 
@@ -25,9 +21,10 @@ namespace Raytracing
 
     private:
         Scene& scene;
-        Camera camera;
 
         Ref<VulkanRenderPass> renderPass{};
-        Ref<VulkanPipeline> geometryPipeline;
+        Ref<VulkanPipeline> skyboxPipeline;
+        Ref<VulkanMesh> cubeMesh;
     };
-}
+
+} // Raytracing

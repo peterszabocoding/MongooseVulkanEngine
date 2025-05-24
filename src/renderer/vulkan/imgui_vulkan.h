@@ -5,11 +5,10 @@ namespace Raytracing
 {
     namespace ImGuiUtils
     {
-        void DrawFloatControl(const std::string& label, float& values, float min, float max, float steps, float resetValue,
-                              float columnWidth);
         void DrawVec3Control(const std::string& label, glm::vec3& values, bool normalizeVector, float resetValue, float columnWidth);
-
-        void DrawIntControl(const std::string& label, int& values, int min, int max, int resetValue, float columnWidth);
+        void DrawFloatControl(const std::string& label, float& values, float min, float max, float steps,float columnWidth);
+        void DrawIntControl(const std::string& label, int& values, int min, int max, float columnWidth);
+        void DrawRGBColorPicker(const std::string& label, glm::vec3& values, float columnWidth = 100.0f);
     }
 
     class ImGuiWindow {
