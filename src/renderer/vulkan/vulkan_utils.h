@@ -394,6 +394,22 @@ namespace Raytracing::VulkanUtils
         return shader_module;
     }
 
+    static VkShaderModule CreateShaderModule(const VkDevice device, const std::vector<uint32_t>& code)
+    {
+        VkShaderModuleCreateInfo create_info{};
+        create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+        create_info.codeSize = 4 * code.size();
+        create_info.pCode = code.data();
+
+        VkShaderModule shader_module;
+
+        VK_CHECK_MSG(
+            vkCreateShaderModule(device, &create_info, nullptr, &shader_module),
+            "Failed to create shader module.");
+
+        return shader_module;
+    }
+
     static uint32_t FindMemoryType(const VkPhysicalDevice physicalDevice, const uint32_t typeFilter,
                                    const VkMemoryPropertyFlags properties)
     {

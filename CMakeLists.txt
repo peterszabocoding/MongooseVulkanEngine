@@ -185,7 +185,7 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "AppleClang")
 endif ()
 
 # Global definitions
-# add_compile_definitions(NDEBUG)
+add_compile_definitions(NDEBUG)
 
 set(_ITERATOR_DEBUG_LEVEL 0)
 

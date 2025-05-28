@@ -108,8 +108,8 @@ namespace Raytracing
     void IrradianceMapGenerator::LoadPipeline()
     {
         PipelineConfig iblIrradianceMapPipelineConfig; {
-            iblIrradianceMapPipelineConfig.vertexShaderPath = "shader/spv/cubemap.vert.spv";
-            iblIrradianceMapPipelineConfig.fragmentShaderPath = "shader/spv/irradiance_convolution.frag.spv";
+            iblIrradianceMapPipelineConfig.vertexShaderPath = "shader\\glsl\\cubemap.vert";
+            iblIrradianceMapPipelineConfig.fragmentShaderPath = "shader\\glsl\\irradiance_convolution.frag";
 
             iblIrradianceMapPipelineConfig.cullMode = PipelineCullMode::Back;
             iblIrradianceMapPipelineConfig.polygonMode = PipelinePolygonMode::Fill;

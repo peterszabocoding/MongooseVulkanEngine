@@ -115,8 +115,8 @@ namespace Raytracing {
 
     void ReflectionProbeGenerator::LoadPipeline() {
         PipelineConfig iblBrdfPipelineConfig; {
-            iblBrdfPipelineConfig.vertexShaderPath = "shader/spv/brdf.vert.spv";
-            iblBrdfPipelineConfig.fragmentShaderPath = "shader/spv/brdf.frag.spv";
+            iblBrdfPipelineConfig.vertexShaderPath = "shader\\glsl\\brdf.vert";
+            iblBrdfPipelineConfig.fragmentShaderPath = "shader\\glsl\\brdf.frag";
 
             iblBrdfPipelineConfig.cullMode = PipelineCullMode::Front;
             iblBrdfPipelineConfig.polygonMode = PipelinePolygonMode::Fill;
@@ -136,8 +136,8 @@ namespace Raytracing {
         brdfLutPipeline = VulkanPipeline::Builder().Build(device, iblBrdfPipelineConfig);
 
         PipelineConfig iblPrefilterPipelineConfig; {
-            iblPrefilterPipelineConfig.vertexShaderPath = "shader/spv/cubemap.vert.spv";
-            iblPrefilterPipelineConfig.fragmentShaderPath = "shader/spv/prefilter.frag.spv";
+            iblPrefilterPipelineConfig.vertexShaderPath = "shader\\glsl\\cubemap.vert";
+            iblPrefilterPipelineConfig.fragmentShaderPath = "shader\\glsl\\prefilter.frag";
 
             iblPrefilterPipelineConfig.cullMode = PipelineCullMode::Back;
             iblPrefilterPipelineConfig.polygonMode = PipelinePolygonMode::Fill;

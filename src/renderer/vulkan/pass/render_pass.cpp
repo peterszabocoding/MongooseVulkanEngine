@@ -74,8 +74,8 @@ namespace Raytracing
     {
         LOG_TRACE("Building geometry pipeline");
         PipelineConfig geometryPipelineConfig; {
-            geometryPipelineConfig.vertexShaderPath = "shader/spv/base-pass.vert.spv";
-            geometryPipelineConfig.fragmentShaderPath = "shader/spv/lighting-pass.frag.spv";
+            geometryPipelineConfig.vertexShaderPath = "shader\\glsl\\base-pass.vert";
+            geometryPipelineConfig.fragmentShaderPath = "shader\\glsl\\lighting-pass.frag";
 
             geometryPipelineConfig.cullMode = PipelineCullMode::Back;
             geometryPipelineConfig.polygonMode = PipelinePolygonMode::Fill;

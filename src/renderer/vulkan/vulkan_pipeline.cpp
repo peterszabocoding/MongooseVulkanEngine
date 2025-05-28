@@ -5,6 +5,7 @@
 #include "util/filesystem.h"
 
 #include "vulkan_device.h"
+#include "renderer/shader_cache.h"
 #include "util/log.h"
 
 namespace Raytracing
@@ -97,8 +98,8 @@ namespace Raytracing
     {
         std::vector<VkPipelineShaderStageCreateInfo> pipelineShaderStageCreateInfos;
 
-        const auto vert_shader_code = FileSystem::ReadFile(vertexShaderPath);
-        const auto frag_shader_code = FileSystem::ReadFile(fragmentShaderPath);
+        const auto vert_shader_code = ShaderCache::shaderCache.at(vertexShaderPath);
+        const auto frag_shader_code = ShaderCache::shaderCache.at(fragmentShaderPath);
 
         VkShaderModule vertexShaderModule = VulkanUtils::CreateShaderModule(vulkanDevice->GetDevice(), vert_shader_code);
         VkShaderModule fragmentShaderModule = VulkanUtils::CreateShaderModule(vulkanDevice->GetDevice(), frag_shader_code);

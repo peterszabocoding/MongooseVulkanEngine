@@ -48,8 +48,8 @@ namespace Raytracing
     {
         LOG_TRACE("Building present pipeline");
         PipelineConfig presentPipelineConfig; {
-            presentPipelineConfig.vertexShaderPath = "shader/spv/quad.vert.spv";
-            presentPipelineConfig.fragmentShaderPath = "shader/spv/quad.frag.spv";
+            presentPipelineConfig.vertexShaderPath = "shader\\glsl\\quad.vert";
+            presentPipelineConfig.fragmentShaderPath = "shader\\glsl\\quad.frag";
 
             presentPipelineConfig.cullMode = PipelineCullMode::Front;
             presentPipelineConfig.polygonMode = PipelinePolygonMode::Fill;

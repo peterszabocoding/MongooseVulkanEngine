@@ -42,19 +42,14 @@ namespace Raytracing
 
 
         LOG_TRACE("Load scene");
-        scene = ResourceManager::LoadScene(device.get(), "resources/PBRCheck/pbr_check.gltf", "resources/environment/kloppenheim_03_puresky_4k.hdr");
         //scene = ResourceManager::LoadScene(device.get(), "resources/PBRCheck/pbr_check.gltf", "resources/environment/etzwihl_4k.hdr");
-        //scene = ResourceManager::LoadScene(device.get(), "resources/PBRCheck/pbr_check.gltf", "resources/environment/kloppenheim_03_puresky_4k.hdr");
-        //scene = ResourceManager::LoadScene(device.get(), "resources/cannon/cannon.gltf", "resources/environment/kloppenheim_06_puresky_4k.hdr");
-        //scene = ResourceManager::LoadScene(device.get(), "resources/sponza/Sponza.gltf", "resources/environment/kloppenheim_03_puresky_4k.hdr");
-        //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/MetalRoughSpheres/MetalRoughSpheres.gltf");
-        //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/vertex_color/vertex_color.gltf");
-        //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/normal_tangent/NormalTangentTest.gltf");
-        //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/gltf/multiple_spheres.gltf");
-        //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/chess/ABeautifulGame.gltf");
-        //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/SciFiHelmet/SciFiHelmet.gltf");
-        //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/DamagedHelmet/DamagedHelmet.gltf");
-        //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/tests/orientation_test/orientation_test.gltf");
+        scene = ResourceManager::LoadScene(device.get(), "resources/cannon/cannon.gltf", "resources/environment/etzwihl_4k.hdr");
+        //scene = ResourceManager::LoadScene(device.get(), "resources/sponza/Sponza.gltf", "resources/environment/etzwihl_4k.hdr");
+        //scene = ResourceManager::LoadScene(device.get(), "resources/MetalRoughSpheres/MetalRoughSpheres.gltf", "resources/environment/etzwihl_4k.hdr");
+        //scene = ResourceManager::LoadScene(device.get(), "resources/gltf/multiple_spheres.gltf", "resources/environment/etzwihl_4k.hdr");
+        //scene = ResourceManager::LoadScene(device.get(), "resources/chess/ABeautifulGame.gltf", "resources/environment/etzwihl_4k.hdr");
+        //scene = ResourceManager::LoadScene(device.get(), "resources/DamagedHelmet/DamagedHelmet.gltf", "resources/environment/etzwihl_4k.hdr");
+
         scene.directionalLight.direction = normalize(glm::vec3(0.0f, -2.0f, -1.0f));
 
         gbufferPass = CreateScope<GBufferPass>(device.get(), scene);

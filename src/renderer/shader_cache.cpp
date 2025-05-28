@@ -38,7 +38,7 @@ namespace Raytracing
     void ShaderCache::LoadShaders()
     {
         VulkanShaderCompiler compiler;
-        const auto glslFiles = FileSystem::GetFilesFromDirectory("shader/glsl", true);
+        const auto glslFiles = FileSystem::GetFilesFromDirectory("shader\\glsl", true);
 
         for (const auto& file: glslFiles)
         {
