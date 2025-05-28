@@ -49,6 +49,8 @@ namespace Raytracing
 
 
         AllocatedImage allocatedImage;
+        allocatedImage.width = width;
+        allocatedImage.height = height;
 
         VmaAllocationCreateInfo vmaallocInfo = {};
         vmaallocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;

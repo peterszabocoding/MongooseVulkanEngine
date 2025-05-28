@@ -72,6 +72,8 @@ namespace Raytracing
         VkImageView GetImageView() const { return imageView; }
         VkImageView GetFaceImageView(size_t faceIndex, uint32_t mipLevel) const { return mipmapFaceImageViews[mipLevel][faceIndex]; }
         VkSampler GetSampler() const { return sampler; }
+        uint32_t GetWidth() const { return allocatedImage.width; }
+        uint32_t GetHeight() const { return allocatedImage.height; }
 
     private:
         VulkanDevice* device;

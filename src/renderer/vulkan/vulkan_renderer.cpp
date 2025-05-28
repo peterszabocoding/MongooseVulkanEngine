@@ -7,9 +7,12 @@
 #include "vulkan_pipeline.h"
 #include "vulkan_device.h"
 #include "vulkan_mesh.h"
+#include "vulkan_shader_compiler.h"
 #include "lighting/irradiance_map_generator.h"
 #include "lighting/reflection_probe_generator.h"
 #include "util/log.h"
+#include "shaderc/shaderc.hpp"
+#include "util/filesystem.h"
 
 namespace Raytracing
 {
@@ -37,10 +40,13 @@ namespace Raytracing
         cubeMesh = ResourceManager::LoadMesh(device.get(), "resources/models/cube.obj");
         screenRect = CreateScope<VulkanMeshlet>(device.get(), Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
 
+
         LOG_TRACE("Load scene");
-        //scene = ResourceManager::LoadScene(device.get(), "resources/PBRCheck/pbr_check.gltf", "resources/environment/newport_loft.hdr");
-        scene = ResourceManager::LoadScene(device.get(), "resources/cannon/cannon.gltf", "resources/environment/newport_loft.hdr");
-        //scene = ResourceManager::LoadScene(device.get(), "resources/sponza/Sponza.gltf", "resources/environment/newport_loft.hdr");
+        scene = ResourceManager::LoadScene(device.get(), "resources/PBRCheck/pbr_check.gltf", "resources/environment/kloppenheim_03_puresky_4k.hdr");
+        //scene = ResourceManager::LoadScene(device.get(), "resources/PBRCheck/pbr_check.gltf", "resources/environment/etzwihl_4k.hdr");
+        //scene = ResourceManager::LoadScene(device.get(), "resources/PBRCheck/pbr_check.gltf", "resources/environment/kloppenheim_03_puresky_4k.hdr");
+        //scene = ResourceManager::LoadScene(device.get(), "resources/cannon/cannon.gltf", "resources/environment/kloppenheim_06_puresky_4k.hdr");
+        //scene = ResourceManager::LoadScene(device.get(), "resources/sponza/Sponza.gltf", "resources/environment/kloppenheim_03_puresky_4k.hdr");
         //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/MetalRoughSpheres/MetalRoughSpheres.gltf");
         //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/vertex_color/vertex_color.gltf");
         //completeScene = ResourceManager::LoadScene(vulkanDevice.get(), "resources/normal_tangent/NormalTangentTest.gltf");
@@ -130,7 +136,6 @@ namespace Raytracing
 
                               presentPass->SetSize(vulkanSwapChain->GetExtent().width, vulkanSwapChain->GetExtent().height);
                               presentPass->Render(commandBuffer, activeImage, framebuffers.presentFramebuffers[activeImage], nullptr);
-
                           }, std::bind(&VulkanRenderer::ResizeSwapchain, this));
     }
 

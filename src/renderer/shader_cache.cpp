@@ -1,19 +1,56 @@
 #include "shader_cache.h"
 
+#include "util/filesystem.h"
 #include "util/log.h"
+#include "vulkan/vulkan_shader_compiler.h"
 
 namespace Raytracing
 {
+    namespace Utils
+    {
+        shaderc_shader_kind GetShaderKindFromExtension(const std::filesystem::path& extension)
+        {
+            if (extension == ".vert") return shaderc_glsl_vertex_shader;
+            if (extension == ".frag") return shaderc_glsl_fragment_shader;
+            if (extension == ".geom") return shaderc_glsl_geometry_shader;
+            if (extension == ".comp") return shaderc_glsl_compute_shader;
+
+            ASSERT(false, "Unknown shader extension");
+            return shaderc_glsl_vertex_shader;
+        }
+    }
+
+
     DescriptorSetLayouts ShaderCache::descriptorSetLayouts;
     DescriptorSets ShaderCache::descriptorSets;
     Renderpass ShaderCache::renderpasses;
     Pipelines ShaderCache::pipelines;
+    std::unordered_map<std::string, std::vector<uint32_t>> ShaderCache::shaderCache;
 
     void ShaderCache::Load()
     {
+        LoadShaders();
         LoadDescriptorLayouts();
         LoadRenderpasses();
         LoadPipelines();
+    }
+
+    void ShaderCache::LoadShaders()
+    {
+        VulkanShaderCompiler compiler;
+        const auto glslFiles = FileSystem::GetFilesFromDirectory("shader/glsl", true);
+
+        for (const auto& file: glslFiles)
+        {
+            shaderc_shader_kind shaderKind = Utils::GetShaderKindFromExtension(file.extension());
+
+            CompilationInfo compilationInfo;
+            compilationInfo.fileName = file.string();
+            compilationInfo.kind = shaderKind;
+
+            std::vector<uint32_t> sprv_source = compiler.CompileFile(compilationInfo);
+            shaderCache[compilationInfo.fileName] = sprv_source;
+        }
     }
 
     void ShaderCache::LoadDescriptorLayouts()
@@ -73,6 +110,11 @@ namespace Raytracing
 
         // SSAO
         descriptorSetLayouts.postProcessingDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice)
+                .AddBinding({0, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
+                .Build();
+
+        // Box Blur
+        descriptorSetLayouts.ppBoxBlurDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice)
                 .AddBinding({0, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
                 .Build();
     }

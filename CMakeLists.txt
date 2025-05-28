@@ -11,10 +11,20 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-
 # Setup project dependencies
 message(STATUS "Looking for Vulkan...")
 find_package(Vulkan REQUIRED)
+find_package(Vulkan REQUIRED COMPONENTS shaderc_combined)
+
+# Alright, no errors? Tell me what you found!
+message("VULKAN_FOUND " ${VULKAN_FOUND})
+message("Vulkan_LIBRARIES: " ${Vulkan_LIBRARIES})
+message("Vulkan_LIBRARY: " ${Vulkan_LIBRARY})
+message("Vulkan_INCLUDE_DIRS: " ${Vulkan_INCLUDE_DIRS})
+message("Vulkan_GLSLC_EXECUTABLE: " ${Vulkan_GLSLC_EXECUTABLE})
+message("Vulkan_glslang_FOUND : " ${Vulkan_glslang_FOUND})
+message("Vulkan_shaderc_combined_FOUND : " ${Vulkan_shaderc_combined_FOUND})
+message("Vulkan_shaderc_combined_LIBRARY: " ${Vulkan_shaderc_combined_LIBRARY})
 
 include(FetchContent)
 FetchContent_Declare(
@@ -69,9 +79,9 @@ set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
 
-set(IMGUI_INCLUDE_DIR ${imgui_SOURCE_DIR}/)
 set(SPDLOG_INCLUDE_DIR ${spdlog_SOURCE_DIR}/include)
 
+set(IMGUI_INCLUDE_DIR ${imgui_SOURCE_DIR}/)
 file(GLOB IMGUI_SOURCES ${imgui_SOURCE_DIR}/*.cpp ${imgui_SOURCE_DIR}/*.h)
 
 add_library(
@@ -94,7 +104,7 @@ set(SOURCE_ONE_WEEKEND
         ./src/renderer/renderer.cpp
         ./src/renderer/camera.cpp
         ./src/renderer/shader_cache.cpp
-        src/renderer/vulkan/vulkan_skybox.cpp
+        ./src/renderer/vulkan/vulkan_skybox.cpp
 
         ./src/renderer/vulkan/vulkan_renderer.cpp
         ./src/renderer/vulkan/vulkan_pipeline.cpp
@@ -113,6 +123,7 @@ set(SOURCE_ONE_WEEKEND
         ./src/renderer/vulkan/vulkan_cube_map_texture.cpp
         ./src/renderer/vulkan/vulkan_shadow_map.cpp
         ./src/renderer/vulkan/vulkan_reflection_probe.cpp
+        ./src/renderer/vulkan/vulkan_shader_compiler.cpp
         ./src/renderer/vulkan/imgui_vulkan.cpp
 
         ./src/renderer/vulkan/pass/render_pass.cpp
@@ -135,12 +146,7 @@ set(SOURCE_ONE_WEEKEND
         ./src/input/input.cpp
 
         ./src/util/log.cpp
-)
-
-set(SOURCE_ONE_WEEKEND_APPLE
-)
-
-set(SOURCE_ONE_WEEKEND_WINDOWS
+        ./src/util/filesystem.cpp
 )
 
 include_directories("src/")
@@ -179,24 +185,25 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "AppleClang")
 endif ()
 
 # Global definitions
-add_compile_definitions(NDEBUG)
+# add_compile_definitions(NDEBUG)
+
+set(_ITERATOR_DEBUG_LEVEL 0)
 
 FILE(GLOB_RECURSE HEADERS "src/**.h")
 
 if (APPLE)
     add_compile_definitions(PLATFORM_MACOS)
-
     add_executable(inOneWeekend ${EXTERNAL} ${HEADERS} ${SOURCE_ONE_WEEKEND} ${SOURCE_ONE_WEEKEND_APPLE})
 endif (APPLE)
 
 if (WIN32)
     add_compile_definitions(PLATFORM_WINDOWS)
-
-    add_compile_definitions(PLATFORM_WINDOWS)
     add_executable(inOneWeekend ${EXTERNAL} ${HEADERS} ${SOURCE_ONE_WEEKEND} ${SOURCE_ONE_WEEKEND_WINDOWS})
+    target_link_libraries( inOneWeekend PRIVATE debug C:/VulkanSDK/1.4.309.0/Lib/shaderc_combinedd.lib optimized ${Vulkan_shaderc_combined_LIBRARY})
 endif (WIN32)
 
 target_compile_definitions(inOneWeekend PRIVATE GLFW_INCLUDE_NONE GLM_FORCE_DEPTH_ZERO_TO_ONE GLM_FORCE_XYZW_ONLY GLM_FORCE_QUAT_DATA_XYZW GLM_FORCE_QUAT_CTOR_XYZW)
+target_compile_definitions(inOneWeekend PRIVATE ENABLE_ASSERTS)
 
 set_target_properties(glfw PROPERTIES FOLDER "Dependencies")
 set_target_properties(glm PROPERTIES FOLDER "Dependencies")
@@ -208,9 +215,9 @@ target_include_directories(inOneWeekend PRIVATE ${IMGUI_INCLUDE_DIR})
 target_include_directories(inOneWeekend PRIVATE ${SPDLOG_INCLUDE_DIR})
 
 target_link_libraries(inOneWeekend PRIVATE ${Vulkan_LIBRARIES})
+
 target_link_libraries(inOneWeekend PRIVATE glfw)
 target_link_libraries(inOneWeekend PRIVATE glm)
 target_link_libraries(inOneWeekend PRIVATE imgui)
 target_link_libraries(inOneWeekend PRIVATE spdlog)
 target_link_libraries(inOneWeekend PUBLIC TracyClient)
-

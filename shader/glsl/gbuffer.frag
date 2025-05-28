@@ -1,4 +1,5 @@
 #version 450
+
 #extension GL_EXT_scalar_block_layout : require
 #extension GL_ARB_shading_language_include : require
 
@@ -61,7 +62,7 @@ void main() {
     vec3 N = materialParams.useNormalMap ? CalcSurfaceNormal(normalMapColor, TBN) : fragNormal;
 
     /////////////////   GBuffer   ////////////////////////
-    normalImage = vec4(N, baseColorSampled.a);
+    normalImage = vec4(N, 1.0);
     outWorldPosition = vec4(inWorldPosition.xyz, 1.0);
     /////////////////////////////////////////////////////
 }

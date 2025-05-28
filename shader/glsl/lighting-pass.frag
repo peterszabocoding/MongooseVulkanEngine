@@ -105,10 +105,19 @@ vec3 CalcDirectionalLightRadiance(vec3 direction)
 }
 
 void main() {
-    vec4 baseColorSampled = texture(baseColorSampler, fragTexCoord);
-    if( baseColorSampled.a < 0.5 ){ discard; }
 
-    vec3 baseColor = materialParams.useBaseColorMap ? pow(baseColorSampled.rgb, vec3(2.2)) : materialParams.baseColor.rgb;
+
+    vec3 baseColor;
+    if (materialParams.useBaseColorMap)
+    {
+        vec4 baseColorSampled = texture(baseColorSampler, fragTexCoord);
+        if (baseColorSampled.a < 0.5) discard;
+
+        baseColor = pow(baseColorSampled.rgb, vec3(2.2));
+    } else {
+        if (materialParams.baseColor.a < 0.5) discard;
+        baseColor = materialParams.baseColor.rgb;
+    }
 
     vec3 albedo = fragColor * materialParams.tint.rgb * baseColor;
 
@@ -128,12 +137,12 @@ void main() {
     vec3 normalMapColor = texture(normalSampler, fragTexCoord).rgb;
 
     N = materialParams.useNormalMap
-        ? CalcSurfaceNormal(normalMapColor, TBN)
-        : fragNormal;
+    ? CalcSurfaceNormal(normalMapColor, TBN)
+    : fragNormal;
     V = normalize(transforms.cameraPosition - inWorldPosition.xyz);
 
     vec3 lightPosition = vec3(0.0);
-   // vec3 L = normalize(lightPosition - inWorldPosition.xyz);
+    // vec3 L = normalize(lightPosition - inWorldPosition.xyz);
     vec3 L = -lights.direction;
     vec3 H = normalize(V + L);
 
@@ -156,9 +165,9 @@ void main() {
 
     vec3 R = reflect(-V, N);
     // sample both the pre-filter map and the BRDF lut and combine them together as per the Split-Sum approximation to get the IBL specular part.
-    vec3 prefilteredColor = textureLod(prefilterMap, R,  roughness * MAX_REFLECTION_LOD).rgb;
+    vec3 prefilteredColor = textureLod(prefilterMap, R, roughness * MAX_REFLECTION_LOD).rgb;
     vec2 brdf  = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
-    vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
+    vec3 specular = prefilteredColor * (F * (brdf.x + brdf.y));
 
     vec3 radiance = CalcDirectionalLightRadiance(-lights.direction);
     vec3 Lo = CalcLightRadiance(L, H, V, N, F0, albedo, roughness, metallic, radiance);
@@ -175,6 +184,4 @@ void main() {
     color = pow(color, vec3(1.0/2.2));
 
     finalImage = vec4(color, 1.0);
-    //finalImage = vec4(vec3(SSAOValue), 1.0);
-    //finalImage = vec4(texCoord, 0.0, 1.0);
 }

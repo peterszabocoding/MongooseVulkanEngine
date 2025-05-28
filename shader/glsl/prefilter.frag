@@ -13,6 +13,7 @@ layout(push_constant) uniform Push {
     mat4 projection;
     mat4 view;
     float roughness;
+    int resolution;
 } push;
 
 // ----------------------------------------------------------------------------
@@ -78,7 +79,7 @@ void main()
     vec3 R = N;
     vec3 V = R;
 
-    const uint SAMPLE_COUNT = 1024u;
+    const uint SAMPLE_COUNT = 16384u;
     vec3 prefilteredColor = vec3(0.0);
     float totalWeight = 0.0;
 
@@ -98,13 +99,14 @@ void main()
             float HdotV = max(dot(H, V), 0.0);
             float pdf = D * NdotH / (4.0 * HdotV) + 0.0001;
 
-            float resolution = 512.0; // resolution of source cubemap (per face)
-            float saTexel  = 4.0 * PI / (6.0 * resolution * resolution);
+            float saTexel  = 4.0 * PI / (6.0 * push.resolution * push.resolution); // resolution of source cubemap (per face)
             float saSample = 1.0 / (float(SAMPLE_COUNT) * pdf + 0.0001);
 
             float mipLevel = push.roughness == 0.0 ? 0.0 : 0.5 * log2(saSample / saTexel);
 
-            prefilteredColor += textureLod(environmentMap, L, mipLevel).rgb * NdotL;
+            vec3 envColor = textureLod(environmentMap, L, mipLevel).rgb;
+
+            prefilteredColor += envColor * NdotL;
             totalWeight      += NdotL;
         }
     }

@@ -9,8 +9,6 @@ namespace Raytracing
 {
     Ref<VulkanTexture> VulkanTexture::Builder::Build(VulkanDevice* device)
     {
-        ASSERT(data && size > 0, "Texture data is NULL or size is 0.")
-
         allocatedImage = ImageBuilder(device)
                 .SetFormat(format)
                 .SetResolution(width, height)

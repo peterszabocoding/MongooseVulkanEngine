@@ -49,7 +49,7 @@ namespace Raytracing
     VulkanDescriptorSetLayout::Builder& VulkanDescriptorSetLayout::Builder::AddBinding(
         const DescriptorSetBinding binding, const uint32_t count)
     {
-        ASSERT(bindings.count(binding) == 0, "Binding already in use");
+        ASSERT(bindings.count(binding.location) == 0, "Binding already in use");
 
         VkShaderStageFlags stageFlags = 0;
 

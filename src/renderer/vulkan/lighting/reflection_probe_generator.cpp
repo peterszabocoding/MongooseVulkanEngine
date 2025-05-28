@@ -75,13 +75,13 @@ namespace Raytracing {
         for (unsigned int mip = 0; mip < PREFILTER_MIP_LEVELS; ++mip) {
             const float roughness = static_cast<float>(mip) / static_cast<float>(PREFILTER_MIP_LEVELS - 1);
             const VkExtent2D extent = {
-                static_cast<unsigned int>(128 * std::pow(0.5, mip)),
-                static_cast<unsigned int>(128 * std::pow(0.5, mip))
+                static_cast<unsigned int>(REFLECTION_RESOLUTION * std::pow(0.5, mip)),
+                static_cast<unsigned int>(REFLECTION_RESOLUTION * std::pow(0.5, mip))
             };
 
             for (size_t faceIndex = 0; faceIndex < 6; faceIndex++) {
                 device->ImmediateSubmit([&](const VkCommandBuffer commandBuffer) {
-                    ComputePrefilterMap(commandBuffer, extent, faceIndex, roughness, framebuffer, cubemapDescriptorSet);
+                    ComputePrefilterMap(commandBuffer, extent, faceIndex, roughness, framebuffer, cubemapDescriptorSet, cubemap->GetWidth());
 
                     VulkanUtils::CopyParams params{};
                     params.srcMipLevel = 0;
@@ -211,7 +211,8 @@ namespace Raytracing {
                                                        const size_t faceIndex,
                                                        const float roughness,
                                                        const Ref<VulkanFramebuffer>& framebuffer,
-                                                       VkDescriptorSet cubemapDescriptorSet) {
+                                                       VkDescriptorSet cubemapDescriptorSet,
+                                                       uint32_t resolution) {
         device->SetViewportAndScissor(extent, commandBuffer);
         renderPass->Begin(commandBuffer, framebuffer, extent);
 
@@ -233,6 +234,7 @@ namespace Raytracing {
         pushConstantData.projection = m_CaptureProjection;
         pushConstantData.view = m_CaptureViews[faceIndex];
         pushConstantData.roughness = roughness;
+        pushConstantData.resolution = resolution;
 
         drawCommandParams.pushConstantParams = {
             &pushConstantData,

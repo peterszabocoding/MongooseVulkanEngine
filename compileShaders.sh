@@ -31,6 +31,7 @@ mkdir -p ./shader/spv
 "$VULKAN_SDK"/bin/glslc -I ./shader/glsl/includes ./shader/glsl/prefilter.frag -o ./shader/spv/prefilter.frag.spv
 
 "$VULKAN_SDK"/bin/glslc -I ./shader/glsl/includes ./shader/glsl/post_processing_ssao.frag -o ./shader/spv/post_processing_ssao.frag.spv
+"$VULKAN_SDK"/bin/glslc -I ./shader/glsl/includes ./shader/glsl/post_processing_box_blur.frag -o ./shader/spv/post_processing_box_blur.frag.spv
 
 "$VULKAN_SDK"/bin/glslc -I ./shader/glsl/includes ./shader/glsl/infinite_grid.vert -o ./shader/spv/infinite_grid.vert.spv
 "$VULKAN_SDK"/bin/glslc -I ./shader/glsl/includes ./shader/glsl/infinite_grid.frag -o ./shader/spv/infinite_grid.frag.spv

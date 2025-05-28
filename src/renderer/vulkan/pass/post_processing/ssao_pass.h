@@ -3,19 +3,22 @@
 
 namespace Raytracing
 {
-    struct SSAOBuffer {
-        glm::vec4 samples[64];
-    };
-
-    struct SSAOParams {
-        glm::vec2 resolution;
-        int kernelSize = 16;
-        float radius = 0.85f;
-        float bias = 0.075f;
-        float strength = 2.0f;
-    };
-
     class SSAOPass : public VulkanPass {
+    public:
+        struct SSAOBuffer {
+            glm::vec4 samples[64];
+        };
+
+        struct SSAOParams {
+            glm::vec2 resolution;
+            int kernelSize = 16;
+            float radius = 0.5f;
+            float bias = 0.075f;
+            float strength = 2.0f;
+        };
+
+        struct BlurParams {};
+
     public:
         explicit SSAOPass(VulkanDevice* _device);
         ~SSAOPass() override;
@@ -38,12 +41,15 @@ namespace Raytracing
 
     private:
         Ref<VulkanPipeline> ssaoPipeline;
+        Ref<VulkanPipeline> blurPipeline;
         Ref<VulkanRenderPass> renderPass{};
 
         SSAOBuffer buffer;
         std::vector<glm::vec4> ssaoNoiseData;
 
         VkDescriptorSet ssaoDescriptorSet{};
+        VkDescriptorSet boxBlurDescriptorSet;
+
         Ref<VulkanTexture> ssaoNoiseTexture;
 
         Ref<VulkanBuffer> ssaoBuffer;

@@ -17,7 +17,7 @@ namespace Raytracing
 
         virtual void SetSize(const uint32_t width, const uint32_t height)
         {
-            ASSERT(width <= 0 || height <= 0, "Invalid pass size");
+            //ASSERT(width <= 0 || height <= 0, "Invalid pass size");
 
             if (passWidth != width || passHeight != height)
                 OnResolutionChanged(width, height);

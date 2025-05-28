@@ -30,7 +30,7 @@ namespace Raytracing
     {}
 
     void SSAOPass::Render(VkCommandBuffer commandBuffer, uint32_t imageIndex, Ref<VulkanFramebuffer> writeBuffer,
-        Ref<VulkanFramebuffer> readBuffer)
+                          Ref<VulkanFramebuffer> readBuffer)
     {
         VkExtent2D extent{passWidth, passHeight};
 
@@ -65,8 +65,9 @@ namespace Raytracing
 
     void SSAOPass::LoadPipeline()
     {
-        LOG_TRACE("Building SSAO pipeline");
-        PipelineConfig pipelineConfig; {
+        {
+            LOG_TRACE("Building SSAO pipeline");
+            PipelineConfig pipelineConfig;
             pipelineConfig.vertexShaderPath = "shader/spv/quad.vert.spv";
             pipelineConfig.fragmentShaderPath = "shader/spv/post_processing_ssao.frag.spv";
 
@@ -92,8 +93,9 @@ namespace Raytracing
             pipelineConfig.pushConstantData.shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
             pipelineConfig.pushConstantData.offset = 0;
             pipelineConfig.pushConstantData.size = sizeof(SSAOParams);
+
+            ssaoPipeline = VulkanPipeline::Builder().Build(device, pipelineConfig);
         }
-        ssaoPipeline = VulkanPipeline::Builder().Build(device, pipelineConfig);
     }
 
     void SSAOPass::InitDescriptorSet()

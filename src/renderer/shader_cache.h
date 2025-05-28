@@ -17,6 +17,7 @@ namespace Raytracing
         Ref<VulkanDescriptorSetLayout> gBufferDescriptorSetLayout;
         Ref<VulkanDescriptorSetLayout> ssaoDescriptorSetLayout;
         Ref<VulkanDescriptorSetLayout> postProcessingDescriptorSetLayout;
+        Ref<VulkanDescriptorSetLayout> ppBoxBlurDescriptorSetLayout;
     };
 
     struct DescriptorSets {
@@ -53,8 +54,10 @@ namespace Raytracing
         static DescriptorSetLayouts descriptorSetLayouts;
         static DescriptorSets descriptorSets;
         static Renderpass renderpasses;
+        static std::unordered_map<std::string, std::vector<uint32_t>> shaderCache;
 
     private:
+        void LoadShaders();
         void LoadDescriptorLayouts();
         void LoadPipelines();
         void LoadRenderpasses();

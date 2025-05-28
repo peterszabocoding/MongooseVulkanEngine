@@ -11,6 +11,7 @@ namespace Raytracing
     class VulkanDevice;
 
     struct AllocatedImage {
+        uint32_t width, height;
         VkImage image;
         VmaAllocation allocation;
         VmaAllocationInfo allocationInfo;

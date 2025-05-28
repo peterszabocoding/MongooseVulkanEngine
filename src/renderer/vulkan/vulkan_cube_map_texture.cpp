@@ -10,8 +10,6 @@ namespace Raytracing
 {
     Ref<VulkanCubeMapTexture> VulkanCubeMapTexture::Builder::Build(VulkanDevice* device)
     {
-        ASSERT(data && size > 0, "Texture data is NULL or size is 0.")
-
         constexpr uint32_t MAX_MIP_LEVEL = 6;
 
         mipLevels = std::min(mipLevels, MAX_MIP_LEVEL);
@@ -54,11 +52,11 @@ namespace Raytracing
         }
 
         sampler = ImageSamplerBuilder(device)
+                .SetFormat(format)
+                .SetMipLevels(mipLevels)
                 .SetFilter(VK_FILTER_LINEAR, VK_FILTER_LINEAR)
                 .SetAddressMode(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
-                .SetFormat(format)
-                .SetBorderColor(VK_BORDER_COLOR_INT_OPAQUE_WHITE)
-                .SetMipLevels(mipLevels)
+                .SetBorderColor(VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK)
                 .Build();
 
 
