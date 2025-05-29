@@ -68,8 +68,8 @@ namespace Raytracing
         {
             LOG_TRACE("Building SSAO pipeline");
             PipelineConfig pipelineConfig;
-            pipelineConfig.vertexShaderPath = "shader\\glsl\\quad.vert";
-            pipelineConfig.fragmentShaderPath = "shader\\glsl\\post_processing_ssao.frag";
+            pipelineConfig.vertexShaderPath = "quad.vert";
+            pipelineConfig.fragmentShaderPath = "post_processing_ssao.frag";
 
             pipelineConfig.cullMode = PipelineCullMode::Front;
             pipelineConfig.polygonMode = PipelinePolygonMode::Fill;

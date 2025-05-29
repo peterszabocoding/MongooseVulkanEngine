@@ -51,8 +51,8 @@ namespace Raytracing {
     {
         LOG_TRACE("Building skybox pipeline");
         PipelineConfig skyboxPipelineConfig; {
-            skyboxPipelineConfig.vertexShaderPath = "shader\\glsl\\skybox.vert";
-            skyboxPipelineConfig.fragmentShaderPath = "shader\\glsl\\skybox.frag";
+            skyboxPipelineConfig.vertexShaderPath = "skybox.vert";
+            skyboxPipelineConfig.fragmentShaderPath = "skybox.frag";
 
             skyboxPipelineConfig.cullMode = PipelineCullMode::Front;
             skyboxPipelineConfig.polygonMode = PipelinePolygonMode::Fill;

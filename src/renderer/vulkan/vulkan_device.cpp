@@ -152,7 +152,7 @@ namespace Raytracing
         {
             device_extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
             //validation_layer_list.push_back("VK_LAYER_LUNARG_crash_diagnostic");
-            //validation_layer_list.push_back("VK_LAYER_KHRONOS_validation");
+            validation_layer_list.push_back("VK_LAYER_KHRONOS_validation");
             //validation_layer_list.push_back("VK_LAYER_LUNARG_api_dump");
         }
 

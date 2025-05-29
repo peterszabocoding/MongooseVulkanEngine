@@ -56,8 +56,8 @@ namespace Raytracing
     {
         LOG_TRACE("Building directional shadow map pipeline");
         PipelineConfig dirShadowMapPipelineConfig; {
-            dirShadowMapPipelineConfig.vertexShaderPath = "shader\\glsl\\depth_only.vert";
-            dirShadowMapPipelineConfig.fragmentShaderPath = "shader\\glsl\\empty.frag";
+            dirShadowMapPipelineConfig.vertexShaderPath = "depth_only.vert";
+            dirShadowMapPipelineConfig.fragmentShaderPath = "empty.frag";
 
             dirShadowMapPipelineConfig.cullMode = PipelineCullMode::Front;
             dirShadowMapPipelineConfig.polygonMode = PipelinePolygonMode::Fill;

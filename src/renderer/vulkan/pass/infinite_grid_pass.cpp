@@ -47,8 +47,8 @@ namespace Raytracing
     {
         LOG_TRACE("Building present pipeline");
         PipelineConfig pipelineConfig; {
-            pipelineConfig.vertexShaderPath = "shader\\glsl\\infinite_grid.vert";
-            pipelineConfig.fragmentShaderPath = "shader\\glsl\\infinite_grid.frag";
+            pipelineConfig.vertexShaderPath = "infinite_grid.vert";
+            pipelineConfig.fragmentShaderPath = "infinite_grid.frag";
 
             pipelineConfig.cullMode = PipelineCullMode::Unknown;
             pipelineConfig.polygonMode = PipelinePolygonMode::Fill;

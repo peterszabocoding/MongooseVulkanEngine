@@ -6,6 +6,8 @@
 
 namespace Raytracing
 {
+    constexpr auto SHADER_PATH = "shader/glsl/";
+
     struct DescriptorSetLayouts {
         Ref<VulkanDescriptorSetLayout> cubemapDescriptorSetLayout;
         Ref<VulkanDescriptorSetLayout> materialDescriptorSetLayout;

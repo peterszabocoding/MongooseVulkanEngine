@@ -38,18 +38,16 @@ namespace Raytracing
     void ShaderCache::LoadShaders()
     {
         VulkanShaderCompiler compiler;
-        const auto glslFiles = FileSystem::GetFilesFromDirectory("shader\\glsl", true);
+        const auto glslFiles = FileSystem::GetFilesFromDirectory(SHADER_PATH, true);
 
         for (const auto& file: glslFiles)
         {
-            shaderc_shader_kind shaderKind = Utils::GetShaderKindFromExtension(file.extension());
-
             CompilationInfo compilationInfo;
-            compilationInfo.fileName = file.string();
-            compilationInfo.kind = shaderKind;
+            compilationInfo.fileName = SHADER_PATH + file.filename().string();
+            compilationInfo.kind = Utils::GetShaderKindFromExtension(file.extension());
 
-            std::vector<uint32_t> sprv_source = compiler.CompileFile(compilationInfo);
-            shaderCache[compilationInfo.fileName] = sprv_source;
+            const std::vector<uint32_t> sprv_source = compiler.CompileFile(compilationInfo);
+            shaderCache[file.filename().string()] = sprv_source;
         }
     }
 

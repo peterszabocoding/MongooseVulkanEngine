@@ -10,8 +10,8 @@ namespace Raytracing
     struct CompilationInfo {
         std::string fileName;
         shaderc_shader_kind kind;
-        std::vector<char> source;
-        shaderc::CompileOptions options;
+        std::vector<char> source{};
+        shaderc::CompileOptions options{};
     };
 
     struct CompilationResult {
