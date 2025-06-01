@@ -7,6 +7,7 @@
 #include "vulkan_swapchain.h"
 #include "vulkan_shadow_map.h"
 #include "vulkan_cube_map_texture.h"
+#include "vulkan_gbuffer.h"
 #include "pass/gbufferPass.h"
 #include "pass/infinite_grid_pass.h"
 #include "pass/present_pass.h"
@@ -79,8 +80,8 @@ namespace Raytracing
         void CreateSwapchain();
         void CreateGBufferDescriptorSet();
         void CreatePostProcessingDescriptorSet();
+        void CreateShadowMap();
         void CreateFramebuffers();
-        void CreatePresentFramebuffers();
 
         void ResizeSwapchain();
         void CreatePresentDescriptorSet();
@@ -98,6 +99,7 @@ namespace Raytracing
         Framebuffers framebuffers;
 
         Ref<VulkanShadowMap> directionalShadowMap;
+        Ref<VulkanGBuffer> gBuffer;
 
         Scope<GBufferPass> gbufferPass;
         Scope<SkyboxPass> skyboxPass;

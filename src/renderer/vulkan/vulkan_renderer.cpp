@@ -62,8 +62,9 @@ namespace Raytracing
         gridPass = CreateScope<InfiniteGridPass>(device.get());
 
         CreateSwapchain();
+
+        CreateShadowMap();
         CreateFramebuffers();
-        CreatePresentFramebuffers();
         CreateTransformsBuffer();
 
         CreateGBufferDescriptorSet();
@@ -150,19 +151,19 @@ namespace Raytracing
     void VulkanRenderer::CreateGBufferDescriptorSet()
     {
         VkDescriptorImageInfo worldSpaceNormalInfo{};
-        worldSpaceNormalInfo.sampler = framebuffers.gbufferFramebuffers->GetAttachments()[0].sampler;
+        worldSpaceNormalInfo.sampler = gBuffer->buffers.viewSpaceNormal.sampler;
         worldSpaceNormalInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        worldSpaceNormalInfo.imageView = framebuffers.gbufferFramebuffers->GetAttachments()[0].imageView;
+        worldSpaceNormalInfo.imageView = gBuffer->buffers.viewSpaceNormal.imageView;
 
         VkDescriptorImageInfo positionInfo{};
-        positionInfo.sampler = framebuffers.gbufferFramebuffers->GetAttachments()[1].sampler;
+        positionInfo.sampler = gBuffer->buffers.viewSpacePosition.sampler;
         positionInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        positionInfo.imageView = framebuffers.gbufferFramebuffers->GetAttachments()[1].imageView;
+        positionInfo.imageView = gBuffer->buffers.viewSpacePosition.imageView;
 
         VkDescriptorImageInfo depthInfo{};
-        depthInfo.sampler = framebuffers.gbufferFramebuffers->GetAttachments()[2].sampler;
+        depthInfo.sampler = gBuffer->buffers.depth.sampler;
         depthInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        depthInfo.imageView = framebuffers.gbufferFramebuffers->GetAttachments()[2].imageView;
+        depthInfo.imageView = gBuffer->buffers.depth.imageView;
 
         VulkanDescriptorWriter(*ShaderCache::descriptorSetLayouts.gBufferDescriptorSetLayout, device->GetShaderDescriptorPool())
                 .WriteImage(0, &worldSpaceNormalInfo)
@@ -196,32 +197,8 @@ namespace Raytracing
         writer.Build(shaderCache->descriptorSets.presentDescriptorSet);
     }
 
-    void VulkanRenderer::CreateFramebuffers()
+    void VulkanRenderer::CreateShadowMap()
     {
-        const uint32_t RENDER_RESOLUTION_WIDTH = viewportWidth * resolutionScale;
-        const uint32_t RENDER_RESOLUTION_HEIGHT = viewportHeight * resolutionScale;
-
-        framebuffers.geometryFramebuffers = VulkanFramebuffer::Builder(device.get())
-                .SetRenderpass(renderPass->GetRenderPass())
-                .SetResolution(RENDER_RESOLUTION_WIDTH, RENDER_RESOLUTION_HEIGHT)
-                .AddAttachment(ImageFormat::RGBA8_UNORM)
-                .AddAttachment(ImageFormat::DEPTH24_STENCIL8)
-                .Build();
-
-        framebuffers.gbufferFramebuffers = VulkanFramebuffer::Builder(device.get())
-                .SetRenderpass(gbufferPass->GetRenderPass())
-                .SetResolution(RENDER_RESOLUTION_WIDTH, RENDER_RESOLUTION_HEIGHT)
-                .AddAttachment(ImageFormat::RGBA32_SFLOAT)
-                .AddAttachment(ImageFormat::RGBA32_SFLOAT)
-                .AddAttachment(ImageFormat::DEPTH24_STENCIL8)
-                .Build();
-
-        framebuffers.ssaoFramebuffers = VulkanFramebuffer::Builder(device.get())
-                .SetRenderpass(ssaoPass->GetRenderPass())
-                .SetResolution(RENDER_RESOLUTION_WIDTH * 0.5, RENDER_RESOLUTION_HEIGHT * 0.5)
-                .AddAttachment(ImageFormat::R8_UNORM)
-                .Build();
-
         uint32_t SHADOW_MAP_RESOLUTION = 1024;
         directionalShadowMap = VulkanShadowMap::Builder()
                 .SetResolution(SHADOW_MAP_RESOLUTION, SHADOW_MAP_RESOLUTION)
@@ -234,8 +211,36 @@ namespace Raytracing
                 .Build();
     }
 
-    void VulkanRenderer::CreatePresentFramebuffers()
+    void VulkanRenderer::CreateFramebuffers()
     {
+        const uint32_t RENDER_RESOLUTION_WIDTH = viewportWidth * resolutionScale;
+        const uint32_t RENDER_RESOLUTION_HEIGHT = viewportHeight * resolutionScale;
+
+        gBuffer = VulkanGBuffer::Builder()
+                .SetResolution(RENDER_RESOLUTION_WIDTH, RENDER_RESOLUTION_HEIGHT)
+                .Build(device.get());
+
+        framebuffers.geometryFramebuffers = VulkanFramebuffer::Builder(device.get())
+                .SetRenderpass(renderPass->GetRenderPass())
+                .SetResolution(RENDER_RESOLUTION_WIDTH, RENDER_RESOLUTION_HEIGHT)
+                .AddAttachment(ImageFormat::RGBA8_UNORM)
+                .AddAttachment(ImageFormat::DEPTH24_STENCIL8)
+                .Build();
+
+        framebuffers.gbufferFramebuffers = VulkanFramebuffer::Builder(device.get())
+                .SetRenderpass(gbufferPass->GetRenderPass())
+                .SetResolution(RENDER_RESOLUTION_WIDTH, RENDER_RESOLUTION_HEIGHT)
+                .AddAttachment(gBuffer->buffers.viewSpaceNormal.imageView)
+                .AddAttachment(gBuffer->buffers.viewSpacePosition.imageView)
+                .AddAttachment(gBuffer->buffers.depth.imageView)
+                .Build();
+
+        framebuffers.ssaoFramebuffers = VulkanFramebuffer::Builder(device.get())
+                .SetRenderpass(ssaoPass->GetRenderPass())
+                .SetResolution(RENDER_RESOLUTION_WIDTH * 0.5, RENDER_RESOLUTION_HEIGHT * 0.5)
+                .AddAttachment(ImageFormat::R8_UNORM)
+                .Build();
+
         const uint32_t imageCount = VulkanUtils::GetSwapchainImageCount(device->GetPhysicalDevice(), device->GetSurface());
         framebuffers.presentFramebuffers.clear();
         framebuffers.presentFramebuffers.resize(imageCount);
@@ -253,7 +258,7 @@ namespace Raytracing
     {
         IdleWait();
         CreateSwapchain();
-        CreatePresentFramebuffers();
+        CreateFramebuffers();
     }
 
     void VulkanRenderer::CreateTransformsBuffer()

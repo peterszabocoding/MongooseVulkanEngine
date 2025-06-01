@@ -92,15 +92,12 @@ namespace Raytracing
                 debugTextures.clear();
             }
 
-            gbufferBuffer = renderer->GetGBuffer();
+            gBuffer = renderer->gBuffer;
             ssaoBuffer = renderer->GetSSAOBuffer();
-            for (const auto attachment: gbufferBuffer->GetAttachments())
-            {
-                if (!attachment.allocatedImage.image) continue;
 
-                auto descriptorSet = ImGui_ImplVulkan_AddTexture(sampler, attachment.imageView, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-                debugTextures.push_back(descriptorSet);
-            }
+            debugTextures.push_back(ImGui_ImplVulkan_AddTexture(sampler, gBuffer->buffers.viewSpaceNormal.imageView, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
+            debugTextures.push_back(ImGui_ImplVulkan_AddTexture(sampler, gBuffer->buffers.viewSpacePosition.imageView, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
+            debugTextures.push_back(ImGui_ImplVulkan_AddTexture(sampler, gBuffer->buffers.depth.imageView, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
 
             auto ssaoDescriptorSet = ImGui_ImplVulkan_AddTexture(sampler, ssaoBuffer->GetAttachments()[0].imageView,
                                                                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
@@ -118,13 +115,13 @@ namespace Raytracing
 
             const ImVec2 availableSpace = ImGui::GetContentRegionAvail();
 
-            const float aspect = static_cast<float>(gbufferBuffer->GetHeight()) / static_cast<float>(gbufferBuffer->GetWidth());
+            const float aspect = static_cast<float>(gBuffer->height) / static_cast<float>(gBuffer->width);
             const ImVec2 imageSize = {
                 std::min(availableSpace.x, availableSpace.y),
                 std::min(availableSpace.x, availableSpace.y) * aspect,
             };
 
-            ImGui::Text("Resolution: %d x %d", gbufferBuffer->GetWidth(), gbufferBuffer->GetHeight());
+            ImGui::Text("Resolution: %d x %d", gBuffer->width, gBuffer->height);
 
             ImGui::Text("Worldspace normal:");
             ImGui::Image(reinterpret_cast<ImTextureID>(debugTextures[0]), imageSize, ImVec2(0, 0), ImVec2(1, 1));
@@ -145,7 +142,7 @@ namespace Raytracing
         }
 
     private:
-        Ref<VulkanFramebuffer> gbufferBuffer;
+        Ref<VulkanGBuffer> gBuffer;
         Ref<VulkanFramebuffer> ssaoBuffer;
         std::vector<VkDescriptorSet> debugTextures{};
         VkSampler sampler = VK_NULL_HANDLE;

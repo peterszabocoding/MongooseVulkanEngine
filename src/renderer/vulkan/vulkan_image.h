@@ -17,6 +17,29 @@ namespace Raytracing
         VmaAllocationInfo allocationInfo;
     };
 
+    namespace ImageUtils {
+        static VkImageAspectFlagBits GetAspectFlagFromFormat(ImageFormat format) {
+            if (format == ImageFormat::DEPTH24_STENCIL8 || format == ImageFormat::DEPTH32)
+                return VK_IMAGE_ASPECT_DEPTH_BIT;
+
+            return VK_IMAGE_ASPECT_COLOR_BIT;
+        }
+
+        static VkImageUsageFlags GetUsageFromFormat(ImageFormat format) {
+            if (format == ImageFormat::DEPTH24_STENCIL8 || format == ImageFormat::DEPTH32)
+                return VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+
+            return VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+        }
+
+        static VkImageLayout GetLayoutFromFormat(ImageFormat format) {
+            if (format == ImageFormat::DEPTH24_STENCIL8 || format == ImageFormat::DEPTH32)
+                return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+            return VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
+        }
+    }
+
     class ImageBuilder {
     public:
         ImageBuilder(VulkanDevice* _device): device(_device) {}

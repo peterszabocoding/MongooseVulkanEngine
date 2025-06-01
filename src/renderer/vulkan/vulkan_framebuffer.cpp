@@ -8,29 +8,6 @@
 #include "util/log.h"
 
 namespace Raytracing {
-    namespace ImageUtils {
-        VkImageAspectFlagBits GetAspectFlagFromFormat(ImageFormat format) {
-            if (format == ImageFormat::DEPTH24_STENCIL8 || format == ImageFormat::DEPTH32)
-                return VK_IMAGE_ASPECT_DEPTH_BIT;
-
-            return VK_IMAGE_ASPECT_COLOR_BIT;
-        }
-
-        VkImageUsageFlags GetUsageFromFormat(ImageFormat format) {
-            if (format == ImageFormat::DEPTH24_STENCIL8 || format == ImageFormat::DEPTH32)
-                return VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-
-            return VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
-        }
-
-        VkImageLayout GetLayoutFromFormat(ImageFormat format) {
-            if (format == ImageFormat::DEPTH24_STENCIL8 || format == ImageFormat::DEPTH32)
-                return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-            return VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
-        }
-    }
-
     VulkanFramebuffer::Builder& VulkanFramebuffer::Builder::AddAttachment(VkImageView imageAttachment) {
         FramebufferAttachment attachment;
         attachment.allocatedImage.image = nullptr;

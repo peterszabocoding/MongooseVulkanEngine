@@ -124,6 +124,7 @@ set(SOURCE_ONE_WEEKEND
         ./src/renderer/vulkan/vulkan_shadow_map.cpp
         ./src/renderer/vulkan/vulkan_reflection_probe.cpp
         ./src/renderer/vulkan/vulkan_shader_compiler.cpp
+        ./src/renderer/vulkan/vulkan_gbuffer.cpp
         ./src/renderer/vulkan/imgui_vulkan.cpp
 
         ./src/renderer/vulkan/pass/render_pass.cpp
