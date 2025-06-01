@@ -4,7 +4,6 @@
 
 namespace Raytracing
 {
-
     Ref<VulkanShadowMap> VulkanShadowMap::Builder::Build(VulkanDevice* device)
     {
         allocatedImage = ImageBuilder(device)
@@ -16,15 +15,25 @@ namespace Raytracing
                 .SetArrayLayers(arrayLayers)
                 .Build();
 
-        imageViews.resize(arrayLayers);
-        for (uint32_t i = 0; i < arrayLayers; i++)
-        {
-            imageViews[i] = ImageViewBuilder(device)
+        imageView = ImageViewBuilder(device)
                     .SetFormat(ImageFormat::DEPTH32)
                     .SetImage(allocatedImage.image)
                     .SetViewType(VK_IMAGE_VIEW_TYPE_2D)
                     .SetAspectFlags(VK_IMAGE_ASPECT_DEPTH_BIT)
-                    .SetBaseMipLevel(i)
+                    .SetBaseArrayLayer(0)
+                    .SetLayerCount(arrayLayers)
+                    .Build();
+
+        arrayImageViews.resize(arrayLayers);
+        for (uint32_t i = 0; i < arrayLayers; i++)
+        {
+            arrayImageViews[i] = ImageViewBuilder(device)
+                    .SetFormat(ImageFormat::DEPTH32)
+                    .SetImage(allocatedImage.image)
+                    .SetViewType(VK_IMAGE_VIEW_TYPE_2D)
+                    .SetAspectFlags(VK_IMAGE_ASPECT_DEPTH_BIT)
+                    .SetBaseArrayLayer(i)
+                    .SetLayerCount(1)
                     .Build();
         }
 
@@ -36,13 +45,13 @@ namespace Raytracing
                 .SetBorderColor(VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE)
                 .Build();
 
-        return CreateRef<VulkanShadowMap>(device, allocatedImage, VK_IMAGE_LAYOUT_UNDEFINED, imageViews, sampler);
+        return CreateRef<VulkanShadowMap>(device, allocatedImage, VK_IMAGE_LAYOUT_UNDEFINED, imageView, arrayImageViews, sampler);
     }
 
     VulkanShadowMap::~VulkanShadowMap()
     {
         vkDestroySampler(device->GetDevice(), sampler, nullptr);
-        for (const auto imageView: imageViews)
+        for (const auto imageView: arrayImageViews)
         {
             vkDestroyImageView(device->GetDevice(), imageView, nullptr);
         }

@@ -30,8 +30,7 @@ namespace Raytracing
         for (size_t i = 0; i < scene.meshes.size(); i++)
         {
             SimplePushConstantData pushConstantData;
-            //pushConstantData.transform = scene.directionalLight.GetProjection() * scene.directionalLight.GetView();
-            pushConstantData.transform = scene.directionalLight.cascades[2].viewProjMatrix;
+            pushConstantData.transform = scene.directionalLight.cascades[cascadeIndex].viewProjMatrix;
             pushConstantData.modelMatrix = scene.transforms[i].GetTransform();
 
             geometryDrawParams.pushConstantParams = {

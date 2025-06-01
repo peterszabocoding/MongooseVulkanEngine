@@ -38,7 +38,7 @@ namespace Raytracing
         TextureAtlas::AtlasBox* shadowMapRegion = nullptr;
     };
 
-    constexpr size_t SHADOW_MAP_CASCADE_COUNT = 5;
+    constexpr size_t SHADOW_MAP_CASCADE_COUNT = 4;
     constexpr float CASCADE_SPLIT_LAMBDA = 0.95f;
 
     struct DirectionalLight : Light {

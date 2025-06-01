@@ -53,3 +53,9 @@ constexpr Ref<T> CreateRef(Args&&... args)
 {
 	return std::make_shared<T>(std::forward<Args>(args)...);
 }
+
+template <typename E>
+constexpr auto EnumValue(E e) noexcept
+{
+	return static_cast<std::underlying_type_t<E>>(e);
+}

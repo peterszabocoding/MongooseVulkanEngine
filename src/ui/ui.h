@@ -95,9 +95,12 @@ namespace Raytracing
             gBuffer = renderer->gBuffer;
             ssaoBuffer = renderer->GetSSAOBuffer();
 
-            debugTextures.push_back(ImGui_ImplVulkan_AddTexture(sampler, gBuffer->buffers.viewSpaceNormal.imageView, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
-            debugTextures.push_back(ImGui_ImplVulkan_AddTexture(sampler, gBuffer->buffers.viewSpacePosition.imageView, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
-            debugTextures.push_back(ImGui_ImplVulkan_AddTexture(sampler, gBuffer->buffers.depth.imageView, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
+            debugTextures.push_back(ImGui_ImplVulkan_AddTexture(sampler, gBuffer->buffers.viewSpaceNormal.imageView,
+                                                                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
+            debugTextures.push_back(ImGui_ImplVulkan_AddTexture(sampler, gBuffer->buffers.viewSpacePosition.imageView,
+                                                                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
+            debugTextures.push_back(
+                ImGui_ImplVulkan_AddTexture(sampler, gBuffer->buffers.depth.imageView, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
 
             auto ssaoDescriptorSet = ImGui_ImplVulkan_AddTexture(sampler, ssaoBuffer->GetAttachments()[0].imageView,
                                                                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
@@ -180,9 +183,11 @@ namespace Raytracing
 
             if (renderer->directionalShadowMap->GetImage())
             {
-                const auto descriptorSet = ImGui_ImplVulkan_AddTexture(sampler, renderer->directionalShadowMap->GetImageView(),
-                                                                       VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
-                shadowMapAttachments.push_back(descriptorSet);
+                for (size_t i = 0; i < SHADOW_MAP_CASCADE_COUNT; i++)
+                {
+                    shadowMapAttachments.push_back(ImGui_ImplVulkan_AddTexture(sampler, renderer->directionalShadowMap->GetImageView(i),
+                                                                           VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL));
+                }
             }
         }
 
@@ -201,9 +206,9 @@ namespace Raytracing
                 availableSpace.x,
             };
 
-            if (shadowMapAttachments.size() > 0)
+            for (auto attachment : shadowMapAttachments)
             {
-                ImGui::Image(reinterpret_cast<ImTextureID>(shadowMapAttachments[0]), imageSize, ImVec2(0, 0), ImVec2(1, 1));
+                ImGui::Image(reinterpret_cast<ImTextureID>(attachment), imageSize, ImVec2(0, 0), ImVec2(1, 1));
             }
         }
 

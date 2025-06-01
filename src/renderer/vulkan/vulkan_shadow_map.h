@@ -30,24 +30,27 @@ namespace Raytracing
             uint32_t width, height;
             uint32_t arrayLayers = 1;
             AllocatedImage allocatedImage{};
-            std::vector<VkImageView> imageViews{};
+            VkImageView imageView{};
+            std::vector<VkImageView> arrayImageViews{};
             VkDeviceMemory imageMemory{};
             VkSampler sampler{};
         };
 
     public:
-        VulkanShadowMap(VulkanDevice* _device, const AllocatedImage& _image, const VkImageLayout _imageLayout, const std::vector<VkImageView> _imageViews,
+        VulkanShadowMap(VulkanDevice* _device, const AllocatedImage& _image, const VkImageLayout _imageLayout, const VkImageView _imageView,
+                        const std::vector<VkImageView> _arrayImageViews,
                         const VkSampler _sampler): device(_device),
                                                    allocatedImage(_image),
-                                                   imageViews(_imageViews),
+                                                   imageView(_imageView),
+                                                   arrayImageViews(_arrayImageViews),
                                                    sampler(_sampler),
                                                    imageLayout(_imageLayout) {}
 
         ~VulkanShadowMap();
 
         VkImage GetImage() const { return allocatedImage.image; };
-        VkImageView GetImageView() const { return imageViews[0]; }
-        VkImageView GetImageView(uint32_t index) const { return imageViews[index % imageViews.size()]; }
+        VkImageView GetImageView() const { return imageView; }
+        VkImageView GetImageView(uint32_t index) const { return arrayImageViews[index % arrayImageViews.size()]; }
         VkSampler GetSampler() const { return sampler; }
         VkImageLayout GetImageLayout() const { return imageLayout; }
 
@@ -58,7 +61,8 @@ namespace Raytracing
         VulkanDevice* device;
 
         AllocatedImage allocatedImage{};
-        std::vector<VkImageView> imageViews{};
+        VkImageView imageView{};
+        std::vector<VkImageView> arrayImageViews{};
         VkSampler sampler{};
         VkImageLayout imageLayout{};
     };

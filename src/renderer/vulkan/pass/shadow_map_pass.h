@@ -10,6 +10,8 @@ namespace Raytracing
         explicit ShadowMapPass(VulkanDevice* vulkanDevice, Scene& _scene);
         virtual ~ShadowMapPass() override = default;
 
+        void SetCascadeIndex(uint32_t _cascadeIndex) { cascadeIndex = _cascadeIndex; }
+
         virtual void Render(VkCommandBuffer commandBuffer,
                             Camera& camera,
                             uint32_t imageIndex,
@@ -23,9 +25,8 @@ namespace Raytracing
 
     private:
         Scene& scene;
+        uint32_t cascadeIndex = 0;
         Ref<VulkanRenderPass> renderPass{};
         Ref<VulkanPipeline> directionalShadowMapPipeline;
-
-
     };
 }
