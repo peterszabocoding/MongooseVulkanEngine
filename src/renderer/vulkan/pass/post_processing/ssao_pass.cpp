@@ -29,7 +29,7 @@ namespace Raytracing
     void SSAOPass::Update()
     {}
 
-    void SSAOPass::Render(VkCommandBuffer commandBuffer, uint32_t imageIndex, Ref<VulkanFramebuffer> writeBuffer,
+    void SSAOPass::Render(VkCommandBuffer commandBuffer, Camera& camera, uint32_t imageIndex, Ref<VulkanFramebuffer> writeBuffer,
                           Ref<VulkanFramebuffer> readBuffer)
     {
         VkExtent2D extent{passWidth, passHeight};

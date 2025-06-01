@@ -10,6 +10,7 @@ namespace Raytracing
         virtual ~PresentPass() override = default;
 
         virtual void Render(VkCommandBuffer commandBuffer,
+                            Camera& camera,
                             uint32_t imageIndex,
                             Ref<VulkanFramebuffer> writeBuffer,
                             Ref<VulkanFramebuffer> readBuffer) override;

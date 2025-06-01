@@ -26,12 +26,12 @@ namespace Raytracing
     };
 
     struct Framebuffers {
-        std::vector<Ref<VulkanFramebuffer>> gbufferFramebuffers;
-        std::vector<Ref<VulkanFramebuffer>> ssaoFramebuffers;
-        std::vector<Ref<VulkanFramebuffer>> geometryFramebuffers;
-        std::vector<Ref<VulkanFramebuffer>> shadowMapFramebuffers;
+        Ref<VulkanFramebuffer> geometryFramebuffers;
+        Ref<VulkanFramebuffer> gbufferFramebuffers;
+        Ref<VulkanFramebuffer> ssaoFramebuffers;
+        Ref<VulkanFramebuffer> shadowMapFramebuffers;
+        Ref<VulkanShadowMap> directionalShadowMaps;
         std::vector<Ref<VulkanFramebuffer>> presentFramebuffers;
-        std::vector<Ref<VulkanShadowMap>> directionalShadowMaps;
     };
 
     struct TransformsBuffer {
@@ -69,10 +69,10 @@ namespace Raytracing
         VulkanDevice* GetVulkanDevice() const { return device.get(); }
 
         [[nodiscard]] Ref<VulkanRenderPass> GetRenderPass() const { return presentPass->GetRenderPass(); }
-        [[nodiscard]] Ref<VulkanFramebuffer> GetRenderBuffer() const { return framebuffers.geometryFramebuffers[activeImage]; }
-        [[nodiscard]] Ref<VulkanFramebuffer> GetGBuffer() const { return framebuffers.gbufferFramebuffers[activeImage]; }
-        [[nodiscard]] Ref<VulkanFramebuffer> GetSSAOBuffer() const { return framebuffers.ssaoFramebuffers[activeImage]; }
-        [[nodiscard]] Ref<VulkanShadowMap> GetShadowMap() const { return framebuffers.directionalShadowMaps[activeImage]; }
+        [[nodiscard]] Ref<VulkanFramebuffer> GetRenderBuffer() const { return framebuffers.geometryFramebuffers; }
+        [[nodiscard]] Ref<VulkanFramebuffer> GetGBuffer() const { return framebuffers.gbufferFramebuffers; }
+        [[nodiscard]] Ref<VulkanFramebuffer> GetSSAOBuffer() const { return framebuffers.ssaoFramebuffers; }
+        [[nodiscard]] Ref<VulkanShadowMap> GetShadowMap() const { return framebuffers.directionalShadowMaps; }
 
         DirectionalLight* GetLight() { return &scene.directionalLight; }
 

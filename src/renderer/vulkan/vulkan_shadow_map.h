@@ -18,28 +18,36 @@ namespace Raytracing
                 return *this;
             }
 
+            Builder& SetArrayLayers(const uint32_t _arrayLayers)
+            {
+                arrayLayers = _arrayLayers;
+                return *this;
+            }
+
             Ref<VulkanShadowMap> Build(VulkanDevice* device);
 
         private:
             uint32_t width, height;
+            uint32_t arrayLayers = 1;
             AllocatedImage allocatedImage{};
-            VkImageView imageView{};
+            std::vector<VkImageView> imageViews{};
             VkDeviceMemory imageMemory{};
             VkSampler sampler{};
         };
 
     public:
-        VulkanShadowMap(VulkanDevice* _device, const AllocatedImage& _image, const VkImageLayout _imageLayout, const VkImageView _imageView,
+        VulkanShadowMap(VulkanDevice* _device, const AllocatedImage& _image, const VkImageLayout _imageLayout, const std::vector<VkImageView> _imageViews,
                         const VkSampler _sampler): device(_device),
                                                    allocatedImage(_image),
-                                                   imageLayout(_imageLayout),
-                                                   imageView(_imageView),
-                                                   sampler(_sampler) {}
+                                                   imageViews(_imageViews),
+                                                   sampler(_sampler),
+                                                   imageLayout(_imageLayout) {}
 
         ~VulkanShadowMap();
 
         VkImage GetImage() const { return allocatedImage.image; };
-        VkImageView GetImageView() const { return imageView; }
+        VkImageView GetImageView() const { return imageViews[0]; }
+        VkImageView GetImageView(uint32_t index) const { return imageViews[index % imageViews.size()]; }
         VkSampler GetSampler() const { return sampler; }
         VkImageLayout GetImageLayout() const { return imageLayout; }
 
@@ -50,7 +58,7 @@ namespace Raytracing
         VulkanDevice* device;
 
         AllocatedImage allocatedImage{};
-        VkImageView imageView{};
+        std::vector<VkImageView> imageViews{};
         VkSampler sampler{};
         VkImageLayout imageLayout{};
     };

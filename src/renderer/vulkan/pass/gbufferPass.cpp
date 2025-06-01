@@ -19,12 +19,7 @@ namespace Raytracing
         LoadPipelines();
     }
 
-    void GBufferPass::SetCamera(const Camera& _camera)
-    {
-        camera = _camera;
-    }
-
-    void GBufferPass::Render(VkCommandBuffer commandBuffer, uint32_t imageIndex, Ref<VulkanFramebuffer> writeBuffer,
+    void GBufferPass::Render(VkCommandBuffer commandBuffer, Camera& camera, uint32_t imageIndex, Ref<VulkanFramebuffer> writeBuffer,
                              Ref<VulkanFramebuffer> readBuffer)
     {
         VkExtent2D extent = {passWidth, passHeight};

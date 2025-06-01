@@ -10,9 +10,8 @@ namespace Raytracing
         explicit GBufferPass(VulkanDevice* vulkanDevice, Scene& _scene);
         virtual ~GBufferPass() override = default;
 
-        void SetCamera(const Camera& camera);
-
         virtual void Render(VkCommandBuffer commandBuffer,
+                            Camera& camera,
                             uint32_t imageIndex,
                             Ref<VulkanFramebuffer> writeBuffer,
                             Ref<VulkanFramebuffer> readBuffer) override;
@@ -24,7 +23,6 @@ namespace Raytracing
 
     private:
         Scene& scene;
-        Camera camera;
 
         Ref<VulkanRenderPass> renderPass{};
         Ref<VulkanPipeline> gbufferPipeline;

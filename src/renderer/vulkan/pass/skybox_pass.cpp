@@ -9,7 +9,8 @@
 #include "resource/resource_manager.h"
 #include "util/log.h"
 
-namespace Raytracing {
+namespace Raytracing
+{
     SkyboxPass::SkyboxPass(VulkanDevice* vulkanDevice, Scene& _scene): VulkanPass(vulkanDevice), scene(_scene)
     {
         renderPass = VulkanRenderPass::Builder(vulkanDevice)
@@ -20,8 +21,8 @@ namespace Raytracing {
         LoadPipelines();
     }
 
-    void SkyboxPass::Render(VkCommandBuffer commandBuffer, uint32_t imageIndex, Ref<VulkanFramebuffer> writeBuffer,
-        Ref<VulkanFramebuffer> readBuffer)
+    void SkyboxPass::Render(VkCommandBuffer commandBuffer, Camera& camera, uint32_t imageIndex, Ref<VulkanFramebuffer> writeBuffer,
+                            Ref<VulkanFramebuffer> readBuffer)
     {
         VkExtent2D extent = {passWidth, passHeight};
 

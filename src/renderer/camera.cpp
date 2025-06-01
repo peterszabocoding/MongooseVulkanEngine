@@ -39,14 +39,18 @@ namespace Raytracing {
 
     void Camera::SetNearPlane(const float _nearPlane)
     {
+        if (isEqual(nearPlane, _nearPlane)) return;
+
         nearPlane = _nearPlane;
-        CalculateView();
+        CalculateProjection();
     }
 
     void Camera::SetFarPlane(const float _farPlane)
     {
+        if (isEqual(farPlane, _farPlane)) return;
+
         farPlane = _farPlane;
-        CalculateView();
+        CalculateProjection();
     }
 
     void Camera::CalculateProjection()

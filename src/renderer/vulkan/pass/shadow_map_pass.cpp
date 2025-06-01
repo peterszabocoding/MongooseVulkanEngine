@@ -13,10 +13,10 @@ namespace Raytracing
         LoadPipelines();
     }
 
-    void ShadowMapPass::Render(VkCommandBuffer commandBuffer, uint32_t imageIndex, Ref<VulkanFramebuffer> writeBuffer,
+    void ShadowMapPass::Render(VkCommandBuffer commandBuffer, Camera& camera, uint32_t imageIndex, Ref<VulkanFramebuffer> writeBuffer,
                                Ref<VulkanFramebuffer> readBuffer)
     {
-        constexpr VkExtent2D extent = {4096, 4096};
+        constexpr VkExtent2D extent = {1024, 1024};
 
         device->SetViewportAndScissor(extent, commandBuffer);
         renderPass->Begin(commandBuffer, writeBuffer, extent);
@@ -32,9 +32,8 @@ namespace Raytracing
         for (size_t i = 0; i < scene.meshes.size(); i++)
         {
             SimplePushConstantData pushConstantData;
-            pushConstantData.transform = scene.directionalLight.GetProjection() *
-                                         scene.directionalLight.GetView() *
-                                         pushConstantData.modelMatrix;
+            //pushConstantData.transform = scene.directionalLight.GetProjection() * scene.directionalLight.GetView();
+            pushConstantData.transform = scene.directionalLight.cascades[2].viewProjMatrix;
             pushConstantData.modelMatrix = scene.transforms[i].GetTransform();
 
             geometryDrawParams.pushConstantParams = {

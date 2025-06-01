@@ -152,7 +152,7 @@ namespace Raytracing
         {
             device_extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
             //validation_layer_list.push_back("VK_LAYER_LUNARG_crash_diagnostic");
-            validation_layer_list.push_back("VK_LAYER_KHRONOS_validation");
+            //validation_layer_list.push_back("VK_LAYER_KHRONOS_validation");
             //validation_layer_list.push_back("VK_LAYER_LUNARG_api_dump");
         }
 
@@ -411,6 +411,10 @@ namespace Raytracing
     VkInstance VulkanDevice::CreateVkInstance(const std::vector<const char*>& deviceExtensions,
                                               const std::vector<const char*>& validationLayers)
     {
+
+        VulkanUtils::VulkanVersion vkVersion;
+        VulkanUtils::GetInstanceVersion(vkVersion);
+
         VkInstanceCreateInfo createInfo;
 
         auto* vkApplicationInfo = new VkApplicationInfo();
@@ -428,7 +432,7 @@ namespace Raytracing
             APPLICATION_VERSION.minor,
             APPLICATION_VERSION.patch);
 
-        vkApplicationInfo->apiVersion = VK_API_VERSION_1_3;
+        vkApplicationInfo->apiVersion = VK_MAKE_API_VERSION(0, vkVersion.major, vkVersion.minor, 0);
 
         createInfo.pApplicationInfo = vkApplicationInfo;
 

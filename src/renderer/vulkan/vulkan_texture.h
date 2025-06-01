@@ -74,6 +74,12 @@ namespace Raytracing
                 return *this;
             }
 
+            Builder& SetArrayLayers(uint32_t _arrayLayers)
+            {
+                arrayLayers = _arrayLayers;
+                return *this;
+            }
+
             Ref<VulkanTexture> Build(VulkanDevice* device);
 
         private:
@@ -88,8 +94,10 @@ namespace Raytracing
             VkImageUsageFlags usage = 0;
             VkImageAspectFlags aspectFlags = 0;
             uint32_t mipLevels = 1;
+            uint32_t arrayLayers = 1;
 
             AllocatedImage allocatedImage{};
+            std::vector<VkImageView> imageViews{};
             VkImageView imageView{};
             VkDeviceMemory imageMemory{};
             VkSampler sampler{};
@@ -97,11 +105,11 @@ namespace Raytracing
         };
 
     public:
-        VulkanTexture(VulkanDevice* _device, const AllocatedImage _image, const VkImageView _imageView, const VkSampler _sampler,
+        VulkanTexture(VulkanDevice* _device, const AllocatedImage _image, const std::vector<VkImageView> _imageViews, const VkSampler _sampler,
                       const VkDeviceMemory _imageMemory,
                       const ImageResource& _imageResource): device(_device),
                                                             allocatedImage(_image),
-                                                            imageView(_imageView),
+                                                            imageViews(_imageViews),
                                                             sampler(_sampler),
                                                             imageMemory(_imageMemory),
                                                             imageResource(_imageResource) {}
@@ -109,7 +117,8 @@ namespace Raytracing
         ~VulkanTexture();
 
         VkImage GetImage() const { return allocatedImage.image; };
-        VkImageView GetImageView() const { return imageView; }
+        VkImageView GetImageView() const { return imageViews[0]; }
+        VkImageView GetImageView(const uint32_t index) { return imageViews[index % imageViews.size()]; }
         VkSampler GetSampler() const { return sampler; }
         ImageResource GetImageResource() const { return imageResource; }
 
@@ -118,7 +127,7 @@ namespace Raytracing
         ImageResource imageResource{};
 
         AllocatedImage allocatedImage{};
-        VkImageView imageView{};
+        std::vector<VkImageView> imageViews{};
         VkDeviceMemory imageMemory{};
         VkSampler sampler{};
     };

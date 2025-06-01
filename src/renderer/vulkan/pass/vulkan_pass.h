@@ -11,6 +11,7 @@ namespace Raytracing
         virtual ~VulkanPass() = default;
 
         virtual void Render(VkCommandBuffer commandBuffer,
+                            Camera& camera,
                             uint32_t imageIndex,
                             Ref<VulkanFramebuffer> writeBuffer,
                             Ref<VulkanFramebuffer> readBuffer) = 0;

@@ -1,4 +1,5 @@
 #pragma once
+#include "camera.h"
 #include "texture_atlas.h"
 
 #include "glm/vec3.hpp"
@@ -22,6 +23,11 @@ namespace Raytracing
         ULTRA_HIGH = 4096
     };
 
+    struct Cascade {
+        float splitDepth;
+        glm::mat4 viewProjMatrix;
+    };
+
     struct Light {
         glm::vec3 color = glm::vec3(1.0f);
         float intensity = 20.0f;
@@ -32,12 +38,18 @@ namespace Raytracing
         TextureAtlas::AtlasBox* shadowMapRegion = nullptr;
     };
 
+    constexpr size_t SHADOW_MAP_CASCADE_COUNT = 5;
+    constexpr float CASCADE_SPLIT_LAMBDA = 0.95f;
+
     struct DirectionalLight : Light {
         glm::vec3 direction = normalize(glm::vec3(0.0f, -1.0f, 0.0f));
+        glm::vec3 center = glm::vec3(0.0f);
         float ambientIntensity = 1.0f;
         float nearPlane = 1.0f;
         float farPlane = 50.0f;
-        float orthoSize = 20.0f;
+        float orthoSize = 1.0f;
+
+        Cascade cascades[SHADOW_MAP_CASCADE_COUNT];
 
         glm::mat4 GetProjection() const
         {
@@ -48,21 +60,112 @@ namespace Raytracing
         {
             // We need a position for the "camera" looking along the light direction.
             // A simple trick is to choose an arbitrary world-space origin and look along -lightDir.
-            glm::vec3 lightPosition = -2.0f * 20.0f * direction; // Offset to see the scene
+            glm::vec3 lightPosition = center - direction; // Offset to see the scene
             glm::vec3 upDirection = glm::vec3(0.0f, 1.0f, 0.0f); // Choose an appropriate up vector
 
             // Handle the case where the light direction is almost parallel to the up direction
-            if (glm::abs(glm::dot(direction, upDirection)) > 0.99f) {
+            if (glm::abs(glm::dot(direction, upDirection)) > 0.99f)
+            {
                 upDirection = glm::vec3(0.0f, 0.0f, 1.0f); // Use a different up vector
             }
 
-            return lookAt(lightPosition, glm::vec3(0.0f), upDirection);
-            // lookAt(normalize(direction), glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+            return lookAt(lightPosition, center, upDirection);
         }
 
         glm::mat4 GetTransform() const
         {
             return GetProjection() * GetView();
+        }
+
+        void UpdateCascades(const Camera& camera)
+        {
+            float cascadeSplits[SHADOW_MAP_CASCADE_COUNT];
+
+            const float nearClip = camera.GetNearPlane();
+            const float farClip = camera.GetFarPlane();
+            const float clipRange = farClip - nearClip;
+
+            const float minZ = nearClip;
+            const float maxZ = nearClip + clipRange;
+
+            const float range = maxZ - minZ;
+            const float ratio = maxZ / minZ;
+
+            // Calculate split depths based on view camera frustum
+            // Based on method presented in https://developer.nvidia.com/gpugems/GPUGems3/gpugems3_ch10.html
+            for (uint32_t i = 0; i < SHADOW_MAP_CASCADE_COUNT; i++)
+            {
+                const float p = (i + 1) / static_cast<float>(SHADOW_MAP_CASCADE_COUNT);
+                const float log = minZ * std::pow(ratio, p);
+                const float uniform = minZ + range * p;
+                const float d = CASCADE_SPLIT_LAMBDA * (log - uniform) + uniform;
+                cascadeSplits[i] = (d - nearClip) / clipRange;
+            }
+
+            // Calculate orthographic projection matrix for each cascade
+            float lastSplitDist = 0.0;
+            for (uint32_t i = 0; i < SHADOW_MAP_CASCADE_COUNT; i++)
+            {
+                const float splitDist = cascadeSplits[i];
+
+                glm::vec3 frustumCorners[8] = {
+                    glm::vec3(-1.0f, 1.0f, 0.0f),
+                    glm::vec3(1.0f, 1.0f, 0.0f),
+                    glm::vec3(1.0f, -1.0f, 0.0f),
+                    glm::vec3(-1.0f, -1.0f, 0.0f),
+                    glm::vec3(-1.0f, 1.0f, 1.0f),
+                    glm::vec3(1.0f, 1.0f, 1.0f),
+                    glm::vec3(1.0f, -1.0f, 1.0f),
+                    glm::vec3(-1.0f, -1.0f, 1.0f),
+                };
+
+                // Project frustum corners into world space
+                glm::mat4 invCam = inverse(camera.GetProjection() * camera.GetView());
+                for (uint32_t j = 0; j < 8; j++)
+                {
+                    glm::vec4 invCorner = invCam * glm::vec4(frustumCorners[j], 1.0f);
+                    frustumCorners[j] = invCorner / invCorner.w;
+                }
+
+                for (uint32_t j = 0; j < 4; j++)
+                {
+                    glm::vec3 dist = frustumCorners[j + 4] - frustumCorners[j];
+                    frustumCorners[j + 4] = frustumCorners[j] + (dist * splitDist);
+                    frustumCorners[j] = frustumCorners[j] + (dist * lastSplitDist);
+                }
+
+                // Get frustum center
+                glm::vec3 frustumCenter = glm::vec3(0.0f);
+                for (uint32_t j = 0; j < 8; j++)
+                {
+                    frustumCenter += frustumCorners[j];
+                }
+                frustumCenter /= 8.0f;
+
+                float radius = 0.0f;
+                for (uint32_t j = 0; j < 8; j++)
+                {
+                    const float distance = length(frustumCorners[j] - frustumCenter);
+                    radius = glm::max(radius, distance);
+                }
+                radius = std::ceil(radius * 16.0f) / 16.0f;
+
+                glm::vec3 maxExtents = glm::vec3(radius);
+                glm::vec3 minExtents = -maxExtents;
+
+                //maxExtents *= orthoSize;
+                //minExtents *= orthoSize;
+
+                glm::mat4 lightViewMatrix = lookAt(frustumCenter - direction * -minExtents.z, frustumCenter, glm::vec3(0.0f, 1.0f, 0.0f));
+                glm::mat4 lightOrthoMatrix = glm::ortho(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.0f,
+                                                        maxExtents.z - minExtents.z);
+
+                // Store split distance and matrix in cascade
+                cascades[i].splitDepth = (camera.GetNearPlane() + splitDist * clipRange) * -1.0f;
+                cascades[i].viewProjMatrix = lightOrthoMatrix * lightViewMatrix;
+
+                lastSplitDist = cascadeSplits[i];
+            }
         }
     };
 

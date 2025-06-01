@@ -48,7 +48,7 @@ const mat4 biasMat = mat4(
 void main() {
     worldPosition = push.modelMatrix * vec4(inPosition, 1.0);
     fragPosition = worldPosition.xyz;
-    shadowMapCoord = (biasMat * lights.lightProjection * lights.lightView) * worldPosition;
+    shadowMapCoord = (biasMat * lights.lightProjection) * worldPosition;
 
     fragColor = inColor;
     fragTexCoord = inTexCoord;

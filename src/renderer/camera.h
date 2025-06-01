@@ -35,6 +35,9 @@ namespace Raytracing
         double GetFOV() const { return fov; }
         double GetAspectRatio() const { return aspectRatio; }
 
+        float GetNearPlane() const { return nearPlane; }
+        float GetFarPlane() const { return farPlane; }
+
         Transform& GetTransform() { return transform; }
 
     private:
@@ -46,7 +49,7 @@ namespace Raytracing
         float aspectRatio = 1.0;
 
         float nearPlane = 0.1f;
-        float farPlane = 10000.0f;
+        float farPlane = 100.0f;
 
         unsigned int viewportWidth = 1;
         unsigned int viewportHeight = 1;

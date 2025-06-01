@@ -17,15 +17,21 @@ namespace Raytracing
                 .AddUsage(VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
                 .SetInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
                 .SetMipLevels(mipLevels)
+                .SetArrayLayers(arrayLayers)
                 .Build();
 
-        imageView = ImageViewBuilder(device)
+        imageViews.resize(arrayLayers);
+        for (size_t i = 0; i < arrayLayers; i++)
+        {
+            imageViews[i] = ImageViewBuilder(device)
                 .SetFormat(format)
                 .SetImage(allocatedImage.image)
                 .SetViewType(VK_IMAGE_VIEW_TYPE_2D)
                 .SetAspectFlags(aspectFlags)
                 .SetMipLevels(mipLevels)
+                .SetBaseArrayLayer(i)
                 .Build();
+        }
 
         sampler = ImageSamplerBuilder(device)
                 .SetFilter(minFilter, magFilter)
@@ -69,22 +75,30 @@ namespace Raytracing
             } else
             {
                 device->ImmediateSubmit([&](const VkCommandBuffer cmd) {
-                VulkanUtils::TransitionImageLayout(cmd, allocatedImage.image,
-                                                   VK_IMAGE_ASPECT_COLOR_BIT,
-                                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                                                   mipLevels);
-            });
+                    VulkanUtils::TransitionImageLayout(cmd, allocatedImage.image,
+                                                       VK_IMAGE_ASPECT_COLOR_BIT,
+                                                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                                       VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                                                       mipLevels);
+                });
             }
         }
 
-        return CreateRef<VulkanTexture>(device, allocatedImage, imageView, sampler, imageMemory, imageResource);
+        imageResource.data = data;
+        imageResource.size = size;
+        imageResource.format = format;
+        imageResource.width = width;
+        imageResource.height = height;
+        return CreateRef<VulkanTexture>(device, allocatedImage, imageViews, sampler, imageMemory, imageResource);
     }
 
     VulkanTexture::~VulkanTexture()
     {
         vkDestroySampler(device->GetDevice(), sampler, nullptr);
-        vkDestroyImageView(device->GetDevice(), imageView, nullptr);
+        for (size_t i = 0; i < imageViews.size(); i++)
+        {
+            vkDestroyImageView(device->GetDevice(), imageViews[i], nullptr);
+        }
         vmaDestroyImage(device->GetVmaAllocator(), allocatedImage.image, allocatedImage.allocation);
     }
 }

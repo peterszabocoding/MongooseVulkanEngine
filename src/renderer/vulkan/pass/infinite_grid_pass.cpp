@@ -10,13 +10,13 @@ namespace Raytracing
     {
         renderPass = VulkanRenderPass::Builder(vulkanDevice)
                 .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM, false, false)
-                .AddDepthAttachment({ VK_FORMAT_D24_UNORM_S8_UINT, false})
+                .AddDepthAttachment({VK_FORMAT_D24_UNORM_S8_UINT, false})
                 .Build();
         screenRect = CreateScope<VulkanMeshlet>(device, Primitives::GRID_VERTICES, Primitives::GRID_INDICES);
         LoadPipelines();
     }
 
-    void InfiniteGridPass::Render(VkCommandBuffer commandBuffer, uint32_t imageIndex, Ref<VulkanFramebuffer> writeBuffer,
+    void InfiniteGridPass::Render(VkCommandBuffer commandBuffer, Camera& camera, uint32_t imageIndex, Ref<VulkanFramebuffer> writeBuffer,
                                   Ref<VulkanFramebuffer> readBuffer)
     {
         const VkExtent2D extent{passWidth, passHeight};

@@ -36,6 +36,12 @@ do                                                                              
 
 namespace Raytracing::VulkanUtils
 {
+    struct VulkanVersion {
+        uint32_t major;
+        uint32_t minor;
+        uint32_t patch;
+    };
+
     struct QueueFamilyIndices {
         std::optional<uint32_t> graphicsFamily;
         std::optional<uint32_t> presentFamily;
@@ -274,6 +280,19 @@ namespace Raytracing::VulkanUtils
         return available_extensions;
     }
 
+    static void GetInstanceVersion(VulkanVersion& version)
+    {
+        uint32_t instanceVersion = 0;
+        VkResult result = vkEnumerateInstanceVersion(&instanceVersion);
+        VK_CHECK_MSG(result, "Failed to get instance version");
+
+        version.major = VK_API_VERSION_MAJOR(instanceVersion);
+        version.minor = VK_API_VERSION_MINOR(instanceVersion);
+        version.patch = VK_API_VERSION_PATCH(instanceVersion);
+
+        LOG_INFO("Vulkan version: {0}.{1}.{2}", version.major, version.minor, version.patch);
+    }
+
     static std::vector<VkLayerProperties> GetSupportedValidationLayers()
     {
         uint32_t layer_count;
@@ -375,7 +394,7 @@ namespace Raytracing::VulkanUtils
         VkPhysicalDeviceFeatures supportedFeatures;
         vkGetPhysicalDeviceFeatures(physicalDevice, &supportedFeatures);
 
-        return indices.IsComplete() && supportedFeatures.samplerAnisotropy;;
+        return indices.IsComplete() && supportedFeatures.samplerAnisotropy;
     }
 
     static VkShaderModule CreateShaderModule(const VkDevice device, const std::vector<char>& code)

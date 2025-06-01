@@ -11,6 +11,7 @@ namespace Raytracing
         virtual ~ShadowMapPass() override = default;
 
         virtual void Render(VkCommandBuffer commandBuffer,
+                            Camera& camera,
                             uint32_t imageIndex,
                             Ref<VulkanFramebuffer> writeBuffer,
                             Ref<VulkanFramebuffer> readBuffer) override;
@@ -24,5 +25,7 @@ namespace Raytracing
         Scene& scene;
         Ref<VulkanRenderPass> renderPass{};
         Ref<VulkanPipeline> directionalShadowMapPipeline;
+
+
     };
 }
