@@ -18,10 +18,8 @@ namespace Raytracing
     void RenderPass::Render(VkCommandBuffer commandBuffer, Camera& camera, uint32_t imageIndex, Ref<VulkanFramebuffer> writeBuffer,
                             Ref<VulkanFramebuffer> readBuffer)
     {
-        VkExtent2D extent = {passWidth, passHeight};
-
-        device->SetViewportAndScissor(extent, commandBuffer);
-        renderPass->Begin(commandBuffer, writeBuffer, extent);
+        device->SetViewportAndScissor(writeBuffer->GetExtent(), commandBuffer);
+        renderPass->Begin(commandBuffer, writeBuffer, writeBuffer->GetExtent());
 
         DrawCommandParams geometryDrawParams{};
         geometryDrawParams.commandBuffer = commandBuffer;
@@ -47,9 +45,9 @@ namespace Raytracing
                 geometryDrawParams.descriptorSets = {
                     scene.meshes[i]->GetMaterial(meshlet).descriptorSet,
                     ShaderCache::descriptorSets.transformDescriptorSet,
-                    ShaderCache::descriptorSets.lightsDescriptorSets[imageIndex],
+                    ShaderCache::descriptorSets.lightsDescriptorSet,
                     ShaderCache::descriptorSets.irradianceDescriptorSet,
-                    ShaderCache::descriptorSets.postProcessingDescriptorSets[imageIndex],
+                    ShaderCache::descriptorSets.postProcessingDescriptorSet,
                 };
 
                 if (scene.reflectionProbe)

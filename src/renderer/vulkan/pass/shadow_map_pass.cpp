@@ -16,10 +16,8 @@ namespace Raytracing
     void ShadowMapPass::Render(VkCommandBuffer commandBuffer, Camera& camera, uint32_t imageIndex, Ref<VulkanFramebuffer> writeBuffer,
                                Ref<VulkanFramebuffer> readBuffer)
     {
-        constexpr VkExtent2D extent = {1024, 1024};
-
-        device->SetViewportAndScissor(extent, commandBuffer);
-        renderPass->Begin(commandBuffer, writeBuffer, extent);
+        device->SetViewportAndScissor(writeBuffer->GetExtent(), commandBuffer);
+        renderPass->Begin(commandBuffer, writeBuffer, writeBuffer->GetExtent());
 
         DrawCommandParams geometryDrawParams{};
         geometryDrawParams.commandBuffer = commandBuffer;

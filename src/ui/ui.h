@@ -8,7 +8,7 @@
 
 namespace Raytracing
 {
-    class PerformanceWindow : ImGuiWindow {
+    class PerformanceWindow final : ImGuiWindow {
     public:
         PerformanceWindow(const Ref<VulkanRenderer>& _renderer): ImGuiWindow(_renderer), device(renderer->GetVulkanDevice()) {}
         ~PerformanceWindow() override = default;
@@ -31,7 +31,7 @@ namespace Raytracing
         VulkanDevice* device;
     };
 
-    class CameraSettingsWindow : ImGuiWindow {
+    class CameraSettingsWindow final : ImGuiWindow {
     public:
         explicit CameraSettingsWindow(const Ref<VulkanRenderer>& _renderer, Camera* camera,
                                       CameraController& controller): ImGuiWindow(_renderer),
@@ -64,7 +64,7 @@ namespace Raytracing
         CameraController& controller;
     };
 
-    class GBufferViewer : ImGuiWindow {
+    class GBufferViewer final : ImGuiWindow {
     public:
         struct FramebufferInfo {
             VkDescriptorSet descriptorSet;
@@ -151,7 +151,7 @@ namespace Raytracing
         VkSampler sampler = VK_NULL_HANDLE;
     };
 
-    class ShadowMapViewer : ImGuiWindow {
+    class ShadowMapViewer final : ImGuiWindow {
     public:
         struct FramebufferInfo {
             VkDescriptorSet descriptorSet;
@@ -175,16 +175,16 @@ namespace Raytracing
             if (shadowMapAttachments.size() > 0)
             {
                 for (int i = 0; i < shadowMapAttachments.size(); i++)
+                {
                     ImGui_ImplVulkan_RemoveTexture(shadowMapAttachments[i]);
+                }
                 shadowMapAttachments.clear();
             }
 
-            shadowMap = renderer->GetShadowMap();
-
-            if (shadowMap->GetImage())
+            if (renderer->directionalShadowMap->GetImage())
             {
-                auto descriptorSet = ImGui_ImplVulkan_AddTexture(sampler, shadowMap->GetImageView(),
-                                                                 VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
+                const auto descriptorSet = ImGui_ImplVulkan_AddTexture(sampler, renderer->directionalShadowMap->GetImageView(),
+                                                                       VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
                 shadowMapAttachments.push_back(descriptorSet);
             }
         }
@@ -216,12 +216,11 @@ namespace Raytracing
         }
 
     private:
-        Ref<VulkanShadowMap> shadowMap;
         std::vector<VkDescriptorSet> shadowMapAttachments{};
         VkSampler sampler = VK_NULL_HANDLE;
     };
 
-    class LightSettingsWindow : ImGuiWindow {
+    class LightSettingsWindow final : ImGuiWindow {
     public:
         explicit LightSettingsWindow(const Ref<VulkanRenderer>& _renderer): ImGuiWindow(_renderer), light(renderer->GetLight()) {}
 
@@ -248,7 +247,7 @@ namespace Raytracing
         DirectionalLight* light;
     };
 
-    class PostProcessingWindow : ImGuiWindow {
+    class PostProcessingWindow final : ImGuiWindow {
     public:
         explicit PostProcessingWindow(const Ref<VulkanRenderer>& _renderer): ImGuiWindow(_renderer) {}
         ~PostProcessingWindow() override = default;
@@ -267,7 +266,7 @@ namespace Raytracing
         }
     };
 
-    class GridSettingsWindow : ImGuiWindow {
+    class GridSettingsWindow final : ImGuiWindow {
     public:
         explicit GridSettingsWindow(const Ref<VulkanRenderer>& _renderer): ImGuiWindow(_renderer) {}
         ~GridSettingsWindow() override = default;

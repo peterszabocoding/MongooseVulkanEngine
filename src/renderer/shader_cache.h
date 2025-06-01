@@ -27,10 +27,10 @@ namespace Raytracing
         VkDescriptorSet transformDescriptorSet;
         VkDescriptorSet irradianceDescriptorSet;
         VkDescriptorSet reflectionDescriptorSet;
-        std::vector<VkDescriptorSet> presentDescriptorSets;
-        std::vector<VkDescriptorSet> lightsDescriptorSets;
-        std::vector<VkDescriptorSet> gbufferDescriptorSets;
-        std::vector<VkDescriptorSet> postProcessingDescriptorSets;
+        VkDescriptorSet lightsDescriptorSet;
+        VkDescriptorSet gbufferDescriptorSet;
+        VkDescriptorSet postProcessingDescriptorSet;
+        VkDescriptorSet presentDescriptorSet;
     };
 
     struct Pipelines {

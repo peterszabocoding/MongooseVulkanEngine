@@ -23,13 +23,11 @@ namespace Raytracing
         explicit SSAOPass(VulkanDevice* _device);
         ~SSAOPass() override;
 
-        void Update();
-
         virtual void Render(VkCommandBuffer commandBuffer,
                             Camera& camera,
                             uint32_t imageIndex,
                             Ref<VulkanFramebuffer> writeBuffer,
-                            Ref<VulkanFramebuffer> readBuffer) override;
+                            Ref<VulkanFramebuffer> readBuffer = nullptr) override;
 
         Ref<VulkanRenderPass> GetRenderPass() { return renderPass; }
 

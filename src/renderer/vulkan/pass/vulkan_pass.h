@@ -14,7 +14,7 @@ namespace Raytracing
                             Camera& camera,
                             uint32_t imageIndex,
                             Ref<VulkanFramebuffer> writeBuffer,
-                            Ref<VulkanFramebuffer> readBuffer) = 0;
+                            Ref<VulkanFramebuffer> readBuffer = nullptr) = 0;
 
         virtual void SetSize(const uint32_t width, const uint32_t height)
         {

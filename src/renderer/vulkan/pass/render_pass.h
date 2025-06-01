@@ -14,7 +14,7 @@ namespace Raytracing
                             Camera& camera,
                             uint32_t imageIndex,
                             Ref<VulkanFramebuffer> writeBuffer,
-                            Ref<VulkanFramebuffer> readBuffer) override;
+                            Ref<VulkanFramebuffer> readBuffer = nullptr) override;
         void DrawSkybox(VkCommandBuffer commandBuffer) const;
 
         Ref<VulkanRenderPass> GetRenderPass() { return renderPass; }

@@ -19,10 +19,8 @@ namespace Raytracing
     void InfiniteGridPass::Render(VkCommandBuffer commandBuffer, Camera& camera, uint32_t imageIndex, Ref<VulkanFramebuffer> writeBuffer,
                                   Ref<VulkanFramebuffer> readBuffer)
     {
-        const VkExtent2D extent{passWidth, passHeight};
-
-        device->SetViewportAndScissor(extent, commandBuffer);
-        renderPass->Begin(commandBuffer, writeBuffer, extent);
+        device->SetViewportAndScissor(writeBuffer->GetExtent(), commandBuffer);
+        renderPass->Begin(commandBuffer, writeBuffer, writeBuffer->GetExtent());
 
         DrawCommandParams screenRectDrawParams{};
         screenRectDrawParams.commandBuffer = commandBuffer;

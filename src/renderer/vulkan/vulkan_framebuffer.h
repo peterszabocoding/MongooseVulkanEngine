@@ -55,6 +55,7 @@ namespace Raytracing
 
         uint32_t GetWidth() const { return params.width; }
         uint32_t GetHeight() const { return params.height; }
+        VkExtent2D GetExtent() const { return {params.width, params.height}; }
         std::vector<FramebufferAttachment> const& GetAttachments() const { return params.attachments; }
 
     private:

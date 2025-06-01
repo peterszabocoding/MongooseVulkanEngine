@@ -26,16 +26,11 @@ namespace Raytracing
         vkFreeDescriptorSets(device->GetDevice(), device->GetShaderDescriptorPool().GetDescriptorPool(), 1, &ssaoDescriptorSet);;
     }
 
-    void SSAOPass::Update()
-    {}
-
     void SSAOPass::Render(VkCommandBuffer commandBuffer, Camera& camera, uint32_t imageIndex, Ref<VulkanFramebuffer> writeBuffer,
                           Ref<VulkanFramebuffer> readBuffer)
     {
-        VkExtent2D extent{passWidth, passHeight};
-
-        device->SetViewportAndScissor(extent, commandBuffer);
-        renderPass->Begin(commandBuffer, writeBuffer, extent);
+        device->SetViewportAndScissor(writeBuffer->GetExtent(), commandBuffer);
+        renderPass->Begin(commandBuffer, writeBuffer, writeBuffer->GetExtent());
 
         DrawCommandParams drawParams{};
         drawParams.commandBuffer = commandBuffer;
@@ -47,10 +42,9 @@ namespace Raytracing
         };
 
         drawParams.descriptorSets = {
-            ShaderCache::descriptorSets.gbufferDescriptorSets[imageIndex],
+            ShaderCache::descriptorSets.gbufferDescriptorSet,
             ssaoDescriptorSet,
             ShaderCache::descriptorSets.transformDescriptorSet,
-
         };
 
         ssaoParams.resolution = glm::vec2(passWidth, passHeight);

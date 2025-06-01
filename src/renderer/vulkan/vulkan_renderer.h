@@ -7,7 +7,6 @@
 #include "vulkan_swapchain.h"
 #include "vulkan_shadow_map.h"
 #include "vulkan_cube_map_texture.h"
-#include "vulkan_reflection_probe.h"
 #include "pass/gbufferPass.h"
 #include "pass/infinite_grid_pass.h"
 #include "pass/present_pass.h"
@@ -30,7 +29,7 @@ namespace Raytracing
         Ref<VulkanFramebuffer> gbufferFramebuffers;
         Ref<VulkanFramebuffer> ssaoFramebuffers;
         Ref<VulkanFramebuffer> shadowMapFramebuffers;
-        Ref<VulkanShadowMap> directionalShadowMaps;
+
         std::vector<Ref<VulkanFramebuffer>> presentFramebuffers;
     };
 
@@ -72,16 +71,19 @@ namespace Raytracing
         [[nodiscard]] Ref<VulkanFramebuffer> GetRenderBuffer() const { return framebuffers.geometryFramebuffers; }
         [[nodiscard]] Ref<VulkanFramebuffer> GetGBuffer() const { return framebuffers.gbufferFramebuffers; }
         [[nodiscard]] Ref<VulkanFramebuffer> GetSSAOBuffer() const { return framebuffers.ssaoFramebuffers; }
-        [[nodiscard]] Ref<VulkanShadowMap> GetShadowMap() const { return framebuffers.directionalShadowMaps; }
+        [[nodiscard]] Ref<VulkanShadowMap> GetShadowMap() const { return directionalShadowMap; }
 
         DirectionalLight* GetLight() { return &scene.directionalLight; }
 
     private:
         void CreateSwapchain();
+        void CreateGBufferDescriptorSet();
+        void CreatePostProcessingDescriptorSet();
         void CreateFramebuffers();
+        void CreatePresentFramebuffers();
 
         void ResizeSwapchain();
-        void PreparePresentPass();
+        void CreatePresentDescriptorSet();
 
         void CreateTransformsBuffer();
         void UpdateTransformsBuffer(const Ref<Camera>& camera) const;
@@ -94,6 +96,8 @@ namespace Raytracing
 
         DescriptorBuffers descriptorBuffers;
         Framebuffers framebuffers;
+
+        Ref<VulkanShadowMap> directionalShadowMap;
 
         Scope<GBufferPass> gbufferPass;
         Scope<SkyboxPass> skyboxPass;
