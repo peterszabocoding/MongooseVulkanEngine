@@ -21,16 +21,16 @@ namespace Raytracing
 
         DrawCommandParams geometryDrawParams{};
         geometryDrawParams.commandBuffer = commandBuffer;
-
         geometryDrawParams.pipelineParams = {
             directionalShadowMapPipeline->GetPipeline(),
             directionalShadowMapPipeline->GetPipelineLayout()
         };
 
+        SimplePushConstantData pushConstantData;
+        pushConstantData.transform = scene.directionalLight.cascades[cascadeIndex].viewProjMatrix;
+
         for (size_t i = 0; i < scene.meshes.size(); i++)
         {
-            SimplePushConstantData pushConstantData;
-            pushConstantData.transform = scene.directionalLight.cascades[cascadeIndex].viewProjMatrix;
             pushConstantData.modelMatrix = scene.transforms[i].GetTransform();
 
             geometryDrawParams.pushConstantParams = {

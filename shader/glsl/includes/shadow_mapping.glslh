@@ -1,11 +1,29 @@
 
+#define SHADOW_MAP_CASCADE_COUNT 4
+
 float CalcShadowFactor(sampler2D shadowMapTexture, vec4 shadowCoord, vec2 off)
 {
+    float bias = 0.005;
     float shadow = 1.0;
     if ( shadowCoord.z > -1.0 && shadowCoord.z < 1.0 )
     {
         float dist = texture(shadowMapTexture, shadowCoord.st + off).r;
-        if ( shadowCoord.w > 0.0 && dist < shadowCoord.z - 0.005 )
+        if ( shadowCoord.w > 0.0 && dist < shadowCoord.z - bias )
+        {
+            shadow = 0.0;
+        }
+    }
+    return shadow;
+}
+
+float CalcCascadedShadowFactor(sampler2DArray shadowMapTexture, vec4 shadowCoord, vec2 off, uint cascadeIndex)
+{
+    float bias = 0.005;
+    float shadow = 1.0;
+    if ( shadowCoord.z > -1.0 && shadowCoord.z < 1.0 )
+    {
+        float dist = texture(shadowMapTexture, vec3(shadowCoord.st + off, cascadeIndex)).r;
+        if ( shadowCoord.w > 0.0 && dist < shadowCoord.z - bias )
         {
             shadow = 0.0;
         }
@@ -29,6 +47,28 @@ float filterPCF(sampler2D shadowMapTexture, vec4 sc)
         for (int y = -range; y <= range; y++)
         {
             shadowFactor += CalcShadowFactor(shadowMapTexture, sc, vec2(dx*x, dy*y));
+            count++;
+        }
+    }
+    return shadowFactor / count;
+}
+
+float filterPCFCascaded(sampler2DArray shadowMapTexture, vec4 sc, int cascadeIndex)
+{
+    ivec2 texDim = textureSize(shadowMapTexture, 0).xy;
+    float scale = 1.5;
+    float dx = scale * 1.0 / float(texDim.x);
+    float dy = scale * 1.0 / float(texDim.y);
+
+    float shadowFactor = 0.0;
+    int count = 0;
+    int range = 3;
+
+    for (int x = -range; x <= range; x++)
+    {
+        for (int y = -range; y <= range; y++)
+        {
+            shadowFactor += CalcCascadedShadowFactor(shadowMapTexture, sc, vec2(dx*x, dy*y), cascadeIndex);
             count++;
         }
     }

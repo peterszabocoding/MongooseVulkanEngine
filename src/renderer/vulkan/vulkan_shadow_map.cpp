@@ -18,7 +18,7 @@ namespace Raytracing
         imageView = ImageViewBuilder(device)
                     .SetFormat(ImageFormat::DEPTH32)
                     .SetImage(allocatedImage.image)
-                    .SetViewType(VK_IMAGE_VIEW_TYPE_2D)
+                    .SetViewType(arrayLayers > 1 ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D)
                     .SetAspectFlags(VK_IMAGE_ASPECT_DEPTH_BIT)
                     .SetBaseArrayLayer(0)
                     .SetLayerCount(arrayLayers)
@@ -41,7 +41,7 @@ namespace Raytracing
                 .SetFilter(VK_FILTER_LINEAR, VK_FILTER_LINEAR)
                 .SetFormat(ImageFormat::DEPTH32)
                 .SetCompareOp(true, VK_COMPARE_OP_LESS)
-                .SetAddressMode(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER)
+                .SetAddressMode(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
                 .SetBorderColor(VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE)
                 .Build();
 

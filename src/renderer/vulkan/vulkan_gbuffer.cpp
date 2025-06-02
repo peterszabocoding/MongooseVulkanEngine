@@ -18,7 +18,7 @@ namespace Raytracing
         Buffers buffers;
         buffers.viewSpaceNormal = CreateAttachment(device, ImageFormat::RGBA32_SFLOAT);
         buffers.viewSpacePosition = CreateAttachment(device, ImageFormat::RGBA32_SFLOAT);
-        buffers.depth = CreateAttachment(device, ImageFormat::DEPTH24_STENCIL8);
+        buffers.depth = CreateAttachment(device, ImageFormat::DEPTH32);
 
         return CreateRef<VulkanGBuffer>(device, width, height, buffers);
     }

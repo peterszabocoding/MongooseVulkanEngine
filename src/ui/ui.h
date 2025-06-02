@@ -239,8 +239,6 @@ namespace Raytracing
             ImGuiUtils::DrawVec3Control("Center", light->center, false, 0.0f, 150.0f);
             ImGuiUtils::DrawFloatControl("Intensity", light->intensity, 0.0f, 100.0f, 0.01f, 150.0f);
             ImGuiUtils::DrawFloatControl("Ambient Intensity", light->ambientIntensity, 0.0f, 100.0f, 0.01f, 150.0f);
-            ImGuiUtils::DrawFloatControl("Near plane", light->nearPlane, -100.0f, 0.0f, 0.1f, 150.0f);
-            ImGuiUtils::DrawFloatControl("Far plane", light->farPlane, 0.0f, 100.0f, 0.1f, 150.0f);
             ImGuiUtils::DrawFloatControl("Ortho size", light->orthoSize, 0.0001f, 100.0f, 0.0001f, 150.0f);
             ImGuiUtils::DrawFloatControl("Bias", light->bias, 0.0001f, 1.0f, 0.0001f, 150.0f);
         }

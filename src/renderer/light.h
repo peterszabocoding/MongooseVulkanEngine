@@ -34,7 +34,7 @@ namespace Raytracing
         float bias = 0.05f;
 
         ShadowType shadowType = ShadowType::NONE;
-        ShadowMapResolution shadowMapResolution = ShadowMapResolution::MEDIUM;
+        ShadowMapResolution shadowMapResolution = ShadowMapResolution::ULTRA_HIGH;
         TextureAtlas::AtlasBox* shadowMapRegion = nullptr;
     };
 
@@ -45,37 +45,9 @@ namespace Raytracing
         glm::vec3 direction = normalize(glm::vec3(0.0f, -1.0f, 0.0f));
         glm::vec3 center = glm::vec3(0.0f);
         float ambientIntensity = 1.0f;
-        float nearPlane = 1.0f;
-        float farPlane = 50.0f;
         float orthoSize = 1.0f;
 
         Cascade cascades[SHADOW_MAP_CASCADE_COUNT];
-
-        glm::mat4 GetProjection() const
-        {
-            return glm::ortho(-orthoSize, orthoSize, -orthoSize, orthoSize, nearPlane, farPlane);
-        }
-
-        glm::mat4 GetView() const
-        {
-            // We need a position for the "camera" looking along the light direction.
-            // A simple trick is to choose an arbitrary world-space origin and look along -lightDir.
-            glm::vec3 lightPosition = center - direction; // Offset to see the scene
-            glm::vec3 upDirection = glm::vec3(0.0f, 1.0f, 0.0f); // Choose an appropriate up vector
-
-            // Handle the case where the light direction is almost parallel to the up direction
-            if (glm::abs(glm::dot(direction, upDirection)) > 0.99f)
-            {
-                upDirection = glm::vec3(0.0f, 0.0f, 1.0f); // Use a different up vector
-            }
-
-            return lookAt(lightPosition, center, upDirection);
-        }
-
-        glm::mat4 GetTransform() const
-        {
-            return GetProjection() * GetView();
-        }
 
         void UpdateCascades(const Camera& camera)
         {
@@ -98,7 +70,7 @@ namespace Raytracing
                 const float p = (i + 1) / static_cast<float>(SHADOW_MAP_CASCADE_COUNT);
                 const float log = minZ * std::pow(ratio, p);
                 const float uniform = minZ + range * p;
-                const float d = CASCADE_SPLIT_LAMBDA * (log - uniform) + uniform;
+                const float d = (orthoSize * CASCADE_SPLIT_LAMBDA) * (log - uniform) + uniform;
                 cascadeSplits[i] = (d - nearClip) / clipRange;
             }
 
@@ -152,9 +124,6 @@ namespace Raytracing
 
                 glm::vec3 maxExtents = glm::vec3(radius);
                 glm::vec3 minExtents = -maxExtents;
-
-                //maxExtents *= orthoSize;
-                //minExtents *= orthoSize;
 
                 glm::mat4 lightViewMatrix = lookAt(frustumCenter - direction * -minExtents.z, frustumCenter, glm::vec3(0.0f, 1.0f, 0.0f));
                 glm::mat4 lightOrthoMatrix = glm::ortho(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.0f,

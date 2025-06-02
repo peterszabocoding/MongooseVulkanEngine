@@ -103,7 +103,7 @@ namespace Raytracing
         cameraController.Update(deltaTime);
 
         imGuiVulkan->DrawUi();
-        renderer->DrawFrame(deltaTime, camera);
+        renderer->Draw(deltaTime, camera);
     }
 
     void Window::Resize(int width, int height)

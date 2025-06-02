@@ -41,11 +41,11 @@ namespace Raytracing
     };
 
     struct LightsBuffer {
-        glm::mat4 lightView;
-        glm::mat4 lightProjection;
-        alignas(16) glm::vec3 direction = glm::vec3(0.0f, -1.0f, 0.0f);
-        alignas(4) float ambientIntensity = 0.1f;
+        glm::mat4 lightProjection[SHADOW_MAP_CASCADE_COUNT];
         glm::vec4 color = glm::vec4(1.0f);
+        glm::vec3 direction = glm::vec3(0.0f, -1.0f, 0.0f);
+        float ambientIntensity = 0.1f;
+        alignas(4) float cascadeSplits[4];
         alignas(4) float intensity = 1.0f;
         alignas(4) float bias = 0.005f;
     };
@@ -64,7 +64,7 @@ namespace Raytracing
 
         virtual void IdleWait() override;
         virtual void Resize(int width, int height) override;
-        virtual void DrawFrame(float deltaTime, Ref<Camera> camera) override;
+        virtual void Draw(float deltaTime, Ref<Camera> camera) override;
 
         VulkanDevice* GetVulkanDevice() const { return device.get(); }
 
@@ -88,9 +88,12 @@ namespace Raytracing
 
         void CreateTransformsBuffer();
         void UpdateTransformsBuffer(const Ref<Camera>& camera) const;
+        void RotateLight(float deltaTime);
 
         void CreateLightsBuffer();
         void UpdateLightsBuffer(float deltaTime);
+
+        void DrawFrame(VkCommandBuffer commandBuffer, uint32_t, uint32_t imageIndex, const Ref<Camera>& camera);
 
     public:
         float resolutionScale = 1.0f;

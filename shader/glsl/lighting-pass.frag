@@ -13,16 +13,15 @@ layout(location = 0) in vec3 fragPosition;
 layout(location = 1) in vec3 fragColor;
 layout(location = 2) in vec2 fragTexCoord;
 layout(location = 3) in vec3 fragNormal;
-layout(location = 4) in vec3 fragTangent;
-layout(location = 5) in vec4 inWorldPosition;
-layout(location = 6) in vec4 shadowMapCoord;
-layout(location = 7) in mat3 TBN;
+layout(location = 4) in vec4 inWorldPosition;
+layout(location = 5) in vec3 inViewPosition;
+layout(location = 6) in mat3 TBN;
 
 // ------------------------------------------------------------------
 // OUTPUT VARIABLES -------------------------------------------------
 // ------------------------------------------------------------------
 
-layout(location = 0)            out vec4 finalImage;
+layout(location = 0) out vec4 finalImage;
 
 // ------------------------------------------------------------------
 // UNIFORMS ---------------------------------------------------------
@@ -41,6 +40,7 @@ layout(set = 0, binding = 0) uniform MaterialParams {
     bool useMetallicRoughnessMap;
     bool alphaTested;
 } materialParams;
+
 layout(set = 0, binding = 1) uniform sampler2D baseColorSampler;
 layout(set = 0, binding = 2) uniform sampler2D normalSampler;
 layout(set = 0, binding = 3) uniform sampler2D metallicRoughnessSampler;
@@ -54,15 +54,15 @@ layout(set = 1, binding = 0) uniform Transforms {
 
 // Light uniforms
 layout(std430, set = 2, binding = 0) uniform Lights {
-    mat4 lightView;
-    mat4 lightProjection;
+    mat4[SHADOW_MAP_CASCADE_COUNT] lightProjection;
+    vec4 color;
     vec3 direction;
     float ambientIntensity;
-    vec4 color;
+    float[SHADOW_MAP_CASCADE_COUNT] cascadeSplits;
     float intensity;
     float bias;
 } lights;
-layout(set = 2, binding = 1)    uniform sampler2D shadowMap;
+layout(set = 2, binding = 1)    uniform sampler2DArray shadowMap;
 
 // Irradiance uniforms
 layout(set = 3, binding = 0)    uniform samplerCube irradianceMap;
@@ -86,6 +86,12 @@ vec3 V;
 
 const float MAX_REFLECTION_LOD = 6.0;
 
+const mat4 biasMat = mat4(
+0.5, 0.0, 0.0, 0.0,
+0.0, 0.5, 0.0, 0.0,
+0.0, 0.0, 1.0, 0.0,
+0.5, 0.5, 0.0, 1.0 );
+
 vec3 CalcSurfaceNormal(vec3 normalFromTexture, mat3 TBN)
 {
     vec3 normal;
@@ -95,18 +101,16 @@ vec3 CalcSurfaceNormal(vec3 normalFromTexture, mat3 TBN)
     return normalize(TBN * normal);
 }
 
-vec3 CalcDirectionalLightRadiance(vec3 direction)
+vec3 CalcDirectionalLightRadiance(vec3 direction, vec4 shadowMapCoord, int cascadeIndex)
 {
     vec3 lightDir = direction;
     float diffuseFactor = clamp(dot(N, lightDir), 0.0, 1.0);
 
-    float shadowCoeff = filterPCF(shadowMap, shadowMapCoord / shadowMapCoord.w);
+    float shadowCoeff = filterPCFCascaded(shadowMap, shadowMapCoord / shadowMapCoord.w, cascadeIndex);
     return shadowCoeff * lights.intensity * lights.color.rgb * diffuseFactor;
 }
 
 void main() {
-
-
     vec3 baseColor;
     if (materialParams.useBaseColorMap)
     {
@@ -118,6 +122,15 @@ void main() {
         if (materialParams.baseColor.a < 0.5) discard;
         baseColor = materialParams.baseColor.rgb;
     }
+
+    int cascadeIndex = 0;
+    for(int i = 0; i < SHADOW_MAP_CASCADE_COUNT - 1; ++i) {
+        if(inViewPosition.z < lights.cascadeSplits[i]) {
+            cascadeIndex = i + 1;
+        }
+    }
+
+    vec4 shadowMapCoord = (biasMat * lights.lightProjection[cascadeIndex]) * inWorldPosition;
 
     vec3 albedo = fragColor * materialParams.tint.rgb * baseColor;
 
@@ -169,7 +182,7 @@ void main() {
     vec2 brdf  = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
     vec3 specular = prefilteredColor * (F * (brdf.x + brdf.y));
 
-    vec3 radiance = CalcDirectionalLightRadiance(-lights.direction);
+    vec3 radiance = CalcDirectionalLightRadiance(-lights.direction, shadowMapCoord, cascadeIndex);
     vec3 Lo = CalcLightRadiance(L, H, V, N, F0, albedo, roughness, metallic, radiance);
 
     vec2 texSize = textureSize(SSAO, 0);
@@ -183,5 +196,12 @@ void main() {
     color =  color / (color + vec3(1.0));
     color = pow(color, vec3(1.0/2.2));
 
+    //color = vec3(abs(inViewPosition.z * 0.01));
+    //color = vec3(0.25 * cascadeIndex);
+
+    //vec2 shadowMapUV = (shadowMapCoord / shadowMapCoord.w).st;
+    //float shadowMapValue = texture(shadowMap, vec3(shadowMapUV, 2)).r;
+
+    //finalImage = vec4(vec3(shadowMapValue), 1.0);
     finalImage = vec4(color, 1.0);
 }
