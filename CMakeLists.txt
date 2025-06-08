@@ -195,6 +195,7 @@ FILE(GLOB_RECURSE HEADERS "src/**.h")
 if (APPLE)
     add_compile_definitions(PLATFORM_MACOS)
     add_executable(inOneWeekend ${EXTERNAL} ${HEADERS} ${SOURCE_ONE_WEEKEND} ${SOURCE_ONE_WEEKEND_APPLE})
+    target_link_libraries( inOneWeekend PRIVATE ${Vulkan_shaderc_combined_LIBRARY})
 endif (APPLE)
 
 if (WIN32)

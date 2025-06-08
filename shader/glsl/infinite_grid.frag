@@ -51,7 +51,7 @@ vec4 gridColorThin;
 vec4 gridColor(vec2 uv, vec2 camPos) {
     vec2 dudv = vec2( length(vec2(dFdx(uv.x), dFdy(uv.x))),  length(vec2(dFdx(uv.y), dFdy(uv.y))) );
 
-    float lodLevel = max(0.0, log10((length(dudv) * GRID_MIN_PIXELS_BETWEEN_CELLS) / push.gridCellSize) + 1.0);
+    float lodLevel = max(0.0, log_10((length(dudv) * GRID_MIN_PIXELS_BETWEEN_CELLS) / push.gridCellSize) + 1.0);
     float lodFade = fract(lodLevel);
 
     // cell sizes for lod0, lod1 and lod2

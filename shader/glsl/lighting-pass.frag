@@ -185,7 +185,7 @@ void main() {
     vec3 radiance = CalcDirectionalLightRadiance(-lights.direction, shadowMapCoord, cascadeIndex);
     vec3 Lo = CalcLightRadiance(L, H, V, N, F0, albedo, roughness, metallic, radiance);
 
-    vec2 texSize = textureSize(SSAO, 0);
+    ivec2 texSize = textureSize(SSAO, 0);
     vec2 texCoord = ((gl_FragCoord.xy + vec2(1.0)) * 0.5) / texSize;
     float SSAOValue = texture(SSAO, texCoord).r;
 
@@ -195,13 +195,6 @@ void main() {
 
     color =  color / (color + vec3(1.0));
     color = pow(color, vec3(1.0/2.2));
-
-    //color = vec3(abs(inViewPosition.z * 0.01));
-    //color = vec3(0.25 * cascadeIndex);
-
-    //vec2 shadowMapUV = (shadowMapCoord / shadowMapCoord.w).st;
-    //float shadowMapValue = texture(shadowMap, vec3(shadowMapUV, 2)).r;
-
-    //finalImage = vec4(vec3(shadowMapValue), 1.0);
+    
     finalImage = vec4(color, 1.0);
 }

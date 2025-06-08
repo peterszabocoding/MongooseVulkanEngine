@@ -1,7 +1,7 @@
 const float PI = 3.141592;
 const float TwoPI = 2 * PI;
 
-float log10(float x) {
+float log_10(float x) {
     return log(x) / log(10.0);
 }
 

@@ -21,7 +21,11 @@ constexpr Version APPLICATION_VERSION = {0, 1, 0};
 #define ASSERT_STRINGIFY_MACRO(x) #x
 
 #ifdef ENABLE_ASSERTS
+#ifdef PLATFORM_MACOS
+#define ASSERT(x, ...)
+#else
 #define ASSERT(x, ...) { if(!(x)) { LOG_ERROR("Assertion Failed: {0}", __VA_ARGS__); __debugbreak(); } }
+#endif
 #else
 #define ASSERT(x, ...)
 #endif

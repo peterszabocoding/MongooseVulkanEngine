@@ -12,7 +12,7 @@ namespace Raytracing
     shaderc_include_result* ShaderIncluder::GetInclude(const char* requested_source, shaderc_include_type type,
                                                        const char* requesting_source, size_t include_depth)
     {
-        const auto includePath = std::string("shader\\glsl\\includes/").append(requested_source);
+        const auto includePath = std::string("shader/glsl/includes/").append(requested_source);
         const auto includeSourceRaw = FileSystem::ReadFile(includePath);
 
         const auto result = new shaderc_include_result(); {
