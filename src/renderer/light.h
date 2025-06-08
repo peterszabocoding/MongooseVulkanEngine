@@ -39,13 +39,12 @@ namespace Raytracing
     };
 
     constexpr size_t SHADOW_MAP_CASCADE_COUNT = 4;
-    constexpr float CASCADE_SPLIT_LAMBDA = 0.85f;
 
     struct DirectionalLight : Light {
         glm::vec3 direction = normalize(glm::vec3(0.0f, -1.0f, 0.0f));
         glm::vec3 center = glm::vec3(0.0f);
         float ambientIntensity = 1.0f;
-        float orthoSize = 1.0f;
+        float cascadeSplitLambda = 0.85f;
 
         Cascade cascades[SHADOW_MAP_CASCADE_COUNT];
 
@@ -70,7 +69,7 @@ namespace Raytracing
                 const float p = (i + 1) / static_cast<float>(SHADOW_MAP_CASCADE_COUNT);
                 const float log = minZ * std::pow(ratio, p);
                 const float uniform = minZ + range * p;
-                const float d = (CASCADE_SPLIT_LAMBDA) * (log - uniform) + uniform;
+                const float d = cascadeSplitLambda * (log - uniform) + uniform;
                 cascadeSplits[i] = (d - nearClip) / clipRange;
             }
 
@@ -126,7 +125,7 @@ namespace Raytracing
                 glm::vec3 minExtents = -maxExtents;
 
                 glm::mat4 lightViewMatrix = lookAt(frustumCenter - direction * -minExtents.z, frustumCenter, glm::vec3(0.0f, 1.0f, 0.0f));
-                glm::mat4 lightOrthoMatrix = glm::ortho(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.0f,
+                glm::mat4 lightOrthoMatrix = glm::ortho(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 3.0f * minExtents.z,
                                                         maxExtents.z - minExtents.z);
 
                 // Store split distance and matrix in cascade
