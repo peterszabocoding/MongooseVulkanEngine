@@ -1,5 +1,7 @@
 #include "camera.h"
 
+#include "util/log.h"
+
 namespace Raytracing {
     Camera::Camera()
     {

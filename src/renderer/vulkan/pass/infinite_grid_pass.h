@@ -18,7 +18,6 @@ namespace Raytracing
 
         virtual void Render(VkCommandBuffer commandBuffer,
                             Camera& camera,
-                            uint32_t imageIndex,
                             Ref<VulkanFramebuffer> writeBuffer,
                             Ref<VulkanFramebuffer> readBuffer = nullptr) override;
 

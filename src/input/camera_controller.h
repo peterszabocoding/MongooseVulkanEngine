@@ -13,12 +13,9 @@ namespace Raytracing
         void SetCamera(const Ref<Camera>& _camera) { camera = _camera; }
 
     public:
-        float movementSpeed = 1.0f;
+        float movementSpeed = 15.0f;
         float turnSpeed = 0.1f;
-
-        float moveTransitionEffect = 0.5f;
         float maxSpeed = 50.0f;
-        float cameraDrag = 0.975f;
 
     private:
         Ref<Camera> camera;
@@ -26,6 +23,5 @@ namespace Raytracing
         bool m_IsCameraMoving = false;
         glm::vec2 mouseDelta = {0.0f, 0.0f};
         glm::vec2 lastMousePos = {0.0f, 0.0f};
-        glm::vec3 velocity = glm::vec3(0.0f, 0.0f, 0.0f);
     };
 }

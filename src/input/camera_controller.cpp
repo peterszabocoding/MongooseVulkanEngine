@@ -24,16 +24,9 @@ namespace Raytracing
         float speed;
         glm::vec3 newVel = {0.0f, 0.0f, 0.0f};
 
-        if (!m_IsCameraMoving)
+        if (m_IsCameraMoving)
         {
-            speed = maxSpeed * deltaTime;
-            newVel = -velocity;
-        }
-        else
-        {
-            moveTransitionEffect += 0.75f * deltaTime;
-            moveTransitionEffect = std::min(moveTransitionEffect, 1.0f);
-            speed = moveTransitionEffect * movementSpeed * deltaTime;
+            speed = movementSpeed * deltaTime;
 
             if (Input::IsKeyPressed(GLFW_KEY_W)) newVel += camera->GetForwardVector();
             if (Input::IsKeyPressed(GLFW_KEY_S)) newVel += -camera->GetForwardVector();
@@ -43,10 +36,9 @@ namespace Raytracing
             if (Input::IsKeyPressed(GLFW_KEY_Q)) newVel += -glm::vec3(0.0f, 1.0f, 0.0f);
             if (Input::IsKeyPressed(GLFW_KEY_LEFT_SHIFT)) speed *= 2.0f;
         }
-        speed = std::clamp(speed, 0.0f, maxSpeed);
-        velocity = cameraDrag * velocity + (newVel * speed);
 
-        camera->GetTransform().m_Position += velocity;
+        speed = std::clamp(speed, 0.0f, maxSpeed);
+        camera->GetTransform().m_Position += newVel * speed;
 
         const glm::vec2 mouseInput = {
             Input::GetMousePosX(),

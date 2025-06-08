@@ -80,7 +80,7 @@ namespace Raytracing
         vkCmdDrawIndexed(params.commandBuffer, params.meshlet->GetIndexCount(), 1, 0, 0, 0);
     }
 
-    void VulkanDevice::DrawFrame(VkSwapchainKHR swapchain, VkExtent2D extent, DrawFrameFunction draw, OutOfDateErrorCallback errorCallback)
+    void VulkanDevice::DrawFrame(VkSwapchainKHR swapchain, DrawFrameFunction draw, OutOfDateErrorCallback errorCallback)
     {
         VkResult result = SetupNextFrame(swapchain);
 
@@ -95,7 +95,7 @@ namespace Raytracing
 
         VK_CHECK_MSG(vkBeginCommandBuffer(commandBuffers[currentFrame], &beginInfo), "Failed to begin recording command buffer.");
 
-        draw(commandBuffers[currentFrame], currentFrame, currentImageIndex);
+        draw(commandBuffers[currentFrame], currentImageIndex);
 
         // End command buffer
         result = vkEndCommandBuffer(commandBuffers[currentFrame]);

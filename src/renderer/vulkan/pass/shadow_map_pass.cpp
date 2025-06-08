@@ -13,7 +13,7 @@ namespace Raytracing
         LoadPipelines();
     }
 
-    void ShadowMapPass::Render(VkCommandBuffer commandBuffer, Camera& camera, uint32_t imageIndex, Ref<VulkanFramebuffer> writeBuffer,
+    void ShadowMapPass::Render(VkCommandBuffer commandBuffer, Camera& camera, Ref<VulkanFramebuffer> writeBuffer,
                                Ref<VulkanFramebuffer> readBuffer)
     {
         device->SetViewportAndScissor(writeBuffer->GetExtent(), commandBuffer);
@@ -27,6 +27,7 @@ namespace Raytracing
         };
 
         SimplePushConstantData pushConstantData;
+
         pushConstantData.transform = scene.directionalLight.cascades[cascadeIndex].viewProjMatrix;
 
         for (size_t i = 0; i < scene.meshes.size(); i++)

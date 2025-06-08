@@ -75,7 +75,7 @@ namespace Raytracing::VulkanUtils
         return VK_FALSE;
     }
 
-    static VkFormat ConvertImageFormat(ImageFormat imageFormat)
+    static VkFormat ConvertImageFormat(const ImageFormat imageFormat)
     {
         switch (imageFormat)
         {
@@ -167,7 +167,7 @@ namespace Raytracing::VulkanUtils
     }
 
 
-    static ImageFormat ConvertVulkanFormat(VkFormat format)
+    static ImageFormat ConvertVulkanFormat(const VkFormat format)
     {
         switch (format)
         {
@@ -446,7 +446,8 @@ namespace Raytracing::VulkanUtils
         throw std::runtime_error("failed to find suitable memory type!");
     }
 
-    static VkImageView CreateImageView(const VkDevice device, const VkImage image, const VkFormat format, VkImageAspectFlags aspectFlags)
+    static VkImageView CreateImageView(const VkDevice device, const VkImage image, const VkFormat format,
+                                       const VkImageAspectFlags aspectFlags)
     {
         VkImageViewCreateInfo viewInfo{};
         viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -465,7 +466,7 @@ namespace Raytracing::VulkanUtils
         return imageView;
     }
 
-    static SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
+    static SwapChainSupportDetails QuerySwapChainSupport(const VkPhysicalDevice physicalDevice, const VkSurfaceKHR surface)
     {
         uint32_t formatCount;
         uint32_t presentModeCount;
@@ -502,7 +503,7 @@ namespace Raytracing::VulkanUtils
         return availableFormats[0];
     }
 
-    static uint32_t GetSwapchainImageCount(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
+    static uint32_t GetSwapchainImageCount(const VkPhysicalDevice physicalDevice, const VkSurfaceKHR surface)
     {
         SwapChainSupportDetails support = QuerySwapChainSupport(physicalDevice, surface);
         uint32_t imageCount = support.capabilities.minImageCount + 1;
@@ -514,7 +515,7 @@ namespace Raytracing::VulkanUtils
         return imageCount;
     }
 
-    static void SetSrcAccessFlag(VkImageLayout oldLayout, VkImageMemoryBarrier& imageBarrier)
+    static void SetSrcAccessFlag(const VkImageLayout oldLayout, VkImageMemoryBarrier& imageBarrier)
     {
         switch (oldLayout)
         {
@@ -544,7 +545,7 @@ namespace Raytracing::VulkanUtils
         }
     }
 
-    static void SetDstAccessFlag(VkImageLayout newLayout, VkImageMemoryBarrier& imageBarrier)
+    static void SetDstAccessFlag(const VkImageLayout newLayout, VkImageMemoryBarrier& imageBarrier)
     {
         switch (newLayout)
         {
@@ -556,14 +557,14 @@ namespace Raytracing::VulkanUtils
                 imageBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
                 break;
             case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+                imageBarrier.srcAccessMask |= VK_ACCESS_TRANSFER_READ_BIT;
                 imageBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-                imageBarrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
                 break;
             case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
                 imageBarrier.dstAccessMask |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
                 break;
             case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
-                imageBarrier.srcAccessMask = VK_ACCESS_HOST_READ_BIT | VK_ACCESS_TRANSFER_READ_BIT;
+                imageBarrier.srcAccessMask |= VK_ACCESS_HOST_READ_BIT | VK_ACCESS_TRANSFER_READ_BIT;
                 imageBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
                 break;
             default:
@@ -572,11 +573,11 @@ namespace Raytracing::VulkanUtils
     }
 
     static void TransitionImageLayout(const VkCommandBuffer commandBuffer,
-                                      VkImage image,
-                                      VkImageAspectFlags aspectFlags,
+                                      const VkImage image,
+                                      const VkImageAspectFlags aspectFlags,
                                       const VkImageLayout oldLayout,
                                       const VkImageLayout newLayout,
-                                      uint32_t mipLevels = 1)
+                                      const uint32_t mipLevels = 1)
     {
         VkImageMemoryBarrier barrier{};
         barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -635,8 +636,36 @@ namespace Raytracing::VulkanUtils
         vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
     }
 
+    static void InsertImageMemoryBarrier(const VkCommandBuffer cmd, const VkImage image,
+                                         const VkAccessFlags srcAccessMask,
+                                         const VkAccessFlags dstAccessMask,
+                                         const VkImageLayout oldImageLayout,
+                                         const VkImageLayout newImageLayout,
+                                         const VkPipelineStageFlags srcStageMask,
+                                         const VkPipelineStageFlags dstStageMask,
+                                         const VkImageSubresourceRange& subresourceRange)
+    {
+        VkImageMemoryBarrier imageMemoryBarrier{};
+        imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 
-    static void CopyBufferToImage(const VkCommandBuffer commandBuffer, VkImage image, uint32_t width, uint32_t height,
+        imageMemoryBarrier.srcAccessMask = srcAccessMask;
+        imageMemoryBarrier.dstAccessMask = dstAccessMask;
+        imageMemoryBarrier.oldLayout = oldImageLayout;
+        imageMemoryBarrier.newLayout = newImageLayout;
+        imageMemoryBarrier.image = image;
+        imageMemoryBarrier.subresourceRange = subresourceRange;
+
+        vkCmdPipelineBarrier(cmd, srcStageMask, dstStageMask, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+    }
+
+    static void InsertPipelineBarrier(const VkCommandBuffer cmd, const VkPipelineStageFlags srcStageMask, const VkPipelineStageFlags dstStageMask)
+    {
+        vkCmdPipelineBarrier(cmd, srcStageMask, dstStageMask, 0, 0, nullptr, 0, nullptr, 0, nullptr);
+    }
+
+    static void CopyBufferToImage(const VkCommandBuffer commandBuffer, const VkImage image, const uint32_t width, const uint32_t height,
                                   const VkBuffer buffer)
     {
         VkBufferImageCopy region{};
@@ -662,7 +691,7 @@ namespace Raytracing::VulkanUtils
         );
     }
 
-    static void CopyImage(const VkCommandBuffer commandBuffer, VkImage srcImage, VkImage dstImage, CopyParams params)
+    static void CopyImage(const VkCommandBuffer commandBuffer, const VkImage srcImage, const VkImage dstImage, CopyParams params)
     {
         TransitionImageLayout(commandBuffer, srcImage,
                               VK_IMAGE_ASPECT_COLOR_BIT,
@@ -719,12 +748,12 @@ namespace Raytracing::VulkanUtils
     }
 
     static void GenerateMipmaps(const VkCommandBuffer commandBuffer,
-                                VkPhysicalDevice physicalDevice,
-                                VkImage image,
-                                VkFormat imageFormat,
-                                int32_t width,
-                                int32_t height,
-                                uint32_t mipLevels)
+                                const VkPhysicalDevice physicalDevice,
+                                const VkImage image,
+                                const VkFormat imageFormat,
+                                const int32_t width,
+                                const int32_t height,
+                                const uint32_t mipLevels)
     {
         VkFormatProperties formatProperties;
         vkGetPhysicalDeviceFormatProperties(physicalDevice, imageFormat, &formatProperties);
@@ -815,11 +844,11 @@ namespace Raytracing::VulkanUtils
 
     static void GenerateCubemapMipmaps(const VkCommandBuffer commandBuffer,
                                        VkPhysicalDevice physicalDevice,
-                                       VkImage image,
+                                       const VkImage image,
                                        VkFormat imageFormat,
-                                       int32_t width,
-                                       int32_t height,
-                                       uint32_t mipLevels)
+                                       const int32_t width,
+                                       const int32_t height,
+                                       const uint32_t mipLevels)
     {
         for (size_t face = 0; face < 6; face++)
         {

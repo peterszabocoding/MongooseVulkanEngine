@@ -62,7 +62,7 @@ float filterPCFCascaded(sampler2DArray shadowMapTexture, vec4 sc, int cascadeInd
 
     float shadowFactor = 0.0;
     int count = 0;
-    int range = 3;
+    int range = (3 - cascadeIndex) + 1;
 
     for (int x = -range; x <= range; x++)
     {

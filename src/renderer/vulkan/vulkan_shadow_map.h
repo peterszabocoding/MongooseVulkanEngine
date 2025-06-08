@@ -54,8 +54,8 @@ namespace Raytracing
         VkSampler GetSampler() const { return sampler; }
         VkImageLayout GetImageLayout() const { return imageLayout; }
 
-        void PrepareToDepthRendering();
-        void PrepareToShadowRendering();
+        void TransitionToDepthRendering(VkCommandBuffer cmd);
+        void TransitionToShaderRead(VkCommandBuffer cmd);
 
     private:
         VulkanDevice* device;

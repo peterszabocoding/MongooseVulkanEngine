@@ -67,4 +67,15 @@ namespace Raytracing
         for (auto& write: writes) write.dstSet = set;
         vkUpdateDescriptorSets(pool.vulkanDevice->GetDevice(), writes.size(), writes.data(), 0, nullptr);
     }
+
+    void VulkanDescriptorWriter::BuildOrOverwrite(VkDescriptorSet& set)
+    {
+        if (set)
+        {
+            Overwrite(set);
+        } else
+        {
+            Build(set);
+        }
+    }
 }

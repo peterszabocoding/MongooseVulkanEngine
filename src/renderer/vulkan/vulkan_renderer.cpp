@@ -11,7 +11,6 @@
 #include "lighting/irradiance_map_generator.h"
 #include "lighting/reflection_probe_generator.h"
 #include "util/log.h"
-#include "shaderc/shaderc.hpp"
 #include "util/filesystem.h"
 
 namespace Raytracing
@@ -85,24 +84,25 @@ namespace Raytracing
         irradianceMapInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         irradianceMapInfo.imageView = irradianceMap->GetImageView();
 
-        VulkanDescriptorWriter(*shaderCache->descriptorSetLayouts.irradianceDescriptorSetLayout, device->GetShaderDescriptorPool()).
-                WriteImage(0, &irradianceMapInfo).Build(shaderCache->descriptorSets.irradianceDescriptorSet);
+        VulkanDescriptorWriter(*shaderCache->descriptorSetLayouts.irradianceDescriptorSetLayout, device->GetShaderDescriptorPool())
+                .WriteImage(0, &irradianceMapInfo)
+                .Build(shaderCache->descriptorSets.irradianceDescriptorSet);
 
         scene.reflectionProbe = ReflectionProbeGenerator(device.get()).FromCubemap(scene.skybox->GetCubemap());
     }
 
     void VulkanRenderer::Draw(const float deltaTime, const Ref<Camera> camera)
     {
-        UpdateTransformsBuffer(camera);
+        device->DrawFrame(vulkanSwapChain->GetSwapChain(),
+                          [&](const VkCommandBuffer cmd, const uint32_t imgIndex) {
+                              RotateLight(deltaTime);
+                              scene.directionalLight.UpdateCascades(*camera);
 
-        RotateLight(deltaTime);
-        scene.directionalLight.UpdateCascades(*camera);
-        UpdateLightsBuffer(deltaTime);
-
-        device->DrawFrame(vulkanSwapChain->GetSwapChain(), vulkanSwapChain->GetExtent(),
-                          [&](const VkCommandBuffer commandBuffer, uint32_t, const uint32_t imageIndex) {
-                              DrawFrame(commandBuffer, imageIndex, imageIndex, camera);
-                          }, std::bind(&VulkanRenderer::ResizeSwapchain, this));
+                              UpdateLightsBuffer(deltaTime);
+                              UpdateTransformsBuffer(camera);
+                              DrawFrame(cmd, imgIndex, camera);
+                          },
+                          std::bind(&VulkanRenderer::ResizeSwapchain, this));
     }
 
     void VulkanRenderer::IdleWait()
@@ -130,8 +130,12 @@ namespace Raytracing
         const VkSurfaceFormatKHR surfaceFormat = VulkanUtils::ChooseSwapSurfaceFormat(swapChainSupport.formats);
 
         const uint32_t imageCount = VulkanUtils::GetSwapchainImageCount(device->GetPhysicalDevice(), device->GetSurface());
-        vulkanSwapChain = VulkanSwapchain::Builder(device.get()).SetResolution(viewportWidth, viewportHeight).
-                SetPresentMode(VK_PRESENT_MODE_IMMEDIATE_KHR).SetImageCount(imageCount).SetImageFormat(surfaceFormat.format).Build();
+        vulkanSwapChain = VulkanSwapchain::Builder(device.get())
+                .SetResolution(viewportWidth, viewportHeight)
+                .SetPresentMode(VK_PRESENT_MODE_IMMEDIATE_KHR)
+                .SetImageCount(imageCount)
+                .SetImageFormat(surfaceFormat.format)
+                .Build();
     }
 
     void VulkanRenderer::CreateGBufferDescriptorSet()
@@ -152,11 +156,15 @@ namespace Raytracing
         depthInfo.imageView = gBuffer->buffers.depth.imageView;
 
         auto writer = VulkanDescriptorWriter(*ShaderCache::descriptorSetLayouts.gBufferDescriptorSetLayout,
-                                             device->GetShaderDescriptorPool()).WriteImage(0, &worldSpaceNormalInfo).WriteImage(
-            1, &positionInfo).WriteImage(2, &depthInfo);
+                                             device->GetShaderDescriptorPool())
+                .WriteImage(0, &worldSpaceNormalInfo)
+                .WriteImage(1, &positionInfo)
+                .WriteImage(2, &depthInfo);
 
-        if (shaderCache->descriptorSets.gbufferDescriptorSet) writer.Overwrite(shaderCache->descriptorSets.gbufferDescriptorSet);
-        else writer.Build(shaderCache->descriptorSets.gbufferDescriptorSet);
+        if (shaderCache->descriptorSets.gbufferDescriptorSet)
+            writer.Overwrite(shaderCache->descriptorSets.gbufferDescriptorSet);
+        else
+            writer.Build(shaderCache->descriptorSets.gbufferDescriptorSet);
     }
 
     void VulkanRenderer::CreatePostProcessingDescriptorSet()
@@ -166,12 +174,14 @@ namespace Raytracing
         ssaoInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         ssaoInfo.imageView = framebuffers.ssaoFramebuffer->GetAttachments()[0].imageView;
 
-        auto writer = VulkanDescriptorWriter(*ShaderCache::descriptorSetLayouts.postProcessingDescriptorSetLayout,
-                                             device->GetShaderDescriptorPool()).WriteImage(0, &ssaoInfo);
+        auto descriptorSetLayout = ShaderCache::descriptorSetLayouts.postProcessingDescriptorSetLayout;
+        auto writer = VulkanDescriptorWriter(*descriptorSetLayout, device->GetShaderDescriptorPool())
+                .WriteImage(0, &ssaoInfo);
 
-        if (shaderCache->descriptorSets.postProcessingDescriptorSet) writer.Overwrite(
-            shaderCache->descriptorSets.postProcessingDescriptorSet);
-        else writer.Build(shaderCache->descriptorSets.postProcessingDescriptorSet);
+        if (shaderCache->descriptorSets.postProcessingDescriptorSet)
+            writer.Overwrite(shaderCache->descriptorSets.postProcessingDescriptorSet);
+        else
+            writer.Build(shaderCache->descriptorSets.postProcessingDescriptorSet);
     }
 
     void VulkanRenderer::CreatePresentDescriptorSet()
@@ -181,26 +191,28 @@ namespace Raytracing
         renderImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         renderImageInfo.imageView = framebuffers.geometryFramebuffer->GetAttachments()[0].imageView;
 
-        auto writer = VulkanDescriptorWriter(*shaderCache->descriptorSetLayouts.presentDescriptorSetLayout,
-                                             device->GetShaderDescriptorPool());
+        auto descriptorSetLayout = ShaderCache::descriptorSetLayouts.presentDescriptorSetLayout;
+        auto writer = VulkanDescriptorWriter(*descriptorSetLayout, device->GetShaderDescriptorPool());
         writer.WriteImage(0, &renderImageInfo);
-
-        if (shaderCache->descriptorSets.presentDescriptorSet) writer.Overwrite(shaderCache->descriptorSets.presentDescriptorSet);
-        else writer.Build(shaderCache->descriptorSets.presentDescriptorSet);
+        writer.BuildOrOverwrite(shaderCache->descriptorSets.presentDescriptorSet);
     }
 
     void VulkanRenderer::CreateShadowMap()
     {
         const uint16_t SHADOW_MAP_RESOLUTION = EnumValue(scene.directionalLight.shadowMapResolution);
-        directionalShadowMap = VulkanShadowMap::Builder().SetResolution(SHADOW_MAP_RESOLUTION, SHADOW_MAP_RESOLUTION).
-                SetArrayLayers(SHADOW_MAP_CASCADE_COUNT).Build(device.get());
+        directionalShadowMap = VulkanShadowMap::Builder()
+                .SetResolution(SHADOW_MAP_RESOLUTION, SHADOW_MAP_RESOLUTION)
+                .SetArrayLayers(SHADOW_MAP_CASCADE_COUNT)
+                .Build(device.get());
 
         framebuffers.shadowMapFramebuffers.resize(SHADOW_MAP_CASCADE_COUNT);
         for (size_t i = 0; i < SHADOW_MAP_CASCADE_COUNT; i++)
         {
-            framebuffers.shadowMapFramebuffers[i] = VulkanFramebuffer::Builder(device.get()).SetRenderpass(shadowMapPass->GetRenderPass()).
-                    SetResolution(SHADOW_MAP_RESOLUTION, SHADOW_MAP_RESOLUTION).AddAttachment(directionalShadowMap->GetImageView(i)).
-                    Build();
+            framebuffers.shadowMapFramebuffers[i] = VulkanFramebuffer::Builder(device.get())
+                    .SetRenderpass(shadowMapPass->GetRenderPass())
+                    .SetResolution(SHADOW_MAP_RESOLUTION, SHADOW_MAP_RESOLUTION)
+                    .AddAttachment(directionalShadowMap->GetImageView(i))
+                    .Build();
         }
     }
 
@@ -209,26 +221,39 @@ namespace Raytracing
         const uint32_t RENDER_RESOLUTION_WIDTH = viewportWidth * resolutionScale;
         const uint32_t RENDER_RESOLUTION_HEIGHT = viewportHeight * resolutionScale;
 
-        gBuffer = VulkanGBuffer::Builder().SetResolution(RENDER_RESOLUTION_WIDTH, RENDER_RESOLUTION_HEIGHT).Build(device.get());
+        gBuffer = VulkanGBuffer::Builder()
+                .SetResolution(RENDER_RESOLUTION_WIDTH, RENDER_RESOLUTION_HEIGHT)
+                .Build(device.get());
 
-        framebuffers.geometryFramebuffer = VulkanFramebuffer::Builder(device.get()).SetRenderpass(renderPass->GetRenderPass()).
-                SetResolution(RENDER_RESOLUTION_WIDTH, RENDER_RESOLUTION_HEIGHT).AddAttachment(ImageFormat::RGBA8_UNORM).AddAttachment(
-                    ImageFormat::DEPTH24_STENCIL8).Build();
+        framebuffers.geometryFramebuffer = VulkanFramebuffer::Builder(device.get())
+                .SetRenderpass(renderPass->GetRenderPass())
+                .SetResolution(RENDER_RESOLUTION_WIDTH, RENDER_RESOLUTION_HEIGHT)
+                .AddAttachment(ImageFormat::RGBA8_UNORM)
+                .AddAttachment(ImageFormat::DEPTH24_STENCIL8).Build();
 
-        framebuffers.gbufferFramebuffer = VulkanFramebuffer::Builder(device.get()).SetRenderpass(gbufferPass->GetRenderPass()).
-                SetResolution(RENDER_RESOLUTION_WIDTH, RENDER_RESOLUTION_HEIGHT).AddAttachment(gBuffer->buffers.viewSpaceNormal.imageView).
-                AddAttachment(gBuffer->buffers.viewSpacePosition.imageView).AddAttachment(gBuffer->buffers.depth.imageView).Build();
+        framebuffers.gbufferFramebuffer = VulkanFramebuffer::Builder(device.get())
+                .SetRenderpass(gbufferPass->GetRenderPass())
+                .SetResolution(RENDER_RESOLUTION_WIDTH, RENDER_RESOLUTION_HEIGHT)
+                .AddAttachment(gBuffer->buffers.viewSpaceNormal.imageView)
+                .AddAttachment(gBuffer->buffers.viewSpacePosition.imageView)
+                .AddAttachment(gBuffer->buffers.depth.imageView).Build();
 
-        framebuffers.ssaoFramebuffer = VulkanFramebuffer::Builder(device.get()).SetRenderpass(ssaoPass->GetRenderPass()).SetResolution(
-            RENDER_RESOLUTION_WIDTH * 0.5, RENDER_RESOLUTION_HEIGHT * 0.5).AddAttachment(ImageFormat::R8_UNORM).Build();
+        framebuffers.ssaoFramebuffer = VulkanFramebuffer::Builder(device.get())
+                .SetRenderpass(ssaoPass->GetRenderPass())
+                .SetResolution(RENDER_RESOLUTION_WIDTH * 0.5, RENDER_RESOLUTION_HEIGHT * 0.5)
+                .AddAttachment(ImageFormat::R8_UNORM)
+                .Build();
 
         const uint32_t imageCount = VulkanUtils::GetSwapchainImageCount(device->GetPhysicalDevice(), device->GetSurface());
         framebuffers.presentFramebuffers.clear();
         framebuffers.presentFramebuffers.resize(imageCount);
         for (size_t i = 0; i < imageCount; i++)
         {
-            framebuffers.presentFramebuffers[i] = VulkanFramebuffer::Builder(device.get()).SetRenderpass(presentPass->GetRenderPass()).
-                    SetResolution(viewportWidth, viewportHeight).AddAttachment(vulkanSwapChain->GetImageViews()[i]).Build();
+            framebuffers.presentFramebuffers[i] = VulkanFramebuffer::Builder(device.get())
+                    .SetRenderpass(presentPass->GetRenderPass())
+                    .SetResolution(viewportWidth, viewportHeight)
+                    .AddAttachment(vulkanSwapChain->GetImageViews()[i])
+                    .Build();
         }
     }
 
@@ -323,23 +348,25 @@ namespace Raytracing
         memcpy(descriptorBuffers.lightsBuffer->GetMappedData(), &bufferData, sizeof(LightsBuffer));
     }
 
-    void VulkanRenderer::DrawFrame(const VkCommandBuffer commandBuffer, uint32_t, const uint32_t imageIndex, const Ref<Camera>& camera)
+    void VulkanRenderer::DrawFrame(const VkCommandBuffer commandBuffer, const uint32_t imageIndex, const Ref<Camera>& camera)
     {
         activeImage = imageIndex;
 
-        directionalShadowMap->PrepareToDepthRendering();
+        gbufferPass->Render(commandBuffer, *camera, framebuffers.gbufferFramebuffer);
+        directionalShadowMap->TransitionToDepthRendering(commandBuffer);
         for (size_t i = 0; i < SHADOW_MAP_CASCADE_COUNT; i++)
         {
             shadowMapPass->SetCascadeIndex(i);
-            shadowMapPass->Render(commandBuffer, *camera, activeImage, framebuffers.shadowMapFramebuffers[i]);
+            shadowMapPass->Render(commandBuffer, *camera, framebuffers.shadowMapFramebuffers[i]);
         }
-        directionalShadowMap->PrepareToShadowRendering();
+        directionalShadowMap->TransitionToShaderRead(commandBuffer);
 
-        gbufferPass->Render(commandBuffer, *camera, activeImage, framebuffers.gbufferFramebuffer);
-        ssaoPass->Render(commandBuffer, *camera, activeImage, framebuffers.ssaoFramebuffer);
-        skyboxPass->Render(commandBuffer, *camera, activeImage, framebuffers.geometryFramebuffer);
-        renderPass->Render(commandBuffer, *camera, activeImage, framebuffers.geometryFramebuffer);
-        gridPass->Render(commandBuffer, *camera, activeImage, framebuffers.geometryFramebuffer);
-        presentPass->Render(commandBuffer, *camera, activeImage, framebuffers.presentFramebuffers[activeImage]);
+        ssaoPass->Render(commandBuffer, *camera, framebuffers.ssaoFramebuffer);
+        skyboxPass->Render(commandBuffer, *camera, framebuffers.geometryFramebuffer);
+
+        renderPass->Render(commandBuffer, *camera, framebuffers.geometryFramebuffer);
+        gridPass->Render(commandBuffer, *camera, framebuffers.geometryFramebuffer);
+
+        presentPass->Render(commandBuffer, *camera, framebuffers.presentFramebuffers[activeImage]);
     }
 }

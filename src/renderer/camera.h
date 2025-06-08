@@ -16,11 +16,11 @@ namespace Raytracing
 
         void Update();
 
-        void SetResolution(const unsigned int width, const unsigned int height);
-        void SetFOV(const float focalLength);
+        void SetResolution(unsigned int width, unsigned int height);
+        void SetFOV(float focalLength);
         void SetTransform(const Transform& _transform);
-        void SetNearPlane(const float _nearPlane);
-        void SetFarPlane(const float _farPlane);
+        void SetNearPlane(float _nearPlane);
+        void SetFarPlane(float _farPlane);
 
         glm::mat4 GetProjection() const { return projection; }
         glm::mat4 GetView() const { return view; }

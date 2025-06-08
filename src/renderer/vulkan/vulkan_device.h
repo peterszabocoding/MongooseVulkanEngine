@@ -21,7 +21,7 @@ namespace Raytracing
 
     constexpr int MAX_FRAMES_IN_FLIGHT = 1;
 
-    typedef std::function<void(VkCommandBuffer commandBuffer, uint32_t frameIndex, uint32_t imageIndex)>&& DrawFrameFunction;
+    typedef std::function<void(VkCommandBuffer commandBuffer, uint32_t imageIndex)>&& DrawFrameFunction;
     typedef std::function<void()>&& OutOfDateErrorCallback;
 
     struct DrawPipelineParams {
@@ -50,7 +50,7 @@ namespace Raytracing
 
         void DrawMeshlet(const DrawCommandParams& params) const;
 
-        void DrawFrame(VkSwapchainKHR swapchain, VkExtent2D extent, DrawFrameFunction draw, OutOfDateErrorCallback errorCallback);
+        void DrawFrame(VkSwapchainKHR swapchain, DrawFrameFunction draw, OutOfDateErrorCallback errorCallback);
 
         void GetReadyToResize();
         void ImmediateSubmit(std::function<void (VkCommandBuffer commandBuffer)>&& function) const;

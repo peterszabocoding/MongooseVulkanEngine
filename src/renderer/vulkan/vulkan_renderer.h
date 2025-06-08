@@ -93,7 +93,7 @@ namespace Raytracing
         void CreateLightsBuffer();
         void UpdateLightsBuffer(float deltaTime);
 
-        void DrawFrame(VkCommandBuffer commandBuffer, uint32_t, uint32_t imageIndex, const Ref<Camera>& camera);
+        void DrawFrame(VkCommandBuffer commandBuffer, uint32_t imageIndex, const Ref<Camera>& camera);
 
     public:
         float resolutionScale = 1.0f;

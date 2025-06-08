@@ -17,6 +17,7 @@ namespace Raytracing
 
         bool Build(VkDescriptorSet& set);
         void Overwrite(VkDescriptorSet& set);
+        void BuildOrOverwrite(VkDescriptorSet& set);
 
     private:
         VulkanDescriptorSetLayout& setLayout;
