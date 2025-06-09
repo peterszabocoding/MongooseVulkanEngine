@@ -27,9 +27,6 @@ namespace Raytracing
 
     struct Framebuffers {
         Ref<VulkanFramebuffer> geometryFramebuffer;
-        Ref<VulkanFramebuffer> gbufferFramebuffer;
-        Ref<VulkanFramebuffer> ssaoFramebuffer;
-
         std::vector<Ref<VulkanFramebuffer>> shadowMapFramebuffers;
         std::vector<Ref<VulkanFramebuffer>> presentFramebuffers;
     };
@@ -55,7 +52,7 @@ namespace Raytracing
         VulkanRenderer() = default;
         ~VulkanRenderer() override;
 
-        virtual void Init(int width, int height) override;
+        virtual void Init(uint32_t width, uint32_t height) override;
         void PrecomputeIBL();
 
         virtual void ProcessPixel(unsigned int pixelCount, vec3 pixelColor) override {}
@@ -70,16 +67,12 @@ namespace Raytracing
 
         [[nodiscard]] Ref<VulkanRenderPass> GetRenderPass() const { return presentPass->GetRenderPass(); }
         [[nodiscard]] Ref<VulkanFramebuffer> GetRenderBuffer() const { return framebuffers.geometryFramebuffer; }
-        [[nodiscard]] Ref<VulkanFramebuffer> GetGBuffer() const { return framebuffers.gbufferFramebuffer; }
-        [[nodiscard]] Ref<VulkanFramebuffer> GetSSAOBuffer() const { return framebuffers.ssaoFramebuffer; }
         [[nodiscard]] Ref<VulkanShadowMap> GetShadowMap() const { return directionalShadowMap; }
 
         DirectionalLight* GetLight() { return &scene.directionalLight; }
 
     private:
         void CreateSwapchain();
-        void CreateGBufferDescriptorSet();
-        void CreatePostProcessingDescriptorSet();
         void CreateShadowMap();
         void CreateFramebuffers();
 
@@ -102,7 +95,6 @@ namespace Raytracing
         Framebuffers framebuffers;
 
         Ref<VulkanShadowMap> directionalShadowMap;
-        Ref<VulkanGBuffer> gBuffer;
 
         Scope<GBufferPass> gbufferPass;
         Scope<SkyboxPass> skyboxPass;
@@ -113,7 +105,8 @@ namespace Raytracing
         Scope<InfiniteGridPass> gridPass;
 
     private:
-        uint32_t viewportWidth, viewportHeight;
+        VkExtent2D viewportResolution;
+        VkExtent2D renderResolution;
         uint32_t activeImage = 0;
 
         Scene scene;

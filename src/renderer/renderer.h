@@ -20,7 +20,7 @@ namespace Raytracing
 		virtual ~Renderer() = default;
 		virtual void Render(const Camera& camera, const std::vector<Hitable*>& scene);
 
-		virtual void Init(int width, int height) = 0;
+		virtual void Init(uint32_t width, uint32_t height) = 0;
 		virtual void Resize(int width, int height);
 
 		virtual void IdleWait() {}

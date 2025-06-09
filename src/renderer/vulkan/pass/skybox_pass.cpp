@@ -1,7 +1,3 @@
-//
-// Created by peter on 2025. 05. 24..
-//
-
 #include "skybox_pass.h"
 
 #include "renderer/shader_cache.h"
@@ -11,10 +7,13 @@
 
 namespace Raytracing
 {
-    SkyboxPass::SkyboxPass(VulkanDevice* vulkanDevice, Scene& _scene): VulkanPass(vulkanDevice), scene(_scene)
+    SkyboxPass::SkyboxPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution): VulkanPass(vulkanDevice, _resolution), scene(_scene)
     {
+        VulkanRenderPass::ColorAttachment colorAttachment;
+        colorAttachment.imageFormat = VK_FORMAT_R8G8B8A8_UNORM;
+
         renderPass = VulkanRenderPass::Builder(vulkanDevice)
-                .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM, false)
+                .AddColorAttachment(colorAttachment)
                 .Build();
 
         cubeMesh = ResourceManager::LoadMesh(device, "resources/models/cube.obj");

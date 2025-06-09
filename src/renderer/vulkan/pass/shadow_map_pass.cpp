@@ -5,7 +5,7 @@
 
 namespace Raytracing
 {
-    ShadowMapPass::ShadowMapPass(VulkanDevice* vulkanDevice, Scene& _scene): VulkanPass(vulkanDevice), scene(_scene)
+    ShadowMapPass::ShadowMapPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution): VulkanPass(vulkanDevice, _resolution), scene(_scene)
     {
         renderPass = VulkanRenderPass::Builder(vulkanDevice)
                 .AddDepthAttachment(VK_FORMAT_D32_SFLOAT)

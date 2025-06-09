@@ -6,7 +6,7 @@ namespace Raytracing
 {
     class PresentPass : public VulkanPass {
     public:
-        explicit PresentPass(VulkanDevice* vulkanDevice);
+        explicit PresentPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution);
         virtual ~PresentPass() override = default;
 
         virtual void Render(VkCommandBuffer commandBuffer,

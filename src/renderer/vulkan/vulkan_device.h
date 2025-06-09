@@ -10,6 +10,7 @@
 #include "vulkan_descriptor_pool.h"
 #include "vulkan_mesh.h"
 #include "GLFW/glfw3.h"
+#include "memory/resource_pool.h"
 #include "renderer/camera.h"
 #include "util/core.h"
 
@@ -20,6 +21,7 @@ namespace Raytracing
     class VulkanMesh;
 
     constexpr int MAX_FRAMES_IN_FLIGHT = 1;
+    constexpr int DESCRIPTOR_SET_LAYOUT_POOL_SIZE = 10000;
 
     typedef std::function<void(VkCommandBuffer commandBuffer, uint32_t imageIndex)>&& DrawFrameFunction;
     typedef std::function<void()>&& OutOfDateErrorCallback;
@@ -131,6 +133,8 @@ namespace Raytracing
         Scope<VulkanDescriptorPool> globalUniformPool{};
         Scope<VulkanDescriptorPool> shaderDescriptorPool{};
         Scope<VulkanDescriptorPool> imguiDescriptorPool{};
+
+        ObjectResourcePool<VulkanDescriptorSetLayout> descriptorSetLayoutPool{};
 
         VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
     };

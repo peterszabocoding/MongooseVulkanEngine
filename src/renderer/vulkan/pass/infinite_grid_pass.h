@@ -13,7 +13,7 @@ namespace Raytracing
 
     class InfiniteGridPass : public VulkanPass {
     public:
-        InfiniteGridPass(VulkanDevice* vulkanDevice);
+        InfiniteGridPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution);
         ~InfiniteGridPass() override = default;
 
         virtual void Render(VkCommandBuffer commandBuffer,

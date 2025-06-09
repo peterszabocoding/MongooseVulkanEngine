@@ -15,23 +15,16 @@
 
 namespace Raytracing
 {
-    const glm::mat4 m_CaptureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
-    const glm::mat4 m_CaptureViews[6] = {
-        lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)),
-        lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)),
-        lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
-        lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f)),
-        lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f)),
-        lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f))
-    };
-
     VulkanRenderer::~VulkanRenderer() {}
 
-    void VulkanRenderer::Init(const int width, const int height)
+    void VulkanRenderer::Init(const uint32_t width, const uint32_t height)
     {
         LOG_TRACE("VulkanRenderer::Init()");
-        viewportWidth = width;
-        viewportHeight = height;
+        viewportResolution.width = width;
+        viewportResolution.height = height;
+
+        renderResolution.width = resolutionScale * viewportResolution.width;
+        renderResolution.height = resolutionScale * viewportResolution.height;
 
         device = CreateScope<VulkanDevice>(width, height, glfwWindow);
         shaderCache = CreateScope<ShaderCache>(device.get());
@@ -41,8 +34,8 @@ namespace Raytracing
 
         LOG_TRACE("Load scene");
         //scene = ResourceManager::LoadScene(device.get(), "resources/sponza/Sponza.gltf", "resources/environment/etzwihl_4k.hdr");
-        scene = ResourceManager::LoadScene(device.get(), "resources/PBRCheck/pbr_check.gltf", "resources/environment/etzwihl_4k.hdr");
-        //scene = ResourceManager::LoadScene(device.get(), "resources/cannon/cannon.gltf", "resources/environment/etzwihl_4k.hdr");
+        //scene = ResourceManager::LoadScene(device.get(), "resources/PBRCheck/pbr_check.gltf", "resources/environment/etzwihl_4k.hdr");
+        scene = ResourceManager::LoadScene(device.get(), "resources/cannon/cannon.gltf", "resources/environment/etzwihl_4k.hdr");
         //scene = ResourceManager::LoadScene(device.get(), "resources/MetalRoughSpheres/MetalRoughSpheres.gltf", "resources/environment/etzwihl_4k.hdr");
         //scene = ResourceManager::LoadScene(device.get(), "resources/gltf/multiple_spheres.gltf", "resources/environment/etzwihl_4k.hdr");
         //scene = ResourceManager::LoadScene(device.get(), "resources/chess/ABeautifulGame.gltf", "resources/environment/etzwihl_4k.hdr");
@@ -50,24 +43,19 @@ namespace Raytracing
 
         scene.directionalLight.direction = normalize(glm::vec3(0.0f, -2.0f, -1.0f));
 
-        gbufferPass = CreateScope<GBufferPass>(device.get(), scene);
-        gbufferPass->SetSize(viewportWidth * resolutionScale, viewportHeight * resolutionScale);
-
-        skyboxPass = CreateScope<SkyboxPass>(device.get(), scene);
-        renderPass = CreateScope<RenderPass>(device.get(), scene);
-        shadowMapPass = CreateScope<ShadowMapPass>(device.get(), scene);
-        presentPass = CreateScope<PresentPass>(device.get());
-        ssaoPass = CreateScope<SSAOPass>(device.get());
-        gridPass = CreateScope<InfiniteGridPass>(device.get());
+        gbufferPass = CreateScope<GBufferPass>(device.get(), scene, renderResolution);
+        skyboxPass = CreateScope<SkyboxPass>(device.get(), scene, renderResolution);
+        renderPass = CreateScope<RenderPass>(device.get(), scene, renderResolution);
+        shadowMapPass = CreateScope<ShadowMapPass>(device.get(), scene, renderResolution);
+        presentPass = CreateScope<PresentPass>(device.get(), renderResolution);
+        ssaoPass = CreateScope<SSAOPass>(device.get(), renderResolution);
+        gridPass = CreateScope<InfiniteGridPass>(device.get(), renderResolution);
 
         CreateSwapchain();
 
         CreateShadowMap();
         CreateFramebuffers();
         CreateTransformsBuffer();
-
-        CreateGBufferDescriptorSet();
-        CreatePostProcessingDescriptorSet();
 
         CreateLightsBuffer();
         CreatePresentDescriptorSet();
@@ -114,8 +102,20 @@ namespace Raytracing
     {
         Renderer::Resize(width, height);
 
-        viewportWidth = width;
-        viewportHeight = height;
+        viewportResolution.width = width;
+        viewportResolution.height = height;
+
+        renderResolution.width = resolutionScale * viewportResolution.width;
+        renderResolution.height = resolutionScale * viewportResolution.height;
+
+        gbufferPass->Resize(renderResolution);
+        skyboxPass->Resize(renderResolution);
+        renderPass->Resize(renderResolution);
+        shadowMapPass->Resize(renderResolution);
+        ssaoPass->Resize(renderResolution);
+        gridPass->Resize(renderResolution);
+
+        presentPass->Resize(viewportResolution);
 
         IdleWait();
         device->GetReadyToResize();
@@ -131,57 +131,11 @@ namespace Raytracing
 
         const uint32_t imageCount = VulkanUtils::GetSwapchainImageCount(device->GetPhysicalDevice(), device->GetSurface());
         vulkanSwapChain = VulkanSwapchain::Builder(device.get())
-                .SetResolution(viewportWidth, viewportHeight)
+                .SetResolution(viewportResolution.width, viewportResolution.height)
                 .SetPresentMode(VK_PRESENT_MODE_IMMEDIATE_KHR)
                 .SetImageCount(imageCount)
                 .SetImageFormat(surfaceFormat.format)
                 .Build();
-    }
-
-    void VulkanRenderer::CreateGBufferDescriptorSet()
-    {
-        VkDescriptorImageInfo worldSpaceNormalInfo{};
-        worldSpaceNormalInfo.sampler = gBuffer->buffers.viewSpaceNormal.sampler;
-        worldSpaceNormalInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        worldSpaceNormalInfo.imageView = gBuffer->buffers.viewSpaceNormal.imageView;
-
-        VkDescriptorImageInfo positionInfo{};
-        positionInfo.sampler = gBuffer->buffers.viewSpacePosition.sampler;
-        positionInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        positionInfo.imageView = gBuffer->buffers.viewSpacePosition.imageView;
-
-        VkDescriptorImageInfo depthInfo{};
-        depthInfo.sampler = gBuffer->buffers.depth.sampler;
-        depthInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        depthInfo.imageView = gBuffer->buffers.depth.imageView;
-
-        auto writer = VulkanDescriptorWriter(*ShaderCache::descriptorSetLayouts.gBufferDescriptorSetLayout,
-                                             device->GetShaderDescriptorPool())
-                .WriteImage(0, &worldSpaceNormalInfo)
-                .WriteImage(1, &positionInfo)
-                .WriteImage(2, &depthInfo);
-
-        if (shaderCache->descriptorSets.gbufferDescriptorSet)
-            writer.Overwrite(shaderCache->descriptorSets.gbufferDescriptorSet);
-        else
-            writer.Build(shaderCache->descriptorSets.gbufferDescriptorSet);
-    }
-
-    void VulkanRenderer::CreatePostProcessingDescriptorSet()
-    {
-        VkDescriptorImageInfo ssaoInfo{};
-        ssaoInfo.sampler = framebuffers.ssaoFramebuffer->GetAttachments()[0].sampler;
-        ssaoInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        ssaoInfo.imageView = framebuffers.ssaoFramebuffer->GetAttachments()[0].imageView;
-
-        auto descriptorSetLayout = ShaderCache::descriptorSetLayouts.postProcessingDescriptorSetLayout;
-        auto writer = VulkanDescriptorWriter(*descriptorSetLayout, device->GetShaderDescriptorPool())
-                .WriteImage(0, &ssaoInfo);
-
-        if (shaderCache->descriptorSets.postProcessingDescriptorSet)
-            writer.Overwrite(shaderCache->descriptorSets.postProcessingDescriptorSet);
-        else
-            writer.Build(shaderCache->descriptorSets.postProcessingDescriptorSet);
     }
 
     void VulkanRenderer::CreatePresentDescriptorSet()
@@ -218,31 +172,11 @@ namespace Raytracing
 
     void VulkanRenderer::CreateFramebuffers()
     {
-        const uint32_t RENDER_RESOLUTION_WIDTH = viewportWidth * resolutionScale;
-        const uint32_t RENDER_RESOLUTION_HEIGHT = viewportHeight * resolutionScale;
-
-        gBuffer = VulkanGBuffer::Builder()
-                .SetResolution(RENDER_RESOLUTION_WIDTH, RENDER_RESOLUTION_HEIGHT)
-                .Build(device.get());
-
         framebuffers.geometryFramebuffer = VulkanFramebuffer::Builder(device.get())
                 .SetRenderpass(renderPass->GetRenderPass())
-                .SetResolution(RENDER_RESOLUTION_WIDTH, RENDER_RESOLUTION_HEIGHT)
-                .AddAttachment(ImageFormat::RGBA8_UNORM)
+                .SetResolution(renderResolution.width, renderResolution.height)
+                .AddAttachment(ImageFormat::RGBA16_SFLOAT)
                 .AddAttachment(ImageFormat::DEPTH24_STENCIL8).Build();
-
-        framebuffers.gbufferFramebuffer = VulkanFramebuffer::Builder(device.get())
-                .SetRenderpass(gbufferPass->GetRenderPass())
-                .SetResolution(RENDER_RESOLUTION_WIDTH, RENDER_RESOLUTION_HEIGHT)
-                .AddAttachment(gBuffer->buffers.viewSpaceNormal.imageView)
-                .AddAttachment(gBuffer->buffers.viewSpacePosition.imageView)
-                .AddAttachment(gBuffer->buffers.depth.imageView).Build();
-
-        framebuffers.ssaoFramebuffer = VulkanFramebuffer::Builder(device.get())
-                .SetRenderpass(ssaoPass->GetRenderPass())
-                .SetResolution(RENDER_RESOLUTION_WIDTH * 0.5, RENDER_RESOLUTION_HEIGHT * 0.5)
-                .AddAttachment(ImageFormat::R8_UNORM)
-                .Build();
 
         const uint32_t imageCount = VulkanUtils::GetSwapchainImageCount(device->GetPhysicalDevice(), device->GetSurface());
         framebuffers.presentFramebuffers.clear();
@@ -251,7 +185,7 @@ namespace Raytracing
         {
             framebuffers.presentFramebuffers[i] = VulkanFramebuffer::Builder(device.get())
                     .SetRenderpass(presentPass->GetRenderPass())
-                    .SetResolution(viewportWidth, viewportHeight)
+                    .SetResolution(viewportResolution.width, viewportResolution.height)
                     .AddAttachment(vulkanSwapChain->GetImageViews()[i])
                     .Build();
         }
@@ -263,8 +197,6 @@ namespace Raytracing
         CreateSwapchain();
         CreateFramebuffers();
         CreatePresentDescriptorSet();
-        CreateGBufferDescriptorSet();
-        CreatePostProcessingDescriptorSet();
     }
 
     void VulkanRenderer::CreateTransformsBuffer()
@@ -319,7 +251,6 @@ namespace Raytracing
         memcpy(descriptorBuffers.transformsBuffer->GetMappedData(), &bufferData, sizeof(TransformsBuffer));
     }
 
-
     void VulkanRenderer::RotateLight(float deltaTime)
     {
         Transform lightTransform;
@@ -352,7 +283,7 @@ namespace Raytracing
     {
         activeImage = imageIndex;
 
-        gbufferPass->Render(commandBuffer, *camera, framebuffers.gbufferFramebuffer);
+        gbufferPass->Render(commandBuffer, *camera, nullptr);
         directionalShadowMap->TransitionToDepthRendering(commandBuffer);
         for (size_t i = 0; i < SHADOW_MAP_CASCADE_COUNT; i++)
         {
@@ -361,7 +292,7 @@ namespace Raytracing
         }
         directionalShadowMap->TransitionToShaderRead(commandBuffer);
 
-        ssaoPass->Render(commandBuffer, *camera, framebuffers.ssaoFramebuffer);
+        ssaoPass->Render(commandBuffer, *camera, nullptr);
         skyboxPass->Render(commandBuffer, *camera, framebuffers.geometryFramebuffer);
 
         renderPass->Render(commandBuffer, *camera, framebuffers.geometryFramebuffer);

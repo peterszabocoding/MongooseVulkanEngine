@@ -6,10 +6,14 @@
 
 namespace Raytracing
 {
-    RenderPass::RenderPass(VulkanDevice* vulkanDevice, Scene& _scene): VulkanPass(vulkanDevice), scene(_scene)
+    RenderPass::RenderPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution): VulkanPass(vulkanDevice, _resolution), scene(_scene)
     {
+        VulkanRenderPass::ColorAttachment colorAttachment;
+        colorAttachment.imageFormat = VK_FORMAT_R16G16B16A16_UNORM;
+        colorAttachment.loadOperation = VK_ATTACHMENT_LOAD_OP_LOAD;
+
         renderPass = VulkanRenderPass::Builder(vulkanDevice)
-                .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM, false, false)
+                .AddColorAttachment(colorAttachment)
                 .AddDepthAttachment()
                 .Build();
         LoadPipelines();
@@ -84,7 +88,7 @@ namespace Raytracing
             };
 
             geometryPipelineConfig.colorAttachments = {
-                ImageFormat::RGBA8_UNORM,
+                ImageFormat::RGBA16_SFLOAT,
             };
 
             geometryPipelineConfig.disableBlending = true;

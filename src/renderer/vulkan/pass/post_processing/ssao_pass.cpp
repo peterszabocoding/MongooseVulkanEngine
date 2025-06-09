@@ -8,17 +8,23 @@
 
 namespace Raytracing
 {
-    SSAOPass::SSAOPass(VulkanDevice* _device): VulkanPass(_device)
+    SSAOPass::SSAOPass(VulkanDevice* _device, VkExtent2D _resolution): VulkanPass(_device, _resolution)
     {
+        VulkanRenderPass::ColorAttachment colorAttachment;
+        colorAttachment.imageFormat = VK_FORMAT_R8_UNORM;
+
         renderPass = VulkanRenderPass::Builder(device)
-                .AddColorAttachment(VK_FORMAT_R8_UNORM, false)
+                .AddColorAttachment(colorAttachment)
                 .Build();
         screenRect = CreateScope<VulkanMeshlet>(device, Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
         LoadPipeline();
 
         GenerateKernel();
         GenerateNoiseData();
+
+        CreateFramebuffer();
         InitDescriptorSet();
+        BuildOutputDescriptorSet();
     }
 
     SSAOPass::~SSAOPass()
@@ -29,8 +35,8 @@ namespace Raytracing
     void SSAOPass::Render(VkCommandBuffer commandBuffer, Camera& camera, Ref<VulkanFramebuffer> writeBuffer,
                           Ref<VulkanFramebuffer> readBuffer)
     {
-        device->SetViewportAndScissor(writeBuffer->GetExtent(), commandBuffer);
-        renderPass->Begin(commandBuffer, writeBuffer, writeBuffer->GetExtent());
+        device->SetViewportAndScissor(framebuffer->GetExtent(), commandBuffer);
+        renderPass->Begin(commandBuffer, framebuffer, framebuffer->GetExtent());
 
         DrawCommandParams drawParams{};
         drawParams.commandBuffer = commandBuffer;
@@ -47,7 +53,7 @@ namespace Raytracing
             ShaderCache::descriptorSets.transformDescriptorSet,
         };
 
-        ssaoParams.resolution = glm::vec2(passWidth, passHeight);
+        ssaoParams.resolution = glm::vec2(resolution.width, resolution.height);
         drawParams.pushConstantParams = {
             &ssaoParams,
             sizeof(SSAOParams)
@@ -57,39 +63,44 @@ namespace Raytracing
         renderPass->End(commandBuffer);
     }
 
+    void SSAOPass::Resize(VkExtent2D _resolution)
+    {
+        VulkanPass::Resize(_resolution);
+        CreateFramebuffer();
+        BuildOutputDescriptorSet();
+    }
+
     void SSAOPass::LoadPipeline()
     {
-        {
-            LOG_TRACE("Building SSAO pipeline");
-            PipelineConfig pipelineConfig;
-            pipelineConfig.vertexShaderPath = "quad.vert";
-            pipelineConfig.fragmentShaderPath = "post_processing_ssao.frag";
+        LOG_TRACE("Building SSAO pipeline");
+        PipelineConfig pipelineConfig;
+        pipelineConfig.vertexShaderPath = "quad.vert";
+        pipelineConfig.fragmentShaderPath = "post_processing_ssao.frag";
 
-            pipelineConfig.cullMode = PipelineCullMode::Front;
-            pipelineConfig.polygonMode = PipelinePolygonMode::Fill;
-            pipelineConfig.frontFace = PipelineFrontFace::Counter_clockwise;
+        pipelineConfig.cullMode = PipelineCullMode::Front;
+        pipelineConfig.polygonMode = PipelinePolygonMode::Fill;
+        pipelineConfig.frontFace = PipelineFrontFace::Counter_clockwise;
 
-            pipelineConfig.descriptorSetLayouts = {
-                ShaderCache::descriptorSetLayouts.gBufferDescriptorSetLayout,
-                ShaderCache::descriptorSetLayouts.ssaoDescriptorSetLayout,
-                ShaderCache::descriptorSetLayouts.transformDescriptorSetLayout,
-            };
+        pipelineConfig.descriptorSetLayouts = {
+            ShaderCache::descriptorSetLayouts.gBufferDescriptorSetLayout,
+            ShaderCache::descriptorSetLayouts.ssaoDescriptorSetLayout,
+            ShaderCache::descriptorSetLayouts.transformDescriptorSetLayout,
+        };
 
-            pipelineConfig.colorAttachments = {
-                ImageFormat::R8_UNORM,
-            };
+        pipelineConfig.colorAttachments = {
+            ImageFormat::R8_UNORM,
+        };
 
-            pipelineConfig.disableBlending = true;
-            pipelineConfig.enableDepthTest = false;
+        pipelineConfig.disableBlending = true;
+        pipelineConfig.enableDepthTest = false;
 
-            pipelineConfig.renderPass = renderPass;
+        pipelineConfig.renderPass = renderPass;
 
-            pipelineConfig.pushConstantData.shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-            pipelineConfig.pushConstantData.offset = 0;
-            pipelineConfig.pushConstantData.size = sizeof(SSAOParams);
+        pipelineConfig.pushConstantData.shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+        pipelineConfig.pushConstantData.offset = 0;
+        pipelineConfig.pushConstantData.size = sizeof(SSAOParams);
 
-            ssaoPipeline = VulkanPipeline::Builder().Build(device, pipelineConfig);
-        }
+        ssaoPipeline = VulkanPipeline::Builder().Build(device, pipelineConfig);
     }
 
     void SSAOPass::InitDescriptorSet()
@@ -166,5 +177,31 @@ namespace Raytracing
 
             buffer.samples[i] = sample;
         }
+    }
+
+    void SSAOPass::BuildOutputDescriptorSet()
+    {
+        VkDescriptorImageInfo ssaoInfo{};
+        ssaoInfo.sampler = framebuffer->GetAttachments()[0].sampler;
+        ssaoInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        ssaoInfo.imageView = framebuffer->GetAttachments()[0].imageView;
+
+        auto descriptorSetLayout = ShaderCache::descriptorSetLayouts.postProcessingDescriptorSetLayout;
+        auto writer = VulkanDescriptorWriter(*descriptorSetLayout, device->GetShaderDescriptorPool())
+                .WriteImage(0, &ssaoInfo);
+
+        if (ShaderCache::descriptorSets.postProcessingDescriptorSet)
+            writer.Overwrite(ShaderCache::descriptorSets.postProcessingDescriptorSet);
+        else
+            writer.Build(ShaderCache::descriptorSets.postProcessingDescriptorSet);
+    }
+
+    void SSAOPass::CreateFramebuffer()
+    {
+        framebuffer = VulkanFramebuffer::Builder(device)
+                .SetRenderpass(renderPass)
+                .SetResolution(resolution.width * 0.5, resolution.height * 0.5)
+                .AddAttachment(ImageFormat::R8_UNORM)
+                .Build();
     }
 }

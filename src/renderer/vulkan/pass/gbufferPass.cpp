@@ -3,27 +3,35 @@
 #include <random>
 #include <glm/gtc/packing.inl>
 
+#include "render_pass.h"
 #include "renderer/shader_cache.h"
+#include "renderer/vulkan/vulkan_descriptor_writer.h"
 #include "renderer/vulkan/vulkan_pipeline.h"
 #include "util/log.h"
 
 namespace Raytracing
 {
-    GBufferPass::GBufferPass(VulkanDevice* vulkanDevice, Scene& _scene): VulkanPass(vulkanDevice), scene(_scene)
+    GBufferPass::GBufferPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution): VulkanPass(vulkanDevice, _resolution), scene(_scene)
     {
+        VulkanRenderPass::ColorAttachment colorAttachment;
+        colorAttachment.imageFormat = VK_FORMAT_R32G32B32A32_SFLOAT;
+
         renderPass = VulkanRenderPass::Builder(vulkanDevice)
-                .AddColorAttachment(VK_FORMAT_R32G32B32A32_SFLOAT, false)
-                .AddColorAttachment(VK_FORMAT_R32G32B32A32_SFLOAT, false)
+                .AddColorAttachment(colorAttachment)
+                .AddColorAttachment(colorAttachment)
                 .AddDepthAttachment()
                 .Build();
         LoadPipelines();
+
+        BuildGBuffer();
+        CreateFramebuffer();
     }
 
     void GBufferPass::Render(VkCommandBuffer commandBuffer, Camera& camera, Ref<VulkanFramebuffer> writeBuffer,
                              Ref<VulkanFramebuffer> readBuffer)
     {
-        device->SetViewportAndScissor(writeBuffer->GetExtent(), commandBuffer);
-        renderPass->Begin(commandBuffer, writeBuffer, writeBuffer->GetExtent());
+        device->SetViewportAndScissor(resolution, commandBuffer);
+        renderPass->Begin(commandBuffer, framebuffer, resolution);
 
         DrawCommandParams geometryDrawParams{};
         geometryDrawParams.commandBuffer = commandBuffer;
@@ -61,6 +69,13 @@ namespace Raytracing
         renderPass->End(commandBuffer);
     }
 
+    void GBufferPass::Resize(VkExtent2D _resolution)
+    {
+        VulkanPass::Resize(_resolution);
+        BuildGBuffer();
+        CreateFramebuffer();
+    }
+
     void GBufferPass::LoadPipelines()
     {
         LOG_TRACE("Building geometry pipeline");
@@ -93,5 +108,48 @@ namespace Raytracing
             pipelineConfig.pushConstantData.size = sizeof(SimplePushConstantData);
         }
         gbufferPipeline = VulkanPipeline::Builder().Build(device, pipelineConfig);
+    }
+
+    void GBufferPass::CreateFramebuffer()
+    {
+        framebuffer = VulkanFramebuffer::Builder(device)
+                .SetRenderpass(renderPass)
+                .SetResolution(resolution.width, resolution.height)
+                .AddAttachment(gBuffer->buffers.viewSpaceNormal.imageView)
+                .AddAttachment(gBuffer->buffers.viewSpacePosition.imageView)
+                .AddAttachment(gBuffer->buffers.depth.imageView).Build();
+    }
+
+    void GBufferPass::BuildGBuffer()
+    {
+        gBuffer = VulkanGBuffer::Builder()
+                        .SetResolution(resolution.width, resolution.height)
+                        .Build(device);
+
+        VkDescriptorImageInfo worldSpaceNormalInfo{};
+        worldSpaceNormalInfo.sampler = gBuffer->buffers.viewSpaceNormal.sampler;
+        worldSpaceNormalInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        worldSpaceNormalInfo.imageView = gBuffer->buffers.viewSpaceNormal.imageView;
+
+        VkDescriptorImageInfo positionInfo{};
+        positionInfo.sampler = gBuffer->buffers.viewSpacePosition.sampler;
+        positionInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        positionInfo.imageView = gBuffer->buffers.viewSpacePosition.imageView;
+
+        VkDescriptorImageInfo depthInfo{};
+        depthInfo.sampler = gBuffer->buffers.depth.sampler;
+        depthInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        depthInfo.imageView = gBuffer->buffers.depth.imageView;
+
+        auto writer = VulkanDescriptorWriter(*ShaderCache::descriptorSetLayouts.gBufferDescriptorSetLayout,
+                                             device->GetShaderDescriptorPool())
+                .WriteImage(0, &worldSpaceNormalInfo)
+                .WriteImage(1, &positionInfo)
+                .WriteImage(2, &depthInfo);
+
+        if (ShaderCache::descriptorSets.gbufferDescriptorSet)
+            writer.Overwrite(ShaderCache::descriptorSets.gbufferDescriptorSet);
+        else
+            writer.Build(ShaderCache::descriptorSets.gbufferDescriptorSet);
     }
 }

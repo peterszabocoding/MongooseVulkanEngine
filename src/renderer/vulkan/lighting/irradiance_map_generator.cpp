@@ -23,8 +23,13 @@ namespace Raytracing
     IrradianceMapGenerator::IrradianceMapGenerator(VulkanDevice* _device): device(_device)
     {
         cubeMesh = ResourceManager::LoadMesh(device, "resources/models/cube.obj");
+
+
+        VulkanRenderPass::ColorAttachment colorAttachment;
+        colorAttachment.imageFormat = VK_FORMAT_R16G16B16A16_SFLOAT;
+
         renderPass = VulkanRenderPass::Builder(device)
-                .AddColorAttachment(VK_FORMAT_R16G16B16A16_SFLOAT, false)
+                .AddColorAttachment(colorAttachment)
                 .Build();
         LoadPipeline();
     }

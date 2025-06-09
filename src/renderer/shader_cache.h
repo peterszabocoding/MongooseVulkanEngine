@@ -20,6 +20,7 @@ namespace Raytracing
         Ref<VulkanDescriptorSetLayout> ssaoDescriptorSetLayout;
         Ref<VulkanDescriptorSetLayout> postProcessingDescriptorSetLayout;
         Ref<VulkanDescriptorSetLayout> ppBoxBlurDescriptorSetLayout;
+        Ref<VulkanDescriptorSetLayout> toneMappingDescriptorSetLayout;
     };
 
     struct DescriptorSets {
@@ -30,6 +31,7 @@ namespace Raytracing
         VkDescriptorSet lightsDescriptorSet;
         VkDescriptorSet gbufferDescriptorSet;
         VkDescriptorSet postProcessingDescriptorSet;
+        VkDescriptorSet toneMappingDescriptorSet;
         VkDescriptorSet presentDescriptorSet;
     };
 

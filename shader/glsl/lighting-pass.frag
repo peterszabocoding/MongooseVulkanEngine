@@ -31,7 +31,6 @@ layout(location = 0) out vec4 finalImage;
 layout(set = 0, binding = 0) uniform MaterialParams {
     vec4 tint;
     vec4 baseColor;
-
     float metallic;
     float roughness;
 
@@ -195,6 +194,6 @@ void main() {
 
     color =  color / (color + vec3(1.0));
     color = pow(color, vec3(1.0/2.2));
-    
+
     finalImage = vec4(color, 1.0);
 }

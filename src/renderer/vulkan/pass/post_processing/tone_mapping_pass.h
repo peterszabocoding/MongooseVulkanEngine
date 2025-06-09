@@ -1,30 +1,30 @@
 #pragma once
-
-#include "renderer/scene.h"
-#include "vulkan_pass.h"
+#include "renderer/vulkan/pass/vulkan_pass.h"
 
 namespace Raytracing
 {
-    class RenderPass : public VulkanPass {
+    class ToneMappingPass : public VulkanPass {
+
     public:
-        explicit RenderPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution);
-        virtual ~RenderPass() override = default;
+        explicit ToneMappingPass(VulkanDevice* _device, VkExtent2D _resolution);
+        ~ToneMappingPass() override;
 
         virtual void Render(VkCommandBuffer commandBuffer,
                             Camera& camera,
                             Ref<VulkanFramebuffer> writeBuffer,
                             Ref<VulkanFramebuffer> readBuffer = nullptr) override;
-        void DrawSkybox(VkCommandBuffer commandBuffer) const;
 
         Ref<VulkanRenderPass> GetRenderPass() { return renderPass; }
 
     private:
-        void LoadPipelines();
+        void LoadPipeline();
+        void InitDescriptorSet();
 
     private:
-        Scene& scene;
-
+        Ref<VulkanPipeline> pipeline;
         Ref<VulkanRenderPass> renderPass{};
-        Ref<VulkanPipeline> geometryPipeline;
+
+        VkDescriptorSet descriptorSet{};
+        Scope<VulkanMeshlet> screenRect;
     };
 }

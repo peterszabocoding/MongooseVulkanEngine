@@ -7,7 +7,7 @@ namespace Raytracing
 {
     class ShadowMapPass : public VulkanPass {
     public:
-        explicit ShadowMapPass(VulkanDevice* vulkanDevice, Scene& _scene);
+        explicit ShadowMapPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution);
         virtual ~ShadowMapPass() override = default;
 
         void SetCascadeIndex(uint32_t _cascadeIndex) { cascadeIndex = _cascadeIndex; }

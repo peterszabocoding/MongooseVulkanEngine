@@ -6,11 +6,15 @@
 
 namespace Raytracing
 {
-    InfiniteGridPass::InfiniteGridPass(VulkanDevice* vulkanDevice): VulkanPass(vulkanDevice)
+    InfiniteGridPass::InfiniteGridPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution): VulkanPass(vulkanDevice, _resolution)
     {
+        VulkanRenderPass::ColorAttachment colorAttachment;
+        colorAttachment.imageFormat = VK_FORMAT_R8G8B8A8_UNORM;
+        colorAttachment.loadOperation = VK_ATTACHMENT_LOAD_OP_LOAD;
+
         renderPass = VulkanRenderPass::Builder(vulkanDevice)
-                .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM, false, false)
-                .AddDepthAttachment({VK_FORMAT_D24_UNORM_S8_UINT, false})
+                .AddColorAttachment(colorAttachment)
+                .AddDepthAttachment({VK_FORMAT_D24_UNORM_S8_UINT, VK_ATTACHMENT_LOAD_OP_LOAD})
                 .Build();
         screenRect = CreateScope<VulkanMeshlet>(device, Primitives::GRID_VERTICES, Primitives::GRID_INDICES);
         LoadPipelines();

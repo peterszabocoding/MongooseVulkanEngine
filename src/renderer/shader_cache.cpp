@@ -115,6 +115,11 @@ namespace Raytracing
         descriptorSetLayouts.ppBoxBlurDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice)
                 .AddBinding({0, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
                 .Build();
+
+        // Tone Mapping
+        descriptorSetLayouts.toneMappingDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice)
+                .AddBinding({0, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
+                .Build();
     }
 
     void ShaderCache::LoadPipelines()
@@ -124,8 +129,11 @@ namespace Raytracing
 
     void ShaderCache::LoadRenderpasses()
     {
+        VulkanRenderPass::ColorAttachment colorAttachment;
+        colorAttachment.imageFormat = VK_FORMAT_R16G16B16A16_SFLOAT;
+
         renderpasses.iblPreparePass = VulkanRenderPass::Builder(vulkanDevice)
-                .AddColorAttachment(VK_FORMAT_R16G16B16A16_SFLOAT, false)
+                .AddColorAttachment(colorAttachment)
                 .Build();
     }
 }

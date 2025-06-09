@@ -92,8 +92,8 @@ namespace Raytracing
                 debugTextures.clear();
             }
 
-            gBuffer = renderer->gBuffer;
-            ssaoBuffer = renderer->GetSSAOBuffer();
+            gBuffer = renderer->gbufferPass->gBuffer;
+            ssaoBuffer = renderer->ssaoPass->framebuffer;
 
             debugTextures.push_back(ImGui_ImplVulkan_AddTexture(sampler, gBuffer->buffers.viewSpaceNormal.imageView,
                                                                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));

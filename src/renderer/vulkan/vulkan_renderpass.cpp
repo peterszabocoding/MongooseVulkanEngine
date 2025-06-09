@@ -10,23 +10,19 @@ namespace Raytracing
 {
     VulkanRenderPass::Builder::Builder(VulkanDevice* vulkanDevice): vulkanDevice(vulkanDevice) {}
 
-    VulkanRenderPass::Builder& VulkanRenderPass::Builder::AddColorAttachment(const VkFormat imageFormat,
-                                                                             bool isSwapchainAttachment,
-                                                                             bool clearOnLoad,
-                                                                             const glm::vec4 clearColor,
-                                                                             const VkSampleCountFlagBits sampleCount)
+    VulkanRenderPass::Builder& VulkanRenderPass::Builder::AddColorAttachment(ColorAttachment colorAttachment)
     {
-        colorAttachments.push_back({imageFormat, sampleCount, clearColor, clearOnLoad, isSwapchainAttachment});
+        colorAttachments.push_back(colorAttachment);
         return *this;
     }
 
-    VulkanRenderPass::Builder& VulkanRenderPass::Builder::AddDepthAttachment(VkFormat depthFormat)
+    VulkanRenderPass::Builder& VulkanRenderPass::Builder::AddDepthAttachment(const VkFormat depthFormat)
     {
         depthAttachments.push_back({depthFormat});
         return *this;
     }
 
-    VulkanRenderPass::Builder& VulkanRenderPass::Builder::AddDepthAttachment(DepthAttachment depthAttachment)
+    VulkanRenderPass::Builder& VulkanRenderPass::Builder::AddDepthAttachment(const DepthAttachment depthAttachment)
     {
         depthAttachments.push_back(depthAttachment);
         return *this;
@@ -44,7 +40,7 @@ namespace Raytracing
             VkAttachmentDescription attachment{};
             attachment.format = colorAttachment.imageFormat;
             attachment.samples = colorAttachment.sampleCount;
-            attachment.loadOp = colorAttachment.clearOnLoad ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
+            attachment.loadOp = colorAttachment.loadOperation;
             attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
             attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
             attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -79,7 +75,7 @@ namespace Raytracing
             VkAttachmentDescription attachment{};
             attachment.format = depthAttachment.depthFormat;
             attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-            attachment.loadOp = depthAttachment.clearOnLoad ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
+            attachment.loadOp = depthAttachment.loadOperation;
             attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
             attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
             attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;

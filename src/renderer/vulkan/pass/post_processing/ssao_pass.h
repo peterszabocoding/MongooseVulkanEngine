@@ -11,16 +11,16 @@ namespace Raytracing
 
         struct SSAOParams {
             glm::vec2 resolution;
-            int kernelSize = 16;
-            float radius = 0.5f;
-            float bias = 0.075f;
+            int kernelSize = 24;
+            float radius = 0.25f;
+            float bias = 0.025f;
             float strength = 2.0f;
         };
 
         struct BlurParams {};
 
     public:
-        explicit SSAOPass(VulkanDevice* _device);
+        explicit SSAOPass(VulkanDevice* _device, VkExtent2D _resolution);
         ~SSAOPass() override;
 
         virtual void Render(VkCommandBuffer commandBuffer,
@@ -30,14 +30,19 @@ namespace Raytracing
 
         Ref<VulkanRenderPass> GetRenderPass() { return renderPass; }
 
+        virtual void Resize(VkExtent2D _resolution) override;
+
     private:
         void LoadPipeline();
         void InitDescriptorSet();
         void GenerateNoiseData();
         void GenerateKernel();
+        void BuildOutputDescriptorSet();
+        void CreateFramebuffer();
 
     public:
         SSAOParams ssaoParams;
+        Ref<VulkanFramebuffer> framebuffer;
 
     private:
         Ref<VulkanPipeline> ssaoPipeline;

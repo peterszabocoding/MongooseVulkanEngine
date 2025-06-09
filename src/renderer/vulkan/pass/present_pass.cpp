@@ -8,10 +8,14 @@
 
 namespace Raytracing
 {
-    PresentPass::PresentPass(VulkanDevice* vulkanDevice): VulkanPass(vulkanDevice)
+    PresentPass::PresentPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution): VulkanPass(vulkanDevice, _resolution)
     {
+        VulkanRenderPass::ColorAttachment colorAttachment;
+        colorAttachment.imageFormat = VK_FORMAT_R8G8B8A8_UNORM;
+        colorAttachment.isSwapchainAttachment = true;
+
         renderPass = VulkanRenderPass::Builder(vulkanDevice)
-                .AddColorAttachment(VK_FORMAT_R8G8B8A8_UNORM, true)
+                .AddColorAttachment(colorAttachment)
                 .Build();
         screenRect = CreateScope<VulkanMeshlet>(device, Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
         LoadPipeline();
