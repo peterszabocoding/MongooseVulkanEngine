@@ -14,12 +14,9 @@ namespace Raytracing
     GBufferPass::GBufferPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution): VulkanPass(vulkanDevice, _resolution),
         scene(_scene)
     {
-        VulkanRenderPass::ColorAttachment colorAttachment;
-        colorAttachment.imageFormat = VK_FORMAT_R32G32B32A32_SFLOAT;
-
         renderPass = VulkanRenderPass::Builder(vulkanDevice)
-                .AddColorAttachment(colorAttachment)
-                .AddColorAttachment(colorAttachment)
+                .AddColorAttachment({.imageFormat = VK_FORMAT_R32G32B32A32_SFLOAT})
+                .AddColorAttachment({.imageFormat = VK_FORMAT_R32G32B32A32_SFLOAT})
                 .AddDepthAttachment(VK_FORMAT_D32_SFLOAT)
                 .Build();
         LoadPipelines();
@@ -81,35 +78,41 @@ namespace Raytracing
     void GBufferPass::LoadPipelines()
     {
         LOG_TRACE("Building gbuffer pipeline");
-        PipelineConfig pipelineConfig; {
-            pipelineConfig.vertexShaderPath = "gbuffer.vert";
-            pipelineConfig.fragmentShaderPath = "gbuffer.frag";
 
-            pipelineConfig.cullMode = PipelineCullMode::Back;
-            pipelineConfig.polygonMode = PipelinePolygonMode::Fill;
-            pipelineConfig.frontFace = PipelineFrontFace::Counter_clockwise;
+        constexpr PipelinePushConstantData pushConstantData = {
+            .shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+            .offset = 0,
+            .size = sizeof(SimplePushConstantData),
+        };
 
-            pipelineConfig.descriptorSetLayouts = {
+        PipelineConfig pipelineConfig = {
+            .vertexShaderPath = "gbuffer.vert",
+            .fragmentShaderPath = "gbuffer.frag",
+
+            .descriptorSetLayouts = {
                 device->bindlessDescriptorSetLayout,
                 ShaderCache::descriptorSetLayouts.materialDescriptorSetLayout,
                 ShaderCache::descriptorSetLayouts.transformDescriptorSetLayout,
-            };
+            },
 
-            pipelineConfig.colorAttachments = {
+            .colorAttachments = {
                 ImageFormat::RGBA32_SFLOAT,
                 ImageFormat::RGBA32_SFLOAT,
-            };
+            },
+            .depthAttachment = ImageFormat::DEPTH32,
 
-            pipelineConfig.disableBlending = true;
-            pipelineConfig.enableDepthTest = true;
-            pipelineConfig.depthAttachment = ImageFormat::DEPTH32;
+            .polygonMode = PipelinePolygonMode::Fill,
+            .frontFace = PipelineFrontFace::Counter_clockwise,
+            .cullMode = PipelineCullMode::Back,
 
-            pipelineConfig.renderPass = renderPass;
+            .renderPass = renderPass,
 
-            pipelineConfig.pushConstantData.shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-            pipelineConfig.pushConstantData.offset = 0;
-            pipelineConfig.pushConstantData.size = sizeof(SimplePushConstantData);
-        }
+            .pushConstantData = pushConstantData,
+
+            .enableDepthTest = true,
+            .disableBlending = true,
+        };
+
         gbufferPipeline = VulkanPipeline::Builder().Build(device, pipelineConfig);
     }
 
@@ -130,20 +133,23 @@ namespace Raytracing
                 .SetResolution(resolution.width, resolution.height)
                 .Build(device);
 
-        VkDescriptorImageInfo worldSpaceNormalInfo{};
-        worldSpaceNormalInfo.sampler = gBuffer->buffers.viewSpaceNormal.sampler;
-        worldSpaceNormalInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        worldSpaceNormalInfo.imageView = gBuffer->buffers.viewSpaceNormal.imageView;
+        const VkDescriptorImageInfo worldSpaceNormalInfo{
+            .sampler = gBuffer->buffers.viewSpaceNormal.sampler,
+            .imageView = gBuffer->buffers.viewSpaceNormal.imageView,
+            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        };
 
-        VkDescriptorImageInfo positionInfo{};
-        positionInfo.sampler = gBuffer->buffers.viewSpacePosition.sampler;
-        positionInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        positionInfo.imageView = gBuffer->buffers.viewSpacePosition.imageView;
+        const VkDescriptorImageInfo positionInfo{
+            .sampler = gBuffer->buffers.viewSpacePosition.sampler,
+            .imageView = gBuffer->buffers.viewSpacePosition.imageView,
+            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        };
 
-        VkDescriptorImageInfo depthInfo{};
-        depthInfo.sampler = gBuffer->buffers.depth.sampler;
-        depthInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        depthInfo.imageView = gBuffer->buffers.depth.imageView;
+        const VkDescriptorImageInfo depthInfo{
+            .sampler = gBuffer->buffers.depth.sampler,
+            .imageView = gBuffer->buffers.depth.imageView,
+            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        };
 
         auto writer = VulkanDescriptorWriter(*ShaderCache::descriptorSetLayouts.gBufferDescriptorSetLayout,
                                              device->GetShaderDescriptorPool())
@@ -151,9 +157,6 @@ namespace Raytracing
                 .WriteImage(1, &positionInfo)
                 .WriteImage(2, &depthInfo);
 
-        if (ShaderCache::descriptorSets.gbufferDescriptorSet)
-            writer.Overwrite(ShaderCache::descriptorSets.gbufferDescriptorSet);
-        else
-            writer.Build(ShaderCache::descriptorSets.gbufferDescriptorSet);
+        writer.BuildOrOverwrite(ShaderCache::descriptorSets.gbufferDescriptorSet);
     }
 }
