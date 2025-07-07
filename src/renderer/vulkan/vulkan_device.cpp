@@ -65,15 +65,16 @@ namespace Raytracing
 
         vkCmdBindPipeline(params.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, params.pipelineParams.pipeline);
 
-        if (!params.descriptorSets.empty()) {
+        if (!params.descriptorSets.empty())
+        {
             vkCmdBindDescriptorSets(params.commandBuffer,
-                                VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                params.pipelineParams.pipelineLayout,
-                                0,
-                                params.descriptorSets.size(),
-                                params.descriptorSets.data(),
-                                0,
-                                nullptr);
+                                    VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                    params.pipelineParams.pipelineLayout,
+                                    0,
+                                    params.descriptorSets.size(),
+                                    params.descriptorSets.data(),
+                                    0,
+                                    nullptr);
         }
 
         params.meshlet->Bind(params.commandBuffer);
@@ -177,6 +178,8 @@ namespace Raytracing
         CreateDescriptorPool();
         CreateCommandBuffers();
         CreateSyncObjects();
+
+        texturePool.Init(1000);
     }
 
     VkResult VulkanDevice::SubmitDrawCommands(VkSemaphore* signalSemaphores) const
@@ -265,6 +268,27 @@ namespace Raytracing
 
         vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
         vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+    }
+
+    TextureHandle VulkanDevice::AllocateTexture(ImageResource imageResource)
+    {
+        VulkanTexture* texture = texturePool.Obtain();
+
+        uint32_t mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(imageResource.width, imageResource.height)))) + 1;
+        VulkanTexture::Builder()
+                .SetData(imageResource.data, imageResource.size)
+                .SetResolution(imageResource.width, imageResource.height)
+                .SetFormat(imageResource.format)
+                .SetFilter(VK_FILTER_LINEAR, VK_FILTER_LINEAR)
+                .SetTiling(VK_IMAGE_TILING_OPTIMAL)
+                .AddUsage(VK_IMAGE_USAGE_TRANSFER_DST_BIT)
+                .AddUsage(VK_IMAGE_USAGE_SAMPLED_BIT)
+                .AddAspectFlag(VK_IMAGE_ASPECT_COLOR_BIT)
+                .SetImageResource(imageResource)
+                .SetMipLevels(mipLevels)
+                .Build(this, *texture);
+
+        return {texture->poolIndex};
     }
 
     void VulkanDevice::ImmediateSubmit(std::function<void(VkCommandBuffer commandBuffer)>&& function) const
@@ -411,7 +435,6 @@ namespace Raytracing
     VkInstance VulkanDevice::CreateVkInstance(const std::vector<const char*>& deviceExtensions,
                                               const std::vector<const char*>& validationLayers)
     {
-
         VulkanUtils::VulkanVersion vkVersion;
         VulkanUtils::GetInstanceVersion(vkVersion);
 
@@ -533,6 +556,24 @@ namespace Raytracing
                 .AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100)
                 .SetPoolFlags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT)
                 .Build();
+
+        bindlessDescriptorPool = VulkanDescriptorPool::Builder(this)
+        .SetMaxSets(2 * MAX_BINDLESS_RESOURCES)
+        .AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, MAX_BINDLESS_RESOURCES)
+        .AddPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, MAX_BINDLESS_RESOURCES)
+        .SetPoolFlags(VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT)
+        .Build();
+
+        // Bindless Textures
+        bindlessDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(this)
+                .AddBinding({0, DescriptorSetBindingType::TextureSampler, {ShaderStage::VertexShader, ShaderStage::FragmentShader}},
+                            MAX_BINDLESS_RESOURCES)
+                .AddBinding({1, DescriptorSetBindingType::StorageImage, {ShaderStage::VertexShader, ShaderStage::FragmentShader}},
+                            MAX_BINDLESS_RESOURCES)
+                .Build();
+
+        VulkanDescriptorWriter(*bindlessDescriptorSetLayout, *bindlessDescriptorPool)
+                .Build(bindlessTextureDescriptorSet);
     }
 
     void VulkanDevice::CreateCommandBuffers()

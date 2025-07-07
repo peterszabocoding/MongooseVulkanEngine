@@ -15,6 +15,8 @@ namespace Raytracing
                     return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
                 case DescriptorSetBindingType::TextureSampler:
                     return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                case DescriptorSetBindingType::StorageImage:
+                    return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 
                 default:
                     ASSERT(false, "Unknown descriptor type");
@@ -103,6 +105,7 @@ namespace Raytracing
         descriptorSetLayoutInfo.bindingCount = static_cast<uint32_t>(setLayoutBindings.size());
         descriptorSetLayoutInfo.pBindings = setLayoutBindings.data();
         descriptorSetLayoutInfo.pNext = &layoutBindingFlags;
+        descriptorSetLayoutInfo.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT_EXT;
 
         VK_CHECK_MSG(vkCreateDescriptorSetLayout(vulkanDevice->GetDevice(),&descriptorSetLayoutInfo,nullptr,&descriptorSetLayout),
                      "Failed to create descriptor set layout.");

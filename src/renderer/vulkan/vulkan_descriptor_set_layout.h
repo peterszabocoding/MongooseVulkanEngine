@@ -15,6 +15,7 @@ namespace Raytracing
         Unknown = 0,
         UniformBuffer = 1,
         TextureSampler = 2,
+        StorageImage = 3,
     };
 
     enum class ShaderStage {

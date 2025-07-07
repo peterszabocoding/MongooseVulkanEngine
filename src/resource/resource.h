@@ -1,9 +1,7 @@
 #pragma once
 
-#include <string>
-
-namespace Raytracing {
-
+namespace Raytracing
+{
     enum class ImageFormat {
         Unknown = 0,
 
@@ -47,8 +45,8 @@ namespace Raytracing {
 
 
     struct ImageResource {
-        std::string path = "";
         void* data = nullptr;
+        char path[128] = "";
         uint64_t size = 0;
         uint32_t width = 0;
         uint32_t height = 0;
@@ -57,11 +55,30 @@ namespace Raytracing {
     };
 
     struct TextureResource {
-        std::string path = "";
         void* data = nullptr;
+        char path[128] = "";
         uint64_t size = 0;
         uint32_t width = 0;
         uint32_t height = 0;
         ImageFormat format = ImageFormat::Unknown;
     };
+
+    typedef uint32_t ResourceHandle;
+    static ResourceHandle INVALID_RESOURCE_HANDLE = 0xffffffff;
+
+    struct TextureHandle {
+        ResourceHandle handle;
+
+        bool operator==(const TextureHandle& other)
+        {
+            return handle == other.handle;
+        }
+
+        bool operator!=(const TextureHandle& other)
+        {
+            return handle != other.handle;
+        }
+    };
+
+    static TextureHandle INVALID_TEXTURE_HANDLE = { INVALID_RESOURCE_HANDLE };
 }

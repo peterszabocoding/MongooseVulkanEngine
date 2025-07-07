@@ -2,9 +2,10 @@
 
 #include <random>
 
+#include "util/log.h"
 #include "renderer/shader_cache.h"
 #include "renderer/vulkan/vulkan_descriptor_writer.h"
-#include "util/log.h"
+#include "renderer/vulkan/vulkan_mesh.h"
 
 namespace Raytracing
 {

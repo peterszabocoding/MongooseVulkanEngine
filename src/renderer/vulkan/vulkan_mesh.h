@@ -1,9 +1,9 @@
 #pragma once
 
+#include "util/core.h"
 #include "renderer/mesh.h"
 #include "vulkan_buffer.h"
 #include "vulkan_material.h"
-#include "util/core.h"
 
 namespace Raytracing
 {

@@ -4,9 +4,9 @@
 #include <glm/vec4.hpp>
 
 #include "vulkan_buffer.h"
-#include "vulkan_descriptor_set_layout.h"
-#include "vulkan_image.h"
+#include "vulkan_device.h"
 #include "vulkan_texture.h"
+#include "vulkan_descriptor_set_layout.h"
 
 namespace Raytracing
 {
@@ -27,9 +27,11 @@ namespace Raytracing
 
     struct VulkanMaterial {
         int index = 0;
-        Ref<VulkanTexture> baseColorTexture;
-        Ref<VulkanTexture> normalMapTexture;
-        Ref<VulkanTexture> metallicRoughnessTexture;
+
+        TextureHandle baseColorTextureHandle = INVALID_TEXTURE_HANDLE;
+        TextureHandle normalMapTextureHandle = INVALID_TEXTURE_HANDLE;
+        TextureHandle metallicRoughnessTextureHandle = INVALID_TEXTURE_HANDLE;
+
         MaterialParams params;
         VkDescriptorSet descriptorSet;
         Ref<VulkanBuffer> materialBuffer;
@@ -50,13 +52,13 @@ namespace Raytracing
         VulkanMaterialBuilder& SetRoughness(float roughness);
 
         VulkanMaterialBuilder& SetBaseColorPath(const std::string& baseColorPath);
-        VulkanMaterialBuilder& SetBaseColorTexture(const Ref<VulkanTexture>& baseColorTexture);
+        VulkanMaterialBuilder& SetBaseColorTextureHandle(const TextureHandle& _handle);
 
         VulkanMaterialBuilder& SetNormalMapPath(const std::string& normalMapPath);
-        VulkanMaterialBuilder& SetNormalMapTexture(const Ref<VulkanTexture>& normalMapTexture);
+        VulkanMaterialBuilder& SetNormalMapTextureHandle(const TextureHandle& _handle);
 
         VulkanMaterialBuilder& SetMetallicRoughnessPath(const std::string& metallicRoughnessPath);
-        VulkanMaterialBuilder& SetMetallicRoughnessTexture(const Ref<VulkanTexture>& metallicRoughnessTexture);
+        VulkanMaterialBuilder& SetMetallicRoughnessTextureHandle(const TextureHandle& _handle);
 
         VulkanMaterialBuilder& SetAlphaTested(bool _alphaTested);
 
@@ -71,9 +73,9 @@ namespace Raytracing
         Ref<VulkanDescriptorSetLayout> descriptorSetLayout;
         MaterialParams params;
 
-        Ref<VulkanTexture> baseColorTexture;
-        Ref<VulkanTexture> normalMapTexture;
-        Ref<VulkanTexture> metallicRoughnessTexture;
+        TextureHandle baseColorTextureHandle = INVALID_TEXTURE_HANDLE;
+        TextureHandle normalMapTextureHandle = INVALID_TEXTURE_HANDLE;
+        TextureHandle metallicRoughnessTextureHandle = INVALID_TEXTURE_HANDLE;
 
         std::string baseColorPath;
         std::string normalMapPath;

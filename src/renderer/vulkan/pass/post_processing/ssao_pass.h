@@ -3,6 +3,8 @@
 
 namespace Raytracing
 {
+    class VulkanBuffer;
+
     class SSAOPass : public VulkanPass {
     public:
         struct SSAOBuffer {

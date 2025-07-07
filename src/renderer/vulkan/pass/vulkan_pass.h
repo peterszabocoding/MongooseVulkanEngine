@@ -2,6 +2,7 @@
 #include "../vulkan_device.h"
 #include "../vulkan_framebuffer.h"
 #include "../../../util/core.h"
+#include "renderer/camera.h"
 
 namespace Raytracing
 {

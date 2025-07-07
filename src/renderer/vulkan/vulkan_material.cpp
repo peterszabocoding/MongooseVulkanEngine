@@ -39,9 +39,9 @@ namespace Raytracing
         return *this;
     }
 
-    VulkanMaterialBuilder& VulkanMaterialBuilder::SetBaseColorTexture(const Ref<VulkanTexture>& _baseColorTexture)
+    VulkanMaterialBuilder& VulkanMaterialBuilder::SetBaseColorTextureHandle(const TextureHandle& _handle)
     {
-        baseColorTexture = _baseColorTexture;
+        baseColorTextureHandle = _handle;
         return *this;
     }
 
@@ -51,9 +51,9 @@ namespace Raytracing
         return *this;
     }
 
-    VulkanMaterialBuilder& VulkanMaterialBuilder::SetNormalMapTexture(const Ref<VulkanTexture>& _normalMapTexture)
+    VulkanMaterialBuilder& VulkanMaterialBuilder::SetNormalMapTextureHandle(const TextureHandle& _handle)
     {
-        normalMapTexture = _normalMapTexture;
+        normalMapTextureHandle = _handle;
         return *this;
     }
 
@@ -63,9 +63,9 @@ namespace Raytracing
         return *this;
     }
 
-    VulkanMaterialBuilder& VulkanMaterialBuilder::SetMetallicRoughnessTexture(const Ref<VulkanTexture>& _metallicRoughnessTexture)
+    VulkanMaterialBuilder& VulkanMaterialBuilder::SetMetallicRoughnessTextureHandle(const TextureHandle& _handle)
     {
-        metallicRoughnessTexture = _metallicRoughnessTexture;
+        metallicRoughnessTextureHandle = _handle;
         return *this;
     }
 
@@ -88,16 +88,7 @@ namespace Raytracing
 
     VulkanMaterial VulkanMaterialBuilder::Build()
     {
-        if (baseColorTexture == nullptr && !baseColorPath.empty())
-            baseColorTexture = ResourceManager::LoadTexture(vulkanDevice, baseColorPath);
-
-        if (normalMapTexture == nullptr && !normalMapPath.empty())
-            normalMapTexture = ResourceManager::LoadTexture(vulkanDevice, normalMapPath);
-
-        if (metallicRoughnessTexture == nullptr && !metallicRoughnessPath.empty())
-            metallicRoughnessTexture = ResourceManager::LoadTexture(vulkanDevice, metallicRoughnessPath);
-
-        Ref<VulkanBuffer> materialBuffer = CreateRef<VulkanBuffer>(
+        const Ref<VulkanBuffer> materialBuffer = CreateRef<VulkanBuffer>(
             vulkanDevice,
             sizeof(MaterialParams),
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
@@ -112,38 +103,41 @@ namespace Raytracing
         auto descriptorWriter = VulkanDescriptorWriter(*descriptorSetLayout, vulkanDevice->GetShaderDescriptorPool());
         descriptorWriter.WriteBuffer(0, &bufferInfo);
 
-        if (baseColorTexture != nullptr)
+        if (baseColorTextureHandle != INVALID_TEXTURE_HANDLE)
         {
             params.useBaseColorMap = 1;
+            const VulkanTexture* texture = vulkanDevice->texturePool.Get(baseColorTextureHandle.handle);
 
             VkDescriptorImageInfo baseColorImageInfo{};
             baseColorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            baseColorImageInfo.imageView = baseColorTexture->GetImageView();
-            baseColorImageInfo.sampler = baseColorTexture->GetSampler();
+            baseColorImageInfo.imageView = texture->GetImageView();
+            baseColorImageInfo.sampler = texture->GetSampler();
 
             descriptorWriter.WriteImage(1, &baseColorImageInfo);
         }
 
-        if (normalMapTexture != nullptr)
+        if (normalMapTextureHandle != INVALID_TEXTURE_HANDLE)
         {
             params.useNormalMap = 1;
+            const VulkanTexture* texture = vulkanDevice->texturePool.Get(normalMapTextureHandle.handle);
 
             VkDescriptorImageInfo normalMapImageInfo{};
             normalMapImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            normalMapImageInfo.imageView = normalMapTexture->GetImageView();
-            normalMapImageInfo.sampler = normalMapTexture->GetSampler();
+            normalMapImageInfo.imageView = texture->GetImageView();
+            normalMapImageInfo.sampler = texture->GetSampler();
 
             descriptorWriter.WriteImage(2, &normalMapImageInfo);
         }
 
-        if (metallicRoughnessTexture != nullptr)
+        if (metallicRoughnessTextureHandle != INVALID_TEXTURE_HANDLE)
         {
             params.useMetallicRoughnessMap = 1;
+            const VulkanTexture* texture = vulkanDevice->texturePool.Get(metallicRoughnessTextureHandle.handle);
 
             VkDescriptorImageInfo metallicRoughnessImageInfo{};
             metallicRoughnessImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            metallicRoughnessImageInfo.imageView = metallicRoughnessTexture->GetImageView();
-            metallicRoughnessImageInfo.sampler = metallicRoughnessTexture->GetSampler();
+            metallicRoughnessImageInfo.imageView = texture->GetImageView();
+            metallicRoughnessImageInfo.sampler = texture->GetSampler();
 
             descriptorWriter.WriteImage(3, &metallicRoughnessImageInfo);
         }
@@ -159,9 +153,11 @@ namespace Raytracing
 
         VulkanMaterial material;
         material.index = 0;
-        material.baseColorTexture = baseColorTexture;
-        material.normalMapTexture = normalMapTexture;
-        material.metallicRoughnessTexture = metallicRoughnessTexture;
+
+        material.baseColorTextureHandle = baseColorTextureHandle;
+        material.normalMapTextureHandle = normalMapTextureHandle;
+        material.metallicRoughnessTextureHandle = metallicRoughnessTextureHandle;
+
         material.params = params;
         material.descriptorSet = descriptorSet;
         material.materialBuffer = materialBuffer;

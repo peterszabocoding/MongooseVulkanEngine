@@ -1,9 +1,9 @@
 #pragma once
 #include <vulkan/vulkan_core.h>
 
+#include "util/core.h"
 #include "vulkan_utils.h"
 #include "resource/resource.h"
-#include "util/core.h"
 #include "vma/vk_mem_alloc.h"
 
 namespace Raytracing

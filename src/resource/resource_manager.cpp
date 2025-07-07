@@ -34,13 +34,13 @@ namespace Raytracing
             throw std::runtime_error("Failed to load texture image.");
 
         ImageResource resource;
-        resource.path = imagePath;
         resource.width = width;
         resource.height = height;
         resource.data = pixels;
         resource.size = size;
         resource.channels = channels;
         resource.format = ImageFormat::RGBA8_UNORM;
+        std::copy(imagePath.begin(), imagePath.end(), resource.path);
 
         return resource;
     }
@@ -58,19 +58,19 @@ namespace Raytracing
             throw std::runtime_error("Failed to load HDR image.");
 
         ImageResource resource;
-        resource.path = hdrPath;
         resource.width = width;
         resource.height = height;
         resource.data = pixels;
         resource.size = size;
         resource.format = ImageFormat::RGB32_SFLOAT;
+        std::copy(hdrPath.begin(), hdrPath.end(), resource.path);
 
         return resource;
     }
 
     void ResourceManager::ReleaseImage(const ImageResource& image)
     {
-        LOG_TRACE("Release image data: " + image.path);
+        LOG_TRACE("Release image data: {0}", image.path);
         stbi_image_free(image.data);
     }
 
@@ -123,6 +123,12 @@ namespace Raytracing
         ReleaseImage(imageResource);
 
         return texture;
+    }
+
+    TextureHandle ResourceManager::LoadTexture2(VulkanDevice* device, const std::string& textureImagePath)
+    {
+        LOG_INFO("Load Texture: " + textureImagePath);
+        return device->AllocateTexture(LoadImageResource(textureImagePath));
     }
 
     Ref<VulkanCubeMapTexture> ResourceManager::LoadHDRCubeMap(VulkanDevice* device, const std::string& hdrPath)

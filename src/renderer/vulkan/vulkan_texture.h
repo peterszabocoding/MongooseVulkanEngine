@@ -1,16 +1,18 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
+#include <array>
 
-#include "vulkan_image.h"
-#include "resource/resource.h"
 #include "util/core.h"
+#include "vulkan_image.h"
+
+#include "resource/resource.h"
+#include "memory/resource_pool.h"
 
 namespace Raytracing
 {
     class VulkanDevice;
 
-    class VulkanTexture {
+    class VulkanTexture: public PoolObject {
     public:
         class Builder {
         public:
@@ -81,6 +83,7 @@ namespace Raytracing
             }
 
             Ref<VulkanTexture> Build(VulkanDevice* device);
+            void Build(VulkanDevice* device, VulkanTexture& texture);
 
         private:
             void* data = nullptr;
@@ -97,7 +100,7 @@ namespace Raytracing
             uint32_t arrayLayers = 1;
 
             AllocatedImage allocatedImage{};
-            std::vector<VkImageView> imageViews{};
+            std::array<VkImageView, 6> imageViews{};
             VkImageView imageView{};
             VkDeviceMemory imageMemory{};
             VkSampler sampler{};
@@ -105,7 +108,7 @@ namespace Raytracing
         };
 
     public:
-        VulkanTexture(VulkanDevice* _device, const AllocatedImage _image, const std::vector<VkImageView> _imageViews, const VkSampler _sampler,
+        VulkanTexture(VulkanDevice* _device, const AllocatedImage _image, const std::array<VkImageView, 6> _imageViews, const VkSampler _sampler,
                       const VkDeviceMemory _imageMemory,
                       const ImageResource& _imageResource): device(_device),
                                                             allocatedImage(_image),
@@ -116,19 +119,18 @@ namespace Raytracing
 
         ~VulkanTexture();
 
-        VkImage GetImage() const { return allocatedImage.image; };
         VkImageView GetImageView() const { return imageViews[0]; }
         VkImageView GetImageView(const uint32_t index) { return imageViews[index % imageViews.size()]; }
         VkSampler GetSampler() const { return sampler; }
-        ImageResource GetImageResource() const { return imageResource; }
+
+    public:
+        ImageResource imageResource{};
+        AllocatedImage allocatedImage{};
+        std::array<VkImageView, 6> imageViews{};
+        VkDeviceMemory imageMemory{};
+        VkSampler sampler{};
 
     private:
         VulkanDevice* device;
-        ImageResource imageResource{};
-
-        AllocatedImage allocatedImage{};
-        std::vector<VkImageView> imageViews{};
-        VkDeviceMemory imageMemory{};
-        VkSampler sampler{};
     };
 }

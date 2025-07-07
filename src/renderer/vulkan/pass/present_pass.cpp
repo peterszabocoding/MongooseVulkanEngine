@@ -3,8 +3,9 @@
 #include <backends/imgui_impl_vulkan.h>
 
 #include "imgui.h"
-#include "renderer/shader_cache.h"
 #include "util/log.h"
+#include "renderer/shader_cache.h"
+#include "renderer/vulkan/vulkan_mesh.h"
 
 namespace Raytracing
 {

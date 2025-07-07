@@ -7,21 +7,26 @@
 #include <functional>
 #include <vma/vk_mem_alloc.h>
 
-#include "vulkan_descriptor_pool.h"
-#include "vulkan_mesh.h"
 #include "GLFW/glfw3.h"
-#include "memory/resource_pool.h"
-#include "renderer/camera.h"
+
 #include "util/core.h"
+#include "memory/resource_pool.h"
+#include "vulkan_descriptor_pool.h"
+#include "vulkan_descriptor_set_layout.h"
+#include "vulkan_texture.h"
+#include "resource/resource.h"
+
 
 namespace Raytracing
 {
+    class VulkanMeshlet;
     struct SimplePushConstantData;
     class VulkanPipeline;
     class VulkanMesh;
 
     constexpr int MAX_FRAMES_IN_FLIGHT = 1;
     constexpr int DESCRIPTOR_SET_LAYOUT_POOL_SIZE = 10000;
+    constexpr uint32_t MAX_BINDLESS_RESOURCES = 100;
 
     typedef std::function<void(VkCommandBuffer commandBuffer, uint32_t imageIndex)>&& DrawFrameFunction;
     typedef std::function<void()>&& OutOfDateErrorCallback;
@@ -34,7 +39,7 @@ namespace Raytracing
     struct DrawPushConstantParams {
         void* data;
         uint32_t size;
-        VkShaderStageFlags shaderStageFlags  = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+        VkShaderStageFlags shaderStageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
     };
 
     struct DrawCommandParams {
@@ -43,6 +48,23 @@ namespace Raytracing
         DrawPipelineParams pipelineParams;
         DrawPushConstantParams pushConstantParams;
         std::vector<VkDescriptorSet> descriptorSets{};
+    };
+
+    class DeletionQueue {
+    public:
+        void Push(const std::function<void()>& func)
+        {
+            deletions.push_back(func);
+        }
+
+        void Flush()
+        {
+            for (auto& func: deletions) func();
+            deletions.clear();
+        }
+
+    private:
+        std::vector<std::function<void()>> deletions;
     };
 
     class VulkanDevice {
@@ -78,6 +100,8 @@ namespace Raytracing
 
         void SetViewportAndScissor(VkExtent2D extent, VkCommandBuffer commandBuffer) const;
 
+        TextureHandle AllocateTexture(ImageResource imageResource);
+
     public:
         [[nodiscard]] inline VkPhysicalDevice PickPhysicalDevice() const;
         [[nodiscard]] inline VkDevice CreateLogicalDevice();
@@ -104,6 +128,7 @@ namespace Raytracing
 
     public:
         uint32_t currentFrame = 0;
+        ObjectResourcePool<VulkanTexture> texturePool;
 
     private:
         int viewportWidth{}, viewportHeight{};
@@ -134,8 +159,14 @@ namespace Raytracing
         Scope<VulkanDescriptorPool> shaderDescriptorPool{};
         Scope<VulkanDescriptorPool> imguiDescriptorPool{};
 
+        Scope<VulkanDescriptorPool> bindlessDescriptorPool{};
+        Ref<VulkanDescriptorSetLayout> bindlessDescriptorSetLayout;
+        VkDescriptorSet bindlessTextureDescriptorSet{};
+
         ObjectResourcePool<VulkanDescriptorSetLayout> descriptorSetLayoutPool{};
 
         VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
+
+        DeletionQueue frameDeletionQueue;
     };
 }

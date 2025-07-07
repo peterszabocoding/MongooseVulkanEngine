@@ -135,7 +135,6 @@ set(SOURCE_ONE_WEEKEND
         ./src/renderer/vulkan/pass/skybox_pass.cpp
 
         ./src/renderer/vulkan/pass/post_processing/ssao_pass.cpp
-        ./src/renderer/vulkan/pass/post_processing/tone_mapping_pass.cpp
 
         ./src/renderer/vulkan/lighting/irradiance_map_generator.cpp
         ./src/renderer/vulkan/lighting/reflection_probe_generator.cpp

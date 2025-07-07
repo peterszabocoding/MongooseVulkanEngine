@@ -4,6 +4,7 @@
 
 #include "vulkan_cube_map_texture.h"
 
+#include "vulkan_buffer.h"
 #include "renderer/bitmap.h"
 
 namespace Raytracing

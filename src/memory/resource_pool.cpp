@@ -1,13 +1,12 @@
 #include "resource_pool.h"
 
 #include <cstdlib>
-#include "util/core.h"
 
+#include "resource/resource.h"
+#include "util/core.h"
 
 namespace Raytracing
 {
-    static const uint32_t k_invalid_index = 0xffffffff;
-
     void ResourcePool::Init(uint32_t _poolSize, uint32_t _resourceSize)
     {
         poolSize = _poolSize;
@@ -51,7 +50,7 @@ namespace Raytracing
         }
 
         ASSERT(false, "Error: no more resources left");
-        return k_invalid_index;
+        return INVALID_RESOURCE_HANDLE;
     }
 
     void ResourcePool::ReleaseResource(uint32_t handle)
@@ -73,7 +72,7 @@ namespace Raytracing
 
     void* ResourcePool::AccessResource(uint32_t handle)
     {
-        if ( handle != k_invalid_index ) {
+        if ( handle != INVALID_RESOURCE_HANDLE ) {
             return &memory[handle * resourceSize];
         }
         return nullptr;
@@ -81,7 +80,7 @@ namespace Raytracing
 
     const void* ResourcePool::AccessResource(uint32_t handle) const
     {
-        if ( handle != k_invalid_index ) {
+        if ( handle != INVALID_RESOURCE_HANDLE ) {
             return &memory[handle * resourceSize];
         }
         return nullptr;

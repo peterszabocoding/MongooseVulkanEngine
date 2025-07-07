@@ -1,8 +1,9 @@
 #include "infinite_grid_pass.h"
 
+#include "util/log.h"
 #include "renderer/shader_cache.h"
 #include "renderer/vulkan/vulkan_pipeline.h"
-#include "util/log.h"
+#include "renderer/vulkan/vulkan_mesh.h"
 
 namespace Raytracing
 {

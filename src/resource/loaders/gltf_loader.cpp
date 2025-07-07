@@ -119,8 +119,8 @@ namespace Raytracing
                                                           : glm::vec3(0.0f)));
 
                     vert.tangent = normalize(glm::vec3(vAttributes[2].buffer
-                                                          ? glm::make_vec3(&vAttributes[2].buffer[v * vAttributes[2].byteStride])
-                                                          : glm::vec3(0.0f)));
+                                                           ? glm::make_vec3(&vAttributes[2].buffer[v * vAttributes[2].byteStride])
+                                                           : glm::vec3(0.0f)));
 
                     vert.bitangent = normalize(cross(vert.normal, vert.tangent));
 
@@ -191,7 +191,7 @@ namespace Raytracing
         }
 
         static std::vector<Ref<VulkanTexture>> LoadTextures(tinygltf::Model& model, VulkanDevice* device,
-                                                                 const std::filesystem::path& parentPath)
+                                                            const std::filesystem::path& parentPath)
         {
             std::vector<Ref<VulkanTexture>> textures;
             for (tinygltf::Texture& tex: model.textures)
@@ -203,8 +203,22 @@ namespace Raytracing
             return textures;
         }
 
+        static std::vector<TextureHandle> LoadTextures2(tinygltf::Model& model, VulkanDevice* device,
+                                                        const std::filesystem::path& parentPath)
+        {
+            std::vector<TextureHandle> textures;
+            for (tinygltf::Texture& tex: model.textures)
+            {
+                tinygltf::Image image = model.images[tex.source];
+                std::string imagePath = parentPath.string() + "/" + image.uri;
+                textures.push_back(ResourceManager::LoadTexture2(device, imagePath));
+            }
+            return textures;
+        }
+
         static std::vector<VulkanMaterial> LoadMaterials(const tinygltf::Model& model, VulkanDevice* device,
-                                                         const std::vector<Ref<VulkanTexture>>& textures)
+                                                         const std::vector<Ref<VulkanTexture>>& textures,
+                                                         const std::vector<TextureHandle>& textureHandles)
         {
             std::vector<VulkanMaterial> materials;
             for (const tinygltf::Material& material: model.materials)
@@ -212,14 +226,17 @@ namespace Raytracing
                 VulkanMaterialBuilder builder(device);
                 builder.SetDescriptorSetLayout(ShaderCache::descriptorSetLayouts.materialDescriptorSetLayout);
 
-                if (material.pbrMetallicRoughness.baseColorTexture.index >= 0)
-                    builder.SetBaseColorTexture(textures[material.pbrMetallicRoughness.baseColorTexture.index]);
+                builder.SetBaseColorTextureHandle(material.pbrMetallicRoughness.baseColorTexture.index >= 0
+                                                      ? textureHandles[material.pbrMetallicRoughness.baseColorTexture.index]
+                                                      : INVALID_TEXTURE_HANDLE);
 
-                if (material.pbrMetallicRoughness.metallicRoughnessTexture.index >= 0)
-                    builder.SetMetallicRoughnessTexture(textures[material.pbrMetallicRoughness.metallicRoughnessTexture.index]);
+                builder.SetMetallicRoughnessTextureHandle(material.pbrMetallicRoughness.metallicRoughnessTexture.index >= 0
+                                                              ? textureHandles[material.pbrMetallicRoughness.metallicRoughnessTexture.index]
+                                                              : INVALID_TEXTURE_HANDLE);
 
-                if (material.normalTexture.index >= 0)
-                    builder.SetNormalMapTexture(textures[material.normalTexture.index]);
+                builder.SetNormalMapTextureHandle(material.normalTexture.index >= 0
+                                                      ? textureHandles[material.normalTexture.index]
+                                                      : INVALID_TEXTURE_HANDLE);
 
                 builder.SetBaseColor(glm::make_vec4(material.pbrMetallicRoughness.baseColorFactor.data()));
                 builder.SetMetallic(material.pbrMetallicRoughness.metallicFactor);
@@ -260,7 +277,9 @@ namespace Raytracing
         ImageUtils::LoadGLTFNode(node, model, mesh);
 
         const std::vector<Ref<VulkanTexture>> textures = ImageUtils::LoadTextures(model, device, gltfFilePath.parent_path());
-        const std::vector<VulkanMaterial> materials = ImageUtils::LoadMaterials(model, device, textures);
+        const std::vector<TextureHandle> textureHandles = ImageUtils::LoadTextures2(model, device, gltfFilePath.parent_path());
+
+        const std::vector<VulkanMaterial> materials = ImageUtils::LoadMaterials(model, device, textures, textureHandles);
 
         mesh->SetMaterials(materials);
 
@@ -289,7 +308,9 @@ namespace Raytracing
         }
 
         const std::vector<Ref<VulkanTexture>> textures = ImageUtils::LoadTextures(model, device, gltfFilePath.parent_path());
-        const std::vector<VulkanMaterial> materials = ImageUtils::LoadMaterials(model, device, textures);
+        const std::vector<TextureHandle> textureHandles = ImageUtils::LoadTextures2(model, device, gltfFilePath.parent_path());
+
+        const std::vector<VulkanMaterial> materials = ImageUtils::LoadMaterials(model, device, textures, textureHandles);
         std::vector<Ref<VulkanMesh>> meshes;
         std::vector<Transform> transforms;
 
