@@ -19,6 +19,10 @@ namespace Raytracing
         float metallic = 0.0f;
         float roughness = 1.0f;
 
+        uint32_t baseColorTextureIndex = INVALID_RESOURCE_HANDLE;
+        uint32_t normalMapTextureIndex = INVALID_RESOURCE_HANDLE;
+        uint32_t metallicRoughnessTextureIndex = INVALID_RESOURCE_HANDLE;
+
         int useBaseColorMap = 0;
         int useNormalMap = 0;
         int useMetallicRoughnessMap = 0;
@@ -51,14 +55,9 @@ namespace Raytracing
         VulkanMaterialBuilder& SetMetallic(float metallic);
         VulkanMaterialBuilder& SetRoughness(float roughness);
 
-        VulkanMaterialBuilder& SetBaseColorPath(const std::string& baseColorPath);
-        VulkanMaterialBuilder& SetBaseColorTextureHandle(const TextureHandle& _handle);
-
-        VulkanMaterialBuilder& SetNormalMapPath(const std::string& normalMapPath);
-        VulkanMaterialBuilder& SetNormalMapTextureHandle(const TextureHandle& _handle);
-
-        VulkanMaterialBuilder& SetMetallicRoughnessPath(const std::string& metallicRoughnessPath);
-        VulkanMaterialBuilder& SetMetallicRoughnessTextureHandle(const TextureHandle& _handle);
+        VulkanMaterialBuilder& SetBaseColorTexture(const TextureHandle& _handle);
+        VulkanMaterialBuilder& SetNormalMapTexture(const TextureHandle& _handle);
+        VulkanMaterialBuilder& SetMetallicRoughnessTexture(const TextureHandle& _handle);
 
         VulkanMaterialBuilder& SetAlphaTested(bool _alphaTested);
 

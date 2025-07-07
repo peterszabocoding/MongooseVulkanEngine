@@ -1,6 +1,7 @@
 #version 450
 #extension GL_EXT_scalar_block_layout : require
 #extension GL_ARB_shading_language_include : require
+#extension GL_EXT_nonuniform_qualifier : require
 
 #include <shadow_mapping.glslh>
 #include <pbr_functions.glslh>
@@ -27,12 +28,18 @@ layout(location = 0) out vec4 finalImage;
 // UNIFORMS ---------------------------------------------------------
 // ------------------------------------------------------------------
 
+layout(set = 0, binding = 0) uniform sampler2D textures[];
+
 // Material uniforms
-layout(set = 0, binding = 0) uniform MaterialParams {
+layout(set = 1, binding = 0) uniform MaterialParams {
     vec4 tint;
     vec4 baseColor;
     float metallic;
     float roughness;
+
+    uint baseColorTextureIndex;
+    uint normalMapTextureIndex;
+    uint metallicRoughnessTextureIndex;
 
     bool useBaseColorMap;
     bool useNormalMap;
@@ -40,19 +47,19 @@ layout(set = 0, binding = 0) uniform MaterialParams {
     bool alphaTested;
 } materialParams;
 
-layout(set = 0, binding = 1) uniform sampler2D baseColorSampler;
-layout(set = 0, binding = 2) uniform sampler2D normalSampler;
-layout(set = 0, binding = 3) uniform sampler2D metallicRoughnessSampler;
+layout(set = 1, binding = 1) uniform sampler2D baseColorSampler;
+layout(set = 1, binding = 2) uniform sampler2D normalSampler;
+layout(set = 1, binding = 3) uniform sampler2D metallicRoughnessSampler;
 
 // Transform uniforms
-layout(set = 1, binding = 0) uniform Transforms {
+layout(set = 2, binding = 0) uniform Transforms {
     mat4 projection;
     mat4 view;
     vec3 cameraPosition;
 } transforms;
 
 // Light uniforms
-layout(std430, set = 2, binding = 0) uniform Lights {
+layout(std430, set = 3, binding = 0) uniform Lights {
     mat4[SHADOW_MAP_CASCADE_COUNT] lightProjection;
     vec4 color;
     vec3 direction;
@@ -61,17 +68,17 @@ layout(std430, set = 2, binding = 0) uniform Lights {
     float intensity;
     float bias;
 } lights;
-layout(set = 2, binding = 1)    uniform sampler2DArray shadowMap;
+layout(set = 3, binding = 1)    uniform sampler2DArray shadowMap;
 
 // Irradiance uniforms
-layout(set = 3, binding = 0)    uniform samplerCube irradianceMap;
+layout(set = 4, binding = 0)    uniform samplerCube irradianceMap;
 
 // Post Processing
-layout(set = 4, binding = 0)    uniform sampler2D SSAO;
+layout(set = 5, binding = 0)    uniform sampler2D SSAO;
 
 // Reflection uniforms
-layout(set = 5, binding = 0)    uniform samplerCube prefilterMap;
-layout(set = 5, binding = 1)    uniform sampler2D brdfLUT;
+layout(set = 6, binding = 0)    uniform samplerCube prefilterMap;
+layout(set = 6, binding = 1)    uniform sampler2D brdfLUT;
 
 // ------------------------------------------------------------------
 // VARIABLES --------------------------------------------------------
@@ -113,7 +120,7 @@ void main() {
     vec3 baseColor;
     if (materialParams.useBaseColorMap)
     {
-        vec4 baseColorSampled = texture(baseColorSampler, fragTexCoord);
+        vec4 baseColorSampled = texture(textures[materialParams.baseColorTextureIndex], fragTexCoord);
         if (baseColorSampled.a < 0.5) discard;
 
         baseColor = pow(baseColorSampled.rgb, vec3(2.2));
@@ -139,14 +146,14 @@ void main() {
 
     if (materialParams.useMetallicRoughnessMap)
     {
-        vec4 metallicRoughness = texture(metallicRoughnessSampler, fragTexCoord);
+        vec4 metallicRoughness = texture(textures[materialParams.metallicRoughnessTextureIndex], fragTexCoord);
 
         occlusion =  metallicRoughness.r;
         metallic =  metallicRoughness.b;
         roughness = metallicRoughness.g;
     }
 
-    vec3 normalMapColor = texture(normalSampler, fragTexCoord).rgb;
+    vec3 normalMapColor = texture(textures[materialParams.normalMapTextureIndex], fragTexCoord).rgb;
 
     N = materialParams.useNormalMap
     ? CalcSurfaceNormal(normalMapColor, TBN)

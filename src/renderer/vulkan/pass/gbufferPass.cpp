@@ -11,7 +11,8 @@
 
 namespace Raytracing
 {
-    GBufferPass::GBufferPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution): VulkanPass(vulkanDevice, _resolution), scene(_scene)
+    GBufferPass::GBufferPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution): VulkanPass(vulkanDevice, _resolution),
+        scene(_scene)
     {
         VulkanRenderPass::ColorAttachment colorAttachment;
         colorAttachment.imageFormat = VK_FORMAT_R32G32B32A32_SFLOAT;
@@ -19,7 +20,7 @@ namespace Raytracing
         renderPass = VulkanRenderPass::Builder(vulkanDevice)
                 .AddColorAttachment(colorAttachment)
                 .AddColorAttachment(colorAttachment)
-                .AddDepthAttachment()
+                .AddDepthAttachment(VK_FORMAT_D32_SFLOAT)
                 .Build();
         LoadPipelines();
 
@@ -57,6 +58,7 @@ namespace Raytracing
                 if (scene.meshes[i]->GetMaterial(meshlet).params.alphaTested) continue;
 
                 geometryDrawParams.descriptorSets = {
+                    device->bindlessTextureDescriptorSet,
                     scene.meshes[i]->GetMaterial(meshlet).descriptorSet,
                     ShaderCache::descriptorSets.transformDescriptorSet,
                 };
@@ -78,7 +80,7 @@ namespace Raytracing
 
     void GBufferPass::LoadPipelines()
     {
-        LOG_TRACE("Building geometry pipeline");
+        LOG_TRACE("Building gbuffer pipeline");
         PipelineConfig pipelineConfig; {
             pipelineConfig.vertexShaderPath = "gbuffer.vert";
             pipelineConfig.fragmentShaderPath = "gbuffer.frag";
@@ -88,6 +90,7 @@ namespace Raytracing
             pipelineConfig.frontFace = PipelineFrontFace::Counter_clockwise;
 
             pipelineConfig.descriptorSetLayouts = {
+                device->bindlessDescriptorSetLayout,
                 ShaderCache::descriptorSetLayouts.materialDescriptorSetLayout,
                 ShaderCache::descriptorSetLayouts.transformDescriptorSetLayout,
             };
@@ -99,7 +102,7 @@ namespace Raytracing
 
             pipelineConfig.disableBlending = true;
             pipelineConfig.enableDepthTest = true;
-            pipelineConfig.depthAttachment = ImageFormat::DEPTH24_STENCIL8;
+            pipelineConfig.depthAttachment = ImageFormat::DEPTH32;
 
             pipelineConfig.renderPass = renderPass;
 
@@ -117,14 +120,15 @@ namespace Raytracing
                 .SetResolution(resolution.width, resolution.height)
                 .AddAttachment(gBuffer->buffers.viewSpaceNormal.imageView)
                 .AddAttachment(gBuffer->buffers.viewSpacePosition.imageView)
-                .AddAttachment(gBuffer->buffers.depth.imageView).Build();
+                .AddAttachment(gBuffer->buffers.depth.imageView)
+                .Build();
     }
 
     void GBufferPass::BuildGBuffer()
     {
         gBuffer = VulkanGBuffer::Builder()
-                        .SetResolution(resolution.width, resolution.height)
-                        .Build(device);
+                .SetResolution(resolution.width, resolution.height)
+                .Build(device);
 
         VkDescriptorImageInfo worldSpaceNormalInfo{};
         worldSpaceNormalInfo.sampler = gBuffer->buffers.viewSpaceNormal.sampler;

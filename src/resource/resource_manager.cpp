@@ -28,7 +28,7 @@ namespace Raytracing
     {
         int width, height, channels;
         unsigned char* pixels = stbi_load(imagePath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
-        uint64_t size = width * height * 4;
+        const uint64_t size = width * height * 4;
 
         if (!pixels)
             throw std::runtime_error("Failed to load texture image.");
@@ -106,7 +106,7 @@ namespace Raytracing
         LOG_INFO("Load Texture: " + textureImagePath);
         ImageResource imageResource = LoadImageResource(textureImagePath);
 
-        uint32_t mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(imageResource.width, imageResource.height)))) + 1;
+        const uint32_t mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(imageResource.width, imageResource.height)))) + 1;
         Ref<VulkanTexture> texture = VulkanTexture::Builder()
                 .SetData(imageResource.data, imageResource.size)
                 .SetResolution(imageResource.width, imageResource.height)
@@ -128,7 +128,11 @@ namespace Raytracing
     TextureHandle ResourceManager::LoadTexture2(VulkanDevice* device, const std::string& textureImagePath)
     {
         LOG_INFO("Load Texture: " + textureImagePath);
-        return device->AllocateTexture(LoadImageResource(textureImagePath));
+        const ImageResource imageResource = LoadImageResource(textureImagePath);
+        const TextureHandle textureHandle = device->AllocateTexture(imageResource);
+        ReleaseImage(imageResource);
+
+        return textureHandle;
     }
 
     Ref<VulkanCubeMapTexture> ResourceManager::LoadHDRCubeMap(VulkanDevice* device, const std::string& hdrPath)
@@ -143,10 +147,10 @@ namespace Raytracing
                                                  &properties);
 
         LOG_INFO("Load HDR: " + hdrPath);
-        ImageResource imageResource = LoadHDRResource(hdrPath);
+        const ImageResource imageResource = LoadHDRResource(hdrPath);
 
-        Bitmap in(imageResource.width, imageResource.height, 4, eBitmapFormat_Float, imageResource.data);
-        Bitmap verticalCross = Bitmap::ConvertEquirectangularMapToVerticalCross(in);
+        const Bitmap in(imageResource.width, imageResource.height, 4, eBitmapFormat_Float, imageResource.data);
+        const Bitmap verticalCross = Bitmap::ConvertEquirectangularMapToVerticalCross(in);
         Bitmap cubeMapBitmap = Bitmap::ConvertVerticalCrossToCubeMapFaces(verticalCross);
 
         Ref<VulkanCubeMapTexture> cubemapTexture = VulkanCubeMapTexture::Builder()

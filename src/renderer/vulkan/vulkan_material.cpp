@@ -33,37 +33,19 @@ namespace Raytracing
         return *this;
     }
 
-    VulkanMaterialBuilder& VulkanMaterialBuilder::SetBaseColorPath(const std::string& _baseColorPath)
-    {
-        baseColorPath = _baseColorPath;
-        return *this;
-    }
-
-    VulkanMaterialBuilder& VulkanMaterialBuilder::SetBaseColorTextureHandle(const TextureHandle& _handle)
+    VulkanMaterialBuilder& VulkanMaterialBuilder::SetBaseColorTexture(const TextureHandle& _handle)
     {
         baseColorTextureHandle = _handle;
         return *this;
     }
 
-    VulkanMaterialBuilder& VulkanMaterialBuilder::SetNormalMapPath(const std::string& _normalMapPath)
-    {
-        normalMapPath = _normalMapPath;
-        return *this;
-    }
-
-    VulkanMaterialBuilder& VulkanMaterialBuilder::SetNormalMapTextureHandle(const TextureHandle& _handle)
+    VulkanMaterialBuilder& VulkanMaterialBuilder::SetNormalMapTexture(const TextureHandle& _handle)
     {
         normalMapTextureHandle = _handle;
         return *this;
     }
 
-    VulkanMaterialBuilder& VulkanMaterialBuilder::SetMetallicRoughnessPath(const std::string& _metallicRoughnessPath)
-    {
-        metallicRoughnessPath = _metallicRoughnessPath;
-        return *this;
-    }
-
-    VulkanMaterialBuilder& VulkanMaterialBuilder::SetMetallicRoughnessTextureHandle(const TextureHandle& _handle)
+    VulkanMaterialBuilder& VulkanMaterialBuilder::SetMetallicRoughnessTexture(const TextureHandle& _handle)
     {
         metallicRoughnessTextureHandle = _handle;
         return *this;
@@ -148,6 +130,10 @@ namespace Raytracing
         params.baseColor = baseColor;
         params.metallic = metallic;
         params.roughness = roughness;
+
+        params.baseColorTextureIndex = baseColorTextureHandle.handle;
+        params.normalMapTextureIndex = normalMapTextureHandle.handle;
+        params.metallicRoughnessTextureIndex = metallicRoughnessTextureHandle.handle;
 
         params.alphaTested = isAlphaTested;
 

@@ -9,7 +9,7 @@ namespace Raytracing
     RenderPass::RenderPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution): VulkanPass(vulkanDevice, _resolution), scene(_scene)
     {
         VulkanRenderPass::ColorAttachment colorAttachment;
-        colorAttachment.imageFormat = VK_FORMAT_R16G16B16A16_UNORM;
+        colorAttachment.imageFormat = VK_FORMAT_R16G16B16A16_SFLOAT;
         colorAttachment.loadOperation = VK_ATTACHMENT_LOAD_OP_LOAD;
 
         renderPass = VulkanRenderPass::Builder(vulkanDevice)
@@ -47,6 +47,7 @@ namespace Raytracing
             for (auto& meshlet: scene.meshes[i]->GetMeshlets())
             {
                 geometryDrawParams.descriptorSets = {
+                    device->bindlessTextureDescriptorSet,
                     scene.meshes[i]->GetMaterial(meshlet).descriptorSet,
                     ShaderCache::descriptorSets.transformDescriptorSet,
                     ShaderCache::descriptorSets.lightsDescriptorSet,
@@ -69,16 +70,17 @@ namespace Raytracing
 
     void RenderPass::LoadPipelines()
     {
-        LOG_TRACE("Building geometry pipeline");
-        PipelineConfig geometryPipelineConfig; {
-            geometryPipelineConfig.vertexShaderPath = "base-pass.vert";
-            geometryPipelineConfig.fragmentShaderPath = "lighting-pass.frag";
+        LOG_TRACE("Building lighting pipeline");
+        PipelineConfig pipelineConfig; {
+            pipelineConfig.vertexShaderPath = "base-pass.vert";
+            pipelineConfig.fragmentShaderPath = "lighting-pass.frag";
 
-            geometryPipelineConfig.cullMode = PipelineCullMode::Back;
-            geometryPipelineConfig.polygonMode = PipelinePolygonMode::Fill;
-            geometryPipelineConfig.frontFace = PipelineFrontFace::Counter_clockwise;
+            pipelineConfig.cullMode = PipelineCullMode::Back;
+            pipelineConfig.polygonMode = PipelinePolygonMode::Fill;
+            pipelineConfig.frontFace = PipelineFrontFace::Counter_clockwise;
 
-            geometryPipelineConfig.descriptorSetLayouts = {
+            pipelineConfig.descriptorSetLayouts = {
+                device->bindlessDescriptorSetLayout,
                 ShaderCache::descriptorSetLayouts.materialDescriptorSetLayout,
                 ShaderCache::descriptorSetLayouts.transformDescriptorSetLayout,
                 ShaderCache::descriptorSetLayouts.lightsDescriptorSetLayout,
@@ -87,20 +89,20 @@ namespace Raytracing
                 ShaderCache::descriptorSetLayouts.reflectionDescriptorSetLayout,
             };
 
-            geometryPipelineConfig.colorAttachments = {
+            pipelineConfig.colorAttachments = {
                 ImageFormat::RGBA16_SFLOAT,
             };
 
-            geometryPipelineConfig.disableBlending = true;
-            geometryPipelineConfig.enableDepthTest = true;
-            geometryPipelineConfig.depthAttachment = ImageFormat::DEPTH24_STENCIL8;
+            pipelineConfig.disableBlending = true;
+            pipelineConfig.enableDepthTest = true;
+            pipelineConfig.depthAttachment = ImageFormat::DEPTH24_STENCIL8;
 
-            geometryPipelineConfig.renderPass = renderPass;
+            pipelineConfig.renderPass = renderPass;
 
-            geometryPipelineConfig.pushConstantData.shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-            geometryPipelineConfig.pushConstantData.offset = 0;
-            geometryPipelineConfig.pushConstantData.size = sizeof(SimplePushConstantData);
+            pipelineConfig.pushConstantData.shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+            pipelineConfig.pushConstantData.offset = 0;
+            pipelineConfig.pushConstantData.size = sizeof(SimplePushConstantData);
         }
-        geometryPipeline = VulkanPipeline::Builder().Build(device, geometryPipelineConfig);
+        geometryPipeline = VulkanPipeline::Builder().Build(device, pipelineConfig);
     }
 }

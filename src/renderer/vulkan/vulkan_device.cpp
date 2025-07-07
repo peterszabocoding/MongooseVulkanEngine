@@ -91,6 +91,8 @@ namespace Raytracing
             return;
         }
 
+        frameDeletionQueue.Flush();
+
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
@@ -153,7 +155,7 @@ namespace Raytracing
         {
             device_extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
             //validation_layer_list.push_back("VK_LAYER_LUNARG_crash_diagnostic");
-            //validation_layer_list.push_back("VK_LAYER_KHRONOS_validation");
+            validation_layer_list.push_back("VK_LAYER_KHRONOS_validation");
             //validation_layer_list.push_back("VK_LAYER_LUNARG_api_dump");
         }
 
@@ -288,7 +290,37 @@ namespace Raytracing
                 .SetMipLevels(mipLevels)
                 .Build(this, *texture);
 
-        return {texture->poolIndex};
+        UpdateTexture({texture->index});
+
+        return {texture->index};
+    }
+
+    void VulkanDevice::UpdateTexture(TextureHandle textureHandle)
+    {
+        VulkanTexture* texture = texturePool.Get(textureHandle.handle);
+        VulkanDescriptorWriter descriptorWriter = VulkanDescriptorWriter(*bindlessDescriptorSetLayout, *bindlessDescriptorPool);
+
+        VkDescriptorImageInfo imageInfo{};
+        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imageInfo.imageView = texture->GetImageView();
+        imageInfo.sampler = texture->GetSampler();
+
+        descriptorWriter.WriteImage(0, &imageInfo, texture->index);
+        descriptorWriter.BuildOrOverwrite(bindlessTextureDescriptorSet);
+    }
+
+    void VulkanDevice::FreeTexture(TextureHandle textureHandle)
+    {
+        frameDeletionQueue.Push([&] {
+            VulkanTexture* texture = texturePool.Get(textureHandle.handle);
+
+            vkDestroySampler(device, texture->sampler, nullptr);
+
+            for (size_t i = 0; i < texture->imageViews.size(); i++)
+                vkDestroyImageView(device, texture->imageViews[i], nullptr);
+
+            vmaDestroyImage(vmaAllocator, texture->allocatedImage.image, texture->allocatedImage.allocation);
+        });
     }
 
     void VulkanDevice::ImmediateSubmit(std::function<void(VkCommandBuffer commandBuffer)>&& function) const
@@ -543,12 +575,14 @@ namespace Raytracing
         globalUniformPool = VulkanDescriptorPool::Builder(this)
                 .SetMaxSets(MAX_FRAMES_IN_FLIGHT)
                 .AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, MAX_FRAMES_IN_FLIGHT)
+                .SetPoolFlags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT | VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT)
                 .Build();
 
         shaderDescriptorPool = VulkanDescriptorPool::Builder(this)
                 .SetMaxSets(100)
                 .AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 100)
                 .AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100)
+                .SetPoolFlags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT | VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT)
                 .Build();
 
         imguiDescriptorPool = VulkanDescriptorPool::Builder(this)
@@ -558,11 +592,11 @@ namespace Raytracing
                 .Build();
 
         bindlessDescriptorPool = VulkanDescriptorPool::Builder(this)
-        .SetMaxSets(2 * MAX_BINDLESS_RESOURCES)
-        .AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, MAX_BINDLESS_RESOURCES)
-        .AddPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, MAX_BINDLESS_RESOURCES)
-        .SetPoolFlags(VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT)
-        .Build();
+                .SetMaxSets(2 * MAX_BINDLESS_RESOURCES)
+                .AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, MAX_BINDLESS_RESOURCES)
+                .AddPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, MAX_BINDLESS_RESOURCES)
+                .SetPoolFlags(VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT)
+                .Build();
 
         // Bindless Textures
         bindlessDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(this)

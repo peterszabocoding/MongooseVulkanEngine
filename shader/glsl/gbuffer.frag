@@ -2,6 +2,8 @@
 
 #extension GL_EXT_scalar_block_layout : require
 #extension GL_ARB_shading_language_include : require
+#extension GL_EXT_nonuniform_qualifier : require
+
 
 #include <shadow_mapping.glslh>
 #include <pbr_functions.glslh>
@@ -27,13 +29,19 @@ layout(location = 1)            out vec4 outWorldPosition;
 // UNIFORMS ---------------------------------------------------------
 // ------------------------------------------------------------------
 
+layout(set = 0, binding = 0) uniform sampler2D textures[];
+
 // Material uniforms
-layout(set = 0, binding = 0) uniform MaterialParams {
+layout(set = 1, binding = 0) uniform MaterialParams {
     vec4 tint;
     vec4 baseColor;
 
     float metallic;
     float roughness;
+
+    uint baseColorTextureIndex;
+    uint normalMapTextureIndex;
+    uint metallicRoughnessTextureIndex;
 
     bool useBaseColorMap;
     bool useNormalMap;
@@ -41,9 +49,8 @@ layout(set = 0, binding = 0) uniform MaterialParams {
     bool alphaTested;
 } materialParams;
 
-layout(set = 0, binding = 1) uniform sampler2D baseColorSampler;
-layout(set = 0, binding = 2) uniform sampler2D normalSampler;
-layout(set = 0, binding = 3) uniform sampler2D metallicRoughnessSampler;
+layout(set = 1, binding = 1) uniform sampler2D baseColorSampler;
+layout(set = 1, binding = 2) uniform sampler2D normalSampler;
 
 vec3 CalcSurfaceNormal(vec3 normalFromTexture, mat3 TBN)
 {
@@ -55,10 +62,10 @@ vec3 CalcSurfaceNormal(vec3 normalFromTexture, mat3 TBN)
 }
 
 void main() {
-    vec4 baseColorSampled = texture(baseColorSampler, fragTexCoord);
+    vec4 baseColorSampled = texture(textures[materialParams.baseColorTextureIndex], fragTexCoord);
     vec3 baseColor = materialParams.useBaseColorMap ? pow(baseColorSampled.rgb, vec3(2.2)) : materialParams.baseColor.rgb;
 
-    vec3 normalMapColor = texture(normalSampler, fragTexCoord).rgb;
+    vec3 normalMapColor = texture(textures[materialParams.normalMapTextureIndex], fragTexCoord).rgb;
     vec3 N = materialParams.useNormalMap ? CalcSurfaceNormal(normalMapColor, TBN) : fragNormal;
 
     /////////////////   GBuffer   ////////////////////////

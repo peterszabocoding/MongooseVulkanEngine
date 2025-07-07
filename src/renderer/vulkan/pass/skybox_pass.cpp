@@ -10,7 +10,7 @@ namespace Raytracing
     SkyboxPass::SkyboxPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution): VulkanPass(vulkanDevice, _resolution), scene(_scene)
     {
         VulkanRenderPass::ColorAttachment colorAttachment;
-        colorAttachment.imageFormat = VK_FORMAT_R8G8B8A8_UNORM;
+        colorAttachment.imageFormat = VK_FORMAT_R16G16B16A16_UNORM;
 
         renderPass = VulkanRenderPass::Builder(vulkanDevice)
                 .AddColorAttachment(colorAttachment)
@@ -62,7 +62,7 @@ namespace Raytracing
             };
 
             skyboxPipelineConfig.colorAttachments = {
-                ImageFormat::RGBA8_UNORM,
+                ImageFormat::RGBA16_SFLOAT,
             };
 
             skyboxPipelineConfig.disableBlending = true;

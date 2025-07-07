@@ -1,6 +1,5 @@
 #pragma once
 #include "util/core.h"
-#include "vulkan/vulkan_buffer.h"
 #include "vulkan/vulkan_descriptor_set_layout.h"
 #include "vulkan/vulkan_pipeline.h"
 

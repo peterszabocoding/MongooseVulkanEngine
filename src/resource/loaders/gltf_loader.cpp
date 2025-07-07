@@ -226,15 +226,15 @@ namespace Raytracing
                 VulkanMaterialBuilder builder(device);
                 builder.SetDescriptorSetLayout(ShaderCache::descriptorSetLayouts.materialDescriptorSetLayout);
 
-                builder.SetBaseColorTextureHandle(material.pbrMetallicRoughness.baseColorTexture.index >= 0
+                builder.SetBaseColorTexture(material.pbrMetallicRoughness.baseColorTexture.index >= 0
                                                       ? textureHandles[material.pbrMetallicRoughness.baseColorTexture.index]
                                                       : INVALID_TEXTURE_HANDLE);
 
-                builder.SetMetallicRoughnessTextureHandle(material.pbrMetallicRoughness.metallicRoughnessTexture.index >= 0
+                builder.SetMetallicRoughnessTexture(material.pbrMetallicRoughness.metallicRoughnessTexture.index >= 0
                                                               ? textureHandles[material.pbrMetallicRoughness.metallicRoughnessTexture.index]
                                                               : INVALID_TEXTURE_HANDLE);
 
-                builder.SetNormalMapTextureHandle(material.normalTexture.index >= 0
+                builder.SetNormalMapTexture(material.normalTexture.index >= 0
                                                       ? textureHandles[material.normalTexture.index]
                                                       : INVALID_TEXTURE_HANDLE);
 

@@ -96,11 +96,11 @@ namespace Raytracing
         [[nodiscard]] VkCommandPool GetCommandPool() const { return commandPool; }
         [[nodiscard]] VkPhysicalDeviceProperties GetDeviceProperties() const { return physicalDeviceProperties; }
 
-        VkSampleCountFlagBits GetMaxMSAASampleCount() const;
-
         void SetViewportAndScissor(VkExtent2D extent, VkCommandBuffer commandBuffer) const;
 
         TextureHandle AllocateTexture(ImageResource imageResource);
+        void UpdateTexture(TextureHandle textureHandle);
+        void FreeTexture(TextureHandle textureHandle);
 
     public:
         [[nodiscard]] inline VkPhysicalDevice PickPhysicalDevice() const;
@@ -122,13 +122,14 @@ namespace Raytracing
         VkResult SetupNextFrame(VkSwapchainKHR swapchain);
         void SetViewportAndScissor(VkExtent2D extent2D) const;
 
-
         VkResult SubmitDrawCommands(VkSemaphore* signalSemaphores) const;
         VkResult PresentFrame(VkSwapchainKHR swapchain, uint32_t imageIndex, const VkSemaphore* signalSemaphores) const;
 
     public:
         uint32_t currentFrame = 0;
         ObjectResourcePool<VulkanTexture> texturePool;
+        VkDescriptorSet bindlessTextureDescriptorSet{};
+        Ref<VulkanDescriptorSetLayout> bindlessDescriptorSetLayout;
 
     private:
         int viewportWidth{}, viewportHeight{};
@@ -160,8 +161,6 @@ namespace Raytracing
         Scope<VulkanDescriptorPool> imguiDescriptorPool{};
 
         Scope<VulkanDescriptorPool> bindlessDescriptorPool{};
-        Ref<VulkanDescriptorSetLayout> bindlessDescriptorSetLayout;
-        VkDescriptorSet bindlessTextureDescriptorSet{};
 
         ObjectResourcePool<VulkanDescriptorSetLayout> descriptorSetLayoutPool{};
 

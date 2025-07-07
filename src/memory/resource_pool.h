@@ -7,7 +7,7 @@ namespace Raytracing
 {
     class PoolObject {
     public:
-        uint32_t poolIndex;
+        uint32_t index;
     };
 
     class ResourcePool {
@@ -73,7 +73,7 @@ namespace Raytracing
         if (resource_index != UINT32_MAX)
         {
             T* resource = Get(resource_index);
-            resource->poolIndex = resource_index;
+            resource->index = resource_index;
             return resource;
         }
 
@@ -83,7 +83,7 @@ namespace Raytracing
     template<typename T>
     void ObjectResourcePool<T>::Release(T* resource)
     {
-        ResourcePool::ReleaseResource(resource->poolIndex);
+        ResourcePool::ReleaseResource(resource->index);
     }
 
     template<typename T>

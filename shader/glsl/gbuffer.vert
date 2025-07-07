@@ -6,7 +6,7 @@ layout(push_constant) uniform Push {
     mat4 modelMatrix;
 } push;
 
-layout(set = 1, binding = 0) uniform Transforms {
+layout(set = 2, binding = 0) uniform Transforms {
     mat4 projection;
     mat4 view;
     vec3 cameraPosition;

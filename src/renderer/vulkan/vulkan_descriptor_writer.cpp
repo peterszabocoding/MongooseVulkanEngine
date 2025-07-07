@@ -11,7 +11,7 @@ namespace Raytracing
         : setLayout{setLayout}, pool{pool} {}
 
     VulkanDescriptorWriter& VulkanDescriptorWriter::WriteBuffer(
-        uint32_t binding, VkDescriptorBufferInfo* bufferInfo)
+        const uint32_t binding, VkDescriptorBufferInfo* bufferInfo)
     {
         ASSERT(setLayout.bindings.count(binding) == 1, "Layout does not contain specified binding");
 
@@ -32,16 +32,15 @@ namespace Raytracing
         return *this;
     }
 
-    VulkanDescriptorWriter& VulkanDescriptorWriter::WriteImage(
-        uint32_t binding, VkDescriptorImageInfo* imageInfo)
+    VulkanDescriptorWriter& VulkanDescriptorWriter::WriteImage(const uint32_t binding,
+                                                               const VkDescriptorImageInfo* imageInfo,
+                                                               const uint32_t arrayIndex)
     {
         ASSERT(setLayout.bindings.count(binding) == 1, "Layout does not contain specified binding");
 
         auto& bindingDescription = setLayout.bindings[binding];
 
-        ASSERT(
-            bindingDescription.descriptorCount == 1,
-            "Binding single descriptor info, but binding expects multiple");
+        //ASSERT(bindingDescription.descriptorCount == 1, "Binding single descriptor info, but binding expects multiple");
 
         VkWriteDescriptorSet write{};
         write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -49,6 +48,7 @@ namespace Raytracing
         write.dstBinding = binding;
         write.pImageInfo = imageInfo;
         write.descriptorCount = 1;
+        write.dstArrayElement = arrayIndex;
 
         writes.push_back(write);
         return *this;
