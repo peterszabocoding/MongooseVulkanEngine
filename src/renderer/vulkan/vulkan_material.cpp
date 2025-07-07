@@ -85,45 +85,6 @@ namespace Raytracing
         auto descriptorWriter = VulkanDescriptorWriter(*descriptorSetLayout, vulkanDevice->GetShaderDescriptorPool());
         descriptorWriter.WriteBuffer(0, &bufferInfo);
 
-        if (baseColorTextureHandle != INVALID_TEXTURE_HANDLE)
-        {
-            params.useBaseColorMap = 1;
-            const VulkanTexture* texture = vulkanDevice->texturePool.Get(baseColorTextureHandle.handle);
-
-            VkDescriptorImageInfo baseColorImageInfo{};
-            baseColorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            baseColorImageInfo.imageView = texture->GetImageView();
-            baseColorImageInfo.sampler = texture->GetSampler();
-
-            descriptorWriter.WriteImage(1, &baseColorImageInfo);
-        }
-
-        if (normalMapTextureHandle != INVALID_TEXTURE_HANDLE)
-        {
-            params.useNormalMap = 1;
-            const VulkanTexture* texture = vulkanDevice->texturePool.Get(normalMapTextureHandle.handle);
-
-            VkDescriptorImageInfo normalMapImageInfo{};
-            normalMapImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            normalMapImageInfo.imageView = texture->GetImageView();
-            normalMapImageInfo.sampler = texture->GetSampler();
-
-            descriptorWriter.WriteImage(2, &normalMapImageInfo);
-        }
-
-        if (metallicRoughnessTextureHandle != INVALID_TEXTURE_HANDLE)
-        {
-            params.useMetallicRoughnessMap = 1;
-            const VulkanTexture* texture = vulkanDevice->texturePool.Get(metallicRoughnessTextureHandle.handle);
-
-            VkDescriptorImageInfo metallicRoughnessImageInfo{};
-            metallicRoughnessImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            metallicRoughnessImageInfo.imageView = texture->GetImageView();
-            metallicRoughnessImageInfo.sampler = texture->GetSampler();
-
-            descriptorWriter.WriteImage(3, &metallicRoughnessImageInfo);
-        }
-
         VkDescriptorSet descriptorSet;
         descriptorWriter.Build(descriptorSet);
 
@@ -139,10 +100,6 @@ namespace Raytracing
 
         VulkanMaterial material;
         material.index = 0;
-
-        material.baseColorTextureHandle = baseColorTextureHandle;
-        material.normalMapTextureHandle = normalMapTextureHandle;
-        material.metallicRoughnessTextureHandle = metallicRoughnessTextureHandle;
 
         material.params = params;
         material.descriptorSet = descriptorSet;

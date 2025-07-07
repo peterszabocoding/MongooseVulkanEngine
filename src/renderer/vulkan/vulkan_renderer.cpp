@@ -33,9 +33,9 @@ namespace Raytracing
         screenRect = CreateScope<VulkanMeshlet>(device.get(), Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
 
         LOG_TRACE("Load scene");
-        //scene = ResourceManager::LoadScene(device.get(), "resources/sponza/Sponza.gltf", "resources/environment/etzwihl_4k.hdr");
+        scene = ResourceManager::LoadScene(device.get(), "resources/sponza/Sponza.gltf", "resources/environment/etzwihl_4k.hdr");
         //scene = ResourceManager::LoadScene(device.get(), "resources/PBRCheck/pbr_check.gltf", "resources/environment/etzwihl_4k.hdr");
-        scene = ResourceManager::LoadScene(device.get(), "resources/cannon/cannon.gltf", "resources/environment/etzwihl_4k.hdr");
+        //scene = ResourceManager::LoadScene(device.get(), "resources/cannon/cannon.gltf", "resources/environment/etzwihl_4k.hdr");
         //scene = ResourceManager::LoadScene(device.get(), "resources/MetalRoughSpheres/MetalRoughSpheres.gltf", "resources/environment/etzwihl_4k.hdr");
         //scene = ResourceManager::LoadScene(device.get(), "resources/gltf/multiple_spheres.gltf", "resources/environment/etzwihl_4k.hdr");
         //scene = ResourceManager::LoadScene(device.get(), "resources/chess/ABeautifulGame.gltf", "resources/environment/etzwihl_4k.hdr");

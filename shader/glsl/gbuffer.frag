@@ -8,6 +8,8 @@
 #include <shadow_mapping.glslh>
 #include <pbr_functions.glslh>
 
+#define INVALID_TEXTURE_INDEX 65535
+
 // ------------------------------------------------------------------
 // INPUT VARIABLES --------------------------------------------------
 // ------------------------------------------------------------------
@@ -43,14 +45,8 @@ layout(set = 1, binding = 0) uniform MaterialParams {
     uint normalMapTextureIndex;
     uint metallicRoughnessTextureIndex;
 
-    bool useBaseColorMap;
-    bool useNormalMap;
-    bool useMetallicRoughnessMap;
     bool alphaTested;
 } materialParams;
-
-layout(set = 1, binding = 1) uniform sampler2D baseColorSampler;
-layout(set = 1, binding = 2) uniform sampler2D normalSampler;
 
 vec3 CalcSurfaceNormal(vec3 normalFromTexture, mat3 TBN)
 {
@@ -63,10 +59,10 @@ vec3 CalcSurfaceNormal(vec3 normalFromTexture, mat3 TBN)
 
 void main() {
     vec4 baseColorSampled = texture(textures[materialParams.baseColorTextureIndex], fragTexCoord);
-    vec3 baseColor = materialParams.useBaseColorMap ? pow(baseColorSampled.rgb, vec3(2.2)) : materialParams.baseColor.rgb;
+    vec3 baseColor = materialParams.baseColorTextureIndex < INVALID_TEXTURE_INDEX ? pow(baseColorSampled.rgb, vec3(2.2)) : materialParams.baseColor.rgb;
 
     vec3 normalMapColor = texture(textures[materialParams.normalMapTextureIndex], fragTexCoord).rgb;
-    vec3 N = materialParams.useNormalMap ? CalcSurfaceNormal(normalMapColor, TBN) : fragNormal;
+    vec3 N = materialParams.normalMapTextureIndex < INVALID_TEXTURE_INDEX ? CalcSurfaceNormal(normalMapColor, TBN) : fragNormal;
 
     /////////////////   GBuffer   ////////////////////////
     normalImage = vec4(N, 1.0);

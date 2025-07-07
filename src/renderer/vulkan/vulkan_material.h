@@ -23,18 +23,11 @@ namespace Raytracing
         uint32_t normalMapTextureIndex = INVALID_RESOURCE_HANDLE;
         uint32_t metallicRoughnessTextureIndex = INVALID_RESOURCE_HANDLE;
 
-        int useBaseColorMap = 0;
-        int useNormalMap = 0;
-        int useMetallicRoughnessMap = 0;
         int alphaTested = 0;
     };
 
     struct VulkanMaterial {
         int index = 0;
-
-        TextureHandle baseColorTextureHandle = INVALID_TEXTURE_HANDLE;
-        TextureHandle normalMapTextureHandle = INVALID_TEXTURE_HANDLE;
-        TextureHandle metallicRoughnessTextureHandle = INVALID_TEXTURE_HANDLE;
 
         MaterialParams params;
         VkDescriptorSet descriptorSet;

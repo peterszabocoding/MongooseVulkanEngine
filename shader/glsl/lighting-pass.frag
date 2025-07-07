@@ -6,6 +6,8 @@
 #include <shadow_mapping.glslh>
 #include <pbr_functions.glslh>
 
+#define INVALID_TEXTURE_INDEX 65535
+
 // ------------------------------------------------------------------
 // INPUT VARIABLES --------------------------------------------------
 // ------------------------------------------------------------------
@@ -41,15 +43,8 @@ layout(set = 1, binding = 0) uniform MaterialParams {
     uint normalMapTextureIndex;
     uint metallicRoughnessTextureIndex;
 
-    bool useBaseColorMap;
-    bool useNormalMap;
-    bool useMetallicRoughnessMap;
     bool alphaTested;
 } materialParams;
-
-layout(set = 1, binding = 1) uniform sampler2D baseColorSampler;
-layout(set = 1, binding = 2) uniform sampler2D normalSampler;
-layout(set = 1, binding = 3) uniform sampler2D metallicRoughnessSampler;
 
 // Transform uniforms
 layout(set = 2, binding = 0) uniform Transforms {
@@ -118,7 +113,7 @@ vec3 CalcDirectionalLightRadiance(vec3 direction, vec4 shadowMapCoord, int casca
 
 void main() {
     vec3 baseColor;
-    if (materialParams.useBaseColorMap)
+    if (materialParams.baseColorTextureIndex < INVALID_TEXTURE_INDEX)
     {
         vec4 baseColorSampled = texture(textures[materialParams.baseColorTextureIndex], fragTexCoord);
         if (baseColorSampled.a < 0.5) discard;
@@ -144,7 +139,7 @@ void main() {
     float roughness = materialParams.roughness;
     float occlusion = 1.0;
 
-    if (materialParams.useMetallicRoughnessMap)
+    if (materialParams.metallicRoughnessTextureIndex < INVALID_TEXTURE_INDEX)
     {
         vec4 metallicRoughness = texture(textures[materialParams.metallicRoughnessTextureIndex], fragTexCoord);
 
@@ -155,9 +150,9 @@ void main() {
 
     vec3 normalMapColor = texture(textures[materialParams.normalMapTextureIndex], fragTexCoord).rgb;
 
-    N = materialParams.useNormalMap
-    ? CalcSurfaceNormal(normalMapColor, TBN)
-    : fragNormal;
+    N = materialParams.normalMapTextureIndex < INVALID_TEXTURE_INDEX
+        ? CalcSurfaceNormal(normalMapColor, TBN)
+        : fragNormal;
     V = normalize(transforms.cameraPosition - inWorldPosition.xyz);
 
     vec3 lightPosition = vec3(0.0);
