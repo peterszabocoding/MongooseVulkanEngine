@@ -170,7 +170,7 @@ namespace Raytracing {
     }
 
     void ReflectionProbeGenerator::GenerateBrdfLUT() {
-        brdfLUT = VulkanTexture::Builder()
+        brdfLUT = VulkanTextureBuilder()
                 .SetResolution(512, 512)
                 .SetFormat(ImageFormat::RGBA16_SFLOAT)
                 .AddAspectFlag(VK_IMAGE_ASPECT_COLOR_BIT)

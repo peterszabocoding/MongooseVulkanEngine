@@ -107,7 +107,7 @@ namespace Raytracing
         ImageResource imageResource = LoadImageResource(textureImagePath);
 
         const uint32_t mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(imageResource.width, imageResource.height)))) + 1;
-        Ref<VulkanTexture> texture = VulkanTexture::Builder()
+        Ref<VulkanTexture> texture = VulkanTextureBuilder()
                 .SetData(imageResource.data, imageResource.size)
                 .SetResolution(imageResource.width, imageResource.height)
                 .SetFormat(imageResource.format)

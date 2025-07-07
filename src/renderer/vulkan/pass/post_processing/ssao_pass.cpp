@@ -144,7 +144,7 @@ namespace Raytracing
             ssaoNoiseData[i] = glm::vec4(randomFloats(generator) * 2.0f - 1.0f, randomFloats(generator) * 2.0f - 1.0f, 0.0f, 1.0f);
         }
 
-        ssaoNoiseTexture = VulkanTexture::Builder()
+        ssaoNoiseTexture = VulkanTextureBuilder()
                 .SetResolution(4, 4)
                 .SetFormat(ImageFormat::RGBA32_SFLOAT)
                 .AddUsage(VK_IMAGE_USAGE_TRANSFER_DST_BIT)

@@ -7,7 +7,7 @@
 
 namespace Raytracing
 {
-    Ref<VulkanTexture> VulkanTexture::Builder::Build(VulkanDevice* device)
+    Ref<VulkanTexture> VulkanTextureBuilder::Build(VulkanDevice* device)
     {
         allocatedImage = ImageBuilder(device)
                 .SetFormat(format)
@@ -88,10 +88,10 @@ namespace Raytracing
         imageResource.format = format;
         imageResource.width = width;
         imageResource.height = height;
-        return CreateRef<VulkanTexture>(device, allocatedImage, imageViews, sampler, imageMemory, imageResource);
+        return CreateRef<VulkanTexture>(allocatedImage, imageViews, sampler, imageMemory, imageResource);
     }
 
-    void VulkanTexture::Builder::Build(VulkanDevice* device, VulkanTexture& texture)
+    void VulkanTextureBuilder::Build(VulkanDevice* device, VulkanTexture& texture)
     {
         allocatedImage = ImageBuilder(device)
                 .SetFormat(format)
@@ -173,7 +173,6 @@ namespace Raytracing
         imageResource.width = width;
         imageResource.height = height;
 
-        texture.device = device;
         texture.sampler = sampler;
         texture.imageViews = imageViews;
         texture.imageMemory = imageMemory;
@@ -181,13 +180,4 @@ namespace Raytracing
         texture.allocatedImage = allocatedImage;
     }
 
-    VulkanTexture::~VulkanTexture()
-    {
-        vkDestroySampler(device->GetDevice(), sampler, nullptr);
-        for (size_t i = 0; i < imageViews.size(); i++)
-        {
-            vkDestroyImageView(device->GetDevice(), imageViews[i], nullptr);
-        }
-        vmaDestroyImage(device->GetVmaAllocator(), allocatedImage.image, allocatedImage.allocation);
-    }
 }
