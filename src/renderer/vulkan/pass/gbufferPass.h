@@ -1,5 +1,6 @@
 #pragma once
 #include "vulkan_pass.h"
+#include "renderer/render_graph.h"
 #include "renderer/scene.h"
 #include "renderer/vulkan/vulkan_gbuffer.h"
 
@@ -19,6 +20,8 @@ namespace Raytracing
         void Resize(VkExtent2D _resolution) override;
 
         Ref<VulkanRenderPass> GetRenderPass() { return renderPass; }
+
+        void ExecuteWithRenderGraph(VkCommandBuffer cmd, const std::unordered_map<std::string, RenderResource*>& resources);
 
     private:
         void LoadPipelines();

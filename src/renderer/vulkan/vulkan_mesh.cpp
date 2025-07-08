@@ -3,9 +3,10 @@
 
 namespace Raytracing
 {
-    VulkanMeshlet::VulkanMeshlet(VulkanDevice* vulkanDevice, const std::vector<Vertex>& _vertices, const std::vector<uint32_t>& _indices,
+    VulkanMeshlet::VulkanMeshlet(VulkanDevice* _vulkanDevice, const std::vector<Vertex>& _vertices, const std::vector<uint32_t>& _indices,
                                  int _materialIndex)
     {
+        vulkanDevice = _vulkanDevice;
         vertices = _vertices;
         indices = _indices;
         materialIndex = _materialIndex;
@@ -16,68 +17,66 @@ namespace Raytracing
 
     void VulkanMeshlet::Bind(VkCommandBuffer commandBuffer) const
     {
-        const VkBuffer buffers[] = {vertexBuffer->GetBuffer()};
+        const VkBuffer buffers[] = {vertexBuffer.buffer};
         const VkDeviceSize offsets[] = {0};
 
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
-        vkCmdBindIndexBuffer(commandBuffer, indexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
+        vkCmdBindIndexBuffer(commandBuffer, indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
     }
 
     void VulkanMeshlet::CreateVertexBuffer(VulkanDevice* vulkanDevice)
     {
         assert(vertices.size() >= 3 && "Vertex count must be at least 3");
 
-        auto bufferSize = sizeof(vertices[0]) * vertices.size();
-
-        auto stagingBuffer = VulkanBuffer(
-            vulkanDevice,
+        const auto bufferSize = sizeof(vertices[0]) * vertices.size();
+        const auto stagingBuffer = vulkanDevice->AllocateBuffer(
             bufferSize,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
             VMA_MEMORY_USAGE_CPU_ONLY);
 
-        memcpy(stagingBuffer.GetMappedData(), vertices.data(), bufferSize);
+        memcpy(stagingBuffer.GetData(), vertices.data(), bufferSize);
 
-        VkBufferUsageFlags vertexBufferUsageBits =
-                VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
-                VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+        vertexBuffer = vulkanDevice->AllocateBuffer(
+            stagingBuffer.GetBufferSize(),
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+            VMA_MEMORY_USAGE_GPU_ONLY);
 
-        vertexBuffer = CreateRef<VulkanBuffer>(vulkanDevice,
-                                               stagingBuffer.GetBufferSize(),
-                                               vertexBufferUsageBits,
-                                               VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                               VMA_MEMORY_USAGE_GPU_ONLY);
-
-        VulkanBuffer::CopyBuffer(vulkanDevice, &stagingBuffer, vertexBuffer.get());
+        vulkanDevice->CopyBuffer(stagingBuffer, vertexBuffer);
+        vulkanDevice->FreeBuffer(stagingBuffer);
     }
 
     void VulkanMeshlet::CreateIndexBuffer(VulkanDevice* vulkanDevice)
     {
-        auto bufferSize = sizeof(indices[0]) * indices.size();
-        auto stagingBuffer = VulkanBuffer(
-            vulkanDevice,
+        const auto bufferSize = sizeof(indices[0]) * indices.size();
+        const auto stagingBuffer = vulkanDevice->AllocateBuffer(
             bufferSize,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
             VMA_MEMORY_USAGE_CPU_ONLY);
 
-        memcpy(stagingBuffer.GetMappedData(), indices.data(), bufferSize);
+        memcpy(stagingBuffer.GetData(), indices.data(), bufferSize);
 
-        VkBufferUsageFlags indexBufferUsageBits =
-                VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
-                VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+        indexBuffer = vulkanDevice->AllocateBuffer(
+            stagingBuffer.GetBufferSize(),
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+            VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
+            VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+            VMA_MEMORY_USAGE_GPU_ONLY);
 
-        indexBuffer = CreateRef<VulkanBuffer>(vulkanDevice,
-                                              stagingBuffer.GetBufferSize(),
-                                              indexBufferUsageBits,
-                                              VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                              VMA_MEMORY_USAGE_GPU_ONLY);
+        vulkanDevice->CopyBuffer(stagingBuffer, indexBuffer);
+        vulkanDevice->FreeBuffer(stagingBuffer);
+    }
 
-        VulkanBuffer::CopyBuffer(vulkanDevice, &stagingBuffer, indexBuffer.get());
+    VulkanMesh::~VulkanMesh()
+    {
+        for (const auto& meshlet: meshlets)
+        {
+            vulkanDevice->FreeBuffer(meshlet.vertexBuffer);
+            vulkanDevice->FreeBuffer(meshlet.indexBuffer);
+        }
     }
 
     void VulkanMesh::AddMeshlet(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices, int materialIndex)
     {
-        meshlets.push_back({vulkanDevice, vertices, indices, materialIndex});
+        meshlets.emplace_back(vulkanDevice, vertices, indices, materialIndex);
     }
 }

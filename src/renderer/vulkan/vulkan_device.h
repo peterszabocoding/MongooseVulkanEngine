@@ -16,13 +16,14 @@
 #include "vulkan_texture.h"
 #include "resource/resource.h"
 
-
 namespace Raytracing
 {
     class VulkanMeshlet;
-    struct SimplePushConstantData;
     class VulkanPipeline;
     class VulkanMesh;
+
+    struct SimplePushConstantData;
+    struct AllocatedBuffer;
 
     constexpr int MAX_FRAMES_IN_FLIGHT = 1;
     constexpr int DESCRIPTOR_SET_LAYOUT_POOL_SIZE = 10000;
@@ -48,6 +49,18 @@ namespace Raytracing
         DrawPipelineParams pipelineParams;
         DrawPushConstantParams pushConstantParams;
         std::vector<VkDescriptorSet> descriptorSets{};
+    };
+
+    struct AllocatedBuffer {
+        VkBuffer buffer;
+        VmaAllocation allocation;
+        VmaAllocationInfo info;
+        VkDeviceAddress address;
+
+        VkDeviceMemory GetBufferMemory() const { return info.deviceMemory; }
+        VkDeviceSize GetBufferSize() const { return info.size; }
+        VkDeviceSize GetOffset() const { return info.offset; }
+        void* GetData() const { return info.pMappedData; }
     };
 
     class DeletionQueue {
@@ -98,15 +111,20 @@ namespace Raytracing
 
         void SetViewportAndScissor(VkExtent2D extent, VkCommandBuffer commandBuffer) const;
 
-        TextureHandle AllocateTexture(ImageResource imageResource);
-        void UpdateTexture(TextureHandle textureHandle);
-        void FreeTexture(TextureHandle textureHandle);
-
-    public:
         [[nodiscard]] inline VkPhysicalDevice PickPhysicalDevice() const;
         [[nodiscard]] inline VkDevice CreateLogicalDevice();
         [[nodiscard]] inline VkQueue GetDeviceQueue() const;
         [[nodiscard]] inline VkQueue GetDevicePresentQueue() const;
+
+        // Buffer management
+        AllocatedBuffer AllocateBuffer(uint64_t size, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage = VMA_MEMORY_USAGE_AUTO);
+        void CopyBuffer(const AllocatedBuffer& src, const AllocatedBuffer& dst);
+        void FreeBuffer(AllocatedBuffer buffer);
+
+        // Texture management
+        TextureHandle AllocateTexture(ImageResource imageResource);
+        void UpdateTexture(TextureHandle textureHandle);
+        void FreeTexture(TextureHandle textureHandle);
 
     private:
         static VkInstance CreateVkInstance(
@@ -130,6 +148,8 @@ namespace Raytracing
         ObjectResourcePool<VulkanTexture> texturePool;
         VkDescriptorSet bindlessTextureDescriptorSet{};
         Ref<VulkanDescriptorSetLayout> bindlessDescriptorSetLayout;
+
+        DeletionQueue frameDeletionQueue;
 
     private:
         int viewportWidth{}, viewportHeight{};
@@ -165,7 +185,5 @@ namespace Raytracing
         ObjectResourcePool<VulkanDescriptorSetLayout> descriptorSetLayoutPool{};
 
         VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
-
-        DeletionQueue frameDeletionQueue;
     };
 }

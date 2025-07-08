@@ -65,7 +65,7 @@ namespace Raytracing::VulkanUtils
         uint32_t regionHeight;
     };
 
-    static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
+    inline VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
         VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
         VkDebugUtilsMessageTypeFlagsEXT messageType,
         const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
@@ -75,7 +75,7 @@ namespace Raytracing::VulkanUtils
         return VK_FALSE;
     }
 
-    static VkFormat ConvertImageFormat(const ImageFormat imageFormat)
+    inline VkFormat ConvertImageFormat(const ImageFormat imageFormat)
     {
         switch (imageFormat)
         {
@@ -167,7 +167,7 @@ namespace Raytracing::VulkanUtils
     }
 
 
-    static ImageFormat ConvertVulkanFormat(const VkFormat format)
+    inline ImageFormat ConvertVulkanFormat(const VkFormat format)
     {
         switch (format)
         {
@@ -214,7 +214,7 @@ namespace Raytracing::VulkanUtils
     }
 
 
-    static std::string GetVkResultString(const VkResult vulkan_result)
+    inline std::string GetVkResultString(const VkResult vulkan_result)
     {
         switch (vulkan_result)
         {
@@ -241,7 +241,7 @@ namespace Raytracing::VulkanUtils
         }
     }
 
-    static std::vector<VkExtensionProperties> GetAvailableExtensions()
+    inline std::vector<VkExtensionProperties> GetAvailableExtensions()
     {
         // List Vulkan available extensions
         uint32_t extension_count = 0;
@@ -256,7 +256,7 @@ namespace Raytracing::VulkanUtils
         return available_extensions;
     }
 
-    static bool CheckIfExtensionSupported(const char* ext)
+    inline bool CheckIfExtensionSupported(const char* ext)
     {
         const auto available_extensions = VulkanUtils::GetAvailableExtensions();
         for (const auto& extension: available_extensions)
@@ -266,7 +266,7 @@ namespace Raytracing::VulkanUtils
         return false;
     }
 
-    static std::vector<VkExtensionProperties> GetSupportedDeviceExtensions(const VkPhysicalDevice physicalDevice)
+    inline std::vector<VkExtensionProperties> GetSupportedDeviceExtensions(const VkPhysicalDevice physicalDevice)
     {
         uint32_t extension_count;
         vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extension_count, nullptr);
@@ -280,7 +280,7 @@ namespace Raytracing::VulkanUtils
         return available_extensions;
     }
 
-    static void GetInstanceVersion(VulkanVersion& version)
+    inline void GetInstanceVersion(VulkanVersion& version)
     {
         uint32_t instanceVersion = 0;
         VkResult result = vkEnumerateInstanceVersion(&instanceVersion);
@@ -293,7 +293,7 @@ namespace Raytracing::VulkanUtils
         LOG_INFO("Vulkan version: {0}.{1}.{2}", version.major, version.minor, version.patch);
     }
 
-    static std::vector<VkLayerProperties> GetSupportedValidationLayers()
+    inline std::vector<VkLayerProperties> GetSupportedValidationLayers()
     {
         uint32_t layer_count;
         vkEnumerateInstanceLayerProperties(&layer_count, nullptr);
@@ -307,7 +307,7 @@ namespace Raytracing::VulkanUtils
         return available_layers;
     }
 
-    static bool CheckIfValidationLayerSupported(const char* layer)
+    inline bool CheckIfValidationLayerSupported(const char* layer)
     {
         const auto validation_layers = GetSupportedValidationLayers();
         for (const auto& lay: validation_layers)
@@ -317,7 +317,7 @@ namespace Raytracing::VulkanUtils
         return false;
     }
 
-    static bool CheckDeviceExtensionSupport(const VkPhysicalDevice physicalDevice, std::vector<std::string>& deviceExtensions)
+    inline bool CheckDeviceExtensionSupport(const VkPhysicalDevice physicalDevice, std::vector<std::string>& deviceExtensions)
     {
         uint32_t extension_count;
         vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extension_count, nullptr);
@@ -335,7 +335,7 @@ namespace Raytracing::VulkanUtils
         return required_extensions.empty();
     }
 
-    static VkDebugUtilsMessengerCreateInfoEXT CreateDebugMessengerCreateInfo()
+    inline VkDebugUtilsMessengerCreateInfoEXT CreateDebugMessengerCreateInfo()
     {
         VkDebugUtilsMessengerCreateInfoEXT createInfo = {};
 
@@ -355,7 +355,7 @@ namespace Raytracing::VulkanUtils
         return createInfo;
     }
 
-    static QueueFamilyIndices FindQueueFamilies(const VkPhysicalDevice physicalDevice, const VkSurfaceKHR surface)
+    inline QueueFamilyIndices FindQueueFamilies(const VkPhysicalDevice physicalDevice, const VkSurfaceKHR surface)
     {
         QueueFamilyIndices indices;
 
@@ -388,7 +388,7 @@ namespace Raytracing::VulkanUtils
         return indices;
     }
 
-    static bool IsDeviceSuitable(const VkPhysicalDevice physicalDevice, const VkSurfaceKHR surface)
+    inline bool IsDeviceSuitable(const VkPhysicalDevice physicalDevice, const VkSurfaceKHR surface)
     {
         const QueueFamilyIndices indices = FindQueueFamilies(physicalDevice, surface);
         VkPhysicalDeviceFeatures supportedFeatures;
@@ -397,7 +397,7 @@ namespace Raytracing::VulkanUtils
         return indices.IsComplete() && supportedFeatures.samplerAnisotropy;
     }
 
-    static VkShaderModule CreateShaderModule(const VkDevice device, const std::vector<char>& code)
+    inline VkShaderModule CreateShaderModule(const VkDevice device, const std::vector<char>& code)
     {
         VkShaderModuleCreateInfo create_info{};
         create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -413,7 +413,7 @@ namespace Raytracing::VulkanUtils
         return shader_module;
     }
 
-    static VkShaderModule CreateShaderModule(const VkDevice device, const std::vector<uint32_t>& code)
+    inline VkShaderModule CreateShaderModule(const VkDevice device, const std::vector<uint32_t>& code)
     {
         VkShaderModuleCreateInfo create_info{};
         create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -429,7 +429,7 @@ namespace Raytracing::VulkanUtils
         return shader_module;
     }
 
-    static uint32_t FindMemoryType(const VkPhysicalDevice physicalDevice, const uint32_t typeFilter,
+    inline uint32_t FindMemoryType(const VkPhysicalDevice physicalDevice, const uint32_t typeFilter,
                                    const VkMemoryPropertyFlags properties)
     {
         VkPhysicalDeviceMemoryProperties mem_properties;
@@ -446,7 +446,7 @@ namespace Raytracing::VulkanUtils
         throw std::runtime_error("failed to find suitable memory type!");
     }
 
-    static VkImageView CreateImageView(const VkDevice device, const VkImage image, const VkFormat format,
+    inline VkImageView CreateImageView(const VkDevice device, const VkImage image, const VkFormat format,
                                        const VkImageAspectFlags aspectFlags)
     {
         VkImageViewCreateInfo viewInfo{};
@@ -466,7 +466,7 @@ namespace Raytracing::VulkanUtils
         return imageView;
     }
 
-    static SwapChainSupportDetails QuerySwapChainSupport(const VkPhysicalDevice physicalDevice, const VkSurfaceKHR surface)
+    inline SwapChainSupportDetails QuerySwapChainSupport(const VkPhysicalDevice physicalDevice, const VkSurfaceKHR surface)
     {
         uint32_t formatCount;
         uint32_t presentModeCount;
@@ -491,7 +491,7 @@ namespace Raytracing::VulkanUtils
         return details;
     }
 
-    static VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
+    inline VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
     {
         for (const auto& availableFormat: availableFormats)
         {
@@ -503,7 +503,7 @@ namespace Raytracing::VulkanUtils
         return availableFormats[0];
     }
 
-    static uint32_t GetSwapchainImageCount(const VkPhysicalDevice physicalDevice, const VkSurfaceKHR surface)
+    inline uint32_t GetSwapchainImageCount(const VkPhysicalDevice physicalDevice, const VkSurfaceKHR surface)
     {
         SwapChainSupportDetails support = QuerySwapChainSupport(physicalDevice, surface);
         uint32_t imageCount = support.capabilities.minImageCount + 1;
@@ -515,7 +515,7 @@ namespace Raytracing::VulkanUtils
         return imageCount;
     }
 
-    static void SetSrcAccessFlag(const VkImageLayout oldLayout, VkImageMemoryBarrier& imageBarrier)
+    inline void SetSrcAccessFlag(const VkImageLayout oldLayout, VkImageMemoryBarrier& imageBarrier)
     {
         switch (oldLayout)
         {
@@ -545,7 +545,7 @@ namespace Raytracing::VulkanUtils
         }
     }
 
-    static void SetDstAccessFlag(const VkImageLayout newLayout, VkImageMemoryBarrier& imageBarrier)
+    inline void SetDstAccessFlag(const VkImageLayout newLayout, VkImageMemoryBarrier& imageBarrier)
     {
         switch (newLayout)
         {
@@ -572,7 +572,7 @@ namespace Raytracing::VulkanUtils
         }
     }
 
-    static void TransitionImageLayout(const VkCommandBuffer commandBuffer,
+    inline void TransitionImageLayout(const VkCommandBuffer commandBuffer,
                                       const VkImage image,
                                       const VkImageAspectFlags aspectFlags,
                                       const VkImageLayout oldLayout,
@@ -636,7 +636,7 @@ namespace Raytracing::VulkanUtils
         vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
     }
 
-    static void InsertImageMemoryBarrier(const VkCommandBuffer cmd, const VkImage image,
+    inline void InsertImageMemoryBarrier(const VkCommandBuffer cmd, const VkImage image,
                                          const VkAccessFlags srcAccessMask,
                                          const VkAccessFlags dstAccessMask,
                                          const VkImageLayout oldImageLayout,
@@ -660,12 +660,12 @@ namespace Raytracing::VulkanUtils
         vkCmdPipelineBarrier(cmd, srcStageMask, dstStageMask, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
     }
 
-    static void InsertPipelineBarrier(const VkCommandBuffer cmd, const VkPipelineStageFlags srcStageMask, const VkPipelineStageFlags dstStageMask)
+    inline void InsertPipelineBarrier(const VkCommandBuffer cmd, const VkPipelineStageFlags srcStageMask, const VkPipelineStageFlags dstStageMask)
     {
         vkCmdPipelineBarrier(cmd, srcStageMask, dstStageMask, 0, 0, nullptr, 0, nullptr, 0, nullptr);
     }
 
-    static void CopyBufferToImage(const VkCommandBuffer commandBuffer, const VkImage image, const uint32_t width, const uint32_t height,
+    inline void CopyBufferToImage(const VkCommandBuffer commandBuffer, const VkImage image, const uint32_t width, const uint32_t height,
                                   const VkBuffer buffer)
     {
         VkBufferImageCopy region{};
@@ -691,7 +691,7 @@ namespace Raytracing::VulkanUtils
         );
     }
 
-    static void CopyImage(const VkCommandBuffer commandBuffer, const VkImage srcImage, const VkImage dstImage, CopyParams params)
+    inline void CopyImage(const VkCommandBuffer commandBuffer, const VkImage srcImage, const VkImage dstImage, CopyParams params)
     {
         TransitionImageLayout(commandBuffer, srcImage,
                               VK_IMAGE_ASPECT_COLOR_BIT,
@@ -729,7 +729,7 @@ namespace Raytracing::VulkanUtils
                               1);
     }
 
-    static VkDeviceMemory AllocateImageMemory(const VkDevice device, const VkPhysicalDevice physicalDevice, const VkImage image,
+    inline VkDeviceMemory AllocateImageMemory(const VkDevice device, const VkPhysicalDevice physicalDevice, const VkImage image,
                                               const VkMemoryPropertyFlags properties)
     {
         VkMemoryRequirements memRequirements;
@@ -747,7 +747,7 @@ namespace Raytracing::VulkanUtils
         return imageMemory;
     }
 
-    static void GenerateMipmaps(const VkCommandBuffer commandBuffer,
+    inline void GenerateMipmaps(const VkCommandBuffer commandBuffer,
                                 const VkPhysicalDevice physicalDevice,
                                 const VkImage image,
                                 const VkFormat imageFormat,
@@ -842,7 +842,7 @@ namespace Raytracing::VulkanUtils
                              1, &barrier);
     }
 
-    static void GenerateCubemapMipmaps(const VkCommandBuffer commandBuffer,
+    inline void GenerateCubemapMipmaps(const VkCommandBuffer commandBuffer,
                                        VkPhysicalDevice physicalDevice,
                                        const VkImage image,
                                        VkFormat imageFormat,
@@ -932,7 +932,7 @@ namespace Raytracing::VulkanUtils
         }
     }
 
-    static VkSampleCountFlagBits GetMaxMSAASampleCount(const VkPhysicalDevice physicalDevice)
+    inline VkSampleCountFlagBits GetMaxMSAASampleCount(const VkPhysicalDevice physicalDevice)
     {
         VkPhysicalDeviceProperties properties;
         vkGetPhysicalDeviceProperties(physicalDevice, &properties);

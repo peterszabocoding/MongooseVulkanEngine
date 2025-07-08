@@ -114,7 +114,7 @@ namespace Raytracing
             VMA_MEMORY_USAGE_CPU_TO_GPU);
 
 
-        memcpy(ssaoBuffer->GetMappedData(), &buffer, sizeof(SSAOBuffer));
+        memcpy(ssaoBuffer->GetData(), &buffer, sizeof(SSAOBuffer));
 
         VkDescriptorBufferInfo bufferInfo{};
         bufferInfo.buffer = ssaoBuffer->GetBuffer();

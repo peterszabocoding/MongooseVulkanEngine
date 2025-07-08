@@ -18,21 +18,21 @@ namespace Raytracing
     };
 
     namespace ImageUtils {
-        static VkImageAspectFlagBits GetAspectFlagFromFormat(ImageFormat format) {
+        inline VkImageAspectFlagBits GetAspectFlagFromFormat(ImageFormat format) {
             if (format == ImageFormat::DEPTH24_STENCIL8 || format == ImageFormat::DEPTH32)
                 return VK_IMAGE_ASPECT_DEPTH_BIT;
 
             return VK_IMAGE_ASPECT_COLOR_BIT;
         }
 
-        static VkImageUsageFlags GetUsageFromFormat(ImageFormat format) {
+        inline VkImageUsageFlags GetUsageFromFormat(ImageFormat format) {
             if (format == ImageFormat::DEPTH24_STENCIL8 || format == ImageFormat::DEPTH32)
                 return VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
             return VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
         }
 
-        static VkImageLayout GetLayoutFromFormat(ImageFormat format) {
+        inline VkImageLayout GetLayoutFromFormat(ImageFormat format) {
             if (format == ImageFormat::DEPTH24_STENCIL8 || format == ImageFormat::DEPTH32)
                 return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
@@ -55,6 +55,12 @@ namespace Raytracing
         ImageBuilder& SetFormat(const ImageFormat _format)
         {
             format = VulkanUtils::ConvertImageFormat(_format);
+            return *this;
+        }
+
+        ImageBuilder& SetFormat(const VkFormat _format)
+        {
+            format = _format;
             return *this;
         }
 
@@ -101,6 +107,12 @@ namespace Raytracing
             return *this;
         }
 
+        ImageBuilder& SetSharingMode(VkSharingMode _sharingMode)
+        {
+            sharingMode = _sharingMode;
+            return *this;
+        }
+
         AllocatedImage Build();
 
     private:
@@ -116,6 +128,7 @@ namespace Raytracing
         int arrayLayers = 1;
         uint32_t mipLevels = 1;
         VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT;
+        VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     };
 
     class ImageViewBuilder {

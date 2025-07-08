@@ -42,7 +42,7 @@ namespace Raytracing
         imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         imageInfo.usage = usage;
         imageInfo.samples = samples;
-        imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        imageInfo.sharingMode = sharingMode;
 
         if (flags)
             imageInfo.flags = flags;

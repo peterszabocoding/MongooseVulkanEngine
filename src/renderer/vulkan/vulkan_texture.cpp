@@ -40,12 +40,11 @@ namespace Raytracing
 
         if (data && size > 0)
         {
-            auto stagingBuffer = VulkanBuffer(device, size,
-                                              VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-                                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                              VMA_MEMORY_USAGE_CPU_ONLY);
+            auto stagingBuffer = device->AllocateBuffer(size,
+                                                        VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                                                        VMA_MEMORY_USAGE_CPU_ONLY);
 
-            memcpy(stagingBuffer.GetMappedData(), data, stagingBuffer.GetBufferSize());
+            memcpy(stagingBuffer.GetData(), data, stagingBuffer.GetBufferSize());
 
             device->ImmediateSubmit([&](const VkCommandBuffer cmd) {
                 VulkanUtils::TransitionImageLayout(cmd, allocatedImage.image,
@@ -56,7 +55,7 @@ namespace Raytracing
             });
 
             device->ImmediateSubmit([&](const VkCommandBuffer cmd) {
-                VulkanUtils::CopyBufferToImage(cmd, allocatedImage.image, width, height, stagingBuffer.GetBuffer());
+                VulkanUtils::CopyBufferToImage(cmd, allocatedImage.image, width, height, stagingBuffer.buffer);
             });
 
 
@@ -81,6 +80,8 @@ namespace Raytracing
                                                        mipLevels);
                 });
             }
+
+            device->FreeBuffer(stagingBuffer);
         }
 
         imageResource.data = data;
@@ -88,6 +89,8 @@ namespace Raytracing
         imageResource.format = format;
         imageResource.width = width;
         imageResource.height = height;
+
+
         return CreateRef<VulkanTexture>(allocatedImage, imageViews, sampler, imageMemory, imageResource);
     }
 
@@ -124,12 +127,11 @@ namespace Raytracing
 
         if (data && size > 0)
         {
-            auto stagingBuffer = VulkanBuffer(device, size,
-                                              VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-                                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                              VMA_MEMORY_USAGE_CPU_ONLY);
+            auto stagingBuffer = device->AllocateBuffer(size,
+                                                        VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                                                        VMA_MEMORY_USAGE_CPU_ONLY);
 
-            memcpy(stagingBuffer.GetMappedData(), data, stagingBuffer.GetBufferSize());
+            memcpy(stagingBuffer.GetData(), data, stagingBuffer.GetBufferSize());
 
             device->ImmediateSubmit([&](const VkCommandBuffer cmd) {
                 VulkanUtils::TransitionImageLayout(cmd, allocatedImage.image,
@@ -140,13 +142,12 @@ namespace Raytracing
             });
 
             device->ImmediateSubmit([&](const VkCommandBuffer cmd) {
-                VulkanUtils::CopyBufferToImage(cmd, allocatedImage.image, width, height, stagingBuffer.GetBuffer());
+                VulkanUtils::CopyBufferToImage(cmd, allocatedImage.image, width, height, stagingBuffer.buffer);
             });
 
-
-            if (mipLevels > 1)
-            {
-                device->ImmediateSubmit([&](const VkCommandBuffer cmd) {
+            device->ImmediateSubmit([&](const VkCommandBuffer cmd) {
+                if (mipLevels > 1)
+                {
                     VulkanUtils::GenerateMipmaps(cmd,
                                                  device->GetPhysicalDevice(),
                                                  allocatedImage.image,
@@ -154,17 +155,17 @@ namespace Raytracing
                                                  width,
                                                  height,
                                                  mipLevels);
-                });
-            } else
-            {
-                device->ImmediateSubmit([&](const VkCommandBuffer cmd) {
+                } else
+                {
                     VulkanUtils::TransitionImageLayout(cmd, allocatedImage.image,
                                                        VK_IMAGE_ASPECT_COLOR_BIT,
                                                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                                        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                                                        mipLevels);
-                });
-            }
+                }
+            });
+
+            device->FreeBuffer(stagingBuffer);
         }
 
         imageResource.data = data;
@@ -179,5 +180,4 @@ namespace Raytracing
         texture.imageResource = imageResource;
         texture.allocatedImage = allocatedImage;
     }
-
 }

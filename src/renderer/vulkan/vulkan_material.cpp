@@ -105,7 +105,7 @@ namespace Raytracing
         material.descriptorSet = descriptorSet;
         material.materialBuffer = materialBuffer;
 
-        memcpy(material.materialBuffer->GetMappedData(), &material.params, sizeof(MaterialParams));
+        memcpy(material.materialBuffer->GetData(), &material.params, sizeof(MaterialParams));
 
         return material;
     }

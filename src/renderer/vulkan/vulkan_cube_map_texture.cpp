@@ -1,7 +1,3 @@
-//
-// Created by peter on 2025. 04. 27..
-//
-
 #include "vulkan_cube_map_texture.h"
 
 #include "vulkan_buffer.h"
@@ -63,12 +59,11 @@ namespace Raytracing
 
         if (cubemap)
         {
-            auto stagingBuffer = VulkanBuffer(device, cubemap->pixelData.size(),
-                                              VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-                                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                              VMA_MEMORY_USAGE_CPU_ONLY);
+            auto stagingBuffer = device->AllocateBuffer(cubemap->pixelData.size(),
+                                                        VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                                                        VMA_MEMORY_USAGE_CPU_ONLY);
 
-            memcpy(stagingBuffer.GetMappedData(), cubemap->pixelData.data(), cubemap->pixelData.size());
+            memcpy(stagingBuffer.GetData(), cubemap->pixelData.data(), cubemap->pixelData.size());
 
             std::vector<VkBufferImageCopy> bufferCopyRegions;
             for (uint32_t face = 0; face < 6; face++)
@@ -93,7 +88,7 @@ namespace Raytracing
             device->ImmediateSubmit([&](const VkCommandBuffer cmd) {
                 vkCmdCopyBufferToImage(
                     cmd,
-                    stagingBuffer.GetBuffer(),
+                    stagingBuffer.buffer,
                     allocatedImage.image,
                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                     6,
@@ -110,6 +105,8 @@ namespace Raytracing
                                                     height,
                                                     mipLevels);
             });
+
+            device->FreeBuffer(stagingBuffer);
         }
 
         return CreateRef<VulkanCubeMapTexture>(device, allocatedImage, imageView, mipmapFaceImageViews, sampler, imageMemory);
@@ -120,14 +117,9 @@ namespace Raytracing
         vkDestroySampler(device->GetDevice(), sampler, nullptr);
         vkDestroyImageView(device->GetDevice(), imageView, nullptr);
 
-
         for (size_t j = 0; j < mipmapFaceImageViews.size(); j++)
-        {
             for (size_t i = 0; i < 6; i++)
-            {
                 vkDestroyImageView(device->GetDevice(), mipmapFaceImageViews[j][i], nullptr);
-            }
-        }
 
         vmaDestroyImage(device->GetVmaAllocator(), allocatedImage.image, allocatedImage.allocation);
     }

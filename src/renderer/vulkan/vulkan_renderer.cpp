@@ -10,6 +10,7 @@
 #include "vulkan_shader_compiler.h"
 #include "lighting/irradiance_map_generator.h"
 #include "lighting/reflection_probe_generator.h"
+#include "renderer/render_graph.h"
 #include "util/log.h"
 #include "util/filesystem.h"
 
@@ -248,7 +249,7 @@ namespace Raytracing
         bufferData.view = camera->GetView();
         bufferData.proj = camera->GetProjection();
 
-        memcpy(descriptorBuffers.transformsBuffer->GetMappedData(), &bufferData, sizeof(TransformsBuffer));
+        memcpy(descriptorBuffers.transformsBuffer->GetData(), &bufferData, sizeof(TransformsBuffer));
     }
 
     void VulkanRenderer::RotateLight(float deltaTime)
@@ -276,7 +277,7 @@ namespace Raytracing
         bufferData.ambientIntensity = scene.directionalLight.ambientIntensity;
         bufferData.bias = scene.directionalLight.bias;
 
-        memcpy(descriptorBuffers.lightsBuffer->GetMappedData(), &bufferData, sizeof(LightsBuffer));
+        memcpy(descriptorBuffers.lightsBuffer->GetData(), &bufferData, sizeof(LightsBuffer));
     }
 
     void VulkanRenderer::DrawFrame(const VkCommandBuffer commandBuffer, const uint32_t imageIndex, const Ref<Camera>& camera)

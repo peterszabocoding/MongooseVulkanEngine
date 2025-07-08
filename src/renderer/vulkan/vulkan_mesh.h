@@ -36,19 +36,21 @@ namespace Raytracing
         int GetMaterialIndex() const { return materialIndex; }
 
     public:
+        VulkanDevice* vulkanDevice;
+
         int materialIndex = -1;
 
         std::vector<Vertex> vertices;
         std::vector<uint32_t> indices;
 
-        Ref<VulkanBuffer> vertexBuffer;
-        Ref<VulkanBuffer> indexBuffer;
+        AllocatedBuffer vertexBuffer;
+        AllocatedBuffer indexBuffer;
     };
 
     class VulkanMesh {
     public:
         VulkanMesh(VulkanDevice* vulkanDevice): vulkanDevice(vulkanDevice) {}
-        ~VulkanMesh() = default;
+        ~VulkanMesh();
 
         void AddMeshlet(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices, int materialIndex);
         std::vector<VulkanMeshlet>& GetMeshlets() { return meshlets; }

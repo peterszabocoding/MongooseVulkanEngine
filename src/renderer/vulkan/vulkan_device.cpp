@@ -155,7 +155,7 @@ namespace Raytracing
         {
             device_extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
             //validation_layer_list.push_back("VK_LAYER_LUNARG_crash_diagnostic");
-            validation_layer_list.push_back("VK_LAYER_KHRONOS_validation");
+            //validation_layer_list.push_back("VK_LAYER_KHRONOS_validation");
             //validation_layer_list.push_back("VK_LAYER_LUNARG_api_dump");
         }
 
@@ -626,5 +626,58 @@ namespace Raytracing
     uint32_t VulkanDevice::GetQueueFamilyIndex() const
     {
         return VulkanUtils::FindQueueFamilies(physicalDevice, surface).graphicsFamily.value();
+    }
+
+    AllocatedBuffer VulkanDevice::AllocateBuffer(uint64_t size, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage)
+    {
+        LOG_TRACE("Allocate buffer: " + std::to_string(size / 1024) + " kB");
+
+        AllocatedBuffer allocatedBuffer;
+
+        VkBufferCreateInfo bufferInfo{};
+        bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+        bufferInfo.size = size;
+        bufferInfo.usage = usage;
+
+        VmaAllocationCreateInfo vmaallocInfo = {};
+        vmaallocInfo.usage = memoryUsage;
+        vmaallocInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
+
+        VK_CHECK(vmaCreateBuffer(vmaAllocator,
+            &bufferInfo,
+            &vmaallocInfo,
+            &allocatedBuffer.buffer,
+            &allocatedBuffer.allocation,
+            &allocatedBuffer.info));
+
+        VkBufferDeviceAddressInfo deviceAdressInfo{};
+        deviceAdressInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+        deviceAdressInfo.buffer = allocatedBuffer.buffer;
+
+        allocatedBuffer.address = vkGetBufferDeviceAddress(device, &deviceAdressInfo);
+
+        return allocatedBuffer;
+    }
+
+    void VulkanDevice::FreeBuffer(AllocatedBuffer buffer)
+    {
+        frameDeletionQueue.Push([=] {
+            vmaDestroyBuffer(vmaAllocator, buffer.buffer, buffer.allocation);
+        });
+    }
+
+    void VulkanDevice::CopyBuffer(const AllocatedBuffer& src, const AllocatedBuffer& dst)
+    {
+        LOG_INFO("COPY BUFFER");
+        LOG_WARN("Src: " + std::to_string(src.GetBufferSize()));
+        LOG_WARN("Dst: " + std::to_string(dst.GetBufferSize()));
+
+        ImmediateSubmit([&](VkCommandBuffer commandBuffer) {
+            VkBufferCopy copy_region;
+            copy_region.srcOffset = 0;
+            copy_region.dstOffset = 0;
+            copy_region.size = src.GetBufferSize();
+            vkCmdCopyBuffer(commandBuffer, src.buffer, dst.buffer, 1, &copy_region);
+        });
     }
 }

@@ -1,18 +1,11 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
 #include <vma/vk_mem_alloc.h>
+#include "vulkan_device.h"
 
 namespace Raytracing
 {
     class VulkanDevice;
-
-    struct AllocatedBuffer {
-        VkBuffer buffer;
-        VmaAllocation allocation;
-        VmaAllocationInfo info;
-        VkDeviceAddress address;
-    };
 
     class VulkanBuffer {
     public:
@@ -25,12 +18,7 @@ namespace Raytracing
         VkDeviceSize GetBufferSize() const { return allocatedBuffer.info.size; }
         VkDeviceAddress GetBufferAddress() const { return allocatedBuffer.address; }
         VkDeviceSize GetOffset() const { return allocatedBuffer.info.offset; }
-        void* GetMappedData() const { return allocatedBuffer.info.pMappedData; }
-
-        static void CopyBuffer(const VulkanDevice* vulkanDevice, VulkanBuffer* src, VulkanBuffer* dst);
-
-    private:
-        void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage);
+        void* GetData() const { return allocatedBuffer.info.pMappedData; }
 
     private:
         VulkanDevice* vulkanDevice;

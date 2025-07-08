@@ -75,6 +75,9 @@ namespace Raytracing
         CreateFramebuffer();
     }
 
+    void GBufferPass::ExecuteWithRenderGraph(VkCommandBuffer cmd, const std::unordered_map<std::string, RenderResource*>& resources)
+    {}
+
     void GBufferPass::LoadPipelines()
     {
         LOG_TRACE("Building gbuffer pipeline");
@@ -151,12 +154,10 @@ namespace Raytracing
             .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         };
 
-        auto writer = VulkanDescriptorWriter(*ShaderCache::descriptorSetLayouts.gBufferDescriptorSetLayout,
-                                             device->GetShaderDescriptorPool())
+        VulkanDescriptorWriter(*ShaderCache::descriptorSetLayouts.gBufferDescriptorSetLayout, device->GetShaderDescriptorPool())
                 .WriteImage(0, &worldSpaceNormalInfo)
                 .WriteImage(1, &positionInfo)
-                .WriteImage(2, &depthInfo);
-
-        writer.BuildOrOverwrite(ShaderCache::descriptorSets.gbufferDescriptorSet);
+                .WriteImage(2, &depthInfo)
+                .BuildOrOverwrite(ShaderCache::descriptorSets.gbufferDescriptorSet);
     }
 }
