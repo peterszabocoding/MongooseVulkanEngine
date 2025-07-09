@@ -3,7 +3,7 @@
 #include <fstream>
 #include <string>
 
-namespace Raytracing
+namespace MongooseVK
 {
     std::string FileSystem::ReadFileFromPath(const std::filesystem::path& filepath)
     {

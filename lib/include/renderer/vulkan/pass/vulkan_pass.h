@@ -4,7 +4,7 @@
 #include "../../../util/core.h"
 #include "renderer/camera.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     class VulkanPass {
 

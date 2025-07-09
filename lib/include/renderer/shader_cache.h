@@ -3,7 +3,7 @@
 #include "vulkan/vulkan_descriptor_set_layout.h"
 #include "vulkan/vulkan_pipeline.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     constexpr auto SHADER_PATH = "shader/glsl/";
 

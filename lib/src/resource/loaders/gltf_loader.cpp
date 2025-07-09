@@ -14,7 +14,7 @@
 #include "resource/resource_manager.h"
 #include "util/log.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     namespace ImageUtils
     {

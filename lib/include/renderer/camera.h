@@ -7,11 +7,12 @@
 #include "math/math.h"
 #include <limits>
 
-namespace Raytracing
+namespace MongooseVK
 {
     class Camera {
     public:
         Camera();
+        explicit Camera(glm::vec3 initialPosition);
         ~Camera() = default;
 
         void Update();

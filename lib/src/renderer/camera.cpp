@@ -1,11 +1,19 @@
 #include "renderer/camera.h"
 #include "util/log.h"
 
-namespace Raytracing {
+namespace MongooseVK
+{
     Camera::Camera()
     {
         CalculateProjection();
         Update();
+    }
+
+    Camera::Camera(const glm::vec3 initialPosition)
+    {
+        CalculateProjection();
+        Update();
+        transform.m_Position = initialPosition;
     }
 
     void Camera::Update()

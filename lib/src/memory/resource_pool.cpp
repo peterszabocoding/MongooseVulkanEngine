@@ -5,7 +5,7 @@
 #include "resource/resource.h"
 #include "util/core.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     void ResourcePool::Init(uint32_t _poolSize, uint32_t _resourceSize)
     {

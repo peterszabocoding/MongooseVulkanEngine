@@ -3,7 +3,7 @@
 #include "renderer/vulkan/vulkan_buffer.h"
 #include "renderer/bitmap.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     Ref<VulkanCubeMapTexture> VulkanCubeMapTexture::Builder::Build(VulkanDevice* device)
     {

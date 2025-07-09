@@ -2,7 +2,7 @@
 
 #include "renderer/vulkan/vulkan_device.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     Ref<VulkanShadowMap> VulkanShadowMap::Builder::Build(VulkanDevice* device)
     {

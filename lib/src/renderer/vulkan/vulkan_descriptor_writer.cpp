@@ -5,7 +5,7 @@
 #include "renderer/vulkan/vulkan_device.h"
 #include "util/core.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     VulkanDescriptorWriter::VulkanDescriptorWriter(VulkanDescriptorSetLayout& setLayout, VulkanDescriptorPool& pool)
         : setLayout{setLayout}, pool{pool} {}

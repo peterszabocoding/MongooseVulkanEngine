@@ -7,7 +7,7 @@
 #include "renderer/shader_cache.h"
 #include "renderer/vulkan/vulkan_mesh.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     PresentPass::PresentPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution): VulkanPass(vulkanDevice, _resolution)
     {

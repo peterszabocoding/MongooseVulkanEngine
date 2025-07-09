@@ -3,11 +3,20 @@
 
 int main(int argc, char* argv[])
 {
-	Raytracing::Log::Init();
+    MongooseVK::Log::Init();
 
-	Raytracing::Application* application = Raytracing::Application::Create();
-	application->OnCreate();
-	application->Run();
+    const MongooseVK::ApplicationConfig config = {
+        .appName = "MongooseVKDemo",
+        .windowTitle = "Mongoose Vulkan Demo",
+        .versionName = "0.1.0",
+        .appVersion = Version{0, 1, 0},
+        .windowWidth = 1675,
+        .windowHeight = 935
+    };
 
-	return 0;
+    MongooseVK::Application* application = MongooseVK::Application::Create(config);
+    application->OnCreate();
+    application->Run();
+
+    return 0;
 }

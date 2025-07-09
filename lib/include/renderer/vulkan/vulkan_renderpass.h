@@ -6,7 +6,7 @@
 
 #include "util/core.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     class VulkanFramebuffer;
     class VulkanDevice;

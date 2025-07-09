@@ -3,7 +3,7 @@
 #include "vec3.h"
 #include "ray.h"
 
-namespace Raytracing {
+namespace MongooseVK {
 
     struct HitRecord 
     {

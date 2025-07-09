@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include "renderer/vulkan/vulkan_renderer.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     namespace ImGuiUtils
     {
@@ -30,17 +30,17 @@ namespace Raytracing
         ImGuiVulkan();
         ~ImGuiVulkan();
 
-        void Init(GLFWwindow* glfwWindow, Ref<VulkanRenderer> renderer, int width, int height);
-        void Resize(int width, int height);
+        void Init(GLFWwindow* glfwWindow, VulkanDevice* _vulkanDevice);
+        void Resize();
         void DrawUi();
-        void AddWindow(Ref<ImGuiWindow> window) { uiWindows.push_back(window); };
+        void AddWindow(const Ref<ImGuiWindow>& window) { uiWindows.push_back(window); };
 
     private:
-        void SetupImGui(int width, int height) const;
+        void SetupImGui() const;
 
     protected:
-        Ref<VulkanRenderer> renderer = nullptr;
-        GLFWwindow* glfwWindow = nullptr;
+        VulkanDevice* vulkanDevice;
+        GLFWwindow* glfwWindow;
 
         std::vector<Ref<ImGuiWindow>> uiWindows;
     };

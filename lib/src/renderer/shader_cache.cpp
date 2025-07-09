@@ -4,7 +4,7 @@
 #include "util/log.h"
 #include "renderer/vulkan/vulkan_shader_compiler.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     namespace Utils
     {

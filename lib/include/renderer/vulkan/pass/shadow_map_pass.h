@@ -3,7 +3,7 @@
 #include "renderer/scene.h"
 #include "vulkan_pass.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     class ShadowMapPass : public VulkanPass {
     public:

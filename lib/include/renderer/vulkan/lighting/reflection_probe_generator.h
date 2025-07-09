@@ -2,7 +2,7 @@
 #include "renderer/vulkan/vulkan_reflection_probe.h"
 #include "renderer/vulkan/vulkan_renderpass.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     class ReflectionProbeGenerator {
     public:

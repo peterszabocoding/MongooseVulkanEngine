@@ -3,7 +3,7 @@
 #include <GLFW/glfw3.h>
 #include "application/application.h"
 
-namespace Raytracing {
+namespace MongooseVK {
 
     Input* Input::s_Instance = new Input();
 

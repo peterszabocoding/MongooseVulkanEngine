@@ -16,7 +16,7 @@
 #include "util/log.h"
 #include "util/filesystem.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     VulkanRenderer::~VulkanRenderer() {}
 
@@ -29,46 +29,41 @@ namespace Raytracing
         renderResolution.width = resolutionScale * viewportResolution.width;
         renderResolution.height = resolutionScale * viewportResolution.height;
 
-        device = CreateScope<VulkanDevice>(width, height, glfwWindow);
-        shaderCache = CreateScope<ShaderCache>(device.get());
-
-        cubeMesh = ResourceManager::LoadMesh(device.get(), "resources/models/cube.obj");
-        screenRect = CreateScope<VulkanMeshlet>(device.get(), Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
-
-        LOG_TRACE("Load scene");
-        scene = ResourceManager::LoadScene(device.get(), "resources/sponza/Sponza.gltf", "resources/environment/etzwihl_4k.hdr");
-        //scene = ResourceManager::LoadScene(device.get(), "resources/PBRCheck/pbr_check.gltf", "resources/environment/etzwihl_4k.hdr");
-        //scene = ResourceManager::LoadScene(device.get(), "resources/cannon/cannon.gltf", "resources/environment/etzwihl_4k.hdr");
-        //scene = ResourceManager::LoadScene(device.get(), "resources/MetalRoughSpheres/MetalRoughSpheres.gltf", "resources/environment/etzwihl_4k.hdr");
-        //scene = ResourceManager::LoadScene(device.get(), "resources/gltf/multiple_spheres.gltf", "resources/environment/etzwihl_4k.hdr");
-        //scene = ResourceManager::LoadScene(device.get(), "resources/chess/ABeautifulGame.gltf", "resources/environment/etzwihl_4k.hdr");
-        //scene = ResourceManager::LoadScene(device.get(), "resources/DamagedHelmet/DamagedHelmet.gltf", "resources/environment/etzwihl_4k.hdr");
-
-        scene.directionalLight.direction = normalize(glm::vec3(0.0f, -2.0f, -1.0f));
-
-        gbufferPass = CreateScope<GBufferPass>(device.get(), scene, renderResolution);
-        skyboxPass = CreateScope<SkyboxPass>(device.get(), scene, renderResolution);
-        renderPass = CreateScope<RenderPass>(device.get(), scene, renderResolution);
-        shadowMapPass = CreateScope<ShadowMapPass>(device.get(), scene, renderResolution);
-        presentPass = CreateScope<PresentPass>(device.get(), renderResolution);
-        ssaoPass = CreateScope<SSAOPass>(device.get(), renderResolution);
-        gridPass = CreateScope<InfiniteGridPass>(device.get(), renderResolution);
+        shaderCache = CreateScope<ShaderCache>(device);
 
         CreateSwapchain();
+    }
+
+    void VulkanRenderer::LoadScene(const std::string& gltfPath, const std::string& hdrPath)
+    {
+        isSceneLoaded = false;
+
+        LOG_TRACE("Load scene");
+        scene = ResourceManager::LoadScene(device, gltfPath, hdrPath);
+        scene.directionalLight.direction = normalize(glm::vec3(0.0f, -2.0f, -1.0f));
+
+        gbufferPass = CreateScope<GBufferPass>(device, scene, renderResolution);
+        skyboxPass = CreateScope<SkyboxPass>(device, scene, renderResolution);
+        renderPass = CreateScope<RenderPass>(device, scene, renderResolution);
+        shadowMapPass = CreateScope<ShadowMapPass>(device, scene, renderResolution);
+        presentPass = CreateScope<PresentPass>(device, renderResolution);
+        ssaoPass = CreateScope<SSAOPass>(device, renderResolution);
+        gridPass = CreateScope<InfiniteGridPass>(device, renderResolution);
 
         CreateShadowMap();
         CreateFramebuffers();
         CreateTransformsBuffer();
-
         CreateLightsBuffer();
         CreatePresentDescriptorSet();
 
         PrecomputeIBL();
+
+        isSceneLoaded = true;
     }
 
     void VulkanRenderer::PrecomputeIBL()
     {
-        irradianceMap = IrradianceMapGenerator(device.get()).FromCubemapTexture(scene.skybox->GetCubemap());
+        irradianceMap = IrradianceMapGenerator(device).FromCubemapTexture(scene.skybox->GetCubemap());
 
         VkDescriptorImageInfo irradianceMapInfo{};
         irradianceMapInfo.sampler = irradianceMap->GetSampler();
@@ -79,10 +74,10 @@ namespace Raytracing
                 .WriteImage(0, &irradianceMapInfo)
                 .Build(shaderCache->descriptorSets.irradianceDescriptorSet);
 
-        scene.reflectionProbe = ReflectionProbeGenerator(device.get()).FromCubemap(scene.skybox->GetCubemap());
+        scene.reflectionProbe = ReflectionProbeGenerator(device).FromCubemap(scene.skybox->GetCubemap());
     }
 
-    void VulkanRenderer::Draw(const float deltaTime, const Ref<Camera> camera)
+    void VulkanRenderer::Draw(const float deltaTime, const Ref<Camera>& camera)
     {
         device->DrawFrame(vulkanSwapChain->GetSwapChain(),
                           [&](const VkCommandBuffer cmd, const uint32_t imgIndex) {
@@ -103,8 +98,6 @@ namespace Raytracing
 
     void VulkanRenderer::Resize(const int width, const int height)
     {
-        Renderer::Resize(width, height);
-
         viewportResolution.width = width;
         viewportResolution.height = height;
 
@@ -133,7 +126,7 @@ namespace Raytracing
         const VkSurfaceFormatKHR surfaceFormat = VulkanUtils::ChooseSwapSurfaceFormat(swapChainSupport.formats);
 
         const uint32_t imageCount = VulkanUtils::GetSwapchainImageCount(device->GetPhysicalDevice(), device->GetSurface());
-        vulkanSwapChain = VulkanSwapchain::Builder(device.get())
+        vulkanSwapChain = VulkanSwapchain::Builder(device)
                 .SetResolution(viewportResolution.width, viewportResolution.height)
                 .SetPresentMode(VK_PRESENT_MODE_IMMEDIATE_KHR)
                 .SetImageCount(imageCount)
@@ -160,12 +153,12 @@ namespace Raytracing
         directionalShadowMap = VulkanShadowMap::Builder()
                 .SetResolution(SHADOW_MAP_RESOLUTION, SHADOW_MAP_RESOLUTION)
                 .SetArrayLayers(SHADOW_MAP_CASCADE_COUNT)
-                .Build(device.get());
+                .Build(device);
 
         framebuffers.shadowMapFramebuffers.resize(SHADOW_MAP_CASCADE_COUNT);
         for (size_t i = 0; i < SHADOW_MAP_CASCADE_COUNT; i++)
         {
-            framebuffers.shadowMapFramebuffers[i] = VulkanFramebuffer::Builder(device.get())
+            framebuffers.shadowMapFramebuffers[i] = VulkanFramebuffer::Builder(device)
                     .SetRenderpass(shadowMapPass->GetRenderPass())
                     .SetResolution(SHADOW_MAP_RESOLUTION, SHADOW_MAP_RESOLUTION)
                     .AddAttachment(directionalShadowMap->GetImageView(i))
@@ -175,7 +168,7 @@ namespace Raytracing
 
     void VulkanRenderer::CreateFramebuffers()
     {
-        framebuffers.geometryFramebuffer = VulkanFramebuffer::Builder(device.get())
+        framebuffers.geometryFramebuffer = VulkanFramebuffer::Builder(device)
                 .SetRenderpass(renderPass->GetRenderPass())
                 .SetResolution(renderResolution.width, renderResolution.height)
                 .AddAttachment(ImageFormat::RGBA16_SFLOAT)
@@ -186,7 +179,7 @@ namespace Raytracing
         framebuffers.presentFramebuffers.resize(imageCount);
         for (size_t i = 0; i < imageCount; i++)
         {
-            framebuffers.presentFramebuffers[i] = VulkanFramebuffer::Builder(device.get())
+            framebuffers.presentFramebuffers[i] = VulkanFramebuffer::Builder(device)
                     .SetRenderpass(presentPass->GetRenderPass())
                     .SetResolution(viewportResolution.width, viewportResolution.height)
                     .AddAttachment(vulkanSwapChain->GetImageViews()[i])
@@ -204,7 +197,7 @@ namespace Raytracing
 
     void VulkanRenderer::CreateTransformsBuffer()
     {
-        descriptorBuffers.transformsBuffer = CreateRef<VulkanBuffer>(device.get(), sizeof(TransformsBuffer),
+        descriptorBuffers.transformsBuffer = CreateRef<VulkanBuffer>(device, sizeof(TransformsBuffer),
                                                                      VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT |
                                                                      VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                                                                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
@@ -221,7 +214,7 @@ namespace Raytracing
 
     void VulkanRenderer::CreateLightsBuffer()
     {
-        descriptorBuffers.lightsBuffer = CreateRef<VulkanBuffer>(device.get(), sizeof(LightsBuffer),
+        descriptorBuffers.lightsBuffer = CreateRef<VulkanBuffer>(device, sizeof(LightsBuffer),
                                                                  VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT |
                                                                  VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                                                                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,

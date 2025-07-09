@@ -4,7 +4,7 @@
 #include "renderer/scene.h"
 #include "renderer/vulkan/vulkan_gbuffer.h"
 
-namespace Raytracing
+namespace MongooseVK
 
 {
     class GBufferPass : public VulkanPass {

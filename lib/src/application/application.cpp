@@ -1,34 +1,28 @@
 #include "application/application.h"
 #include "util/log.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     Application* Application::s_Instance = nullptr;
 
-    Application::Application()
+    Application::Application(ApplicationConfig config)
     {
         ASSERT(!s_Instance, "Application has been initialized already");
         s_Instance = this;
 
-        applicationInfo.appName = "RaytracingInOneWeekend";
-        applicationInfo.windowWidth = 1675;
-        applicationInfo.windowHeight = 935;
+        applicationInfo.appName = config.appName;
+        applicationInfo.windowWidth = config.windowWidth;
+        applicationInfo.windowHeight = config.windowHeight;
 
-        Version version;
-        version.major = 0;
-        version.minor = 1;
-        version.patch = 0;
+        applicationInfo.appVersion = config.appVersion;
+        applicationInfo.versionName = config.appVersion.GetVersionName();
 
-        applicationInfo.appVersion = version;
-        applicationInfo.versionName = version.GetVersionName();
-
-        applicationInfo.windowTitle = "Raytracing In One Weekend: " + applicationInfo.versionName;
+        applicationInfo.windowTitle = config.windowTitle;
     }
 
     void Application::OnCreate()
     {
         LOG_TRACE("Application OnCreate");
-
         WindowParams params;
         params.title = applicationInfo.windowTitle.c_str();
         params.width = applicationInfo.windowWidth;
@@ -39,13 +33,11 @@ namespace Raytracing
         window->SetOnWindowCloseCallback([&] { isRunning = false; });
 
         isRunning = true;
-
-        LOG_TRACE("Application window created");
     }
 
     void Application::Run()
     {
-        LOG_TRACE("Windows Application Run");
+        LOG_TRACE("Application Run");
         while (isRunning)
         {
             const float time = glfwGetTime();
@@ -56,8 +48,8 @@ namespace Raytracing
         }
     }
 
-    Application* Application::Create()
+    Application* Application::Create(const ApplicationConfig& config)
     {
-        return new Application();
+        return new Application(config);
     }
 }

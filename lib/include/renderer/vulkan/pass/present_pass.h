@@ -2,7 +2,7 @@
 
 #include "vulkan_pass.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     class PresentPass : public VulkanPass {
     public:

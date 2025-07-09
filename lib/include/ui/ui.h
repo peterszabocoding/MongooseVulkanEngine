@@ -6,7 +6,7 @@
 #include "renderer/vulkan/imgui_vulkan.h"
 #include "renderer/vulkan/vulkan_framebuffer.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     class PerformanceWindow final : ImGuiWindow {
     public:

@@ -22,7 +22,7 @@
 #include "util/log.h"
 #include "vma/vk_mem_alloc.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
 #ifdef NDEBUG
     constexpr bool ENABLE_VALIDATION_LAYERS = true;
@@ -30,9 +30,9 @@ namespace Raytracing
 	constexpr bool ENABLE_VALIDATION_LAYERS = false;
 #endif
 
-    VulkanDevice::VulkanDevice(const int width, const int height, GLFWwindow* glfwWindow)
+    VulkanDevice::VulkanDevice(GLFWwindow* glfwWindow)
     {
-        Init(width, height, glfwWindow);
+        Init(glfwWindow);
     }
 
     VulkanDevice::~VulkanDevice()
@@ -129,7 +129,7 @@ namespace Raytracing
         getReadyToResize = true;
     }
 
-    void VulkanDevice::Init(const int width, const int height, GLFWwindow* glfwWindow)
+    void VulkanDevice::Init(GLFWwindow* glfwWindow)
     {
         uint32_t glfw_extension_count = 0;
         const char** glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extension_count);

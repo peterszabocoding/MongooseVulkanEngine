@@ -7,7 +7,7 @@
 #include "renderer/vulkan/vulkan_utils.h"
 #include "util/log.h"
 
-namespace Raytracing {
+namespace MongooseVK {
     VulkanFramebuffer::Builder& VulkanFramebuffer::Builder::AddAttachment(VkImageView imageAttachment) {
         FramebufferAttachment attachment;
         attachment.allocatedImage.image = nullptr;

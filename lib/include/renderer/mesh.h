@@ -12,7 +12,7 @@
 
 #include <util/utils.h>
 
-namespace Raytracing
+namespace MongooseVK
 {
     struct Vertex {
         glm::vec3 pos;
@@ -171,8 +171,8 @@ namespace Raytracing
 namespace std
 {
     template<>
-    struct hash<Raytracing::Vertex> {
-        size_t operator()(Raytracing::Vertex const& vertex) const noexcept
+    struct hash<MongooseVK::Vertex> {
+        size_t operator()(MongooseVK::Vertex const& vertex) const noexcept
         {
             size_t seed = 0;
             hashCombine(seed, vertex.pos, vertex.color, vertex.normal, vertex.texCoord);

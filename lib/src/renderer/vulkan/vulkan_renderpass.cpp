@@ -6,7 +6,7 @@
 #include "renderer/vulkan/vulkan_framebuffer.h"
 #include "renderer/vulkan/vulkan_utils.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     VulkanRenderPass::Builder::Builder(VulkanDevice* vulkanDevice): vulkanDevice(vulkanDevice) {}
 

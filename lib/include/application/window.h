@@ -4,10 +4,9 @@
 
 #include "GLFW/glfw3.h"
 #include "input/camera_controller.h"
-#include "renderer/renderer.h"
 #include "renderer/vulkan/imgui_vulkan.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     typedef std::function<void()> OnWindowCloseCallback;
 
@@ -36,7 +35,8 @@ namespace Raytracing
         GLFWwindow* glfwWindow = nullptr;
         OnWindowCloseCallback windowCloseCallback;
 
-        Ref<Renderer> renderer;
+        Scope<VulkanDevice> vulkanDevice;
+        Ref<VulkanRenderer> renderer;
         Ref<ImGuiVulkan> imGuiVulkan;
 
         CameraController cameraController;

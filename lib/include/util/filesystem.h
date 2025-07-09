@@ -8,7 +8,7 @@
 #include <stack>
 #include <unordered_map>
 
-namespace Raytracing {
+namespace MongooseVK {
 
 	struct FileStructureNode
 	{

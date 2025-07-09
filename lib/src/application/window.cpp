@@ -4,7 +4,7 @@
 #include "ui/ui.h"
 #include "util/log.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     static void FramebufferResizeCallback(GLFWwindow* glfwWindow, int width, int height)
     {
@@ -20,11 +20,22 @@ namespace Raytracing
         window->Resize(currentWidth, currentHeight);
     }
 
+    struct Scenes {
+        std::string SPONZA = "resources/sponza/Sponza.gltf";
+        std::string CANNON = "resources/cannon/cannon.gltf";
+        std::string CHESS_GAME = "resources/chess/ABeautifulGame.gltf";
+        std::string DAMAGED_HELMET = "resources/DamagedHelmet/DamagedHelmet.gltf";
+    } scenes;
+
+    struct HdrEnvironments {
+        std::string CLOUDY = "resources/environment/etzwihl_4k.hdr";
+        std::string NEWPORT_LOFT = "resources/environment/newport_loft.hdr";
+        std::string CASTLE = "resources/environment/champagne_castle_1_4k.hdr";
+    } environments;
+
     Window::Window(const WindowParams params)
     {
         windowParams = params;
-        renderer = Renderer::Create();
-        imGuiVulkan = CreateRef<ImGuiVulkan>();
     }
 
     Window::~Window()
@@ -46,19 +57,16 @@ namespace Raytracing
         glfwGetFramebufferSize(glfwWindow, &width, &height);
         glfwSetFramebufferSizeCallback(glfwWindow, FramebufferResizeCallback);
 
+        LOG_TRACE("Init Vulkan");
+        vulkanDevice = CreateScope<VulkanDevice>(glfwWindow);
+        renderer = CreateRef<VulkanRenderer>(vulkanDevice.get());
+        imGuiVulkan = CreateRef<ImGuiVulkan>();
+
         LOG_TRACE("Init Renderer");
-        renderer->SetGLFWwindow(glfwWindow);
         renderer->Init(width, height);
 
         LOG_TRACE("Init ImGui");
-        imGuiVulkan->Init(glfwWindow, CAST_REF(VulkanRenderer, renderer), width, height);
-
-        camera = CreateRef<Camera>();
-        camera->SetResolution(width, height);
-        camera->GetTransform().m_Position = glm::vec3(0.0f, 5.0f, 15.0f);
-
-        cameraController.SetCamera(camera);
-
+        imGuiVulkan->Init(glfwWindow, vulkanDevice.get());
 
         imGuiVulkan->AddWindow(
             std::reinterpret_pointer_cast<ImGuiWindow>(
@@ -87,13 +95,19 @@ namespace Raytracing
         imGuiVulkan->AddWindow(
             std::reinterpret_pointer_cast<ImGuiWindow>(
                 CreateRef<ShadowMapViewer>(CAST_REF(VulkanRenderer, renderer))));
+
+        LOG_TRACE("Loading scene...");
+        renderer->LoadScene(scenes.CHESS_GAME, environments.CASTLE);
+
+        camera = CreateRef<Camera>(glm::vec3(0.0f, 5.0f, 15.0f));
+        camera->SetResolution(width, height);
+        cameraController.SetCamera(camera);
     }
 
     void Window::OnUpdate(float deltaTime)
     {
         if (glfwWindowShouldClose(glfwWindow))
         {
-            renderer->IdleWait();
             windowCloseCallback();
             return;
         }
@@ -101,7 +115,6 @@ namespace Raytracing
         glfwPollEvents();
 
         cameraController.Update(deltaTime);
-
         imGuiVulkan->DrawUi();
         renderer->Draw(deltaTime, camera);
     }
@@ -115,7 +128,7 @@ namespace Raytracing
         } else
         {
             renderer->Resize(width, height);
-            imGuiVulkan->Resize(width, height);
+            imGuiVulkan->Resize();
             camera->SetResolution(width, height);
         }
     }

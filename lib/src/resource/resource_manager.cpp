@@ -22,7 +22,7 @@
 #include "renderer/vulkan/vulkan_texture.h"
 #include "util/log.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     ImageResource ResourceManager::LoadImageResource(const std::string& imagePath)
     {

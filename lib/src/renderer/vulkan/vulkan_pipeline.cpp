@@ -8,7 +8,7 @@
 #include "util/filesystem.h"
 #include "util/log.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     namespace Utils
     {

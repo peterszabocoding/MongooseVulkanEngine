@@ -2,7 +2,7 @@
 
 #include <spdlog/spdlog.h>
 
-namespace Raytracing
+namespace MongooseVK
 {
     class Log {
     public:
@@ -14,8 +14,8 @@ namespace Raytracing
     };
 }
 
-#define LOG_TRACE(...) Raytracing::Log::GetCoreLogger()->trace(__VA_ARGS__)
-#define LOG_INFO(...) Raytracing::Log::GetCoreLogger()->info(__VA_ARGS__)
-#define LOG_WARN(...) Raytracing::Log::GetCoreLogger()->warn(__VA_ARGS__)
-#define LOG_ERROR(...)	Raytracing::Log::GetCoreLogger()->error(__VA_ARGS__)
-#define LOG_FATAL(...)	Raytracing::Log::GetCoreLogger()->fatal(__VA_ARGS__)
+#define LOG_TRACE(...) MongooseVK::Log::GetCoreLogger()->trace(__VA_ARGS__)
+#define LOG_INFO(...) MongooseVK::Log::GetCoreLogger()->info(__VA_ARGS__)
+#define LOG_WARN(...) MongooseVK::Log::GetCoreLogger()->warn(__VA_ARGS__)
+#define LOG_ERROR(...)	MongooseVK::Log::GetCoreLogger()->error(__VA_ARGS__)
+#define LOG_FATAL(...)	MongooseVK::Log::GetCoreLogger()->fatal(__VA_ARGS__)

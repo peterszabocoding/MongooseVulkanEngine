@@ -1,7 +1,7 @@
 #pragma once
 #include "vulkan_pass.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     struct GridParams {
         alignas(16) glm::vec3 gridColorThin = glm::vec3(0.5f, 0.5f, 0.5f);

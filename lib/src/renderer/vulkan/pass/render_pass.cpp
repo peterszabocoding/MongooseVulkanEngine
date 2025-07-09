@@ -4,7 +4,7 @@
 #include "resource/resource_manager.h"
 #include "util/log.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     RenderPass::RenderPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution): VulkanPass(vulkanDevice, _resolution), scene(_scene)
     {

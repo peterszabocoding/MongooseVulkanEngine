@@ -1,6 +1,6 @@
 #pragma once
 
-namespace Raytracing
+namespace MongooseVK
 {
     enum class ImageFormat {
         Unknown = 0,

@@ -1,7 +1,7 @@
 #pragma once
 #include "vulkan_cube_map_texture.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     class VulkanReflectionProbe {
     public:

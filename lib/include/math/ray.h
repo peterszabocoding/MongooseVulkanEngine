@@ -2,7 +2,7 @@
 
 #include "vec3.h"
 
-namespace Raytracing {
+namespace MongooseVK {
 
   class Ray {
     public:

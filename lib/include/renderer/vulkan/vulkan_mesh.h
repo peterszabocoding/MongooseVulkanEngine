@@ -5,7 +5,7 @@
 #include "vulkan_buffer.h"
 #include "vulkan_material.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     class VulkanDevice;
 

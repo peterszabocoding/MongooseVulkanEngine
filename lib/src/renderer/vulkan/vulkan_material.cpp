@@ -7,7 +7,7 @@
 #include "resource/resource_manager.h"
 #include "util/log.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     VulkanMaterialBuilder& VulkanMaterialBuilder::SetIndex(int _index)
     {

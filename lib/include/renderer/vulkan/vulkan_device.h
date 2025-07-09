@@ -16,7 +16,7 @@
 #include "vulkan_texture.h"
 #include "resource/resource.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     class VulkanMeshlet;
     class VulkanPipeline;
@@ -82,7 +82,7 @@ namespace Raytracing
 
     class VulkanDevice {
     public:
-        VulkanDevice(int width, int height, GLFWwindow* glfwWindow);
+        VulkanDevice(GLFWwindow* glfwWindow);
         ~VulkanDevice();
 
         void DrawMeshlet(const DrawCommandParams& params) const;
@@ -131,7 +131,7 @@ namespace Raytracing
             const std::vector<const char*>& deviceExtensions,
             const std::vector<const char*>& validationLayers);
 
-        void Init(int width, int height, GLFWwindow* glfwWindow);
+        void Init(GLFWwindow* glfwWindow);
 
         void CreateCommandPool();
         void CreateCommandBuffers();

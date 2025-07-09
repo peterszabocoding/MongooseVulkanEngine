@@ -7,7 +7,7 @@
 #include "util/filesystem.h"
 #include "util/log.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     shaderc_include_result* ShaderIncluder::GetInclude(const char* requested_source, shaderc_include_type type,
                                                        const char* requesting_source, size_t include_depth)

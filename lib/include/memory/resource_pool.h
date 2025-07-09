@@ -3,7 +3,7 @@
 
 #include "util/log.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     class PoolObject {
     public:

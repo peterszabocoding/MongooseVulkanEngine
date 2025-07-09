@@ -4,7 +4,7 @@
 #include <iostream>
 #include "util/timer.h"
 
-namespace Raytracing {
+namespace MongooseVK {
 
     class vec3 {
 

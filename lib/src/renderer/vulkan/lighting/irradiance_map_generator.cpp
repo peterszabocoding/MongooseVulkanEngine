@@ -8,7 +8,7 @@
 #include "renderer/vulkan/vulkan_framebuffer.h"
 #include "resource/resource_manager.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     const glm::mat4 m_CaptureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
     const glm::mat4 m_CaptureViews[6] = {

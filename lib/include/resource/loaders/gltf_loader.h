@@ -3,7 +3,7 @@
 #include "renderer/scene.h"
 #include "util/core.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     class VulkanDevice;
     class VulkanMesh;

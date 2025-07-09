@@ -3,7 +3,7 @@
 #include "renderer/vulkan/vulkan_device.h"
 #include "renderer/vulkan/vulkan_utils.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     namespace Utils
     {

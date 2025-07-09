@@ -1,7 +1,7 @@
 #include "renderer/render_graph.h"
 #include "renderer/vulkan/vulkan_device.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     RenderResource::~RenderResource() {}
 

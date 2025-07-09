@@ -9,7 +9,7 @@
 
 #define APP_USE_UNLIMITED_FRAME_RATE
 
-namespace Raytracing
+namespace MongooseVK
 {
     namespace ImGuiUtils
     {
@@ -163,19 +163,19 @@ namespace Raytracing
         ImGui::DestroyContext();
     }
 
-    void ImGuiVulkan::Init(GLFWwindow* window, Ref<VulkanRenderer> vulkanRenderer, const int width, const int height)
+    void ImGuiVulkan::Init(GLFWwindow* window, VulkanDevice* _vulkanDevice)
     {
-        renderer = vulkanRenderer;
+        vulkanDevice = _vulkanDevice;
         glfwWindow = window;
-        SetupImGui(width, height);
+        SetupImGui();
     }
 
-    void ImGuiVulkan::Resize(const int width, const int height)
+    void ImGuiVulkan::Resize()
     {
         for (auto& uiWindow: uiWindows) uiWindow->Resize();
     }
 
-    void ImGuiVulkan::SetupImGui(const int width, const int height) const
+    void ImGuiVulkan::SetupImGui() const
     {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -189,9 +189,9 @@ namespace Raytracing
         // Check for WSI support
         VkBool32 res;
         vkGetPhysicalDeviceSurfaceSupportKHR(
-            renderer->GetVulkanDevice()->GetPhysicalDevice(),
-            renderer->GetVulkanDevice()->GetQueueFamilyIndex(),
-            renderer->GetVulkanDevice()->GetSurface(),
+            vulkanDevice->GetPhysicalDevice(),
+            vulkanDevice->GetQueueFamilyIndex(),
+            vulkanDevice->GetSurface(),
             &res);
 
         if (res != VK_TRUE)
@@ -201,13 +201,14 @@ namespace Raytracing
         ImGui_ImplGlfw_InitForVulkan(glfwWindow, true);
 
         ImGui_ImplVulkan_InitInfo init_info = {};
-        init_info.Instance = renderer->GetVulkanDevice()->GetInstance();
-        init_info.PhysicalDevice = renderer->GetVulkanDevice()->GetPhysicalDevice();
-        init_info.Device = renderer->GetVulkanDevice()->GetDevice();
-        init_info.QueueFamily = renderer->GetVulkanDevice()->GetQueueFamilyIndex();
-        init_info.Queue = renderer->GetVulkanDevice()->GetPresentQueue();
-        init_info.DescriptorPool = renderer->GetVulkanDevice()->GetGuiDescriptorPool();
-        init_info.RenderPass = renderer->GetRenderPass()->Get();
+        init_info.Instance = vulkanDevice->GetInstance();
+        init_info.PhysicalDevice = vulkanDevice->GetPhysicalDevice();
+        init_info.Device = vulkanDevice->GetDevice();
+        init_info.QueueFamily = vulkanDevice->GetQueueFamilyIndex();
+        init_info.Queue = vulkanDevice->GetPresentQueue();
+        init_info.DescriptorPool = vulkanDevice->GetGuiDescriptorPool();
+        // TODO Pass a render pass here, otherwise ImGui doesn't work on MacOS
+        //init_info.RenderPass = renderer->GetRenderPass()->Get();
         init_info.MinImageCount = 2;
         init_info.ImageCount = 2;
         init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;

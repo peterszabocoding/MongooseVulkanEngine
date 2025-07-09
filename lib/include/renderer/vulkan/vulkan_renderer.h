@@ -1,6 +1,5 @@
 #pragma once
 
-#include "renderer/renderer.h"
 #include "renderer/scene.h"
 #include "renderer/transform.h"
 #include "vulkan_device.h"
@@ -18,7 +17,7 @@
 #include "renderer/Light.h"
 #include "renderer/shader_cache.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     struct DescriptorBuffers {
         Ref<VulkanBuffer> transformsBuffer{};
@@ -47,23 +46,26 @@ namespace Raytracing
         alignas(4) float bias = 0.005f;
     };
 
-    class VulkanRenderer final : public Renderer {
+    struct SceneDefinition {
+        std::string gltfPath;
+        std::string hdrPath;
+    };
+
+    class VulkanRenderer {
     public:
-        VulkanRenderer() = default;
-        ~VulkanRenderer() override;
+        explicit VulkanRenderer(VulkanDevice* vulkanDevice): device(vulkanDevice) {}
+        ~VulkanRenderer();
 
-        virtual void Init(uint32_t width, uint32_t height) override;
+        void Init(uint32_t width, uint32_t height);
+
+        void LoadScene(const std::string& gltfPath, const std::string& hdrPath);
+
         void PrecomputeIBL();
+        void IdleWait();
+        void Resize(int width, int height);
+        void Draw(float deltaTime, const Ref<Camera>& camera);
 
-        virtual void ProcessPixel(unsigned int pixelCount, vec3 pixelColor) override {}
-        virtual void OnRenderBegin(const Camera& camera) override {}
-        virtual void OnRenderFinished(const Camera& camera) override {}
-
-        virtual void IdleWait() override;
-        virtual void Resize(int width, int height) override;
-        virtual void Draw(float deltaTime, Ref<Camera> camera) override;
-
-        VulkanDevice* GetVulkanDevice() const { return device.get(); }
+        VulkanDevice* GetVulkanDevice() const { return device; }
 
         [[nodiscard]] Ref<VulkanRenderPass> GetRenderPass() const { return presentPass->GetRenderPass(); }
         [[nodiscard]] Ref<VulkanFramebuffer> GetRenderBuffer() const { return framebuffers.geometryFramebuffer; }
@@ -105,18 +107,17 @@ namespace Raytracing
         Scope<InfiniteGridPass> gridPass;
 
     private:
+        VulkanDevice* device;
+
         VkExtent2D viewportResolution;
         VkExtent2D renderResolution;
         uint32_t activeImage = 0;
 
         Scene scene;
+        bool isSceneLoaded = false;
 
-        Scope<VulkanDevice> device;
         Scope<ShaderCache> shaderCache;
         Scope<VulkanSwapchain> vulkanSwapChain;
-
-        Scope<VulkanMeshlet> screenRect;
-        Ref<VulkanMesh> cubeMesh;
 
         Ref<VulkanCubeMapTexture> irradianceMap;
         float lightSpinningAngle = 0.0f;

@@ -6,7 +6,7 @@
 #include "glm/ext/matrix_clip_space.hpp"
 #include "glm/ext/matrix_transform.hpp"
 
-namespace Raytracing
+namespace MongooseVK
 {
     enum class ShadowType: uint8_t {
         NONE = 0,

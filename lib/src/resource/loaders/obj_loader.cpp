@@ -7,7 +7,7 @@
 #include "renderer/mesh.h"
 #include "util/log.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     Ref<VulkanMesh> ObjLoader::LoadMesh(VulkanDevice* device, const std::string& meshPath)
     {

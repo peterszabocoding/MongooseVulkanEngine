@@ -3,7 +3,7 @@
 #include "renderer/vulkan/vulkan_swapchain.h"
 #include "util/core.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     class VulkanDevice;
     class VulkanCubeMapTexture;

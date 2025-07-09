@@ -2,7 +2,7 @@
 #include "renderer/camera.h"
 #include "util/core.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     class CameraController {
     public:

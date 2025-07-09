@@ -3,7 +3,7 @@
 #include <vulkan/vulkan.h>
 #include <vector>
 
-namespace Raytracing
+namespace MongooseVK
 {
     class VulkanDescriptorSetLayout;
     class VulkanDescriptorPool;

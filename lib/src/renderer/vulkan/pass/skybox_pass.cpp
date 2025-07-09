@@ -5,7 +5,7 @@
 #include "resource/resource_manager.h"
 #include "util/log.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     SkyboxPass::SkyboxPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution): VulkanPass(vulkanDevice, _resolution), scene(_scene)
     {

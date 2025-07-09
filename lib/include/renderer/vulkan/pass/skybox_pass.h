@@ -2,7 +2,7 @@
 #include "vulkan_pass.h"
 #include "renderer/scene.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     class SkyboxPass : public VulkanPass {
     public:

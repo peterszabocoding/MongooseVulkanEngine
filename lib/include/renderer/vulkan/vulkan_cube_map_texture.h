@@ -3,7 +3,7 @@
 #include "renderer/bitmap.h"
 #include "util/core.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     class VulkanCubeMapTexture {
     public:

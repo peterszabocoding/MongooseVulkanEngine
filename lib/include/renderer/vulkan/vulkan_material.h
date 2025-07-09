@@ -8,7 +8,7 @@
 #include "vulkan_texture.h"
 #include "vulkan_descriptor_set_layout.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     class VulkanPipeline;
 

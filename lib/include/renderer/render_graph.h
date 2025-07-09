@@ -9,7 +9,7 @@
 
 #include "vulkan/vulkan_image.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     class VulkanDevice;
 

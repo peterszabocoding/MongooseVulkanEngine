@@ -8,7 +8,7 @@
 #include "renderer/vulkan/vulkan_utils.h"
 #include "util/log.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     namespace ImageUtils
     {

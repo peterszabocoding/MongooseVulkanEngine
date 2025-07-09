@@ -3,7 +3,7 @@
 #include <chrono>
 #include <iostream>
 
-namespace Raytracing {
+namespace MongooseVK {
 
     class Timer {
 

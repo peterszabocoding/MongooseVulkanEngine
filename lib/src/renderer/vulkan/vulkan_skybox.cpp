@@ -3,18 +3,18 @@
 #include "renderer/shader_cache.h"
 #include "renderer/vulkan/vulkan_descriptor_writer.h"
 
-Raytracing::VulkanSkybox::VulkanSkybox(VulkanDevice* vulkanDevice, const Ref<VulkanCubeMapTexture>& _cubemap): vulkanDevice(vulkanDevice),
+MongooseVK::VulkanSkybox::VulkanSkybox(VulkanDevice* vulkanDevice, const Ref<VulkanCubeMapTexture>& _cubemap): vulkanDevice(vulkanDevice),
     cubemap(_cubemap)
 {
     InitDescriptorSets();
 }
 
-Raytracing::VulkanSkybox::~VulkanSkybox()
+MongooseVK::VulkanSkybox::~VulkanSkybox()
 {
     vkFreeDescriptorSets(vulkanDevice->GetDevice(), vulkanDevice->GetShaderDescriptorPool().GetDescriptorPool(), 1, &descriptorSet);
 }
 
-void Raytracing::VulkanSkybox::InitDescriptorSets()
+void MongooseVK::VulkanSkybox::InitDescriptorSets()
 {
     VkDescriptorImageInfo info{
         cubemap->GetSampler(),

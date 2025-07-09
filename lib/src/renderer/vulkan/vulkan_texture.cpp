@@ -4,7 +4,7 @@
 #include "renderer/vulkan/vulkan_image.h"
 #include "renderer/vulkan/vulkan_utils.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     Ref<VulkanTexture> VulkanTextureBuilder::Build(VulkanDevice* device)
     {

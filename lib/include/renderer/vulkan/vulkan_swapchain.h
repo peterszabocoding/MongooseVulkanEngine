@@ -2,7 +2,7 @@
 
 #include "vulkan_device.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     class ImageViewBuilder;
     class VulkanFramebuffer;

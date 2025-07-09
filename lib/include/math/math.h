@@ -7,7 +7,7 @@
 #include <math.h>
 #include <cmath>
 
-namespace Raytracing {
+namespace MongooseVK {
 
     static bool isEqual(float a, float b) {
         const float diff = std::abs(a - b);

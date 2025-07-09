@@ -4,10 +4,10 @@
 #include "util/core.h"
 #include "window.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
 
-	struct AppInfo
+	struct ApplicationConfig
 	{
 		std::string appName;
 		std::string windowTitle;
@@ -20,10 +20,10 @@ namespace Raytracing
 	class Application
 	{
 	public:
-		static Application* Create();
+		static Application* Create(const ApplicationConfig& config);
 		static Application& Get() { return *s_Instance; }
 
-		Application();
+		Application(ApplicationConfig config);
 		virtual ~Application() = default;
 
 		virtual void OnCreate();
@@ -32,13 +32,12 @@ namespace Raytracing
 		Window& GetWindow() const { return *window; }
 
 	protected:
-		AppInfo applicationInfo;
+		ApplicationConfig applicationInfo;
 
 		static Application* s_Instance;
 		Scope<Window> window;
 
 		bool isRunning;
-
 		float lastFrameTime = 0.0f;
 	};
 }

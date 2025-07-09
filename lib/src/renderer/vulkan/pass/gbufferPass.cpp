@@ -9,7 +9,7 @@
 #include "renderer/vulkan/vulkan_pipeline.h"
 #include "util/log.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     GBufferPass::GBufferPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution): VulkanPass(vulkanDevice, _resolution),
         scene(_scene)

@@ -3,7 +3,7 @@
 #include "vec3.h"
 #include <iostream>
 
-namespace Raytracing {
+namespace MongooseVK {
 
     using color = vec3;
 

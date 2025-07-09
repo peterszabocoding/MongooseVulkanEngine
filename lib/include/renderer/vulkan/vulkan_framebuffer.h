@@ -5,7 +5,7 @@
 #include "util/core.h"
 #include "vulkan/vulkan.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     class VulkanRenderPass;
     class VulkanDevice;

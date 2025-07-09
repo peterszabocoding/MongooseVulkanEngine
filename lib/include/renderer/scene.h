@@ -8,7 +8,7 @@
 #include "vulkan/vulkan_mesh.h"
 #include "vulkan/vulkan_reflection_probe.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     struct Renderable {
         Ref<VulkanMesh> mesh;
@@ -20,16 +20,16 @@ namespace Raytracing
         std::string name = "";
         std::string filePath = "";
 
-        std::vector<Renderable> renderables;
-
-        std::vector<VulkanMaterial> materials;
-        std::vector<Ref<VulkanMesh>> meshes;
+        // Render objects
         std::vector<Transform> transforms;
+        std::vector<Ref<VulkanMesh>> meshes;
+        std::vector<VulkanMaterial> materials;
 
+        // Environment
         Scope<VulkanSkybox> skybox;
-
         Ref<VulkanReflectionProbe> reflectionProbe;
 
+        // Lights
         DirectionalLight directionalLight;
     };
 }

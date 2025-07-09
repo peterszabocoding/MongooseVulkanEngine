@@ -1,7 +1,7 @@
 #include "renderer/vulkan/vulkan_mesh.h"
 #include "renderer/vulkan/vulkan_device.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     VulkanMeshlet::VulkanMeshlet(VulkanDevice* _vulkanDevice, const std::vector<Vertex>& _vertices, const std::vector<uint32_t>& _indices,
                                  int _materialIndex)

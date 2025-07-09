@@ -34,7 +34,7 @@ do                                                                              
         }                                                                                                   \
 } while (0)
 
-namespace Raytracing::VulkanUtils
+namespace MongooseVK::VulkanUtils
 {
     struct VulkanVersion {
         uint32_t major;

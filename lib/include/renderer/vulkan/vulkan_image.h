@@ -6,7 +6,7 @@
 #include "resource/resource.h"
 #include "vma/vk_mem_alloc.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     class VulkanDevice;
 

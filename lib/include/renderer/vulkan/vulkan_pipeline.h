@@ -12,7 +12,7 @@
 #include "vulkan_renderpass.h"
 #include "resource/resource.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     class VulkanDevice;
 

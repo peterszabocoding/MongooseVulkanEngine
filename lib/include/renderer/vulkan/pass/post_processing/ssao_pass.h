@@ -1,7 +1,7 @@
 #pragma once
 #include "renderer/vulkan/pass/vulkan_pass.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     class VulkanBuffer;
 

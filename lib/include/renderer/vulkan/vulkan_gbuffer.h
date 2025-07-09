@@ -1,7 +1,7 @@
 #pragma once
 #include "vulkan_device.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     struct BufferAttachment {
         AllocatedImage allocatedImage{};

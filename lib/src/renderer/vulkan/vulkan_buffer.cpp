@@ -4,7 +4,7 @@
 #include "renderer/vulkan/vulkan_utils.h"
 #include "util/log.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     VulkanBuffer::VulkanBuffer(VulkanDevice* _vulkanDevice, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,
                                VmaMemoryUsage memoryUsage)

@@ -7,7 +7,7 @@
 #include "input/input.h"
 #include "GLFW/glfw3.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     void CameraController::Update(float deltaTime)
     {

@@ -10,7 +10,7 @@
 
 #include "resource/resource.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     enum eBitmapType {
         eBitmapType_2D,

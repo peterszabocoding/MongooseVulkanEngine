@@ -3,7 +3,7 @@
 #include "renderer/shader_cache.h"
 #include "util/log.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     ShadowMapPass::ShadowMapPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution): VulkanPass(vulkanDevice, _resolution), scene(_scene)
     {

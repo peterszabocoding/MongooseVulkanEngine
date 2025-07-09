@@ -3,7 +3,7 @@
 #include "renderer/vulkan/vulkan_descriptor_set_layout.h"
 #include "renderer/vulkan/vulkan_image.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     VulkanGBuffer::Builder& VulkanGBuffer::Builder::SetResolution(const uint32_t _width, const uint32_t _height)
     {

@@ -2,7 +2,7 @@
 
 #include "vulkan_image.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     class VulkanShadowMap {
     public:

@@ -7,7 +7,7 @@
 #include "renderer/vulkan/vulkan_descriptor_writer.h"
 #include "renderer/vulkan/vulkan_mesh.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     SSAOPass::SSAOPass(VulkanDevice* _device, VkExtent2D _resolution): VulkanPass(_device, _resolution)
     {

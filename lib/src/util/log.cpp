@@ -2,7 +2,7 @@
 
 #include "spdlog/sinks/stdout_color_sinks-inl.h"
 
-namespace Raytracing
+namespace MongooseVK
 {
     void Log::Init()
     {
