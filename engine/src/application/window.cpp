@@ -40,6 +40,7 @@ namespace MongooseVK
 
     Window::~Window()
     {
+        delete vulkanDevice;
         glfwDestroyWindow(glfwWindow);
         glfwTerminate();
     }
@@ -58,15 +59,15 @@ namespace MongooseVK
         glfwSetFramebufferSizeCallback(glfwWindow, FramebufferResizeCallback);
 
         LOG_TRACE("Init Vulkan");
-        vulkanDevice = CreateScope<VulkanDevice>(glfwWindow);
-        renderer = CreateRef<VulkanRenderer>(vulkanDevice.get());
+        vulkanDevice = VulkanDevice::Create(glfwWindow);
+        renderer = CreateRef<VulkanRenderer>();
         imGuiVulkan = CreateRef<ImGuiVulkan>();
 
         LOG_TRACE("Init Renderer");
         renderer->Init(width, height);
 
         LOG_TRACE("Init ImGui");
-        imGuiVulkan->Init(glfwWindow, vulkanDevice.get());
+        imGuiVulkan->Init(glfwWindow, VulkanDevice::Get());
 
         imGuiVulkan->AddWindow(
             std::reinterpret_pointer_cast<ImGuiWindow>(

@@ -53,7 +53,7 @@ namespace MongooseVK
 
     class VulkanRenderer {
     public:
-        explicit VulkanRenderer(VulkanDevice* vulkanDevice): device(vulkanDevice) {}
+        VulkanRenderer() = default;
         ~VulkanRenderer();
 
         void Init(uint32_t width, uint32_t height);

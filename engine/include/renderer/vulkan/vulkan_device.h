@@ -85,6 +85,9 @@ namespace MongooseVK
         VulkanDevice(GLFWwindow* glfwWindow);
         ~VulkanDevice();
 
+        static VulkanDevice* Create(GLFWwindow* glfwWindow);
+        static VulkanDevice* Get() { return s_Instance; }
+
         void DrawMeshlet(const DrawCommandParams& params) const;
 
         void DrawFrame(VkSwapchainKHR swapchain, DrawFrameFunction draw, OutOfDateErrorCallback errorCallback);
@@ -152,6 +155,8 @@ namespace MongooseVK
         DeletionQueue frameDeletionQueue;
 
     private:
+        static VulkanDevice* s_Instance;
+
         int viewportWidth{}, viewportHeight{};
         bool getReadyToResize = false;
 

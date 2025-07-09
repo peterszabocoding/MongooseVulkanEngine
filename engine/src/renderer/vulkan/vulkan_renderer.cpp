@@ -22,6 +22,8 @@ namespace MongooseVK
 
     void VulkanRenderer::Init(const uint32_t width, const uint32_t height)
     {
+        device = VulkanDevice::Get();
+
         LOG_TRACE("VulkanRenderer::Init()");
         viewportResolution.width = width;
         viewportResolution.height = height;

@@ -12,5 +12,5 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Add the library and application subdirectories
-add_subdirectory(lib)
+add_subdirectory(engine)
 add_subdirectory(app)

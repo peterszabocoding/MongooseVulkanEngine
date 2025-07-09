@@ -35,7 +35,7 @@ namespace MongooseVK
         GLFWwindow* glfwWindow = nullptr;
         OnWindowCloseCallback windowCloseCallback;
 
-        Scope<VulkanDevice> vulkanDevice;
+        VulkanDevice* vulkanDevice;
         Ref<VulkanRenderer> renderer;
         Ref<ImGuiVulkan> imGuiVulkan;
 

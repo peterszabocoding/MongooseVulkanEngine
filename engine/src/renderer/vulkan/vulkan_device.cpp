@@ -30,8 +30,12 @@ namespace MongooseVK
 	constexpr bool ENABLE_VALIDATION_LAYERS = false;
 #endif
 
+    VulkanDevice* VulkanDevice::s_Instance = nullptr;
+
     VulkanDevice::VulkanDevice(GLFWwindow* glfwWindow)
     {
+        ASSERT(!s_Instance, "Vulkan device has been initialized already");
+        s_Instance = this;
         Init(glfwWindow);
     }
 
@@ -49,6 +53,11 @@ namespace MongooseVK
         vkDestroyDevice(device, nullptr);
         vkDestroySurfaceKHR(instance, surface, nullptr);
         vkDestroyInstance(instance, nullptr);
+    }
+
+    VulkanDevice* VulkanDevice::Create(GLFWwindow* glfwWindow)
+    {
+        return new VulkanDevice(glfwWindow);
     }
 
     void VulkanDevice::DrawMeshlet(const DrawCommandParams& params) const
