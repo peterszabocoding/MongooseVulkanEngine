@@ -59,7 +59,7 @@ namespace MongooseVK
 
         if (cubemap)
         {
-            auto stagingBuffer = device->AllocateBuffer(cubemap->pixelData.size(),
+            auto stagingBuffer = device->CreateBuffer(cubemap->pixelData.size(),
                                                         VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                                                         VMA_MEMORY_USAGE_CPU_ONLY);
 
@@ -106,7 +106,7 @@ namespace MongooseVK
                                                     mipLevels);
             });
 
-            device->FreeBuffer(stagingBuffer);
+            device->DestroyBuffer(stagingBuffer);
         }
 
         return CreateRef<VulkanCubeMapTexture>(device, allocatedImage, imageView, mipmapFaceImageViews, sampler, imageMemory);

@@ -14,22 +14,29 @@ namespace MongooseVK
     GBufferPass::GBufferPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution): VulkanPass(vulkanDevice, _resolution),
         scene(_scene)
     {
-        renderPass = VulkanRenderPass::Builder(vulkanDevice)
-                .AddColorAttachment({.imageFormat = VK_FORMAT_R32G32B32A32_SFLOAT})
-                .AddColorAttachment({.imageFormat = VK_FORMAT_R32G32B32A32_SFLOAT})
-                .AddDepthAttachment(VK_FORMAT_D32_SFLOAT)
-                .Build();
+        VulkanRenderPass::RenderPassConfig config;
+        config.AddColorAttachment({.imageFormat = VK_FORMAT_R32G32B32A32_SFLOAT});
+        config.AddColorAttachment({.imageFormat = VK_FORMAT_R32G32B32A32_SFLOAT});
+        config.AddDepthAttachment({.depthFormat = VK_FORMAT_D32_SFLOAT});
+
+        renderPassHandle = device->CreateRenderPass(config);
+
         LoadPipelines();
 
         BuildGBuffer();
         CreateFramebuffer();
     }
 
+    GBufferPass::~GBufferPass()
+    {
+        device->DestroyRenderPass(renderPassHandle);
+    }
+
     void GBufferPass::Render(VkCommandBuffer commandBuffer, Camera& camera, Ref<VulkanFramebuffer> writeBuffer,
                              Ref<VulkanFramebuffer> readBuffer)
     {
         device->SetViewportAndScissor(resolution, commandBuffer);
-        renderPass->Begin(commandBuffer, framebuffer, resolution);
+        GetRenderPass()->Begin(commandBuffer, framebuffer, resolution);
 
         DrawCommandParams geometryDrawParams{};
         geometryDrawParams.commandBuffer = commandBuffer;
@@ -65,7 +72,7 @@ namespace MongooseVK
             }
         }
 
-        renderPass->End(commandBuffer);
+        GetRenderPass()->End(commandBuffer);
     }
 
     void GBufferPass::Resize(VkExtent2D _resolution)
@@ -73,6 +80,11 @@ namespace MongooseVK
         VulkanPass::Resize(_resolution);
         BuildGBuffer();
         CreateFramebuffer();
+    }
+
+    VulkanRenderPass* GBufferPass::GetRenderPass() const
+    {
+        return device->renderPassPool.Get(renderPassHandle.handle);
     }
 
     void GBufferPass::ExecuteWithRenderGraph(VkCommandBuffer cmd, const std::unordered_map<std::string, RenderResource*>& resources)
@@ -108,7 +120,7 @@ namespace MongooseVK
             .frontFace = PipelineFrontFace::Counter_clockwise,
             .cullMode = PipelineCullMode::Back,
 
-            .renderPass = renderPass,
+            .renderPass = GetRenderPass()->Get(),
 
             .pushConstantData = pushConstantData,
 
@@ -122,7 +134,7 @@ namespace MongooseVK
     void GBufferPass::CreateFramebuffer()
     {
         framebuffer = VulkanFramebuffer::Builder(device)
-                .SetRenderpass(renderPass)
+                .SetRenderpass(GetRenderPass())
                 .SetResolution(resolution.width, resolution.height)
                 .AddAttachment(gBuffer->buffers.viewSpaceNormal.imageView)
                 .AddAttachment(gBuffer->buffers.viewSpacePosition.imageView)

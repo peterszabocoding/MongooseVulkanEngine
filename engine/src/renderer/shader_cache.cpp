@@ -1,5 +1,7 @@
 #include "renderer/shader_cache.h"
 
+#include <renderer/vulkan/vulkan_device.h>
+
 #include "util/filesystem.h"
 #include "util/log.h"
 #include "renderer/vulkan/vulkan_shader_compiler.h"
@@ -22,16 +24,12 @@ namespace MongooseVK
 
     DescriptorSetLayouts ShaderCache::descriptorSetLayouts;
     DescriptorSets ShaderCache::descriptorSets;
-    Renderpass ShaderCache::renderpasses;
-    Pipelines ShaderCache::pipelines;
     std::unordered_map<std::string, std::vector<uint32_t>> ShaderCache::shaderCache;
 
     void ShaderCache::Load()
     {
         LoadShaders();
         LoadDescriptorLayouts();
-        LoadRenderpasses();
-        LoadPipelines();
     }
 
     void ShaderCache::LoadShaders()
@@ -115,21 +113,6 @@ namespace MongooseVK
         // Tone Mapping
         descriptorSetLayouts.toneMappingDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice)
                 .AddBinding({0, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
-                .Build();
-    }
-
-    void ShaderCache::LoadPipelines()
-    {
-        LOG_TRACE("Build pipelines");
-    }
-
-    void ShaderCache::LoadRenderpasses()
-    {
-        VulkanRenderPass::ColorAttachment colorAttachment;
-        colorAttachment.imageFormat = VK_FORMAT_R16G16B16A16_SFLOAT;
-
-        renderpasses.iblPreparePass = VulkanRenderPass::Builder(vulkanDevice)
-                .AddColorAttachment(colorAttachment)
                 .Build();
     }
 }

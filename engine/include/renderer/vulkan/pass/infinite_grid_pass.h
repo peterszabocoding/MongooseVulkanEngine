@@ -14,18 +14,20 @@ namespace MongooseVK
     class InfiniteGridPass : public VulkanPass {
     public:
         InfiniteGridPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution);
-        ~InfiniteGridPass() override = default;
+        ~InfiniteGridPass() override;
 
         virtual void Render(VkCommandBuffer commandBuffer,
                             Camera& camera,
                             Ref<VulkanFramebuffer> writeBuffer,
                             Ref<VulkanFramebuffer> readBuffer = nullptr) override;
 
+        VulkanRenderPass* GetRenderPass();
+
     private:
         void LoadPipelines();
 
     public:
-        Ref<VulkanRenderPass> renderPass{};
+        RenderPassHandle renderPassHandle;
         Ref<VulkanPipeline> gridPipeline;
         GridParams gridParams;
 

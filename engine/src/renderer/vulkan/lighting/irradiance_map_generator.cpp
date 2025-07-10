@@ -24,14 +24,17 @@ namespace MongooseVK
     {
         cubeMesh = ResourceManager::LoadMesh(device, "resources/models/cube.obj");
 
+        VulkanRenderPass::RenderPassConfig config;
+        config.AddColorAttachment({.imageFormat = VK_FORMAT_R16G16B16A16_SFLOAT});
 
-        VulkanRenderPass::ColorAttachment colorAttachment;
-        colorAttachment.imageFormat = VK_FORMAT_R16G16B16A16_SFLOAT;
+        renderPassHandle = device->CreateRenderPass(config);
 
-        renderPass = VulkanRenderPass::Builder(device)
-                .AddColorAttachment(colorAttachment)
-                .Build();
         LoadPipeline();
+    }
+
+    IrradianceMapGenerator::~IrradianceMapGenerator()
+    {
+        device->DestroyRenderPass(renderPassHandle);
     }
 
     Ref<VulkanCubeMapTexture> IrradianceMapGenerator::FromCubemapTexture(const Ref<VulkanCubeMapTexture>& cubemapTexture)
@@ -47,7 +50,7 @@ namespace MongooseVK
         for (size_t i = 0; i < 6; i++)
         {
             iblIrradianceFramebuffes[i] = VulkanFramebuffer::Builder(device)
-                    .SetRenderpass(renderPass)
+                    .SetRenderpass(GetRenderPass())
                     .SetResolution(32, 32)
                     .AddAttachment(irradianceMap->GetFaceImageView(i, 0))
                     .Build();
@@ -76,6 +79,11 @@ namespace MongooseVK
         return irradianceMap;
     }
 
+    VulkanRenderPass* IrradianceMapGenerator::GetRenderPass()
+    {
+        return device->renderPassPool.Get(renderPassHandle.handle);
+    }
+
     void IrradianceMapGenerator::ComputeIrradianceMap(const VkCommandBuffer commandBuffer,
                                                       const size_t faceIndex,
                                                       const Ref<VulkanFramebuffer>& framebuffer,
@@ -84,7 +92,7 @@ namespace MongooseVK
         VkExtent2D extent = {framebuffer->GetWidth(), framebuffer->GetHeight()};
 
         device->SetViewportAndScissor(extent, commandBuffer);
-        renderPass->Begin(commandBuffer, framebuffer, extent);
+        GetRenderPass()->Begin(commandBuffer, framebuffer, extent);
 
         DrawCommandParams drawCommandParams{};
         drawCommandParams.commandBuffer = commandBuffer;
@@ -107,7 +115,7 @@ namespace MongooseVK
 
         device->DrawMeshlet(drawCommandParams);
 
-        renderPass->End(commandBuffer);
+        GetRenderPass()->End(commandBuffer);
     }
 
     void IrradianceMapGenerator::LoadPipeline()
@@ -131,7 +139,7 @@ namespace MongooseVK
             iblIrradianceMapPipelineConfig.disableBlending = true;
             iblIrradianceMapPipelineConfig.enableDepthTest = false;
 
-            iblIrradianceMapPipelineConfig.renderPass = renderPass;
+            iblIrradianceMapPipelineConfig.renderPass = GetRenderPass()->Get();
 
             iblIrradianceMapPipelineConfig.pushConstantData.shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
             iblIrradianceMapPipelineConfig.pushConstantData.offset = 0;

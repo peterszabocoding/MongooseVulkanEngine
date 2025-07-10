@@ -6,24 +6,31 @@
 
 namespace MongooseVK
 {
-    RenderPass::RenderPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution): VulkanPass(vulkanDevice, _resolution), scene(_scene)
+    RenderPass::RenderPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution): VulkanPass(vulkanDevice, _resolution),
+        scene(_scene)
     {
-        VulkanRenderPass::ColorAttachment colorAttachment;
-        colorAttachment.imageFormat = VK_FORMAT_R16G16B16A16_SFLOAT;
-        colorAttachment.loadOperation = VK_ATTACHMENT_LOAD_OP_LOAD;
+        VulkanRenderPass::RenderPassConfig config;
+        config.AddColorAttachment({
+            .imageFormat = VK_FORMAT_R16G16B16A16_SFLOAT,
+            .loadOp = VK_ATTACHMENT_LOAD_OP_LOAD
+        });
+        config.AddDepthAttachment({.depthFormat = VK_FORMAT_D24_UNORM_S8_UINT});
 
-        renderPass = VulkanRenderPass::Builder(vulkanDevice)
-                .AddColorAttachment(colorAttachment)
-                .AddDepthAttachment()
-                .Build();
+        renderPassHandle = device->CreateRenderPass(config);
+
         LoadPipelines();
+    }
+
+    RenderPass::~RenderPass()
+    {
+        device->DestroyRenderPass(renderPassHandle);
     }
 
     void RenderPass::Render(VkCommandBuffer commandBuffer, Camera& camera, Ref<VulkanFramebuffer> writeBuffer,
                             Ref<VulkanFramebuffer> readBuffer)
     {
         device->SetViewportAndScissor(writeBuffer->GetExtent(), commandBuffer);
-        renderPass->Begin(commandBuffer, writeBuffer, writeBuffer->GetExtent());
+        GetRenderPass()->Begin(commandBuffer, writeBuffer, writeBuffer->GetExtent());
 
         DrawCommandParams geometryDrawParams{};
         geometryDrawParams.commandBuffer = commandBuffer;
@@ -65,7 +72,12 @@ namespace MongooseVK
             }
         }
 
-        renderPass->End(commandBuffer);
+        GetRenderPass()->End(commandBuffer);
+    }
+
+    VulkanRenderPass* RenderPass::GetRenderPass()
+    {
+        return device->renderPassPool.Get(renderPassHandle.handle);
     }
 
     void RenderPass::LoadPipelines()
@@ -97,7 +109,7 @@ namespace MongooseVK
             pipelineConfig.enableDepthTest = true;
             pipelineConfig.depthAttachment = ImageFormat::DEPTH24_STENCIL8;
 
-            pipelineConfig.renderPass = renderPass;
+            pipelineConfig.renderPass = GetRenderPass()->Get();
 
             pipelineConfig.pushConstantData.shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
             pipelineConfig.pushConstantData.offset = 0;

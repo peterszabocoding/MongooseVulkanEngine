@@ -14,7 +14,7 @@ namespace MongooseVK
                             Ref<VulkanFramebuffer> writeBuffer,
                             Ref<VulkanFramebuffer> readBuffer = nullptr) override;
 
-        Ref<VulkanRenderPass> GetRenderPass() { return renderPass; }
+        VulkanRenderPass* GetRenderPass();
 
     private:
         void LoadPipelines();
@@ -22,7 +22,7 @@ namespace MongooseVK
     private:
         Scene& scene;
 
-        Ref<VulkanRenderPass> renderPass{};
+        RenderPassHandle renderPassHandle;
         Ref<VulkanPipeline> skyboxPipeline;
         Ref<VulkanMesh> cubeMesh;
     };

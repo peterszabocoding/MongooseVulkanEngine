@@ -11,6 +11,8 @@ namespace MongooseVK
 
         Ref<VulkanReflectionProbe> FromCubemap(const Ref<VulkanCubeMapTexture>& cubemap);
 
+        VulkanRenderPass* GetRenderPass();
+
     private:
         void LoadPipeline();
         void GenerateBrdfLUT();
@@ -21,7 +23,7 @@ namespace MongooseVK
     private:
         VulkanDevice* device = nullptr;
         Ref<VulkanTexture> brdfLUT;
-        Ref<VulkanRenderPass> renderPass;
+        RenderPassHandle renderPassHandle;
 
         Ref<VulkanPipeline> brdfLutPipeline;
         Ref<VulkanPipeline> prefilterPipeline;

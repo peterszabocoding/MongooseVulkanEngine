@@ -29,33 +29,33 @@ namespace MongooseVK
         assert(vertices.size() >= 3 && "Vertex count must be at least 3");
 
         const auto bufferSize = sizeof(vertices[0]) * vertices.size();
-        const auto stagingBuffer = vulkanDevice->AllocateBuffer(
+        const auto stagingBuffer = vulkanDevice->CreateBuffer(
             bufferSize,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
             VMA_MEMORY_USAGE_CPU_ONLY);
 
         memcpy(stagingBuffer.GetData(), vertices.data(), bufferSize);
 
-        vertexBuffer = vulkanDevice->AllocateBuffer(
+        vertexBuffer = vulkanDevice->CreateBuffer(
             stagingBuffer.GetBufferSize(),
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
             VMA_MEMORY_USAGE_GPU_ONLY);
 
         vulkanDevice->CopyBuffer(stagingBuffer, vertexBuffer);
-        vulkanDevice->FreeBuffer(stagingBuffer);
+        vulkanDevice->DestroyBuffer(stagingBuffer);
     }
 
     void VulkanMeshlet::CreateIndexBuffer(VulkanDevice* vulkanDevice)
     {
         const auto bufferSize = sizeof(indices[0]) * indices.size();
-        const auto stagingBuffer = vulkanDevice->AllocateBuffer(
+        const auto stagingBuffer = vulkanDevice->CreateBuffer(
             bufferSize,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
             VMA_MEMORY_USAGE_CPU_ONLY);
 
         memcpy(stagingBuffer.GetData(), indices.data(), bufferSize);
 
-        indexBuffer = vulkanDevice->AllocateBuffer(
+        indexBuffer = vulkanDevice->CreateBuffer(
             stagingBuffer.GetBufferSize(),
             VK_BUFFER_USAGE_TRANSFER_DST_BIT |
             VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
@@ -63,15 +63,15 @@ namespace MongooseVK
             VMA_MEMORY_USAGE_GPU_ONLY);
 
         vulkanDevice->CopyBuffer(stagingBuffer, indexBuffer);
-        vulkanDevice->FreeBuffer(stagingBuffer);
+        vulkanDevice->DestroyBuffer(stagingBuffer);
     }
 
     VulkanMesh::~VulkanMesh()
     {
         for (const auto& meshlet: meshlets)
         {
-            vulkanDevice->FreeBuffer(meshlet.vertexBuffer);
-            vulkanDevice->FreeBuffer(meshlet.indexBuffer);
+            vulkanDevice->DestroyBuffer(meshlet.vertexBuffer);
+            vulkanDevice->DestroyBuffer(meshlet.indexBuffer);
         }
     }
 

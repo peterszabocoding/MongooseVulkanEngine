@@ -8,7 +8,7 @@ namespace MongooseVK
     class ShadowMapPass : public VulkanPass {
     public:
         explicit ShadowMapPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution);
-        virtual ~ShadowMapPass() override = default;
+        virtual ~ShadowMapPass() override;
 
         void SetCascadeIndex(uint32_t _cascadeIndex) { cascadeIndex = _cascadeIndex; }
 
@@ -17,7 +17,7 @@ namespace MongooseVK
                             Ref<VulkanFramebuffer> writeBuffer,
                             Ref<VulkanFramebuffer> readBuffer = nullptr) override;
 
-        Ref<VulkanRenderPass> GetRenderPass() { return renderPass; }
+        VulkanRenderPass* GetRenderPass();
 
     private:
         void LoadPipelines();
@@ -25,7 +25,7 @@ namespace MongooseVK
     private:
         Scene& scene;
         uint32_t cascadeIndex = 0;
-        Ref<VulkanRenderPass> renderPass{};
+        RenderPassHandle renderPassHandle;
         Ref<VulkanPipeline> directionalShadowMapPipeline;
     };
 }

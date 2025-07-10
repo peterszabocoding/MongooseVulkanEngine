@@ -10,7 +10,7 @@ namespace MongooseVK
     class GBufferPass : public VulkanPass {
     public:
         explicit GBufferPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution);
-        virtual ~GBufferPass() override = default;
+        virtual ~GBufferPass() override;
 
         virtual void Render(VkCommandBuffer commandBuffer,
                             Camera& camera,
@@ -19,7 +19,7 @@ namespace MongooseVK
 
         void Resize(VkExtent2D _resolution) override;
 
-        Ref<VulkanRenderPass> GetRenderPass() { return renderPass; }
+        VulkanRenderPass* GetRenderPass() const;
 
         void ExecuteWithRenderGraph(VkCommandBuffer cmd, const std::unordered_map<std::string, RenderResource*>& resources);
 
@@ -35,7 +35,7 @@ namespace MongooseVK
     private:
         Scene& scene;
 
-        Ref<VulkanRenderPass> renderPass{};
+        RenderPassHandle renderPassHandle;
         Ref<VulkanPipeline> gbufferPipeline;
     };
 }

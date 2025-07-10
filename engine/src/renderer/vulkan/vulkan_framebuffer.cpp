@@ -54,7 +54,7 @@ namespace MongooseVK {
         return *this;
     }
 
-    VulkanFramebuffer::Builder& VulkanFramebuffer::Builder::SetRenderpass(Ref<VulkanRenderPass> _renderPass) {
+    VulkanFramebuffer::Builder& VulkanFramebuffer::Builder::SetRenderpass(VulkanRenderPass* _renderPass) {
         renderPass = _renderPass;
         return *this;
     }

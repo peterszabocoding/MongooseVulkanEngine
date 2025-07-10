@@ -22,13 +22,11 @@ namespace MongooseVK {
     };
 
     ReflectionProbeGenerator::ReflectionProbeGenerator(VulkanDevice* _device): device(_device) {
+        VulkanRenderPass::RenderPassConfig config;
+        config.AddColorAttachment({.imageFormat = VK_FORMAT_R16G16B16A16_SFLOAT});
 
-        VulkanRenderPass::ColorAttachment colorAttachment;
-        colorAttachment.imageFormat = VK_FORMAT_R16G16B16A16_SFLOAT;
+        renderPassHandle = device->CreateRenderPass(config);
 
-        renderPass = VulkanRenderPass::Builder(device)
-                .AddColorAttachment(colorAttachment)
-                .Build();
         LoadPipeline();
 
         screenRect = CreateScope<VulkanMeshlet>(device, Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
@@ -59,7 +57,7 @@ namespace MongooseVK {
         });
 
         Ref<VulkanFramebuffer> framebuffer = VulkanFramebuffer::Builder(device)
-                .SetRenderpass(renderPass)
+                .SetRenderpass(GetRenderPass())
                 .SetResolution(REFLECTION_RESOLUTION, REFLECTION_RESOLUTION)
                 .AddAttachment(ImageFormat::RGBA16_SFLOAT)
                 .Build();
@@ -116,6 +114,11 @@ namespace MongooseVK {
         return CreateRef<VulkanReflectionProbe>(device, prefilterMap, brdfLUT);
     }
 
+    VulkanRenderPass* ReflectionProbeGenerator::GetRenderPass()
+    {
+        return device->renderPassPool.Get(renderPassHandle.handle);
+    }
+
 
     void ReflectionProbeGenerator::LoadPipeline() {
         PipelineConfig iblBrdfPipelineConfig; {
@@ -135,7 +138,7 @@ namespace MongooseVK {
             iblBrdfPipelineConfig.disableBlending = true;
             iblBrdfPipelineConfig.enableDepthTest = false;
 
-            iblBrdfPipelineConfig.renderPass = renderPass;
+            iblBrdfPipelineConfig.renderPass = GetRenderPass()->Get();
         }
         brdfLutPipeline = VulkanPipeline::Builder().Build(device, iblBrdfPipelineConfig);
 
@@ -164,7 +167,7 @@ namespace MongooseVK {
                 sizeof(PrefilterData)
             };
 
-            iblPrefilterPipelineConfig.renderPass = renderPass;
+            iblPrefilterPipelineConfig.renderPass = GetRenderPass()->Get();
         }
         prefilterPipeline = VulkanPipeline::Builder().Build(device, iblPrefilterPipelineConfig);
     }
@@ -178,7 +181,7 @@ namespace MongooseVK {
                 .Build(device);
 
         auto iblBRDFFramebuffer = VulkanFramebuffer::Builder(device)
-                .SetRenderpass(renderPass)
+                .SetRenderpass(GetRenderPass())
                 .SetResolution(512, 512)
                 .AddAttachment(brdfLUT->GetImageView())
                 .Build();
@@ -192,7 +195,7 @@ namespace MongooseVK {
         VkExtent2D extent = {framebuffer->GetWidth(), framebuffer->GetHeight()};
 
         device->SetViewportAndScissor(extent, commandBuffer);
-        renderPass->Begin(commandBuffer, framebuffer, extent);
+        GetRenderPass()->Begin(commandBuffer, framebuffer, extent);
 
         DrawCommandParams drawCommandParams{};
         drawCommandParams.commandBuffer = commandBuffer;
@@ -207,7 +210,7 @@ namespace MongooseVK {
 
         device->DrawMeshlet(drawCommandParams);
 
-        renderPass->End(commandBuffer);
+        GetRenderPass()->End(commandBuffer);
     }
 
     void ReflectionProbeGenerator::ComputePrefilterMap(const VkCommandBuffer commandBuffer,
@@ -218,7 +221,7 @@ namespace MongooseVK {
                                                        VkDescriptorSet cubemapDescriptorSet,
                                                        uint32_t resolution) {
         device->SetViewportAndScissor(extent, commandBuffer);
-        renderPass->Begin(commandBuffer, framebuffer, extent);
+        GetRenderPass()->Begin(commandBuffer, framebuffer, extent);
 
         DrawCommandParams drawCommandParams{};
         drawCommandParams.commandBuffer = commandBuffer;
@@ -248,6 +251,6 @@ namespace MongooseVK {
 
         device->DrawMeshlet(drawCommandParams);
 
-        renderPass->End(commandBuffer);
+        GetRenderPass()->End(commandBuffer);
     }
 }

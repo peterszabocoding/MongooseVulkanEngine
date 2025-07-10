@@ -27,7 +27,7 @@ namespace MongooseVK
 
             Builder& AddAttachment(VkImageView imageAttachment);
             Builder& AddAttachment(ImageFormat attachmentFormat);
-            Builder& SetRenderpass(Ref<VulkanRenderPass> renderPass);
+            Builder& SetRenderpass(VulkanRenderPass* renderPass);
             Builder& SetResolution(uint32_t width, uint32_t height);
 
             Ref<VulkanFramebuffer> Build();
@@ -35,7 +35,7 @@ namespace MongooseVK
         private:
             VulkanDevice* device{};
             uint32_t width = 0, height = 0;
-            Ref<VulkanRenderPass> renderPass{};
+            VulkanRenderPass* renderPass{};
             std::vector<FramebufferAttachment> attachments{};
         };
 

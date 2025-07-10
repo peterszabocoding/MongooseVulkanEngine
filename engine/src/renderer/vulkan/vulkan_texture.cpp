@@ -39,7 +39,7 @@ namespace MongooseVK
 
         if (data && size > 0)
         {
-            auto stagingBuffer = device->AllocateBuffer(size,
+            auto stagingBuffer = device->CreateBuffer(size,
                                                         VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                                                         VMA_MEMORY_USAGE_CPU_ONLY);
 
@@ -80,7 +80,7 @@ namespace MongooseVK
                 });
             }
 
-            device->FreeBuffer(stagingBuffer);
+            device->DestroyBuffer(stagingBuffer);
         }
 
         imageResource.data = data;
@@ -126,7 +126,7 @@ namespace MongooseVK
 
         if (data && size > 0)
         {
-            auto stagingBuffer = device->AllocateBuffer(size,
+            auto stagingBuffer = device->CreateBuffer(size,
                                                         VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                                                         VMA_MEMORY_USAGE_CPU_ONLY);
 
@@ -164,7 +164,7 @@ namespace MongooseVK
                 }
             });
 
-            device->FreeBuffer(stagingBuffer);
+            device->DestroyBuffer(stagingBuffer);
         }
 
         imageResource.data = data;

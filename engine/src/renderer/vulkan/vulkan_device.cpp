@@ -190,7 +190,8 @@ namespace MongooseVK
         CreateCommandBuffers();
         CreateSyncObjects();
 
-        texturePool.Init(1000);
+        texturePool.Init(1024);
+        renderPassPool.Init(128);
     }
 
     VkResult VulkanDevice::SubmitDrawCommands(VkSemaphore* signalSemaphores) const
@@ -281,7 +282,7 @@ namespace MongooseVK
         vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
     }
 
-    TextureHandle VulkanDevice::AllocateTexture(ImageResource imageResource)
+    TextureHandle VulkanDevice::CreateTexture(ImageResource imageResource)
     {
         VulkanTexture* texture = texturePool.Obtain();
 
@@ -318,9 +319,9 @@ namespace MongooseVK
         descriptorWriter.BuildOrOverwrite(bindlessTextureDescriptorSet);
     }
 
-    void VulkanDevice::FreeTexture(TextureHandle textureHandle)
+    void VulkanDevice::DestroyTexture(TextureHandle textureHandle)
     {
-        frameDeletionQueue.Push([&] {
+        frameDeletionQueue.Push([=] {
             VulkanTexture* texture = texturePool.Get(textureHandle.handle);
 
             vkDestroySampler(device, texture->sampler, nullptr);
@@ -329,6 +330,113 @@ namespace MongooseVK
                 vkDestroyImageView(device, texture->imageViews[i], nullptr);
 
             vmaDestroyImage(vmaAllocator, texture->allocatedImage.image, texture->allocatedImage.allocation);
+        });
+    }
+
+    RenderPassHandle VulkanDevice::CreateRenderPass(VulkanRenderPass::RenderPassConfig config)
+    {
+        VulkanRenderPass* renderPass = renderPassPool.Obtain();
+
+        // Setup attachments
+        uint32_t attachmentIndex = 0;
+        std::vector<VkAttachmentReference> colorAttachmentsRefs;
+        std::vector<VkAttachmentReference> depthAttachmentsRefs;
+        std::vector<VkAttachmentDescription> attachmentDescriptions;
+
+        for (size_t i = 0; i < config.numColorAttachments; i++)
+        {
+            VulkanRenderPass::ColorAttachment colorAttachment = config.colorAttachments[i];
+
+            VkAttachmentDescription attachment{};
+            attachment.format = colorAttachment.imageFormat;
+            attachment.samples = colorAttachment.sampleCount;
+            attachment.loadOp = colorAttachment.loadOp;
+            attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+            attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            attachment.finalLayout = colorAttachment.isSwapchainAttachment
+                                         ? VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+                                         : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+            attachmentDescriptions.push_back(attachment);
+
+            VkAttachmentReference attachmentRef{};
+            attachmentRef.attachment = attachmentIndex;
+            attachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+            attachmentIndex++;
+            colorAttachmentsRefs.push_back(attachmentRef);
+        }
+        if (config.depthAttachment.has_value())
+        {
+            VkAttachmentDescription attachment{};
+            attachment.format = config.depthAttachment->depthFormat;
+            attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+            attachment.loadOp = config.depthAttachment->loadOp;
+            attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+            attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+            attachmentDescriptions.push_back(attachment);
+
+            VkAttachmentReference attachmentRef{};
+            attachmentRef.attachment = attachmentIndex;
+            attachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+            depthAttachmentsRefs.push_back(attachmentRef);
+        }
+
+        // Build VkRenderPass
+        {
+            VkSubpassDescription subpass{};
+            subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+            subpass.colorAttachmentCount = colorAttachmentsRefs.size();
+            subpass.pColorAttachments = colorAttachmentsRefs.data();
+            subpass.pDepthStencilAttachment = depthAttachmentsRefs.data();
+
+            std::array<VkSubpassDependency, 2> dependencies;
+
+            dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+            dependencies[0].dstSubpass = 0;
+            dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+            dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+            dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+            dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+            dependencies[1].srcSubpass = 0;
+            dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
+            dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            dependencies[1].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+            dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+            dependencies[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+            dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+            VkRenderPassCreateInfo render_pass_info{};
+            render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+            render_pass_info.attachmentCount = static_cast<uint32_t>(attachmentDescriptions.size());
+            render_pass_info.pAttachments = attachmentDescriptions.data();
+            render_pass_info.subpassCount = 1;
+            render_pass_info.pSubpasses = &subpass;
+            render_pass_info.dependencyCount = dependencies.size();
+            render_pass_info.pDependencies = dependencies.data();
+
+            VK_CHECK_MSG(
+                vkCreateRenderPass(device, &render_pass_info, nullptr, &renderPass->renderPass),
+                "Failed to create render pass.");
+        }
+
+        renderPass->config = config;
+        return {renderPass->index};
+    }
+
+    void VulkanDevice::DestroyRenderPass(RenderPassHandle renderPassHandle)
+    {
+        frameDeletionQueue.Push([=] {
+            vkDestroyRenderPass(device, renderPassPool.Get(renderPassHandle.handle)->Get(), nullptr);
         });
     }
 
@@ -637,7 +745,7 @@ namespace MongooseVK
         return VulkanUtils::FindQueueFamilies(physicalDevice, surface).graphicsFamily.value();
     }
 
-    AllocatedBuffer VulkanDevice::AllocateBuffer(uint64_t size, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage)
+    AllocatedBuffer VulkanDevice::CreateBuffer(uint64_t size, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage)
     {
         LOG_TRACE("Allocate buffer: " + std::to_string(size / 1024) + " kB");
 
@@ -668,7 +776,7 @@ namespace MongooseVK
         return allocatedBuffer;
     }
 
-    void VulkanDevice::FreeBuffer(AllocatedBuffer buffer)
+    void VulkanDevice::DestroyBuffer(AllocatedBuffer buffer)
     {
         frameDeletionQueue.Push([=] {
             vmaDestroyBuffer(vmaAllocator, buffer.buffer, buffer.allocation);

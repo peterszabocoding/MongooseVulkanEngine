@@ -11,22 +11,20 @@ namespace MongooseVK
 {
     PresentPass::PresentPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution): VulkanPass(vulkanDevice, _resolution)
     {
-        VulkanRenderPass::ColorAttachment colorAttachment;
-        colorAttachment.imageFormat = VK_FORMAT_R8G8B8A8_UNORM;
-        colorAttachment.isSwapchainAttachment = true;
-
-        renderPass = VulkanRenderPass::Builder(vulkanDevice)
-                .AddColorAttachment(colorAttachment)
-                .Build();
         screenRect = CreateScope<VulkanMeshlet>(device, Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
         LoadPipeline();
+    }
+
+    PresentPass::~PresentPass()
+    {
+        device->DestroyRenderPass(renderPassHandle);
     }
 
     void PresentPass::Render(VkCommandBuffer commandBuffer, Camera& camera, Ref<VulkanFramebuffer> writeBuffer,
                              Ref<VulkanFramebuffer> readBuffer)
     {
         device->SetViewportAndScissor(writeBuffer->GetExtent(), commandBuffer);
-        renderPass->Begin(commandBuffer, writeBuffer, writeBuffer->GetExtent());
+        GetRenderPass()->Begin(commandBuffer, writeBuffer, writeBuffer->GetExtent());
 
         DrawCommandParams screenRectDrawParams{};
         screenRectDrawParams.commandBuffer = commandBuffer;
@@ -44,33 +42,47 @@ namespace MongooseVK
         device->DrawMeshlet(screenRectDrawParams);
         ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 
-        renderPass->End(commandBuffer);
+        GetRenderPass()->End(commandBuffer);
+    }
+
+    VulkanRenderPass* PresentPass::GetRenderPass()
+    {
+        return device->renderPassPool.Get(renderPassHandle.handle);
     }
 
     void PresentPass::LoadPipeline()
     {
         LOG_TRACE("Building present pipeline");
-        PipelineConfig presentPipelineConfig; {
-            presentPipelineConfig.vertexShaderPath = "quad.vert";
-            presentPipelineConfig.fragmentShaderPath = "quad.frag";
+        VulkanRenderPass::RenderPassConfig config;
+        config.AddColorAttachment({
+            .imageFormat = VK_FORMAT_R8G8B8A8_UNORM,
+            .isSwapchainAttachment = true
+        });
 
-            presentPipelineConfig.cullMode = PipelineCullMode::Front;
-            presentPipelineConfig.polygonMode = PipelinePolygonMode::Fill;
-            presentPipelineConfig.frontFace = PipelineFrontFace::Counter_clockwise;
+        renderPassHandle = device->CreateRenderPass(config);
 
-            presentPipelineConfig.descriptorSetLayouts = {
-                ShaderCache::descriptorSetLayouts.presentDescriptorSetLayout
-            };
+        PipelineConfig presentPipelineConfig;
+        presentPipelineConfig.name = "present_pipeline";
+        presentPipelineConfig.vertexShaderPath = "quad.vert";
+        presentPipelineConfig.fragmentShaderPath = "quad.frag";
 
-            presentPipelineConfig.colorAttachments = {
-                ImageFormat::RGBA8_UNORM,
-            };
+        presentPipelineConfig.cullMode = PipelineCullMode::Front;
+        presentPipelineConfig.polygonMode = PipelinePolygonMode::Fill;
+        presentPipelineConfig.frontFace = PipelineFrontFace::Counter_clockwise;
 
-            presentPipelineConfig.disableBlending = true;
-            presentPipelineConfig.enableDepthTest = false;
+        presentPipelineConfig.descriptorSetLayouts = {
+            ShaderCache::descriptorSetLayouts.presentDescriptorSetLayout
+        };
 
-            presentPipelineConfig.renderPass = renderPass;
-        }
+        presentPipelineConfig.colorAttachments = {
+            ImageFormat::RGBA8_UNORM,
+        };
+
+        presentPipelineConfig.disableBlending = true;
+        presentPipelineConfig.enableDepthTest = false;
+
+        presentPipelineConfig.renderPass = GetRenderPass()->Get();
+
         presentPipeline = VulkanPipeline::Builder().Build(device, presentPipelineConfig);
     }
 }

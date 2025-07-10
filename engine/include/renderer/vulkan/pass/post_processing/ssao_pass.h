@@ -30,7 +30,7 @@ namespace MongooseVK
                             Ref<VulkanFramebuffer> writeBuffer,
                             Ref<VulkanFramebuffer> readBuffer = nullptr) override;
 
-        Ref<VulkanRenderPass> GetRenderPass() { return renderPass; }
+        VulkanRenderPass* GetRenderPass();
 
         virtual void Resize(VkExtent2D _resolution) override;
 
@@ -49,7 +49,8 @@ namespace MongooseVK
     private:
         Ref<VulkanPipeline> ssaoPipeline;
         Ref<VulkanPipeline> blurPipeline;
-        Ref<VulkanRenderPass> renderPass{};
+
+        RenderPassHandle renderPassHandle;
 
         SSAOBuffer buffer;
         std::vector<glm::vec4> ssaoNoiseData;

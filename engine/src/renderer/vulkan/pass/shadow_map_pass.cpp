@@ -7,17 +7,24 @@ namespace MongooseVK
 {
     ShadowMapPass::ShadowMapPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution): VulkanPass(vulkanDevice, _resolution), scene(_scene)
     {
-        renderPass = VulkanRenderPass::Builder(vulkanDevice)
-                .AddDepthAttachment(VK_FORMAT_D32_SFLOAT)
-                .Build();
+        VulkanRenderPass::RenderPassConfig config;
+        config.AddDepthAttachment({.depthFormat = VK_FORMAT_D32_SFLOAT});
+
+        renderPassHandle = device->CreateRenderPass(config);
+
         LoadPipelines();
+    }
+
+    ShadowMapPass::~ShadowMapPass()
+    {
+        device->DestroyRenderPass(renderPassHandle);
     }
 
     void ShadowMapPass::Render(VkCommandBuffer commandBuffer, Camera& camera, Ref<VulkanFramebuffer> writeBuffer,
                                Ref<VulkanFramebuffer> readBuffer)
     {
         device->SetViewportAndScissor(writeBuffer->GetExtent(), commandBuffer);
-        renderPass->Begin(commandBuffer, writeBuffer, writeBuffer->GetExtent());
+        GetRenderPass()->Begin(commandBuffer, writeBuffer, writeBuffer->GetExtent());
 
         DrawCommandParams geometryDrawParams{};
         geometryDrawParams.commandBuffer = commandBuffer;
@@ -46,7 +53,12 @@ namespace MongooseVK
             }
         }
 
-        renderPass->End(commandBuffer);
+        GetRenderPass()->End(commandBuffer);
+    }
+
+    VulkanRenderPass* ShadowMapPass::GetRenderPass()
+    {
+        return device->renderPassPool.Get(renderPassHandle.handle);
     }
 
     void ShadowMapPass::LoadPipelines()
@@ -64,7 +76,7 @@ namespace MongooseVK
             dirShadowMapPipelineConfig.enableDepthTest = true;
             dirShadowMapPipelineConfig.depthAttachment = ImageFormat::DEPTH32;
 
-            dirShadowMapPipelineConfig.renderPass = renderPass;
+            dirShadowMapPipelineConfig.renderPass = GetRenderPass()->Get();
 
             dirShadowMapPipelineConfig.pushConstantData.shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
             dirShadowMapPipelineConfig.pushConstantData.offset = 0;

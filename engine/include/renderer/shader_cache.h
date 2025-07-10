@@ -34,14 +34,6 @@ namespace MongooseVK
         VkDescriptorSet presentDescriptorSet;
     };
 
-    struct Pipelines {
-
-    };
-
-    struct Renderpass {
-        Ref<VulkanRenderPass> iblPreparePass{};
-    };
-
     class ShaderCache {
     public:
         ShaderCache(VulkanDevice* _vulkanDevice): vulkanDevice(_vulkanDevice) { Load(); }
@@ -53,10 +45,8 @@ namespace MongooseVK
         void Load();
 
     public:
-        static Pipelines pipelines;
         static DescriptorSetLayouts descriptorSetLayouts;
         static DescriptorSets descriptorSets;
-        static Renderpass renderpasses;
         static std::unordered_map<std::string, std::vector<uint32_t>> shaderCache;
 
     private:

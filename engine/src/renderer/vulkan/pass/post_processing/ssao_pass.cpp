@@ -11,12 +11,11 @@ namespace MongooseVK
 {
     SSAOPass::SSAOPass(VulkanDevice* _device, VkExtent2D _resolution): VulkanPass(_device, _resolution)
     {
-        VulkanRenderPass::ColorAttachment colorAttachment;
-        colorAttachment.imageFormat = VK_FORMAT_R8_UNORM;
+        VulkanRenderPass::RenderPassConfig config;
+        config.AddColorAttachment({.imageFormat = VK_FORMAT_R8_UNORM});
 
-        renderPass = VulkanRenderPass::Builder(device)
-                .AddColorAttachment(colorAttachment)
-                .Build();
+        renderPassHandle = device->CreateRenderPass(config);
+
         screenRect = CreateScope<VulkanMeshlet>(device, Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
         LoadPipeline();
 
@@ -30,6 +29,7 @@ namespace MongooseVK
 
     SSAOPass::~SSAOPass()
     {
+        device->DestroyRenderPass(renderPassHandle);
         vkFreeDescriptorSets(device->GetDevice(), device->GetShaderDescriptorPool().GetDescriptorPool(), 1, &ssaoDescriptorSet);;
     }
 
@@ -37,6 +37,8 @@ namespace MongooseVK
                           Ref<VulkanFramebuffer> readBuffer)
     {
         device->SetViewportAndScissor(framebuffer->GetExtent(), commandBuffer);
+        VulkanRenderPass* renderPass = device->renderPassPool.Get(renderPassHandle.handle);
+
         renderPass->Begin(commandBuffer, framebuffer, framebuffer->GetExtent());
 
         DrawCommandParams drawParams{};
@@ -64,6 +66,11 @@ namespace MongooseVK
         renderPass->End(commandBuffer);
     }
 
+    VulkanRenderPass* SSAOPass::GetRenderPass()
+    {
+        return device->renderPassPool.Get(renderPassHandle.handle);
+    }
+
     void SSAOPass::Resize(VkExtent2D _resolution)
     {
         VulkanPass::Resize(_resolution);
@@ -73,6 +80,8 @@ namespace MongooseVK
 
     void SSAOPass::LoadPipeline()
     {
+        VulkanRenderPass* renderPass = device->renderPassPool.Get(renderPassHandle.handle);
+
         LOG_TRACE("Building SSAO pipeline");
         PipelineConfig pipelineConfig;
         pipelineConfig.vertexShaderPath = "quad.vert";
@@ -95,7 +104,7 @@ namespace MongooseVK
         pipelineConfig.disableBlending = true;
         pipelineConfig.enableDepthTest = false;
 
-        pipelineConfig.renderPass = renderPass;
+        pipelineConfig.renderPass = renderPass->renderPass;
 
         pipelineConfig.pushConstantData.shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
         pipelineConfig.pushConstantData.offset = 0;
@@ -200,7 +209,7 @@ namespace MongooseVK
     void SSAOPass::CreateFramebuffer()
     {
         framebuffer = VulkanFramebuffer::Builder(device)
-                .SetRenderpass(renderPass)
+                .SetRenderpass(device->renderPassPool.Get(renderPassHandle.handle))
                 .SetResolution(resolution.width * 0.5, resolution.height * 0.5)
                 .AddAttachment(ImageFormat::R8_UNORM)
                 .Build();

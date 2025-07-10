@@ -210,7 +210,7 @@ namespace MongooseVK
         pipelineInfo.pColorBlendState = &color_blending;
         pipelineInfo.pDynamicState = &dynamicState;
         pipelineInfo.layout = pipelineLayout;
-        pipelineInfo.renderPass = renderpass->Get();
+        pipelineInfo.renderPass = renderpass;
         pipelineInfo.subpass = 0;
         pipelineInfo.pDepthStencilState = &depthStencil;
         pipelineInfo.pNext = &renderInfo;
@@ -352,7 +352,7 @@ namespace MongooseVK
         return *this;
     }
 
-    VulkanPipeline::Builder& VulkanPipeline::Builder::SetRenderpass(Ref<VulkanRenderPass> _renderpass)
+    VulkanPipeline::Builder& VulkanPipeline::Builder::SetRenderpass(VkRenderPass _renderpass)
     {
         renderpass = _renderpass;
         return *this;

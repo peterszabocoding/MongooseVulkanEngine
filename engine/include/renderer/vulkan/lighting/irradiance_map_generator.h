@@ -11,9 +11,11 @@ namespace MongooseVK
     class IrradianceMapGenerator {
     public:
         IrradianceMapGenerator(VulkanDevice* _device);
-        ~IrradianceMapGenerator() = default;
+        ~IrradianceMapGenerator();
 
         Ref<VulkanCubeMapTexture> FromCubemapTexture(const Ref<VulkanCubeMapTexture>& cubemapTexture);
+
+        VulkanRenderPass* GetRenderPass();
 
     private:
         void LoadPipeline();
@@ -22,7 +24,7 @@ namespace MongooseVK
     private:
         VulkanDevice* device;
         Ref<VulkanMesh> cubeMesh;
-        Ref<VulkanRenderPass> renderPass;
+        RenderPassHandle renderPassHandle;
         Ref<VulkanPipeline> irradianceMapPipeline;
     };
 }

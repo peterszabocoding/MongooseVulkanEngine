@@ -13,11 +13,13 @@
 #include "memory/resource_pool.h"
 #include "vulkan_descriptor_pool.h"
 #include "vulkan_descriptor_set_layout.h"
+#include "vulkan_renderpass.h"
 #include "vulkan_texture.h"
 #include "resource/resource.h"
 
 namespace MongooseVK
 {
+    class VulkanRenderPass;
     class VulkanMeshlet;
     class VulkanPipeline;
     class VulkanMesh;
@@ -120,14 +122,18 @@ namespace MongooseVK
         [[nodiscard]] inline VkQueue GetDevicePresentQueue() const;
 
         // Buffer management
-        AllocatedBuffer AllocateBuffer(uint64_t size, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage = VMA_MEMORY_USAGE_AUTO);
+        AllocatedBuffer CreateBuffer(uint64_t size, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage = VMA_MEMORY_USAGE_AUTO);
         void CopyBuffer(const AllocatedBuffer& src, const AllocatedBuffer& dst);
-        void FreeBuffer(AllocatedBuffer buffer);
+        void DestroyBuffer(AllocatedBuffer buffer);
 
         // Texture management
-        TextureHandle AllocateTexture(ImageResource imageResource);
+        TextureHandle CreateTexture(ImageResource imageResource);
         void UpdateTexture(TextureHandle textureHandle);
-        void FreeTexture(TextureHandle textureHandle);
+        void DestroyTexture(TextureHandle textureHandle);
+
+        // Render pass management
+        RenderPassHandle CreateRenderPass(VulkanRenderPass::RenderPassConfig config);
+        void DestroyRenderPass(RenderPassHandle textureHandle);
 
     private:
         static VkInstance CreateVkInstance(
@@ -149,6 +155,8 @@ namespace MongooseVK
     public:
         uint32_t currentFrame = 0;
         ObjectResourcePool<VulkanTexture> texturePool;
+        ObjectResourcePool<VulkanRenderPass> renderPassPool;
+
         VkDescriptorSet bindlessTextureDescriptorSet{};
         Ref<VulkanDescriptorSetLayout> bindlessDescriptorSetLayout;
 

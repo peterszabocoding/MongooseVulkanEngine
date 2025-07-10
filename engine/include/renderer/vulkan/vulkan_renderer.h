@@ -67,7 +67,6 @@ namespace MongooseVK
 
         VulkanDevice* GetVulkanDevice() const { return device; }
 
-        [[nodiscard]] Ref<VulkanRenderPass> GetRenderPass() const { return presentPass->GetRenderPass(); }
         [[nodiscard]] Ref<VulkanFramebuffer> GetRenderBuffer() const { return framebuffers.geometryFramebuffer; }
         [[nodiscard]] Ref<VulkanShadowMap> GetShadowMap() const { return directionalShadowMap; }
 

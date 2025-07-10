@@ -7,14 +7,13 @@
 
 namespace MongooseVK
 {
-    SkyboxPass::SkyboxPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution): VulkanPass(vulkanDevice, _resolution), scene(_scene)
+    SkyboxPass::SkyboxPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution): VulkanPass(vulkanDevice, _resolution),
+        scene(_scene)
     {
-        VulkanRenderPass::ColorAttachment colorAttachment;
-        colorAttachment.imageFormat = VK_FORMAT_R16G16B16A16_UNORM;
+        VulkanRenderPass::RenderPassConfig config;
+        config.AddColorAttachment({.imageFormat = VK_FORMAT_R16G16B16A16_UNORM});
 
-        renderPass = VulkanRenderPass::Builder(vulkanDevice)
-                .AddColorAttachment(colorAttachment)
-                .Build();
+        renderPassHandle = device->CreateRenderPass(config);
 
         cubeMesh = ResourceManager::LoadMesh(device, "resources/models/cube.obj");
         LoadPipelines();
@@ -24,7 +23,7 @@ namespace MongooseVK
                             Ref<VulkanFramebuffer> readBuffer)
     {
         device->SetViewportAndScissor(writeBuffer->GetExtent(), commandBuffer);
-        renderPass->Begin(commandBuffer, writeBuffer, writeBuffer->GetExtent());
+        GetRenderPass()->Begin(commandBuffer, writeBuffer, writeBuffer->GetExtent());
 
         DrawCommandParams skyboxDrawParams{};
         skyboxDrawParams.commandBuffer = commandBuffer;
@@ -42,7 +41,12 @@ namespace MongooseVK
 
         device->DrawMeshlet(skyboxDrawParams);
 
-        renderPass->End(commandBuffer);
+        GetRenderPass()->End(commandBuffer);
+    }
+
+    VulkanRenderPass* SkyboxPass::GetRenderPass()
+    {
+        return device->renderPassPool.Get(renderPassHandle.handle);
     }
 
     void SkyboxPass::LoadPipelines()
@@ -68,7 +72,7 @@ namespace MongooseVK
             skyboxPipelineConfig.disableBlending = true;
             skyboxPipelineConfig.enableDepthTest = false;
 
-            skyboxPipelineConfig.renderPass = renderPass;
+            skyboxPipelineConfig.renderPass = GetRenderPass()->Get();
         }
         skyboxPipeline = VulkanPipeline::Builder().Build(device, skyboxPipelineConfig);
     }

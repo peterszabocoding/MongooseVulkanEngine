@@ -79,6 +79,7 @@ namespace MongooseVK
     };
 
     struct PipelineConfig {
+        std::string name;
         std::string vertexShaderPath;
         std::string fragmentShaderPath;
 
@@ -90,7 +91,7 @@ namespace MongooseVK
         PipelineFrontFace frontFace = PipelineFrontFace::Counter_clockwise;
         PipelineCullMode cullMode = PipelineCullMode::Back;
 
-        Ref<VulkanRenderPass> renderPass = VK_NULL_HANDLE;
+        VkRenderPass renderPass = VK_NULL_HANDLE;
 
         PipelinePushConstantData pushConstantData{};
 
@@ -118,7 +119,7 @@ namespace MongooseVK
             Builder& EnableDepthTest();
             Builder& DisableDepthTest();
             Builder& AddPushConstant(VkShaderStageFlags stageFlags, uint32_t offset, uint32_t size);
-            Builder& SetRenderpass(Ref<VulkanRenderPass> _renderpass);
+            Builder& SetRenderpass(VkRenderPass _renderpass);
 
             Ref<VulkanPipeline> Build(VulkanDevice* vulkanDevice);
             Ref<VulkanPipeline> Build(VulkanDevice* vulkanDevice, PipelineConfig& config);
@@ -154,7 +155,7 @@ namespace MongooseVK
 
             bool disableBlending = false;
 
-            Ref<VulkanRenderPass> renderpass;
+            VkRenderPass renderpass;
         };
 
     public:

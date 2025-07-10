@@ -9,23 +9,33 @@ namespace MongooseVK
 {
     InfiniteGridPass::InfiniteGridPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution): VulkanPass(vulkanDevice, _resolution)
     {
-        VulkanRenderPass::ColorAttachment colorAttachment;
-        colorAttachment.imageFormat = VK_FORMAT_R8G8B8A8_UNORM;
-        colorAttachment.loadOperation = VK_ATTACHMENT_LOAD_OP_LOAD;
+        VulkanRenderPass::RenderPassConfig config;
 
-        renderPass = VulkanRenderPass::Builder(vulkanDevice)
-                .AddColorAttachment(colorAttachment)
-                .AddDepthAttachment({VK_FORMAT_D24_UNORM_S8_UINT, VK_ATTACHMENT_LOAD_OP_LOAD})
-                .Build();
+        config.AddColorAttachment({
+            .imageFormat = VK_FORMAT_R8G8B8A8_UNORM,
+            .loadOp = VK_ATTACHMENT_LOAD_OP_LOAD
+        });
+        config.AddDepthAttachment({
+            .depthFormat = VK_FORMAT_D24_UNORM_S8_UINT,
+            .loadOp = VK_ATTACHMENT_LOAD_OP_LOAD
+        });
+
+        renderPassHandle = device->CreateRenderPass(config);
+
         screenRect = CreateScope<VulkanMeshlet>(device, Primitives::GRID_VERTICES, Primitives::GRID_INDICES);
         LoadPipelines();
+    }
+
+    InfiniteGridPass::~InfiniteGridPass()
+    {
+        device->DestroyRenderPass(renderPassHandle);
     }
 
     void InfiniteGridPass::Render(VkCommandBuffer commandBuffer, Camera& camera, Ref<VulkanFramebuffer> writeBuffer,
                                   Ref<VulkanFramebuffer> readBuffer)
     {
         device->SetViewportAndScissor(writeBuffer->GetExtent(), commandBuffer);
-        renderPass->Begin(commandBuffer, writeBuffer, writeBuffer->GetExtent());
+        GetRenderPass()->Begin(commandBuffer, writeBuffer, writeBuffer->GetExtent());
 
         DrawCommandParams screenRectDrawParams{};
         screenRectDrawParams.commandBuffer = commandBuffer;
@@ -43,7 +53,12 @@ namespace MongooseVK
         };
 
         device->DrawMeshlet(screenRectDrawParams);
-        renderPass->End(commandBuffer);
+        GetRenderPass()->End(commandBuffer);
+    }
+
+    VulkanRenderPass* InfiniteGridPass::GetRenderPass()
+    {
+        return device->renderPassPool.Get(renderPassHandle.handle);
     }
 
     void InfiniteGridPass::LoadPipelines()
@@ -58,7 +73,7 @@ namespace MongooseVK
             pipelineConfig.frontFace = PipelineFrontFace::Counter_clockwise;
             pipelineConfig.disableBlending = false;
             pipelineConfig.enableDepthTest = true;
-            pipelineConfig.renderPass = renderPass;
+            pipelineConfig.renderPass = GetRenderPass()->Get();
             pipelineConfig.pushConstantData.shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
             pipelineConfig.pushConstantData.size = sizeof(GridParams);
             pipelineConfig.depthAttachment = ImageFormat::DEPTH24_STENCIL8;

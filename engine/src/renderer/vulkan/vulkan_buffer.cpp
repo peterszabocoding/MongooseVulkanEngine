@@ -10,11 +10,11 @@ namespace MongooseVK
                                VmaMemoryUsage memoryUsage)
     {
         vulkanDevice = _vulkanDevice;
-        allocatedBuffer = vulkanDevice->AllocateBuffer(size, usage, memoryUsage);
+        allocatedBuffer = vulkanDevice->CreateBuffer(size, usage, memoryUsage);
     }
 
     VulkanBuffer::~VulkanBuffer()
     {
-        vulkanDevice->FreeBuffer(allocatedBuffer);
+        vulkanDevice->DestroyBuffer(allocatedBuffer);
     }
 }

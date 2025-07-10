@@ -129,7 +129,7 @@ namespace MongooseVK
     {
         LOG_INFO("Load Texture: " + textureImagePath);
         const ImageResource imageResource = LoadImageResource(textureImagePath);
-        const TextureHandle textureHandle = device->AllocateTexture(imageResource);
+        const TextureHandle textureHandle = device->CreateTexture(imageResource);
         ReleaseImage(imageResource);
 
         return textureHandle;

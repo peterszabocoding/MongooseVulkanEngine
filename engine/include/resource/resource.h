@@ -69,16 +69,25 @@ namespace MongooseVK
     struct TextureHandle {
         ResourceHandle handle;
 
-        bool operator==(const TextureHandle& other)
-        {
-            return handle == other.handle;
-        }
-
-        bool operator!=(const TextureHandle& other)
-        {
-            return handle != other.handle;
-        }
+        bool operator==(const TextureHandle& other) const { return handle == other.handle; }
+        bool operator!=(const TextureHandle& other) const { return handle != other.handle; }
     };
 
-    static TextureHandle INVALID_TEXTURE_HANDLE = { INVALID_RESOURCE_HANDLE };
+    struct RenderPassHandle {
+        ResourceHandle handle;
+
+        bool operator==(const RenderPassHandle& other) const { return handle == other.handle; }
+        bool operator!=(const RenderPassHandle& other) const { return handle != other.handle; }
+    };
+
+    struct BufferHandle {
+        ResourceHandle handle;
+
+        bool operator==(const BufferHandle& other) const { return handle == other.handle; }
+        bool operator!=(const BufferHandle& other) const { return handle != other.handle; }
+    };
+
+    static TextureHandle INVALID_TEXTURE_HANDLE = {INVALID_RESOURCE_HANDLE};
+    static RenderPassHandle INVALID_RENDER_PASS_HANDLE = {INVALID_RESOURCE_HANDLE};
+    static BufferHandle INVALID_BUFFER_HANDLE = {INVALID_RESOURCE_HANDLE};
 }
