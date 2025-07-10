@@ -12,22 +12,23 @@ namespace MongooseVK
 
     struct WindowParams {
         const char* title;
-        unsigned int width;
-        unsigned int height;
+        uint32_t width;
+        uint32_t height;
     };
 
     class Window {
     public:
         Window(WindowParams params);
-        ~Window();
+        virtual ~Window();
 
-        void OnCreate();
-        void OnUpdate(float deltaTime);
-        void Resize(int width, int height);
+        virtual void OnUpdate(float deltaTime);
+        virtual void Resize(int width, int height);
 
         void SetOnWindowCloseCallback(OnWindowCloseCallback callback);
-
         void* GetNativeWindow() const { return glfwWindow; }
+
+        uint32_t GetWidth() const { return windowParams.width; }
+        uint32_t GetHeight() const { return windowParams.height; }
 
     protected:
         WindowParams windowParams;
@@ -36,10 +37,5 @@ namespace MongooseVK
         OnWindowCloseCallback windowCloseCallback;
 
         VulkanDevice* vulkanDevice;
-        Ref<VulkanRenderer> renderer;
-        Ref<ImGuiVulkan> imGuiVulkan;
-
-        CameraController cameraController;
-        Ref<Camera> camera;
     };
 }

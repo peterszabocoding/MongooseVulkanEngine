@@ -1,6 +1,7 @@
 #pragma once;
 
 #include <backends/imgui_impl_vulkan.h>
+#include <input/camera_controller.h>
 
 #include "imgui.h"
 #include "renderer/vulkan/imgui_vulkan.h"
@@ -10,7 +11,7 @@ namespace MongooseVK
 {
     class PerformanceWindow final : ImGuiWindow {
     public:
-        PerformanceWindow(const Ref<VulkanRenderer>& _renderer): ImGuiWindow(_renderer), device(renderer->GetVulkanDevice()) {}
+        PerformanceWindow(VulkanRenderer& _renderer): ImGuiWindow(_renderer), device(VulkanDevice::Get()) {}
         ~PerformanceWindow() override = default;
 
         virtual const char* GetTitle() override
@@ -33,7 +34,7 @@ namespace MongooseVK
 
     class CameraSettingsWindow final : ImGuiWindow {
     public:
-        explicit CameraSettingsWindow(const Ref<VulkanRenderer>& _renderer, Camera* camera,
+        explicit CameraSettingsWindow(VulkanRenderer& _renderer, Camera* camera,
                                       CameraController& controller): ImGuiWindow(_renderer),
                                                                      camera(camera), controller(controller) {}
 
@@ -73,14 +74,14 @@ namespace MongooseVK
         };
 
     public:
-        explicit GBufferViewer(const Ref<VulkanRenderer>& _renderer): ImGuiWindow(_renderer)
+        explicit GBufferViewer(VulkanRenderer& _renderer): ImGuiWindow(_renderer)
         {
-            sampler = ImageSamplerBuilder(renderer->GetVulkanDevice()).Build();
+            sampler = ImageSamplerBuilder(renderer.GetVulkanDevice()).Build();
         }
 
         ~GBufferViewer() override
         {
-            if (sampler) vkDestroySampler(renderer->GetVulkanDevice()->GetDevice(), sampler, nullptr);
+            if (sampler) vkDestroySampler(renderer.GetVulkanDevice()->GetDevice(), sampler, nullptr);
         }
 
         void Init()
@@ -92,8 +93,8 @@ namespace MongooseVK
                 debugTextures.clear();
             }
 
-            gBuffer = renderer->gbufferPass->gBuffer;
-            ssaoBuffer = renderer->ssaoPass->framebuffer;
+            gBuffer = renderer.gbufferPass->gBuffer;
+            ssaoBuffer = renderer.ssaoPass->framebuffer;
 
             debugTextures.push_back(ImGui_ImplVulkan_AddTexture(sampler, gBuffer->buffers.viewSpaceNormal.imageView,
                                                                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
@@ -160,14 +161,14 @@ namespace MongooseVK
         };
 
     public:
-        explicit ShadowMapViewer(const Ref<VulkanRenderer>& _renderer): ImGuiWindow(_renderer)
+        explicit ShadowMapViewer(VulkanRenderer& _renderer): ImGuiWindow(_renderer)
         {
-            sampler = ImageSamplerBuilder(renderer->GetVulkanDevice()).Build();
+            sampler = ImageSamplerBuilder(renderer.GetVulkanDevice()).Build();
         }
 
         ~ShadowMapViewer() override
         {
-            if (sampler) vkDestroySampler(renderer->GetVulkanDevice()->GetDevice(), sampler, nullptr);
+            if (sampler) vkDestroySampler(renderer.GetVulkanDevice()->GetDevice(), sampler, nullptr);
         }
 
         void Init()
@@ -181,11 +182,11 @@ namespace MongooseVK
                 shadowMapAttachments.clear();
             }
 
-            if (renderer->directionalShadowMap->GetImage())
+            if (renderer.directionalShadowMap->GetImage())
             {
                 for (size_t i = 0; i < SHADOW_MAP_CASCADE_COUNT; i++)
                 {
-                    shadowMapAttachments.push_back(ImGui_ImplVulkan_AddTexture(sampler, renderer->directionalShadowMap->GetImageView(i),
+                    shadowMapAttachments.push_back(ImGui_ImplVulkan_AddTexture(sampler, renderer.directionalShadowMap->GetImageView(i),
                                                                            VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL));
                 }
             }
@@ -224,7 +225,7 @@ namespace MongooseVK
 
     class LightSettingsWindow final : ImGuiWindow {
     public:
-        explicit LightSettingsWindow(const Ref<VulkanRenderer>& _renderer): ImGuiWindow(_renderer), light(renderer->GetLight()) {}
+        explicit LightSettingsWindow(VulkanRenderer& _renderer): ImGuiWindow(_renderer), light(renderer.GetLight()) {}
 
         ~LightSettingsWindow() override = default;
 
@@ -248,7 +249,7 @@ namespace MongooseVK
 
     class PostProcessingWindow final : ImGuiWindow {
     public:
-        explicit PostProcessingWindow(const Ref<VulkanRenderer>& _renderer): ImGuiWindow(_renderer) {}
+        explicit PostProcessingWindow(VulkanRenderer& _renderer): ImGuiWindow(_renderer) {}
         ~PostProcessingWindow() override = default;
 
         virtual const char* GetTitle() override
@@ -258,16 +259,16 @@ namespace MongooseVK
 
         virtual void Draw() override
         {
-            ImGuiUtils::DrawFloatControl("SSAO Strength", renderer->ssaoPass->ssaoParams.strength, 0.01f, 10.0f, 0.01f, 150.0f);
-            ImGuiUtils::DrawFloatControl("SSAO Radius", renderer->ssaoPass->ssaoParams.radius, 0.01f, 1.0f, 0.01f, 150.0f);
-            ImGuiUtils::DrawFloatControl("SSAO Bias", renderer->ssaoPass->ssaoParams.bias, 0.001f, 1.0f, 0.001f, 150.0f);
-            ImGuiUtils::DrawIntControl("SSAO Kernel Size", renderer->ssaoPass->ssaoParams.kernelSize, 1, 64, 150.0f);
+            ImGuiUtils::DrawFloatControl("SSAO Strength", renderer.ssaoPass->ssaoParams.strength, 0.01f, 10.0f, 0.01f, 150.0f);
+            ImGuiUtils::DrawFloatControl("SSAO Radius", renderer.ssaoPass->ssaoParams.radius, 0.01f, 1.0f, 0.01f, 150.0f);
+            ImGuiUtils::DrawFloatControl("SSAO Bias", renderer.ssaoPass->ssaoParams.bias, 0.001f, 1.0f, 0.001f, 150.0f);
+            ImGuiUtils::DrawIntControl("SSAO Kernel Size", renderer.ssaoPass->ssaoParams.kernelSize, 1, 64, 150.0f);
         }
     };
 
     class GridSettingsWindow final : ImGuiWindow {
     public:
-        explicit GridSettingsWindow(const Ref<VulkanRenderer>& _renderer): ImGuiWindow(_renderer) {}
+        explicit GridSettingsWindow(VulkanRenderer& _renderer): ImGuiWindow(_renderer) {}
         ~GridSettingsWindow() override = default;
 
         virtual const char* GetTitle() override
@@ -277,10 +278,10 @@ namespace MongooseVK
 
         virtual void Draw() override
         {
-            ImGuiUtils::DrawFloatControl("Grid size", renderer->gridPass->gridParams.gridSize, 0.1f, 1000.0f, 0.1f, 150.0f);
-            ImGuiUtils::DrawFloatControl("Cell size", renderer->gridPass->gridParams.gridCellSize, 0.01f, 10.0f, 0.01f, 150.0f);
-            ImGuiUtils::DrawRGBColorPicker("Primary color", renderer->gridPass->gridParams.gridColorThick, 150.0f);
-            ImGuiUtils::DrawRGBColorPicker("Secondary color", renderer->gridPass->gridParams.gridColorThin, 150.0f);
+            ImGuiUtils::DrawFloatControl("Grid size", renderer.gridPass->gridParams.gridSize, 0.1f, 1000.0f, 0.1f, 150.0f);
+            ImGuiUtils::DrawFloatControl("Cell size", renderer.gridPass->gridParams.gridCellSize, 0.01f, 10.0f, 0.01f, 150.0f);
+            ImGuiUtils::DrawRGBColorPicker("Primary color", renderer.gridPass->gridParams.gridColorThick, 150.0f);
+            ImGuiUtils::DrawRGBColorPicker("Secondary color", renderer.gridPass->gridParams.gridColorThin, 150.0f);
         }
     };
 }

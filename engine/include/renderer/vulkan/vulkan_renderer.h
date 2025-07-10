@@ -63,7 +63,7 @@ namespace MongooseVK
         void PrecomputeIBL();
         void IdleWait();
         void Resize(int width, int height);
-        void Draw(float deltaTime, const Ref<Camera>& camera);
+        void Draw(float deltaTime, Camera& camera);
 
         VulkanDevice* GetVulkanDevice() const { return device; }
 
@@ -82,13 +82,13 @@ namespace MongooseVK
         void CreatePresentDescriptorSet();
 
         void CreateTransformsBuffer();
-        void UpdateTransformsBuffer(const Ref<Camera>& camera) const;
+        void UpdateTransformsBuffer(Camera& camera) const;
         void RotateLight(float deltaTime);
 
         void CreateLightsBuffer();
         void UpdateLightsBuffer(float deltaTime);
 
-        void DrawFrame(VkCommandBuffer commandBuffer, uint32_t imageIndex, const Ref<Camera>& camera);
+        void DrawFrame(VkCommandBuffer commandBuffer, uint32_t imageIndex, Camera& camera);
 
     public:
         float resolutionScale = 1.0f;

@@ -13,23 +13,24 @@ namespace MongooseVK
         applicationInfo.appName = config.appName;
         applicationInfo.windowWidth = config.windowWidth;
         applicationInfo.windowHeight = config.windowHeight;
-
         applicationInfo.appVersion = config.appVersion;
         applicationInfo.versionName = config.appVersion.GetVersionName();
-
         applicationInfo.windowTitle = config.windowTitle;
     }
 
-    void Application::OnCreate()
+    Application::~Application()
     {
-        LOG_TRACE("Application OnCreate");
+        delete window;
+    }
+
+    void Application::Init()
+    {
         WindowParams params;
         params.title = applicationInfo.windowTitle.c_str();
         params.width = applicationInfo.windowWidth;
         params.height = applicationInfo.windowHeight;
 
-        window = CreateScope<Window>(params);
-        window->OnCreate();
+        window = CreateWindow(params);
         window->SetOnWindowCloseCallback([&] { isRunning = false; });
 
         isRunning = true;
@@ -38,6 +39,7 @@ namespace MongooseVK
     void Application::Run()
     {
         LOG_TRACE("Application Run");
+
         while (isRunning)
         {
             const float time = glfwGetTime();
@@ -46,6 +48,11 @@ namespace MongooseVK
             lastFrameTime = time;
             window->OnUpdate(deltaTime);
         }
+    }
+
+    Window* Application::CreateWindow(WindowParams params)
+    {
+        return new Window(params);
     }
 
     Application* Application::Create(const ApplicationConfig& config)

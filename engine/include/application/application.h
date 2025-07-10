@@ -24,10 +24,12 @@ namespace MongooseVK
 		static Application& Get() { return *s_Instance; }
 
 		Application(ApplicationConfig config);
-		virtual ~Application() = default;
+		virtual ~Application();
 
-		virtual void OnCreate();
+		virtual Window* CreateWindow(WindowParams params);
 		virtual void Run();
+
+		void Init();
 
 		Window& GetWindow() const { return *window; }
 
@@ -35,7 +37,7 @@ namespace MongooseVK
 		ApplicationConfig applicationInfo;
 
 		static Application* s_Instance;
-		Scope<Window> window;
+		Window* window;
 
 		bool isRunning;
 		float lastFrameTime = 0.0f;

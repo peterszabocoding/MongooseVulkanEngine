@@ -163,9 +163,9 @@ namespace MongooseVK
         ImGui::DestroyContext();
     }
 
-    void ImGuiVulkan::Init(GLFWwindow* window, VulkanDevice* _vulkanDevice)
+    void ImGuiVulkan::Init(GLFWwindow* window)
     {
-        vulkanDevice = _vulkanDevice;
+        vulkanDevice = VulkanDevice::Get();
         glfwWindow = window;
         SetupImGui();
     }
@@ -227,7 +227,7 @@ namespace MongooseVK
         ImGui::NewFrame();
 
         ImGui::Begin("Debug Window");
-        for (const auto uiWindow: uiWindows)
+        for (ImGuiWindow* uiWindow: uiWindows)
         {
             if (ImGui::CollapsingHeader(uiWindow->GetTitle()))
             {
@@ -239,5 +239,10 @@ namespace MongooseVK
         ImGui::End();
         // Rendering
         ImGui::Render();
+    }
+
+    void ImGuiVulkan::AddWindow(ImGuiWindow* window)
+    {
+        uiWindows.push_back(window);
     }
 }

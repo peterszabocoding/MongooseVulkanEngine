@@ -1,3 +1,5 @@
+#include <demo_application.h>
+
 #include "application/application.h"
 #include "util/log.h"
 
@@ -14,8 +16,9 @@ int main(int argc, char* argv[])
         .windowHeight = 935
     };
 
-    MongooseVK::Application* application = MongooseVK::Application::Create(config);
-    application->OnCreate();
+    MongooseVK::Application* application = new DemoApplication(config);
+
+    application->Init();
     application->Run();
 
     return 0;

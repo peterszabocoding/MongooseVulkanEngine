@@ -6,11 +6,10 @@ namespace MongooseVK
 {
     class CameraController {
     public:
-        CameraController() = default;
+        CameraController(Camera& _camera): camera(_camera) {}
         ~CameraController() = default;
 
         void Update(float deltaTime);
-        void SetCamera(const Ref<Camera>& _camera) { camera = _camera; }
 
     public:
         float movementSpeed = 15.0f;
@@ -18,7 +17,7 @@ namespace MongooseVK
         float maxSpeed = 50.0f;
 
     private:
-        Ref<Camera> camera;
+        Camera& camera;
 
         bool m_IsCameraMoving = false;
         glm::vec2 mouseDelta = {0.0f, 0.0f};

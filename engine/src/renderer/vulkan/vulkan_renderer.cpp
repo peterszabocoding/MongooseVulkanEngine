@@ -79,12 +79,13 @@ namespace MongooseVK
         scene.reflectionProbe = ReflectionProbeGenerator(device).FromCubemap(scene.skybox->GetCubemap());
     }
 
-    void VulkanRenderer::Draw(const float deltaTime, const Ref<Camera>& camera)
+    void VulkanRenderer::Draw(const float deltaTime, Camera& camera)
     {
+        if (!isSceneLoaded) return;
         device->DrawFrame(vulkanSwapChain->GetSwapChain(),
                           [&](const VkCommandBuffer cmd, const uint32_t imgIndex) {
                               RotateLight(deltaTime);
-                              scene.directionalLight.UpdateCascades(*camera);
+                              scene.directionalLight.UpdateCascades(camera);
 
                               UpdateLightsBuffer(deltaTime);
                               UpdateTransformsBuffer(camera);
@@ -239,12 +240,12 @@ namespace MongooseVK
         writer.Build(shaderCache->descriptorSets.lightsDescriptorSet);
     }
 
-    void VulkanRenderer::UpdateTransformsBuffer(const Ref<Camera>& camera) const
+    void VulkanRenderer::UpdateTransformsBuffer(Camera& camera) const
     {
         TransformsBuffer bufferData;
-        bufferData.cameraPosition = camera->GetTransform().m_Position;
-        bufferData.view = camera->GetView();
-        bufferData.proj = camera->GetProjection();
+        bufferData.cameraPosition = camera.GetTransform().m_Position;
+        bufferData.view = camera.GetView();
+        bufferData.proj = camera.GetProjection();
 
         memcpy(descriptorBuffers.transformsBuffer->GetData(), &bufferData, sizeof(TransformsBuffer));
     }
@@ -277,25 +278,25 @@ namespace MongooseVK
         memcpy(descriptorBuffers.lightsBuffer->GetData(), &bufferData, sizeof(LightsBuffer));
     }
 
-    void VulkanRenderer::DrawFrame(const VkCommandBuffer commandBuffer, const uint32_t imageIndex, const Ref<Camera>& camera)
+    void VulkanRenderer::DrawFrame(const VkCommandBuffer commandBuffer, const uint32_t imageIndex, Camera& camera)
     {
         activeImage = imageIndex;
 
-        gbufferPass->Render(commandBuffer, *camera, nullptr);
+        gbufferPass->Render(commandBuffer, camera, nullptr);
         directionalShadowMap->TransitionToDepthRendering(commandBuffer);
         for (size_t i = 0; i < SHADOW_MAP_CASCADE_COUNT; i++)
         {
             shadowMapPass->SetCascadeIndex(i);
-            shadowMapPass->Render(commandBuffer, *camera, framebuffers.shadowMapFramebuffers[i]);
+            shadowMapPass->Render(commandBuffer, camera, framebuffers.shadowMapFramebuffers[i]);
         }
         directionalShadowMap->TransitionToShaderRead(commandBuffer);
 
-        ssaoPass->Render(commandBuffer, *camera, nullptr);
-        skyboxPass->Render(commandBuffer, *camera, framebuffers.geometryFramebuffer);
+        ssaoPass->Render(commandBuffer, camera, nullptr);
+        skyboxPass->Render(commandBuffer, camera, framebuffers.geometryFramebuffer);
 
-        renderPass->Render(commandBuffer, *camera, framebuffers.geometryFramebuffer);
-        gridPass->Render(commandBuffer, *camera, framebuffers.geometryFramebuffer);
+        renderPass->Render(commandBuffer, camera, framebuffers.geometryFramebuffer);
+        gridPass->Render(commandBuffer, camera, framebuffers.geometryFramebuffer);
 
-        presentPass->Render(commandBuffer, *camera, framebuffers.presentFramebuffers[activeImage]);
+        presentPass->Render(commandBuffer, camera, framebuffers.presentFramebuffers[activeImage]);
     }
 }
