@@ -20,7 +20,6 @@ namespace MongooseVK
         }
     }
 
-
     DescriptorSetLayouts ShaderCache::descriptorSetLayouts;
     DescriptorSets ShaderCache::descriptorSets;
     Renderpass ShaderCache::renderpasses;

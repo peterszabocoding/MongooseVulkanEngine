@@ -1,7 +1,6 @@
 #include "application//window.h"
 
 #include "renderer/vulkan/vulkan_renderer.h"
-#include "ui/ui.h"
 #include "util/log.h"
 
 namespace MongooseVK

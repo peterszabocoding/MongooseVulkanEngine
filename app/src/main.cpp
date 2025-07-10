@@ -1,5 +1,4 @@
-#include <demo_application.h>
-
+#include <application/demo_application.h>
 #include "application/application.h"
 #include "util/log.h"
 
@@ -16,7 +15,7 @@ int main(int argc, char* argv[])
         .windowHeight = 935
     };
 
-    MongooseVK::Application* application = new DemoApplication(config);
+    MongooseVK::Application* application = new VulkanDemo::DemoApplication(config);
 
     application->Init();
     application->Run();

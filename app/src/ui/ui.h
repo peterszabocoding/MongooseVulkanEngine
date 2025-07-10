@@ -5,13 +5,12 @@
 
 #include "imgui.h"
 #include "renderer/vulkan/imgui_vulkan.h"
-#include "renderer/vulkan/vulkan_framebuffer.h"
 
-namespace MongooseVK
+namespace VulkanDemo
 {
-    class PerformanceWindow final : ImGuiWindow {
+    class PerformanceWindow final : MongooseVK::ImGuiWindow {
     public:
-        PerformanceWindow(VulkanRenderer& _renderer): ImGuiWindow(_renderer), device(VulkanDevice::Get()) {}
+        PerformanceWindow(MongooseVK::VulkanRenderer& _renderer): ImGuiWindow(_renderer), device(MongooseVK::VulkanDevice::Get()) {}
         ~PerformanceWindow() override = default;
 
         virtual const char* GetTitle() override
@@ -29,14 +28,14 @@ namespace MongooseVK
         }
 
     private:
-        VulkanDevice* device;
+        MongooseVK::VulkanDevice* device;
     };
 
-    class CameraSettingsWindow final : ImGuiWindow {
+    class CameraSettingsWindow final : MongooseVK::ImGuiWindow {
     public:
-        explicit CameraSettingsWindow(VulkanRenderer& _renderer, Camera* camera,
-                                      CameraController& controller): ImGuiWindow(_renderer),
-                                                                     camera(camera), controller(controller) {}
+        explicit CameraSettingsWindow(MongooseVK::VulkanRenderer& _renderer, MongooseVK::Camera* camera,
+                                      MongooseVK::CameraController& controller): ImGuiWindow(_renderer),
+                                                                                 camera(camera), controller(controller) {}
 
         ~CameraSettingsWindow() override = default;
 
@@ -50,10 +49,10 @@ namespace MongooseVK
             float cameraFov = camera->GetFOV();
             float nearPlane = camera->GetNearPlane();
             float farPlane = camera->GetFarPlane();
-            ImGuiUtils::DrawFloatControl("FOV", cameraFov, 0.0f, 180.0f, 0.1f, 150.0f);
-            ImGuiUtils::DrawFloatControl("Near Plane", nearPlane, -100.0f, 100.0f, 0.1f, 150.0f);
-            ImGuiUtils::DrawFloatControl("Far Plane", farPlane, -100.0f, 100.0f, 0.1f, 150.0f);
-            ImGuiUtils::DrawFloatControl("Move speed", controller.movementSpeed, 0.0f, 10.0f, 0.001f, 150.0f);
+            MongooseVK::ImGuiUtils::DrawFloatControl("FOV", cameraFov, 0.0f, 180.0f, 0.1f, 150.0f);
+            MongooseVK::ImGuiUtils::DrawFloatControl("Near Plane", nearPlane, -100.0f, 100.0f, 0.1f, 150.0f);
+            MongooseVK::ImGuiUtils::DrawFloatControl("Far Plane", farPlane, -100.0f, 100.0f, 0.1f, 150.0f);
+            MongooseVK::ImGuiUtils::DrawFloatControl("Move speed", controller.movementSpeed, 0.0f, 10.0f, 0.001f, 150.0f);
 
             camera->SetFOV(cameraFov);
             camera->SetNearPlane(nearPlane);
@@ -61,11 +60,11 @@ namespace MongooseVK
         }
 
     private:
-        Camera* camera;
-        CameraController& controller;
+        MongooseVK::Camera* camera;
+        MongooseVK::CameraController& controller;
     };
 
-    class GBufferViewer final : ImGuiWindow {
+    class GBufferViewer final : MongooseVK::ImGuiWindow {
     public:
         struct FramebufferInfo {
             VkDescriptorSet descriptorSet;
@@ -74,9 +73,9 @@ namespace MongooseVK
         };
 
     public:
-        explicit GBufferViewer(VulkanRenderer& _renderer): ImGuiWindow(_renderer)
+        explicit GBufferViewer(MongooseVK::VulkanRenderer& _renderer): ImGuiWindow(_renderer)
         {
-            sampler = ImageSamplerBuilder(renderer.GetVulkanDevice()).Build();
+            sampler = MongooseVK::ImageSamplerBuilder(renderer.GetVulkanDevice()).Build();
         }
 
         ~GBufferViewer() override
@@ -146,13 +145,13 @@ namespace MongooseVK
         }
 
     private:
-        Ref<VulkanGBuffer> gBuffer;
-        Ref<VulkanFramebuffer> ssaoBuffer;
+        Ref<MongooseVK::VulkanGBuffer> gBuffer;
+        Ref<MongooseVK::VulkanFramebuffer> ssaoBuffer;
         std::vector<VkDescriptorSet> debugTextures{};
         VkSampler sampler = VK_NULL_HANDLE;
     };
 
-    class ShadowMapViewer final : ImGuiWindow {
+    class ShadowMapViewer final : MongooseVK::ImGuiWindow {
     public:
         struct FramebufferInfo {
             VkDescriptorSet descriptorSet;
@@ -161,9 +160,9 @@ namespace MongooseVK
         };
 
     public:
-        explicit ShadowMapViewer(VulkanRenderer& _renderer): ImGuiWindow(_renderer)
+        explicit ShadowMapViewer(MongooseVK::VulkanRenderer& _renderer): ImGuiWindow(_renderer)
         {
-            sampler = ImageSamplerBuilder(renderer.GetVulkanDevice()).Build();
+            sampler = MongooseVK::ImageSamplerBuilder(renderer.GetVulkanDevice()).Build();
         }
 
         ~ShadowMapViewer() override
@@ -184,7 +183,7 @@ namespace MongooseVK
 
             if (renderer.directionalShadowMap->GetImage())
             {
-                for (size_t i = 0; i < SHADOW_MAP_CASCADE_COUNT; i++)
+                for (size_t i = 0; i < MongooseVK::SHADOW_MAP_CASCADE_COUNT; i++)
                 {
                     shadowMapAttachments.push_back(ImGui_ImplVulkan_AddTexture(sampler, renderer.directionalShadowMap->GetImageView(i),
                                                                            VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL));
@@ -223,9 +222,9 @@ namespace MongooseVK
         VkSampler sampler = VK_NULL_HANDLE;
     };
 
-    class LightSettingsWindow final : ImGuiWindow {
+    class LightSettingsWindow final : MongooseVK::ImGuiWindow {
     public:
-        explicit LightSettingsWindow(VulkanRenderer& _renderer): ImGuiWindow(_renderer), light(renderer.GetLight()) {}
+        explicit LightSettingsWindow(MongooseVK::VulkanRenderer& _renderer): ImGuiWindow(_renderer), light(renderer.GetLight()) {}
 
         ~LightSettingsWindow() override = default;
 
@@ -236,20 +235,20 @@ namespace MongooseVK
 
         virtual void Draw() override
         {
-            ImGuiUtils::DrawVec3Control("Direction", light->direction, true, 1.0f, 150.0f);
-            ImGuiUtils::DrawVec3Control("Center", light->center, false, 0.0f, 150.0f);
-            ImGuiUtils::DrawFloatControl("Intensity", light->intensity, 0.0f, 100.0f, 0.01f, 150.0f);
-            ImGuiUtils::DrawFloatControl("Ambient Intensity", light->ambientIntensity, 0.0f, 100.0f, 0.01f, 150.0f);
-            ImGuiUtils::DrawFloatControl("Cascade split lambda", light->cascadeSplitLambda, 0.01f, 10.0f, 0.01f, 150.0f);
+            MongooseVK::ImGuiUtils::DrawVec3Control("Direction", light->direction, true, 1.0f, 150.0f);
+            MongooseVK::ImGuiUtils::DrawVec3Control("Center", light->center, false, 0.0f, 150.0f);
+            MongooseVK::ImGuiUtils::DrawFloatControl("Intensity", light->intensity, 0.0f, 100.0f, 0.01f, 150.0f);
+            MongooseVK::ImGuiUtils::DrawFloatControl("Ambient Intensity", light->ambientIntensity, 0.0f, 100.0f, 0.01f, 150.0f);
+            MongooseVK::ImGuiUtils::DrawFloatControl("Cascade split lambda", light->cascadeSplitLambda, 0.01f, 10.0f, 0.01f, 150.0f);
         }
 
     private:
-        DirectionalLight* light;
+        MongooseVK::DirectionalLight* light;
     };
 
-    class PostProcessingWindow final : ImGuiWindow {
+    class PostProcessingWindow final : MongooseVK::ImGuiWindow {
     public:
-        explicit PostProcessingWindow(VulkanRenderer& _renderer): ImGuiWindow(_renderer) {}
+        explicit PostProcessingWindow(MongooseVK::VulkanRenderer& _renderer): ImGuiWindow(_renderer) {}
         ~PostProcessingWindow() override = default;
 
         virtual const char* GetTitle() override
@@ -259,16 +258,16 @@ namespace MongooseVK
 
         virtual void Draw() override
         {
-            ImGuiUtils::DrawFloatControl("SSAO Strength", renderer.ssaoPass->ssaoParams.strength, 0.01f, 10.0f, 0.01f, 150.0f);
-            ImGuiUtils::DrawFloatControl("SSAO Radius", renderer.ssaoPass->ssaoParams.radius, 0.01f, 1.0f, 0.01f, 150.0f);
-            ImGuiUtils::DrawFloatControl("SSAO Bias", renderer.ssaoPass->ssaoParams.bias, 0.001f, 1.0f, 0.001f, 150.0f);
-            ImGuiUtils::DrawIntControl("SSAO Kernel Size", renderer.ssaoPass->ssaoParams.kernelSize, 1, 64, 150.0f);
+            MongooseVK::ImGuiUtils::DrawFloatControl("SSAO Strength", renderer.ssaoPass->ssaoParams.strength, 0.01f, 10.0f, 0.01f, 150.0f);
+            MongooseVK::ImGuiUtils::DrawFloatControl("SSAO Radius", renderer.ssaoPass->ssaoParams.radius, 0.01f, 1.0f, 0.01f, 150.0f);
+            MongooseVK::ImGuiUtils::DrawFloatControl("SSAO Bias", renderer.ssaoPass->ssaoParams.bias, 0.001f, 1.0f, 0.001f, 150.0f);
+            MongooseVK::ImGuiUtils::DrawIntControl("SSAO Kernel Size", renderer.ssaoPass->ssaoParams.kernelSize, 1, 64, 150.0f);
         }
     };
 
-    class GridSettingsWindow final : ImGuiWindow {
+    class GridSettingsWindow final : MongooseVK::ImGuiWindow {
     public:
-        explicit GridSettingsWindow(VulkanRenderer& _renderer): ImGuiWindow(_renderer) {}
+        explicit GridSettingsWindow(MongooseVK::VulkanRenderer& _renderer): ImGuiWindow(_renderer) {}
         ~GridSettingsWindow() override = default;
 
         virtual const char* GetTitle() override
@@ -278,10 +277,10 @@ namespace MongooseVK
 
         virtual void Draw() override
         {
-            ImGuiUtils::DrawFloatControl("Grid size", renderer.gridPass->gridParams.gridSize, 0.1f, 1000.0f, 0.1f, 150.0f);
-            ImGuiUtils::DrawFloatControl("Cell size", renderer.gridPass->gridParams.gridCellSize, 0.01f, 10.0f, 0.01f, 150.0f);
-            ImGuiUtils::DrawRGBColorPicker("Primary color", renderer.gridPass->gridParams.gridColorThick, 150.0f);
-            ImGuiUtils::DrawRGBColorPicker("Secondary color", renderer.gridPass->gridParams.gridColorThin, 150.0f);
+            MongooseVK::ImGuiUtils::DrawFloatControl("Grid size", renderer.gridPass->gridParams.gridSize, 0.1f, 1000.0f, 0.1f, 150.0f);
+            MongooseVK::ImGuiUtils::DrawFloatControl("Cell size", renderer.gridPass->gridParams.gridCellSize, 0.01f, 10.0f, 0.01f, 150.0f);
+            MongooseVK::ImGuiUtils::DrawRGBColorPicker("Primary color", renderer.gridPass->gridParams.gridColorThick, 150.0f);
+            MongooseVK::ImGuiUtils::DrawRGBColorPicker("Secondary color", renderer.gridPass->gridParams.gridColorThin, 150.0f);
         }
     };
 }
