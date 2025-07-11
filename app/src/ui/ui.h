@@ -192,11 +192,13 @@ namespace VulkanDemo
                 shadowMapAttachments.clear();
             }
 
-            if (renderer.directionalShadowMap->GetImage())
+            MongooseVK::VulkanTexture* shadowMap = MongooseVK::VulkanDevice::Get()->GetTexture(
+                renderer.renderPassResources.directionalShadowMap.textureInfo->textureHandle);
+            if (shadowMap->GetImage())
             {
                 for (size_t i = 0; i < MongooseVK::SHADOW_MAP_CASCADE_COUNT; i++)
                 {
-                    shadowMapAttachments.push_back(ImGui_ImplVulkan_AddTexture(sampler, renderer.directionalShadowMap->GetImageView(i),
+                    shadowMapAttachments.push_back(ImGui_ImplVulkan_AddTexture(sampler, shadowMap->GetImageView(i),
                                                                                VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL));
                 }
             }

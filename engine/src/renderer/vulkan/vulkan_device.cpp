@@ -319,6 +319,7 @@ namespace MongooseVK
                     .SetViewType(VK_IMAGE_VIEW_TYPE_2D)
                     .SetAspectFlags(ImageUtils::GetAspectFlagFromFormat(createInfo.format))
                     .SetMipLevels(createInfo.mipLevels)
+                    .SetLayerCount(1)
                     .SetBaseArrayLayer(i)
                     .Build();
         }

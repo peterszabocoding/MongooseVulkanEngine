@@ -153,11 +153,8 @@ namespace MongooseVK
 
     void VulkanRenderer::CreateShadowMap()
     {
+        VulkanTexture* shadowMapTexture = device->GetTexture(renderPassResources.directionalShadowMap.textureInfo->textureHandle);
         const uint16_t SHADOW_MAP_RESOLUTION = EnumValue(scene.directionalLight.shadowMapResolution);
-        directionalShadowMap = VulkanShadowMap::Builder()
-                .SetResolution(SHADOW_MAP_RESOLUTION, SHADOW_MAP_RESOLUTION)
-                .SetArrayLayers(SHADOW_MAP_CASCADE_COUNT)
-                .Build(device);
 
         framebuffers.shadowMapFramebuffers.resize(SHADOW_MAP_CASCADE_COUNT);
         for (size_t i = 0; i < SHADOW_MAP_CASCADE_COUNT; i++)
@@ -165,7 +162,7 @@ namespace MongooseVK
             framebuffers.shadowMapFramebuffers[i] = VulkanFramebuffer::Builder(device)
                     .SetRenderpass(renderPasses.shadowMapPass->GetRenderPass())
                     .SetResolution(SHADOW_MAP_RESOLUTION, SHADOW_MAP_RESOLUTION)
-                    .AddAttachment(directionalShadowMap->GetImageView(i))
+                    .AddAttachment(shadowMapTexture->GetImageView(i))
                     .Build();
         }
     }
@@ -257,10 +254,12 @@ namespace MongooseVK
         info.offset = 0;
         info.range = sizeof(LightsBuffer);
 
-        VkDescriptorImageInfo shadowMapInfo{};
-        shadowMapInfo.sampler = directionalShadowMap->GetSampler();
-        shadowMapInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        shadowMapInfo.imageView = directionalShadowMap->GetImageView();
+        VulkanTexture* shadowMapTexture = device->GetTexture(renderPassResources.directionalShadowMap.textureInfo->textureHandle);
+        VkDescriptorImageInfo shadowMapInfo = {
+            .sampler = shadowMapTexture->GetSampler(),
+            .imageView = shadowMapTexture->GetImageView(),
+            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        };
 
         VulkanDescriptorWriter(*shaderCache->descriptorSetLayouts.lightsDescriptorSetLayout, device->GetShaderDescriptorPool())
                 .WriteBuffer(0, &info)
@@ -480,6 +479,8 @@ namespace MongooseVK
                 .compareEnabled = true,
                 .compareOp = VK_COMPARE_OP_LESS
             };
+
+            textureInfo.textureHandle = device->CreateTexture(textureInfo.textureCreateInfo);
 
             renderPassResources.directionalShadowMap = {
                 .name = "directional_shadow_map",

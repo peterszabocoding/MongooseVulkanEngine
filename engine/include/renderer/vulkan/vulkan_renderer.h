@@ -89,8 +89,6 @@ namespace MongooseVK
 
         VulkanDevice* GetVulkanDevice() const { return device; }
 
-        [[nodiscard]] Ref<VulkanShadowMap> GetShadowMap() const { return directionalShadowMap; }
-
         DirectionalLight* GetLight() { return &scene.directionalLight; }
 
     private:
@@ -126,8 +124,6 @@ namespace MongooseVK
 
         RenderPassResources renderPassResources;
         RenderPasses renderPasses;
-
-        Ref<VulkanShadowMap> directionalShadowMap;
 
     private:
         VulkanDevice* device;

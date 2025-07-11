@@ -28,7 +28,8 @@ namespace MongooseVK
 
         ~VulkanTexture() = default;
 
-        VkImageView GetImageView() const { return arrayImageViews[0]; }
+        VkImage GetImage() const { return allocatedImage.image; }
+        VkImageView GetImageView() const { return imageView; }
         VkImageView GetImageView(const uint32_t index) const { return arrayImageViews[index % arrayImageViews.size()]; }
         VkSampler GetSampler() const { return sampler; }
 
