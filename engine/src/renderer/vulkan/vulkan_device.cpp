@@ -351,13 +351,14 @@ namespace MongooseVK
             attachment.format = colorAttachment.imageFormat;
             attachment.samples = colorAttachment.sampleCount;
             attachment.loadOp = colorAttachment.loadOp;
-            attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+            attachment.storeOp = colorAttachment.storeOp;
             attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
             attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
             attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
             attachment.finalLayout = colorAttachment.isSwapchainAttachment
                                          ? VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
-                                         : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                                         : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+;
 
             attachmentDescriptions.push_back(attachment);
 

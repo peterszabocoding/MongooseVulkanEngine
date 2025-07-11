@@ -10,7 +10,7 @@ namespace MongooseVK
 {
     enum class ResourceType: uint8_t {
         Texture = 0,
-        Buffer
+        Buffer,
     };
 
     enum class LoadOp: uint8_t {
@@ -26,41 +26,51 @@ namespace MongooseVK
         DontCare
     };
 
-    struct InputResource {
+    struct PassInput {
         std::string name;
         ResourceType type;
         ImageFormat format;
     };
 
-    struct OutputResource {
+    struct PassResource {
+        std::string name;
+        ResourceType type;
+        VkDescriptorSet descriptorSet;
+        Ref<VulkanDescriptorSetLayout> descriptorSetLayout;
+    };
+
+    struct PassOutput {
         std::string name;
         ImageFormat format;
         bool isSwapchainAttachment;
-        LoadOp loadOp;
-        StoreOp storeOp;
+        LoadOp loadOp = LoadOp::Clear;
+        StoreOp storeOp = StoreOp::Store;
         glm::vec4 clearValue;
     };
 
     struct RenderPassConfig {
         std::string name;
-        std::vector<InputResource> inputs;
-        std::vector<OutputResource> outputs;
-        std::optional<OutputResource> depthStencilAttachment;
+        std::vector<PassInput> inputs;
+        std::vector<PassOutput> outputs;
+        std::optional<PassOutput> depthStencilAttachment;
 
         PipelineConfig pipelineConfig;
         std::vector<VulkanDescriptorSetLayout> descriptorSetLayouts;
 
-        RenderPassConfig& AddInput(const InputResource& input) {
+        RenderPassConfig& AddInput(const PassInput& input)
+        {
             inputs.push_back(input);
             return *this;
         }
 
-        RenderPassConfig& AddOutput(const OutputResource& output) {
+        RenderPassConfig& AddOutput(const PassOutput& output)
+        {
             outputs.push_back(output);
             return *this;
         }
 
-        RenderPassConfig& SetDepthStencilAttachment(const OutputResource& depthStencil) {
+        RenderPassConfig& SetDepthStencilAttachment(const PassOutput& depthStencil)
+        {
             depthStencilAttachment = depthStencil;
             return *this;
         }
@@ -74,7 +84,11 @@ namespace MongooseVK
 
     public:
         explicit VulkanPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution): device(vulkanDevice), resolution(_resolution) {}
-        virtual ~VulkanPass() = default;
+
+        virtual ~VulkanPass()
+        {
+            device->DestroyRenderPass(renderPassHandle);
+        }
 
         virtual void Render(VkCommandBuffer commandBuffer,
                             Camera& camera,
@@ -88,8 +102,27 @@ namespace MongooseVK
 
         virtual void OnResolutionChanged(const uint32_t width, const uint32_t height) {}
 
+        virtual VulkanRenderPass* GetRenderPass() const
+        {
+            return device->renderPassPool.Get(renderPassHandle.handle);
+        }
+
+        void AddResource(const PassResource& resource)
+        {
+            resources.push_back(resource);
+        }
+
+        void ClearResources()
+        {
+            resources.clear();
+        }
+
     protected:
         VulkanDevice* device;
         VkExtent2D resolution;
+
+        RenderPassHandle renderPassHandle = {INVALID_RENDER_PASS_HANDLE};
+
+        std::vector<PassResource> resources;
     };
 }

@@ -15,11 +15,6 @@ namespace MongooseVK
         LoadPipeline();
     }
 
-    PresentPass::~PresentPass()
-    {
-        device->DestroyRenderPass(renderPassHandle);
-    }
-
     void PresentPass::Render(VkCommandBuffer commandBuffer, Camera& camera, Ref<VulkanFramebuffer> writeBuffer,
                              Ref<VulkanFramebuffer> readBuffer)
     {
@@ -45,10 +40,7 @@ namespace MongooseVK
         GetRenderPass()->End(commandBuffer);
     }
 
-    VulkanRenderPass* PresentPass::GetRenderPass()
-    {
-        return device->renderPassPool.Get(renderPassHandle.handle);
-    }
+    void PresentPass::CreateFramebuffer() {}
 
     void PresentPass::LoadPipeline()
     {
@@ -74,14 +66,14 @@ namespace MongooseVK
             ShaderCache::descriptorSetLayouts.presentDescriptorSetLayout
         };
 
-        presentPipelineConfig.colorAttachments = {
-            ImageFormat::RGBA8_UNORM,
-        };
-
         presentPipelineConfig.disableBlending = true;
         presentPipelineConfig.enableDepthTest = false;
 
         presentPipelineConfig.renderPass = GetRenderPass()->Get();
+
+        presentPipelineConfig.colorAttachments = {
+            ImageFormat::RGBA8_UNORM,
+        };
 
         presentPipeline = VulkanPipeline::Builder().Build(device, presentPipelineConfig);
     }

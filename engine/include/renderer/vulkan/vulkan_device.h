@@ -192,7 +192,6 @@ namespace MongooseVK
         Scope<VulkanDescriptorPool> globalUniformPool{};
         Scope<VulkanDescriptorPool> shaderDescriptorPool{};
         Scope<VulkanDescriptorPool> imguiDescriptorPool{};
-
         Scope<VulkanDescriptorPool> bindlessDescriptorPool{};
 
         ObjectResourcePool<VulkanDescriptorSetLayout> descriptorSetLayoutPool{};

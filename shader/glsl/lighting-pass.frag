@@ -63,17 +63,17 @@ layout(std430, set = 3, binding = 0) uniform Lights {
     float intensity;
     float bias;
 } lights;
-layout(set = 3, binding = 1)    uniform sampler2DArray shadowMap;
+layout(set = 4, binding = 0)    uniform sampler2DArray shadowMap;
 
 // Irradiance uniforms
-layout(set = 4, binding = 0)    uniform samplerCube irradianceMap;
+layout(set = 5, binding = 0)    uniform samplerCube irradianceMap;
 
 // Post Processing
-layout(set = 5, binding = 0)    uniform sampler2D SSAO;
+layout(set = 6, binding = 0)    uniform sampler2D SSAO;
 
 // Reflection uniforms
-layout(set = 6, binding = 0)    uniform samplerCube prefilterMap;
-layout(set = 6, binding = 1)    uniform sampler2D brdfLUT;
+layout(set = 7, binding = 0)    uniform samplerCube prefilterMap;
+layout(set = 7, binding = 1)    uniform sampler2D brdfLUT;
 
 // ------------------------------------------------------------------
 // VARIABLES --------------------------------------------------------

@@ -5,10 +5,10 @@
 
 namespace MongooseVK
 {
-    class RenderPass : public VulkanPass {
+    class LightingPass final : public VulkanPass {
     public:
-        explicit RenderPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution);
-        virtual ~RenderPass() override;
+        explicit LightingPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution);
+        ~LightingPass() override = default;
 
         virtual void Render(VkCommandBuffer commandBuffer,
                             Camera& camera,
@@ -16,14 +16,11 @@ namespace MongooseVK
                             Ref<VulkanFramebuffer> readBuffer = nullptr) override;
         void DrawSkybox(VkCommandBuffer commandBuffer) const;
 
-        VulkanRenderPass* GetRenderPass();
-
     private:
         void LoadPipelines();
 
     private:
         Scene& scene;
-        RenderPassHandle renderPassHandle;
         Ref<VulkanPipeline> geometryPipeline;
     };
 }

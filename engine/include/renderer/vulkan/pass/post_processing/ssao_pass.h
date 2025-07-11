@@ -5,7 +5,7 @@ namespace MongooseVK
 {
     class VulkanBuffer;
 
-    class SSAOPass : public VulkanPass {
+    class SSAOPass final : public VulkanPass {
     public:
         struct SSAOBuffer {
             glm::vec4 samples[64];
@@ -30,8 +30,6 @@ namespace MongooseVK
                             Ref<VulkanFramebuffer> writeBuffer,
                             Ref<VulkanFramebuffer> readBuffer = nullptr) override;
 
-        VulkanRenderPass* GetRenderPass();
-
         virtual void Resize(VkExtent2D _resolution) override;
 
     private:
@@ -39,18 +37,13 @@ namespace MongooseVK
         void InitDescriptorSet();
         void GenerateNoiseData();
         void GenerateKernel();
-        void BuildOutputDescriptorSet();
-        void CreateFramebuffer();
 
     public:
         SSAOParams ssaoParams;
-        Ref<VulkanFramebuffer> framebuffer;
 
     private:
         Ref<VulkanPipeline> ssaoPipeline;
         Ref<VulkanPipeline> blurPipeline;
-
-        RenderPassHandle renderPassHandle;
 
         SSAOBuffer buffer;
         std::vector<glm::vec4> ssaoNoiseData;
@@ -58,7 +51,7 @@ namespace MongooseVK
         VkDescriptorSet ssaoDescriptorSet{};
         VkDescriptorSet boxBlurDescriptorSet;
 
-        Ref<VulkanTexture> ssaoNoiseTexture;
+        TextureHandle ssaoNoiseTextureHandle;
 
         Ref<VulkanBuffer> ssaoBuffer;
         Scope<VulkanMeshlet> screenRect;

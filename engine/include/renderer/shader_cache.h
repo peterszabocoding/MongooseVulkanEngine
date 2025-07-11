@@ -10,12 +10,15 @@ namespace MongooseVK
     struct DescriptorSetLayouts {
         Ref<VulkanDescriptorSetLayout> cubemapDescriptorSetLayout;
         Ref<VulkanDescriptorSetLayout> materialDescriptorSetLayout;
-        Ref<VulkanDescriptorSetLayout> transformDescriptorSetLayout;
+        Ref<VulkanDescriptorSetLayout> cameraDescriptorSetLayout;
         Ref<VulkanDescriptorSetLayout> lightsDescriptorSetLayout;
+        Ref<VulkanDescriptorSetLayout> directionalShadowMapDescriptorSetLayout;
         Ref<VulkanDescriptorSetLayout> presentDescriptorSetLayout;
         Ref<VulkanDescriptorSetLayout> irradianceDescriptorSetLayout;
         Ref<VulkanDescriptorSetLayout> reflectionDescriptorSetLayout;
-        Ref<VulkanDescriptorSetLayout> gBufferDescriptorSetLayout;
+        Ref<VulkanDescriptorSetLayout> viewspaceNormalDescriptorSetLayout;
+        Ref<VulkanDescriptorSetLayout> viewspacePositionDescriptorSetLayout;
+        Ref<VulkanDescriptorSetLayout> depthMapDescriptorSetLayout;
         Ref<VulkanDescriptorSetLayout> ssaoDescriptorSetLayout;
         Ref<VulkanDescriptorSetLayout> postProcessingDescriptorSetLayout;
         Ref<VulkanDescriptorSetLayout> ppBoxBlurDescriptorSetLayout;
@@ -24,11 +27,14 @@ namespace MongooseVK
 
     struct DescriptorSets {
         VkDescriptorSet cubemapDescriptorSet;
-        VkDescriptorSet transformDescriptorSet;
+        VkDescriptorSet cameraDescriptorSet;
         VkDescriptorSet irradianceDescriptorSet;
         VkDescriptorSet reflectionDescriptorSet;
         VkDescriptorSet lightsDescriptorSet;
-        VkDescriptorSet gbufferDescriptorSet;
+        VkDescriptorSet directionalShadownMapDescriptorSet;
+        VkDescriptorSet viewspaceNormalDescriptorSet;
+        VkDescriptorSet viewspacePositionDescriptorSet;
+        VkDescriptorSet depthMapDescriptorSet;
         VkDescriptorSet postProcessingDescriptorSet;
         VkDescriptorSet toneMappingDescriptorSet;
         VkDescriptorSet presentDescriptorSet;

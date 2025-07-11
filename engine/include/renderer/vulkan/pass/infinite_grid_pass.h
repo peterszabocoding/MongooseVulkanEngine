@@ -11,23 +11,20 @@ namespace MongooseVK
         float gridCellSize = 1.0f;
     };
 
-    class InfiniteGridPass : public VulkanPass {
+    class InfiniteGridPass final : public VulkanPass {
     public:
         InfiniteGridPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution);
-        ~InfiniteGridPass() override;
+        ~InfiniteGridPass() override = default;
 
         virtual void Render(VkCommandBuffer commandBuffer,
                             Camera& camera,
                             Ref<VulkanFramebuffer> writeBuffer,
                             Ref<VulkanFramebuffer> readBuffer = nullptr) override;
 
-        VulkanRenderPass* GetRenderPass();
-
     private:
         void LoadPipelines();
 
     public:
-        RenderPassHandle renderPassHandle;
         Ref<VulkanPipeline> gridPipeline;
         GridParams gridParams;
 

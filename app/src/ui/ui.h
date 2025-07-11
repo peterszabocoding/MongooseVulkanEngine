@@ -88,23 +88,27 @@ namespace VulkanDemo
             if (debugTextures.size() > 0)
             {
                 for (int i = 0; i < debugTextures.size(); i++)
+                {
                     ImGui_ImplVulkan_RemoveTexture(debugTextures[i]);
+                }
                 debugTextures.clear();
             }
 
-            gBuffer = renderer.gbufferPass->gBuffer;
-            ssaoBuffer = renderer.ssaoPass->framebuffer;
-
-            debugTextures.push_back(ImGui_ImplVulkan_AddTexture(sampler, gBuffer->buffers.viewSpaceNormal.imageView,
+            debugTextures.push_back(ImGui_ImplVulkan_AddTexture(sampler,
+                                                                renderer.gBuffer->buffers.viewSpaceNormal.imageView,
                                                                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
-            debugTextures.push_back(ImGui_ImplVulkan_AddTexture(sampler, gBuffer->buffers.viewSpacePosition.imageView,
-                                                                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
-            debugTextures.push_back(
-                ImGui_ImplVulkan_AddTexture(sampler, gBuffer->buffers.depth.imageView, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
 
-            auto ssaoDescriptorSet = ImGui_ImplVulkan_AddTexture(sampler, ssaoBuffer->GetAttachments()[0].imageView,
-                                                                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-            debugTextures.push_back(ssaoDescriptorSet);
+            debugTextures.push_back(ImGui_ImplVulkan_AddTexture(sampler,
+                                                                renderer.gBuffer->buffers.viewSpacePosition.imageView,
+                                                                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
+
+            debugTextures.push_back(ImGui_ImplVulkan_AddTexture(sampler,
+                                                                renderer.gBuffer->buffers.depth.imageView,
+                                                                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
+
+            debugTextures.push_back(ImGui_ImplVulkan_AddTexture(sampler,
+                                                                renderer.framebuffers.ssaoFramebuffer->GetAttachments()[0].imageView,
+                                                                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
         }
 
         virtual const char* GetTitle() override
@@ -118,13 +122,13 @@ namespace VulkanDemo
 
             const ImVec2 availableSpace = ImGui::GetContentRegionAvail();
 
-            const float aspect = static_cast<float>(gBuffer->height) / static_cast<float>(gBuffer->width);
+            const float aspect = static_cast<float>(renderer.gBuffer->height) / static_cast<float>(renderer.gBuffer->width);
             const ImVec2 imageSize = {
                 std::min(availableSpace.x, availableSpace.y),
                 std::min(availableSpace.x, availableSpace.y) * aspect,
             };
 
-            ImGui::Text("Resolution: %d x %d", gBuffer->width, gBuffer->height);
+            ImGui::Text("Resolution: %d x %d", renderer.gBuffer->width, renderer.gBuffer->height);
 
             ImGui::Text("Worldspace normal:");
             ImGui::Image(reinterpret_cast<ImTextureID>(debugTextures[0]), imageSize, ImVec2(0, 0), ImVec2(1, 1));
@@ -145,8 +149,6 @@ namespace VulkanDemo
         }
 
     private:
-        Ref<MongooseVK::VulkanGBuffer> gBuffer;
-        Ref<MongooseVK::VulkanFramebuffer> ssaoBuffer;
         std::vector<VkDescriptorSet> debugTextures{};
         VkSampler sampler = VK_NULL_HANDLE;
     };
@@ -186,7 +188,7 @@ namespace VulkanDemo
                 for (size_t i = 0; i < MongooseVK::SHADOW_MAP_CASCADE_COUNT; i++)
                 {
                     shadowMapAttachments.push_back(ImGui_ImplVulkan_AddTexture(sampler, renderer.directionalShadowMap->GetImageView(i),
-                                                                           VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL));
+                                                                               VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL));
                 }
             }
         }
@@ -206,7 +208,7 @@ namespace VulkanDemo
                 availableSpace.x,
             };
 
-            for (auto attachment : shadowMapAttachments)
+            for (auto attachment: shadowMapAttachments)
             {
                 ImGui::Image(reinterpret_cast<ImTextureID>(attachment), imageSize, ImVec2(0, 0), ImVec2(1, 1));
             }

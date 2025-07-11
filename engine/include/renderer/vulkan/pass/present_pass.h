@@ -4,24 +4,23 @@
 
 namespace MongooseVK
 {
-    class PresentPass : public VulkanPass {
+    class PresentPass final : public VulkanPass {
     public:
         explicit PresentPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution);
-        virtual ~PresentPass() override;
+        ~PresentPass() override = default;
 
         virtual void Render(VkCommandBuffer commandBuffer,
                             Camera& camera,
                             Ref<VulkanFramebuffer> writeBuffer,
                             Ref<VulkanFramebuffer> readBuffer = nullptr) override;
 
-        VulkanRenderPass* GetRenderPass();
-
     private:
+        void CreateFramebuffer();
         void LoadPipeline();
 
     private:
-        RenderPassHandle renderPassHandle;
         Scope<VulkanMeshlet> screenRect;
         Ref<VulkanPipeline> presentPipeline;
+        Scope<VulkanFramebuffer> framebuffer;
     };
 }

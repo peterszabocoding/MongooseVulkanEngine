@@ -1,16 +1,14 @@
 #pragma once
 
 #include "renderer/scene.h"
-#include "renderer/transform.h"
 #include "vulkan_device.h"
 #include "vulkan_swapchain.h"
 #include "vulkan_shadow_map.h"
 #include "vulkan_cube_map_texture.h"
-#include "vulkan_gbuffer.h"
 #include "pass/gbufferPass.h"
 #include "pass/infinite_grid_pass.h"
+#include "pass/lighting_pass.h"
 #include "pass/present_pass.h"
-#include "pass/render_pass.h"
 #include "pass/shadow_map_pass.h"
 #include "pass/skybox_pass.h"
 #include "pass/post_processing/ssao_pass.h"
@@ -20,11 +18,13 @@
 namespace MongooseVK
 {
     struct DescriptorBuffers {
-        Ref<VulkanBuffer> transformsBuffer{};
+        Ref<VulkanBuffer> cameraBuffer{};
         Ref<VulkanBuffer> lightsBuffer{};
     };
 
     struct Framebuffers {
+        Ref<VulkanFramebuffer> ssaoFramebuffer;
+        Ref<VulkanFramebuffer> gbufferFramebuffer;
         Ref<VulkanFramebuffer> geometryFramebuffer;
         std::vector<Ref<VulkanFramebuffer>> shadowMapFramebuffers;
         std::vector<Ref<VulkanFramebuffer>> presentFramebuffers;
@@ -51,6 +51,18 @@ namespace MongooseVK
         std::string hdrPath;
     };
 
+    struct RenderPassResources {
+        PassResource skyboxTexture;
+        PassResource viewspacePosition;
+        PassResource viewspaceNormal;
+        PassResource depthMap;
+        PassResource cameraBuffer;
+        PassResource lightsBuffer;
+        PassResource directionalShadowMap;
+        PassResource irradianceMap;
+        PassResource ssaoTexture;
+    };
+
     class VulkanRenderer {
     public:
         VulkanRenderer() = default;
@@ -67,7 +79,6 @@ namespace MongooseVK
 
         VulkanDevice* GetVulkanDevice() const { return device; }
 
-        [[nodiscard]] Ref<VulkanFramebuffer> GetRenderBuffer() const { return framebuffers.geometryFramebuffer; }
         [[nodiscard]] Ref<VulkanShadowMap> GetShadowMap() const { return directionalShadowMap; }
 
         DirectionalLight* GetLight() { return &scene.directionalLight; }
@@ -80,12 +91,18 @@ namespace MongooseVK
         void ResizeSwapchain();
         void CreatePresentDescriptorSet();
 
-        void CreateTransformsBuffer();
-        void UpdateTransformsBuffer(Camera& camera) const;
+        void CreateCameraBuffer();
+        void UpdateCameraBuffer(Camera& camera) const;
         void RotateLight(float deltaTime);
 
         void CreateLightsBuffer();
         void UpdateLightsBuffer(float deltaTime);
+
+        void BuildGBuffer();
+
+        void CreateRenderPassResources();
+
+        void PrepareSSAO();
 
         void DrawFrame(VkCommandBuffer commandBuffer, uint32_t imageIndex, Camera& camera);
 
@@ -94,16 +111,19 @@ namespace MongooseVK
 
         DescriptorBuffers descriptorBuffers;
         Framebuffers framebuffers;
+        RenderPassResources renderPassResources;
 
         Ref<VulkanShadowMap> directionalShadowMap;
 
         Scope<GBufferPass> gbufferPass;
         Scope<SkyboxPass> skyboxPass;
-        Scope<RenderPass> renderPass;
+        Scope<LightingPass> lightingPass;
         Scope<ShadowMapPass> shadowMapPass;
         Scope<PresentPass> presentPass;
         Scope<SSAOPass> ssaoPass;
         Scope<InfiniteGridPass> gridPass;
+
+        Ref<VulkanGBuffer> gBuffer;
 
     private:
         VulkanDevice* device;
@@ -120,5 +140,7 @@ namespace MongooseVK
 
         Ref<VulkanCubeMapTexture> irradianceMap;
         float lightSpinningAngle = 0.0f;
+
+
     };
 }

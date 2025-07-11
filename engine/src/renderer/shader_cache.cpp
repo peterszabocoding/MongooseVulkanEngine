@@ -51,7 +51,7 @@ namespace MongooseVK
     void ShaderCache::LoadDescriptorLayouts()
     {
         // transforms
-        descriptorSetLayouts.transformDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice)
+        descriptorSetLayouts.cameraDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice)
                 .AddBinding({0, DescriptorSetBindingType::UniformBuffer, {ShaderStage::VertexShader, ShaderStage::FragmentShader}})
                 .Build();
 
@@ -65,10 +65,13 @@ namespace MongooseVK
                 .AddBinding({0, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
                 .Build();
 
-        // lights, shadowMap
+        // lights
         descriptorSetLayouts.lightsDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice)
                 .AddBinding({0, DescriptorSetBindingType::UniformBuffer, {ShaderStage::VertexShader, ShaderStage::FragmentShader}})
-                .AddBinding({1, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
+                .Build();
+        // directional shadow map
+        descriptorSetLayouts.directionalShadowMapDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice)
+                .AddBinding({0, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
                 .Build();
 
         // imageSampler
@@ -87,11 +90,18 @@ namespace MongooseVK
                 .AddBinding({1, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
                 .Build();
 
-        // world-space normals, position, depth
-        descriptorSetLayouts.gBufferDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice)
+        // world-space normals
+        descriptorSetLayouts.viewspaceNormalDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice)
                 .AddBinding({0, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
-                .AddBinding({1, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
-                .AddBinding({2, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
+                .Build();
+
+        // position
+        descriptorSetLayouts.viewspacePositionDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice)
+                .AddBinding({0, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
+                .Build();
+        // depth
+        descriptorSetLayouts.depthMapDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice)
+                .AddBinding({0, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
                 .Build();
 
         // samples, noise texture

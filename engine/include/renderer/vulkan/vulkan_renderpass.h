@@ -18,6 +18,7 @@ namespace MongooseVK
             VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT;
             glm::vec4 clearColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
             VkAttachmentLoadOp loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+            VkAttachmentStoreOp storeOp = VK_ATTACHMENT_STORE_OP_STORE;
             bool isSwapchainAttachment = false;
         };
 

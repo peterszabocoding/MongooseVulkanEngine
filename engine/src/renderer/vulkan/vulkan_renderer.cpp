@@ -1,13 +1,14 @@
 #include "renderer/vulkan/vulkan_renderer.h"
+
+#include <renderer/vulkan/pass/lighting_pass.h>
+
 #include "renderer/vulkan/vulkan_descriptor_writer.h"
 #include "renderer/vulkan/vulkan_framebuffer.h"
-#include "renderer/vulkan/vulkan_pipeline.h"
 #include "renderer/vulkan/vulkan_device.h"
 #include "renderer/vulkan/vulkan_mesh.h"
 #include "renderer/vulkan/vulkan_shader_compiler.h"
 #include "renderer/vulkan/lighting/irradiance_map_generator.h"
 #include "renderer/vulkan/lighting/reflection_probe_generator.h"
-#include "renderer/render_graph.h"
 
 #include "imgui.h"
 
@@ -44,9 +45,11 @@ namespace MongooseVK
         scene = ResourceManager::LoadScene(device, gltfPath, hdrPath);
         scene.directionalLight.direction = normalize(glm::vec3(0.0f, -2.0f, -1.0f));
 
+        BuildGBuffer();
+
         gbufferPass = CreateScope<GBufferPass>(device, scene, renderResolution);
         skyboxPass = CreateScope<SkyboxPass>(device, scene, renderResolution);
-        renderPass = CreateScope<RenderPass>(device, scene, renderResolution);
+        lightingPass = CreateScope<LightingPass>(device, scene, renderResolution);
         shadowMapPass = CreateScope<ShadowMapPass>(device, scene, renderResolution);
         presentPass = CreateScope<PresentPass>(device, renderResolution);
         ssaoPass = CreateScope<SSAOPass>(device, renderResolution);
@@ -54,11 +57,16 @@ namespace MongooseVK
 
         CreateShadowMap();
         CreateFramebuffers();
-        CreateTransformsBuffer();
+        CreateCameraBuffer();
         CreateLightsBuffer();
         CreatePresentDescriptorSet();
 
+        PrepareSSAO();
         PrecomputeIBL();
+
+        CreateRenderPassResources();
+
+        gridPass->AddResource(renderPassResources.cameraBuffer);
 
         isSceneLoaded = true;
     }
@@ -88,7 +96,7 @@ namespace MongooseVK
                               scene.directionalLight.UpdateCascades(camera);
 
                               UpdateLightsBuffer(deltaTime);
-                              UpdateTransformsBuffer(camera);
+                              UpdateCameraBuffer(camera);
                               DrawFrame(cmd, imgIndex, camera);
                           },
                           std::bind(&VulkanRenderer::ResizeSwapchain, this));
@@ -106,15 +114,6 @@ namespace MongooseVK
 
         renderResolution.width = resolutionScale * viewportResolution.width;
         renderResolution.height = resolutionScale * viewportResolution.height;
-
-        gbufferPass->Resize(renderResolution);
-        skyboxPass->Resize(renderResolution);
-        renderPass->Resize(renderResolution);
-        shadowMapPass->Resize(renderResolution);
-        ssaoPass->Resize(renderResolution);
-        gridPass->Resize(renderResolution);
-
-        presentPass->Resize(viewportResolution);
 
         IdleWait();
         device->GetReadyToResize();
@@ -171,11 +170,25 @@ namespace MongooseVK
 
     void VulkanRenderer::CreateFramebuffers()
     {
+        framebuffers.ssaoFramebuffer = VulkanFramebuffer::Builder(device)
+                        .SetRenderpass(ssaoPass->GetRenderPass())
+                        .SetResolution(viewportResolution.width * 0.5, viewportResolution.height * 0.5)
+                        .AddAttachment(ImageFormat::R8_UNORM)
+                        .Build();
+
         framebuffers.geometryFramebuffer = VulkanFramebuffer::Builder(device)
-                .SetRenderpass(renderPass->GetRenderPass())
+                .SetRenderpass(lightingPass->GetRenderPass())
                 .SetResolution(renderResolution.width, renderResolution.height)
                 .AddAttachment(ImageFormat::RGBA16_SFLOAT)
                 .AddAttachment(ImageFormat::DEPTH24_STENCIL8).Build();
+
+        framebuffers.gbufferFramebuffer = VulkanFramebuffer::Builder(device)
+                        .SetRenderpass(gbufferPass->GetRenderPass())
+                        .SetResolution(viewportResolution.width, viewportResolution.height)
+                        .AddAttachment(gBuffer->buffers.viewSpaceNormal.imageView)
+                        .AddAttachment(gBuffer->buffers.viewSpacePosition.imageView)
+                        .AddAttachment(gBuffer->buffers.depth.imageView)
+                        .Build();
 
         const uint32_t imageCount = VulkanUtils::GetSwapchainImageCount(device->GetPhysicalDevice(), device->GetSurface());
         framebuffers.presentFramebuffers.clear();
@@ -194,25 +207,41 @@ namespace MongooseVK
     {
         IdleWait();
         CreateSwapchain();
+
+        gbufferPass->Resize(renderResolution);
+        skyboxPass->Resize(renderResolution);
+        lightingPass->Resize(renderResolution);
+        shadowMapPass->Resize(renderResolution);
+        ssaoPass->Resize(renderResolution);
+        gridPass->Resize(renderResolution);
+        presentPass->Resize(viewportResolution);
+
+        BuildGBuffer();
         CreateFramebuffers();
         CreatePresentDescriptorSet();
+
+        PrepareSSAO();
+        CreateRenderPassResources();
     }
 
-    void VulkanRenderer::CreateTransformsBuffer()
+    void VulkanRenderer::CreateCameraBuffer()
     {
-        descriptorBuffers.transformsBuffer = CreateRef<VulkanBuffer>(device, sizeof(TransformsBuffer),
-                                                                     VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT |
-                                                                     VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-                                                                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                                                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+        descriptorBuffers.cameraBuffer = CreateRef<VulkanBuffer>(device, sizeof(TransformsBuffer),
+                                                                 VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT |
+                                                                 VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                                                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                                                 VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 
         VkDescriptorBufferInfo info{};
-        info.buffer = descriptorBuffers.transformsBuffer->GetBuffer();
+        info.buffer = descriptorBuffers.cameraBuffer->GetBuffer();
         info.offset = 0;
         info.range = sizeof(TransformsBuffer);
 
-        VulkanDescriptorWriter(*shaderCache->descriptorSetLayouts.transformDescriptorSetLayout, device->GetShaderDescriptorPool()).
-                WriteBuffer(0, &info).Build(shaderCache->descriptorSets.transformDescriptorSet);
+        VulkanDescriptorWriter(*shaderCache->descriptorSetLayouts.cameraDescriptorSetLayout, device->GetShaderDescriptorPool())
+                .WriteBuffer(0, &info)
+                .Build(shaderCache->descriptorSets.cameraDescriptorSet);
+
+
     }
 
     void VulkanRenderer::CreateLightsBuffer()
@@ -233,21 +262,24 @@ namespace MongooseVK
         shadowMapInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         shadowMapInfo.imageView = directionalShadowMap->GetImageView();
 
-        auto writer = VulkanDescriptorWriter(*shaderCache->descriptorSetLayouts.lightsDescriptorSetLayout,
-                                             device->GetShaderDescriptorPool());
-        writer.WriteBuffer(0, &info);
-        writer.WriteImage(1, &shadowMapInfo);
-        writer.Build(shaderCache->descriptorSets.lightsDescriptorSet);
+        VulkanDescriptorWriter(*shaderCache->descriptorSetLayouts.lightsDescriptorSetLayout, device->GetShaderDescriptorPool())
+                .WriteBuffer(0, &info)
+                .Build(shaderCache->descriptorSets.lightsDescriptorSet);
+
+        VulkanDescriptorWriter(*shaderCache->descriptorSetLayouts.directionalShadowMapDescriptorSetLayout,
+                               device->GetShaderDescriptorPool())
+                .WriteImage(0, &shadowMapInfo)
+                .Build(shaderCache->descriptorSets.directionalShadownMapDescriptorSet);
     }
 
-    void VulkanRenderer::UpdateTransformsBuffer(Camera& camera) const
+    void VulkanRenderer::UpdateCameraBuffer(Camera& camera) const
     {
         TransformsBuffer bufferData;
         bufferData.cameraPosition = camera.GetTransform().m_Position;
         bufferData.view = camera.GetView();
         bufferData.proj = camera.GetProjection();
 
-        memcpy(descriptorBuffers.transformsBuffer->GetData(), &bufferData, sizeof(TransformsBuffer));
+        memcpy(descriptorBuffers.cameraBuffer->GetData(), &bufferData, sizeof(TransformsBuffer));
     }
 
     void VulkanRenderer::RotateLight(float deltaTime)
@@ -282,7 +314,7 @@ namespace MongooseVK
     {
         activeImage = imageIndex;
 
-        gbufferPass->Render(commandBuffer, camera, nullptr);
+        gbufferPass->Render(commandBuffer, camera, framebuffers.gbufferFramebuffer);
         directionalShadowMap->TransitionToDepthRendering(commandBuffer);
         for (size_t i = 0; i < SHADOW_MAP_CASCADE_COUNT; i++)
         {
@@ -291,12 +323,120 @@ namespace MongooseVK
         }
         directionalShadowMap->TransitionToShaderRead(commandBuffer);
 
-        ssaoPass->Render(commandBuffer, camera, nullptr);
+        ssaoPass->Render(commandBuffer, camera, framebuffers.ssaoFramebuffer);
         skyboxPass->Render(commandBuffer, camera, framebuffers.geometryFramebuffer);
 
-        renderPass->Render(commandBuffer, camera, framebuffers.geometryFramebuffer);
+        lightingPass->Render(commandBuffer, camera, framebuffers.geometryFramebuffer);
         gridPass->Render(commandBuffer, camera, framebuffers.geometryFramebuffer);
 
         presentPass->Render(commandBuffer, camera, framebuffers.presentFramebuffers[activeImage]);
+    }
+
+    void VulkanRenderer::BuildGBuffer()
+    {
+        gBuffer = VulkanGBuffer::Builder()
+                .SetResolution(viewportResolution.width, viewportResolution.height)
+                .Build(device);
+
+        const VkDescriptorImageInfo worldSpaceNormalInfo{
+            .sampler = gBuffer->buffers.viewSpaceNormal.sampler,
+            .imageView = gBuffer->buffers.viewSpaceNormal.imageView,
+            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        };
+
+        const VkDescriptorImageInfo positionInfo{
+            .sampler = gBuffer->buffers.viewSpacePosition.sampler,
+            .imageView = gBuffer->buffers.viewSpacePosition.imageView,
+            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        };
+
+        const VkDescriptorImageInfo depthInfo{
+            .sampler = gBuffer->buffers.depth.sampler,
+            .imageView = gBuffer->buffers.depth.imageView,
+            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        };
+
+        VulkanDescriptorWriter(*ShaderCache::descriptorSetLayouts.viewspaceNormalDescriptorSetLayout, device->GetShaderDescriptorPool())
+                .WriteImage(0, &worldSpaceNormalInfo)
+                .BuildOrOverwrite(ShaderCache::descriptorSets.viewspaceNormalDescriptorSet);
+
+        VulkanDescriptorWriter(*ShaderCache::descriptorSetLayouts.viewspacePositionDescriptorSetLayout, device->GetShaderDescriptorPool())
+                .WriteImage(0, &positionInfo)
+                .BuildOrOverwrite(ShaderCache::descriptorSets.viewspacePositionDescriptorSet);
+
+        VulkanDescriptorWriter(*ShaderCache::descriptorSetLayouts.depthMapDescriptorSetLayout, device->GetShaderDescriptorPool())
+                .WriteImage(0, &depthInfo)
+                .BuildOrOverwrite(ShaderCache::descriptorSets.depthMapDescriptorSet);
+    }
+
+    void VulkanRenderer::PrepareSSAO()
+    {
+        VkDescriptorImageInfo ssaoInfo{};
+        ssaoInfo.sampler = framebuffers.ssaoFramebuffer->GetAttachments()[0].sampler;
+        ssaoInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        ssaoInfo.imageView = framebuffers.ssaoFramebuffer->GetAttachments()[0].imageView;
+
+        VulkanDescriptorWriter(*ShaderCache::descriptorSetLayouts.postProcessingDescriptorSetLayout, device->GetShaderDescriptorPool())
+                .WriteImage(0, &ssaoInfo)
+                .BuildOrOverwrite(ShaderCache::descriptorSets.postProcessingDescriptorSet);
+    }
+
+    void VulkanRenderer::CreateRenderPassResources()
+    {
+        renderPassResources.viewspaceNormal = {
+            .name = "viewspace_normal",
+            .type = ResourceType::Texture,
+            .descriptorSet = shaderCache->descriptorSets.viewspaceNormalDescriptorSet,
+            .descriptorSetLayout = shaderCache->descriptorSetLayouts.viewspaceNormalDescriptorSetLayout
+        };
+
+        renderPassResources.viewspacePosition = {
+            .name = "viewspace_position",
+            .type = ResourceType::Texture,
+            .descriptorSet = shaderCache->descriptorSets.viewspacePositionDescriptorSet,
+            .descriptorSetLayout = shaderCache->descriptorSetLayouts.viewspacePositionDescriptorSetLayout
+        };
+
+        renderPassResources.depthMap = {
+            .name = "depth_map",
+            .type = ResourceType::Texture,
+            .descriptorSet = shaderCache->descriptorSets.depthMapDescriptorSet,
+            .descriptorSetLayout = shaderCache->descriptorSetLayouts.depthMapDescriptorSetLayout
+        };
+
+        renderPassResources.lightsBuffer = {
+            .name = "lights_buffer",
+            .type = ResourceType::Buffer,
+            .descriptorSet = shaderCache->descriptorSets.lightsDescriptorSet,
+            .descriptorSetLayout = shaderCache->descriptorSetLayouts.lightsDescriptorSetLayout
+        };
+
+        renderPassResources.directionalShadowMap = {
+            .name = "directional_shadow_map",
+            .type = ResourceType::Texture,
+            .descriptorSet = shaderCache->descriptorSets.directionalShadownMapDescriptorSet,
+            .descriptorSetLayout = shaderCache->descriptorSetLayouts.directionalShadowMapDescriptorSetLayout
+        };
+
+        renderPassResources.cameraBuffer = {
+            .name = "camera_buffer",
+            .type = ResourceType::Buffer,
+            .descriptorSet = shaderCache->descriptorSets.cameraDescriptorSet,
+            .descriptorSetLayout = shaderCache->descriptorSetLayouts.cameraDescriptorSetLayout
+        };
+
+        renderPassResources.irradianceMap = {
+            .name = "irradiance_map",
+            .type = ResourceType::Texture,
+            .descriptorSet = shaderCache->descriptorSets.irradianceDescriptorSet,
+            .descriptorSetLayout = shaderCache->descriptorSetLayouts.irradianceDescriptorSetLayout
+        };
+
+        renderPassResources.ssaoTexture = {
+            .name = "ssao_texture",
+            .type = ResourceType::Texture,
+            .descriptorSet = shaderCache->descriptorSets.postProcessingDescriptorSet,
+            .descriptorSetLayout = shaderCache->descriptorSetLayouts.postProcessingDescriptorSetLayout
+        };
     }
 }

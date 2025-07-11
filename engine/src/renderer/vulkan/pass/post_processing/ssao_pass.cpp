@@ -11,35 +11,27 @@ namespace MongooseVK
 {
     SSAOPass::SSAOPass(VulkanDevice* _device, VkExtent2D _resolution): VulkanPass(_device, _resolution)
     {
-        VulkanRenderPass::RenderPassConfig config;
-        config.AddColorAttachment({.imageFormat = VK_FORMAT_R8_UNORM});
-
-        renderPassHandle = device->CreateRenderPass(config);
-
         screenRect = CreateScope<VulkanMeshlet>(device, Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
         LoadPipeline();
 
         GenerateKernel();
         GenerateNoiseData();
 
-        CreateFramebuffer();
         InitDescriptorSet();
-        BuildOutputDescriptorSet();
     }
 
     SSAOPass::~SSAOPass()
     {
-        device->DestroyRenderPass(renderPassHandle);
         vkFreeDescriptorSets(device->GetDevice(), device->GetShaderDescriptorPool().GetDescriptorPool(), 1, &ssaoDescriptorSet);;
     }
 
     void SSAOPass::Render(VkCommandBuffer commandBuffer, Camera& camera, Ref<VulkanFramebuffer> writeBuffer,
                           Ref<VulkanFramebuffer> readBuffer)
     {
-        device->SetViewportAndScissor(framebuffer->GetExtent(), commandBuffer);
+        device->SetViewportAndScissor(writeBuffer->GetExtent(), commandBuffer);
         VulkanRenderPass* renderPass = device->renderPassPool.Get(renderPassHandle.handle);
 
-        renderPass->Begin(commandBuffer, framebuffer, framebuffer->GetExtent());
+        renderPass->Begin(commandBuffer, writeBuffer, writeBuffer->GetExtent());
 
         DrawCommandParams drawParams{};
         drawParams.commandBuffer = commandBuffer;
@@ -51,9 +43,11 @@ namespace MongooseVK
         };
 
         drawParams.descriptorSets = {
-            ShaderCache::descriptorSets.gbufferDescriptorSet,
+            ShaderCache::descriptorSets.viewspaceNormalDescriptorSet,
+            ShaderCache::descriptorSets.viewspacePositionDescriptorSet,
+            ShaderCache::descriptorSets.depthMapDescriptorSet,
+            ShaderCache::descriptorSets.cameraDescriptorSet,
             ssaoDescriptorSet,
-            ShaderCache::descriptorSets.transformDescriptorSet,
         };
 
         ssaoParams.resolution = glm::vec2(resolution.width, resolution.height);
@@ -66,21 +60,17 @@ namespace MongooseVK
         renderPass->End(commandBuffer);
     }
 
-    VulkanRenderPass* SSAOPass::GetRenderPass()
-    {
-        return device->renderPassPool.Get(renderPassHandle.handle);
-    }
-
     void SSAOPass::Resize(VkExtent2D _resolution)
     {
         VulkanPass::Resize(_resolution);
-        CreateFramebuffer();
-        BuildOutputDescriptorSet();
     }
 
     void SSAOPass::LoadPipeline()
     {
-        VulkanRenderPass* renderPass = device->renderPassPool.Get(renderPassHandle.handle);
+        VulkanRenderPass::RenderPassConfig config;
+        config.AddColorAttachment({.imageFormat = VK_FORMAT_R8_UNORM});
+
+        renderPassHandle = device->CreateRenderPass(config);
 
         LOG_TRACE("Building SSAO pipeline");
         PipelineConfig pipelineConfig;
@@ -92,9 +82,11 @@ namespace MongooseVK
         pipelineConfig.frontFace = PipelineFrontFace::Counter_clockwise;
 
         pipelineConfig.descriptorSetLayouts = {
-            ShaderCache::descriptorSetLayouts.gBufferDescriptorSetLayout,
+            ShaderCache::descriptorSetLayouts.viewspaceNormalDescriptorSetLayout,
+            ShaderCache::descriptorSetLayouts.viewspacePositionDescriptorSetLayout,
+            ShaderCache::descriptorSetLayouts.depthMapDescriptorSetLayout,
+            ShaderCache::descriptorSetLayouts.cameraDescriptorSetLayout,
             ShaderCache::descriptorSetLayouts.ssaoDescriptorSetLayout,
-            ShaderCache::descriptorSetLayouts.transformDescriptorSetLayout,
         };
 
         pipelineConfig.colorAttachments = {
@@ -104,7 +96,7 @@ namespace MongooseVK
         pipelineConfig.disableBlending = true;
         pipelineConfig.enableDepthTest = false;
 
-        pipelineConfig.renderPass = renderPass->renderPass;
+        pipelineConfig.renderPass = GetRenderPass()->renderPass;
 
         pipelineConfig.pushConstantData.shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
         pipelineConfig.pushConstantData.offset = 0;
@@ -130,6 +122,8 @@ namespace MongooseVK
         bufferInfo.offset = 0;
         bufferInfo.range = sizeof(SSAOBuffer);
 
+        VulkanTexture* ssaoNoiseTexture = device->texturePool.Get(ssaoNoiseTextureHandle.handle);
+
         VkDescriptorImageInfo ssaoNoiseTextureInfo{};
         ssaoNoiseTextureInfo.sampler = ssaoNoiseTexture->GetSampler();
         ssaoNoiseTextureInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -153,16 +147,15 @@ namespace MongooseVK
             ssaoNoiseData[i] = glm::vec4(randomFloats(generator) * 2.0f - 1.0f, randomFloats(generator) * 2.0f - 1.0f, 0.0f, 1.0f);
         }
 
-        ssaoNoiseTexture = VulkanTextureBuilder()
-                .SetResolution(4, 4)
-                .SetFormat(ImageFormat::RGBA32_SFLOAT)
-                .AddUsage(VK_IMAGE_USAGE_TRANSFER_DST_BIT)
-                .AddUsage(VK_IMAGE_USAGE_SAMPLED_BIT)
-                .SetFilter(VK_FILTER_LINEAR, VK_FILTER_LINEAR)
-                .SetTiling(VK_IMAGE_TILING_OPTIMAL)
-                .AddAspectFlag(VK_IMAGE_ASPECT_COLOR_BIT)
-                .SetData(ssaoNoiseData.data(), ssaoNoiseData.size() * 4 * 4)
-                .Build(device);
+
+        ImageResource imageResource;
+        imageResource.width = 4;
+        imageResource.height = 4;
+        imageResource.data = ssaoNoiseData.data();
+        imageResource.size = ssaoNoiseData.size() * 4 * 4;
+        imageResource.format = ImageFormat::RGBA32_SFLOAT;
+
+        ssaoNoiseTextureHandle = device->CreateTexture(imageResource);
     }
 
     void SSAOPass::GenerateKernel()
@@ -187,31 +180,5 @@ namespace MongooseVK
 
             buffer.samples[i] = sample;
         }
-    }
-
-    void SSAOPass::BuildOutputDescriptorSet()
-    {
-        VkDescriptorImageInfo ssaoInfo{};
-        ssaoInfo.sampler = framebuffer->GetAttachments()[0].sampler;
-        ssaoInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        ssaoInfo.imageView = framebuffer->GetAttachments()[0].imageView;
-
-        auto descriptorSetLayout = ShaderCache::descriptorSetLayouts.postProcessingDescriptorSetLayout;
-        auto writer = VulkanDescriptorWriter(*descriptorSetLayout, device->GetShaderDescriptorPool())
-                .WriteImage(0, &ssaoInfo);
-
-        if (ShaderCache::descriptorSets.postProcessingDescriptorSet)
-            writer.Overwrite(ShaderCache::descriptorSets.postProcessingDescriptorSet);
-        else
-            writer.Build(ShaderCache::descriptorSets.postProcessingDescriptorSet);
-    }
-
-    void SSAOPass::CreateFramebuffer()
-    {
-        framebuffer = VulkanFramebuffer::Builder(device)
-                .SetRenderpass(device->renderPassPool.Get(renderPassHandle.handle))
-                .SetResolution(resolution.width * 0.5, resolution.height * 0.5)
-                .AddAttachment(ImageFormat::R8_UNORM)
-                .Build();
     }
 }

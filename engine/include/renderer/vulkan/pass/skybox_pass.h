@@ -14,16 +14,18 @@ namespace MongooseVK
                             Ref<VulkanFramebuffer> writeBuffer,
                             Ref<VulkanFramebuffer> readBuffer = nullptr) override;
 
-        VulkanRenderPass* GetRenderPass();
-
     private:
+        void CreateFramebuffer();
         void LoadPipelines();
 
     private:
         Scene& scene;
 
-        RenderPassHandle renderPassHandle;
         Ref<VulkanPipeline> skyboxPipeline;
         Ref<VulkanMesh> cubeMesh;
+
+        TextureHandle outputTexture;
+
+        Ref<VulkanFramebuffer> framebuffer;
     };
 } // Raytracing
