@@ -19,9 +19,19 @@ namespace MongooseVK
                 .SetArrayLayers(arrayLayers)
                 .Build();
 
+        imageView = ImageViewBuilder(device)
+                .SetFormat(format)
+                .SetImage(allocatedImage.image)
+                .SetViewType(arrayLayers > 1 ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D)
+                .SetAspectFlags(aspectFlags)
+                .SetMipLevels(mipLevels)
+                .SetBaseArrayLayer(0)
+                .SetLayerCount(arrayLayers)
+                .Build();
+
         for (size_t i = 0; i < arrayLayers; i++)
         {
-            imageViews[i] = ImageViewBuilder(device)
+            arrayImageViews[i] = ImageViewBuilder(device)
                     .SetFormat(format)
                     .SetImage(allocatedImage.image)
                     .SetViewType(VK_IMAGE_VIEW_TYPE_2D)
@@ -40,8 +50,8 @@ namespace MongooseVK
         if (data && size > 0)
         {
             auto stagingBuffer = device->CreateBuffer(size,
-                                                        VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-                                                        VMA_MEMORY_USAGE_CPU_ONLY);
+                                                      VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                                                      VMA_MEMORY_USAGE_CPU_ONLY);
 
             memcpy(stagingBuffer.GetData(), data, stagingBuffer.GetBufferSize());
 
@@ -89,8 +99,7 @@ namespace MongooseVK
         imageResource.width = width;
         imageResource.height = height;
 
-
-        return CreateRef<VulkanTexture>(allocatedImage, imageViews, sampler, imageMemory, imageResource);
+        return CreateRef<VulkanTexture>(allocatedImage, imageView, arrayImageViews, sampler, imageResource);
     }
 
     void VulkanTextureBuilder::Build(VulkanDevice* device, VulkanTexture& texture)
@@ -108,7 +117,7 @@ namespace MongooseVK
 
         for (size_t i = 0; i < arrayLayers; i++)
         {
-            imageViews[i] = ImageViewBuilder(device)
+            arrayImageViews[i] = ImageViewBuilder(device)
                     .SetFormat(format)
                     .SetImage(allocatedImage.image)
                     .SetViewType(VK_IMAGE_VIEW_TYPE_2D)
@@ -127,8 +136,8 @@ namespace MongooseVK
         if (data && size > 0)
         {
             auto stagingBuffer = device->CreateBuffer(size,
-                                                        VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-                                                        VMA_MEMORY_USAGE_CPU_ONLY);
+                                                      VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                                                      VMA_MEMORY_USAGE_CPU_ONLY);
 
             memcpy(stagingBuffer.GetData(), data, stagingBuffer.GetBufferSize());
 
@@ -174,8 +183,7 @@ namespace MongooseVK
         imageResource.height = height;
 
         texture.sampler = sampler;
-        texture.imageViews = imageViews;
-        texture.imageMemory = imageMemory;
+        texture.arrayImageViews = arrayImageViews;
         texture.imageResource = imageResource;
         texture.allocatedImage = allocatedImage;
     }

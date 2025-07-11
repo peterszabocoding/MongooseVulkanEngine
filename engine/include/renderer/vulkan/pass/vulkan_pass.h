@@ -32,11 +32,25 @@ namespace MongooseVK
         ImageFormat format;
     };
 
+    struct ResourceBufferInfo {
+        void* data;
+        uint64_t size;
+        AllocatedBuffer buffer;
+    };
+
+    struct ResourceTextureInfo {
+        TextureHandle textureHandle;
+        TextureCreateInfo textureCreateInfo;
+    };
+
     struct PassResource {
         std::string name;
         ResourceType type;
         VkDescriptorSet descriptorSet;
         Ref<VulkanDescriptorSetLayout> descriptorSetLayout;
+
+        std::optional<ResourceBufferInfo> bufferInfo;
+        std::optional<ResourceTextureInfo> textureInfo;
     };
 
     struct PassOutput {

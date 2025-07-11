@@ -36,7 +36,7 @@ namespace MongooseVK
             if (format == ImageFormat::DEPTH24_STENCIL8 || format == ImageFormat::DEPTH32)
                 return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-            return VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
+            return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         }
     }
 

@@ -260,10 +260,10 @@ namespace VulkanDemo
 
         virtual void Draw() override
         {
-            MongooseVK::ImGuiUtils::DrawFloatControl("SSAO Strength", renderer.ssaoPass->ssaoParams.strength, 0.01f, 10.0f, 0.01f, 150.0f);
-            MongooseVK::ImGuiUtils::DrawFloatControl("SSAO Radius", renderer.ssaoPass->ssaoParams.radius, 0.01f, 1.0f, 0.01f, 150.0f);
-            MongooseVK::ImGuiUtils::DrawFloatControl("SSAO Bias", renderer.ssaoPass->ssaoParams.bias, 0.001f, 1.0f, 0.001f, 150.0f);
-            MongooseVK::ImGuiUtils::DrawIntControl("SSAO Kernel Size", renderer.ssaoPass->ssaoParams.kernelSize, 1, 64, 150.0f);
+            MongooseVK::ImGuiUtils::DrawFloatControl("SSAO Strength", renderer.renderPasses.ssaoPass->ssaoParams.strength, 0.01f, 10.0f, 0.01f, 150.0f);
+            MongooseVK::ImGuiUtils::DrawFloatControl("SSAO Radius", renderer.renderPasses.ssaoPass->ssaoParams.radius, 0.01f, 1.0f, 0.01f, 150.0f);
+            MongooseVK::ImGuiUtils::DrawFloatControl("SSAO Bias", renderer.renderPasses.ssaoPass->ssaoParams.bias, 0.001f, 1.0f, 0.001f, 150.0f);
+            MongooseVK::ImGuiUtils::DrawIntControl("SSAO Kernel Size", renderer.renderPasses.ssaoPass->ssaoParams.kernelSize, 1, 64, 150.0f);
         }
     };
 
@@ -279,10 +279,10 @@ namespace VulkanDemo
 
         virtual void Draw() override
         {
-            MongooseVK::ImGuiUtils::DrawFloatControl("Grid size", renderer.gridPass->gridParams.gridSize, 0.1f, 1000.0f, 0.1f, 150.0f);
-            MongooseVK::ImGuiUtils::DrawFloatControl("Cell size", renderer.gridPass->gridParams.gridCellSize, 0.01f, 10.0f, 0.01f, 150.0f);
-            MongooseVK::ImGuiUtils::DrawRGBColorPicker("Primary color", renderer.gridPass->gridParams.gridColorThick, 150.0f);
-            MongooseVK::ImGuiUtils::DrawRGBColorPicker("Secondary color", renderer.gridPass->gridParams.gridColorThin, 150.0f);
+            MongooseVK::ImGuiUtils::DrawFloatControl("Grid size", renderer.renderPasses.gridPass->gridParams.gridSize, 0.1f, 1000.0f, 0.1f, 150.0f);
+            MongooseVK::ImGuiUtils::DrawFloatControl("Cell size", renderer.renderPasses.gridPass->gridParams.gridCellSize, 0.01f, 10.0f, 0.01f, 150.0f);
+            MongooseVK::ImGuiUtils::DrawRGBColorPicker("Primary color", renderer.renderPasses.gridPass->gridParams.gridColorThick, 150.0f);
+            MongooseVK::ImGuiUtils::DrawRGBColorPicker("Secondary color", renderer.renderPasses.gridPass->gridParams.gridColorThin, 150.0f);
         }
     };
 }

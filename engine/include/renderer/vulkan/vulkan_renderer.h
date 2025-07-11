@@ -18,8 +18,8 @@
 namespace MongooseVK
 {
     struct DescriptorBuffers {
-        Ref<VulkanBuffer> cameraBuffer{};
-        Ref<VulkanBuffer> lightsBuffer{};
+        AllocatedBuffer cameraBuffer{};
+        AllocatedBuffer lightsBuffer{};
     };
 
     struct Framebuffers {
@@ -63,6 +63,16 @@ namespace MongooseVK
         PassResource ssaoTexture;
     };
 
+    struct RenderPasses {
+        Scope<GBufferPass> gbufferPass;
+        Scope<SkyboxPass> skyboxPass;
+        Scope<LightingPass> lightingPass;
+        Scope<ShadowMapPass> shadowMapPass;
+        Scope<PresentPass> presentPass;
+        Scope<SSAOPass> ssaoPass;
+        Scope<InfiniteGridPass> gridPass;
+    };
+
     class VulkanRenderer {
     public:
         VulkanRenderer() = default;
@@ -96,7 +106,7 @@ namespace MongooseVK
         void RotateLight(float deltaTime);
 
         void CreateLightsBuffer();
-        void UpdateLightsBuffer(float deltaTime);
+        void UpdateLightsBuffer();
 
         void BuildGBuffer();
 
@@ -111,18 +121,11 @@ namespace MongooseVK
 
         DescriptorBuffers descriptorBuffers;
         Framebuffers framebuffers;
+
         RenderPassResources renderPassResources;
+        RenderPasses renderPasses;
 
         Ref<VulkanShadowMap> directionalShadowMap;
-
-        Scope<GBufferPass> gbufferPass;
-        Scope<SkyboxPass> skyboxPass;
-        Scope<LightingPass> lightingPass;
-        Scope<ShadowMapPass> shadowMapPass;
-        Scope<PresentPass> presentPass;
-        Scope<SSAOPass> ssaoPass;
-        Scope<InfiniteGridPass> gridPass;
-
         Ref<VulkanGBuffer> gBuffer;
 
     private:
@@ -140,7 +143,5 @@ namespace MongooseVK
 
         Ref<VulkanCubeMapTexture> irradianceMap;
         float lightSpinningAngle = 0.0f;
-
-
     };
 }

@@ -1,5 +1,6 @@
 #pragma once
 #include "vulkan_device.h"
+#include "vulkan_image.h"
 
 namespace MongooseVK
 {
@@ -9,6 +10,8 @@ namespace MongooseVK
         VkSampler sampler{};
         VkImageLayout imageLayout{};
         VkFormat format{};
+
+        TextureHandle textureHandle = INVALID_TEXTURE_HANDLE;
     };
 
     class VulkanGBuffer {
@@ -19,11 +22,7 @@ namespace MongooseVK
             ~Builder() = default;
 
             Builder& SetResolution(uint32_t _width, uint32_t _height);
-
             Ref<VulkanGBuffer> Build(VulkanDevice* device);
-
-        private:
-            BufferAttachment CreateAttachment(VulkanDevice* device, ImageFormat format);
 
         private:
             uint32_t width, height;

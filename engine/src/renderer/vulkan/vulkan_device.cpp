@@ -8,12 +8,9 @@
 #include "renderer/vulkan/vulkan_mesh.h"
 #include "renderer/vulkan/vulkan_utils.h"
 #include "renderer/vulkan/vulkan_pipeline.h"
-#include "renderer/vulkan/vulkan_swapchain.h"
 #include "GLFW/glfw3.h"
 
 #define VMA_IMPLEMENTATION
-#include <glm/gtx/transform.hpp>
-#include <renderer/transform.h>
 
 #include "renderer/vulkan/vulkan_descriptor_pool.h"
 #include "renderer/vulkan/vulkan_descriptor_writer.h"
@@ -282,32 +279,133 @@ namespace MongooseVK
         vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
     }
 
-    TextureHandle VulkanDevice::CreateTexture(ImageResource imageResource)
+    TextureHandle VulkanDevice::CreateTexture(const TextureCreateInfo& _createInfo)
     {
         VulkanTexture* texture = texturePool.Obtain();
+        TextureHandle textureHandle = {texture->index};
+        TextureCreateInfo createInfo = _createInfo;
 
-        uint32_t mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(imageResource.width, imageResource.height)))) + 1;
-        VulkanTextureBuilder()
-                .SetData(imageResource.data, imageResource.size)
-                .SetResolution(imageResource.width, imageResource.height)
-                .SetFormat(imageResource.format)
-                .SetFilter(VK_FILTER_LINEAR, VK_FILTER_LINEAR)
+        createInfo.mipLevels = createInfo.generateMipMaps
+                                   ? static_cast<uint32_t>(std::floor(std::log2(std::max(createInfo.width, createInfo.height)))) + 1
+                                   : 1;
+
+        texture->allocatedImage = ImageBuilder(this)
+                .SetFormat(createInfo.format)
+                .SetResolution(createInfo.width, createInfo.height)
                 .SetTiling(VK_IMAGE_TILING_OPTIMAL)
                 .AddUsage(VK_IMAGE_USAGE_TRANSFER_DST_BIT)
-                .AddUsage(VK_IMAGE_USAGE_SAMPLED_BIT)
-                .AddAspectFlag(VK_IMAGE_ASPECT_COLOR_BIT)
-                .SetImageResource(imageResource)
-                .SetMipLevels(mipLevels)
-                .Build(this, *texture);
+                .AddUsage(VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
+                .AddUsage(ImageUtils::GetUsageFromFormat(createInfo.format))
+                .SetInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+                .SetMipLevels(createInfo.mipLevels)
+                .SetArrayLayers(createInfo.arrayLayers)
+                .Build();
+
+        texture->imageView = ImageViewBuilder(this)
+                .SetFormat(createInfo.format)
+                .SetImage(texture->allocatedImage.image)
+                .SetViewType(createInfo.arrayLayers > 1 ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D)
+                .SetAspectFlags(ImageUtils::GetAspectFlagFromFormat(createInfo.format))
+                .SetMipLevels(createInfo.mipLevels)
+                .SetBaseArrayLayer(0)
+                .SetLayerCount(createInfo.arrayLayers)
+                .Build();
+
+        for (size_t i = 0; i < createInfo.arrayLayers; i++)
+        {
+            texture->arrayImageViews[i] = ImageViewBuilder(this)
+                    .SetFormat(createInfo.format)
+                    .SetImage(texture->allocatedImage.image)
+                    .SetViewType(VK_IMAGE_VIEW_TYPE_2D)
+                    .SetAspectFlags(ImageUtils::GetAspectFlagFromFormat(createInfo.format))
+                    .SetMipLevels(createInfo.mipLevels)
+                    .SetBaseArrayLayer(i)
+                    .Build();
+        }
+
+        texture->sampler = ImageSamplerBuilder(this)
+                .SetFilter(createInfo.filter, createInfo.filter)
+                .SetFormat(createInfo.format)
+                .SetMipLevels(createInfo.mipLevels)
+                .SetAddressMode(createInfo.addressMode)
+                .SetBorderColor(createInfo.borderColor)
+                .SetCompareOp(createInfo.compareEnabled, createInfo.compareOp)
+                .Build();
+
+        texture->createInfo = createInfo;
+
+        if (createInfo.data && createInfo.size > 0)
+        {
+            UploadTextureData(textureHandle, createInfo.data, createInfo.size);
+        } else if (createInfo.imageLayout != VK_IMAGE_LAYOUT_UNDEFINED)
+        {
+            ImmediateSubmit([&](const VkCommandBuffer cmd) {
+                VulkanUtils::TransitionImageLayout(cmd, texture->allocatedImage.image,
+                                                   ImageUtils::GetAspectFlagFromFormat(createInfo.format),
+                                                   VK_IMAGE_LAYOUT_UNDEFINED,
+                                                   createInfo.imageLayout,
+                                                   texture->createInfo.mipLevels);
+            });
+        }
 
         UpdateTexture({texture->index});
 
-        return {texture->index};
+        return textureHandle;
+    }
+
+    VulkanTexture* VulkanDevice::GetTexture(const TextureHandle textureHandle)
+    {
+        return texturePool.Get(textureHandle.handle);
+    }
+
+    void VulkanDevice::UploadTextureData(TextureHandle textureHandle, void* data, uint64_t size)
+    {
+        if (!data || size == 0) return;
+
+        const VulkanTexture* texture = GetTexture(textureHandle);
+        const auto stagingBuffer = CreateBuffer(size,
+                                                VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                                                VMA_MEMORY_USAGE_CPU_ONLY);
+
+        memcpy(stagingBuffer.GetData(), data, stagingBuffer.GetBufferSize());
+
+        ImmediateSubmit([&](const VkCommandBuffer cmd) {
+            VulkanUtils::TransitionImageLayout(cmd, texture->allocatedImage.image,
+                                               VK_IMAGE_ASPECT_COLOR_BIT,
+                                               VK_IMAGE_LAYOUT_UNDEFINED,
+                                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                               texture->createInfo.mipLevels);
+
+            VulkanUtils::CopyBufferToImage(cmd, texture->allocatedImage.image,
+                                           texture->createInfo.width,
+                                           texture->createInfo.height,
+                                           stagingBuffer.buffer);
+
+            if (texture->createInfo.mipLevels > 1)
+            {
+                VulkanUtils::GenerateMipmaps(cmd,
+                                             GetPhysicalDevice(),
+                                             texture->allocatedImage.image,
+                                             VulkanUtils::ConvertImageFormat(texture->createInfo.format),
+                                             texture->createInfo.width,
+                                             texture->createInfo.height,
+                                             texture->createInfo.mipLevels);
+            } else
+            {
+                VulkanUtils::TransitionImageLayout(cmd, texture->allocatedImage.image,
+                                                   VK_IMAGE_ASPECT_COLOR_BIT,
+                                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                                                   texture->createInfo.mipLevels);
+            }
+        });
+
+        DestroyBuffer(stagingBuffer);
     }
 
     void VulkanDevice::UpdateTexture(TextureHandle textureHandle)
     {
-        VulkanTexture* texture = texturePool.Get(textureHandle.handle);
+        VulkanTexture* texture = GetTexture(textureHandle);
         VulkanDescriptorWriter descriptorWriter = VulkanDescriptorWriter(*bindlessDescriptorSetLayout, *bindlessDescriptorPool);
 
         VkDescriptorImageInfo imageInfo{};
@@ -322,14 +420,18 @@ namespace MongooseVK
     void VulkanDevice::DestroyTexture(TextureHandle textureHandle)
     {
         frameDeletionQueue.Push([=] {
-            VulkanTexture* texture = texturePool.Get(textureHandle.handle);
+            VulkanTexture* texture = GetTexture(textureHandle);
 
             vkDestroySampler(device, texture->sampler, nullptr);
 
-            for (size_t i = 0; i < texture->imageViews.size(); i++)
-                vkDestroyImageView(device, texture->imageViews[i], nullptr);
+            for (size_t i = 0; i < texture->createInfo.arrayLayers; i++)
+            {
+                vkDestroyImageView(device, texture->arrayImageViews[i], nullptr);
+            }
 
             vmaDestroyImage(vmaAllocator, texture->allocatedImage.image, texture->allocatedImage.allocation);
+
+            texturePool.Release(texture);
         });
     }
 
@@ -357,8 +459,7 @@ namespace MongooseVK
             attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
             attachment.finalLayout = colorAttachment.isSwapchainAttachment
                                          ? VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
-                                         : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-;
+                                         : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
             attachmentDescriptions.push_back(attachment);
 
@@ -437,7 +538,9 @@ namespace MongooseVK
     void VulkanDevice::DestroyRenderPass(RenderPassHandle renderPassHandle)
     {
         frameDeletionQueue.Push([=] {
-            vkDestroyRenderPass(device, renderPassPool.Get(renderPassHandle.handle)->Get(), nullptr);
+            VulkanRenderPass* renderPass = renderPassPool.Get(renderPassHandle.handle);
+            vkDestroyRenderPass(device, renderPass->Get(), nullptr);
+            renderPassPool.Release(renderPass);
         });
     }
 

@@ -14,7 +14,6 @@
 #include "vulkan_descriptor_pool.h"
 #include "vulkan_descriptor_set_layout.h"
 #include "vulkan_renderpass.h"
-#include "vulkan_texture.h"
 #include "resource/resource.h"
 
 namespace MongooseVK
@@ -23,6 +22,7 @@ namespace MongooseVK
     class VulkanMeshlet;
     class VulkanPipeline;
     class VulkanMesh;
+    class VulkanTexture;
 
     struct SimplePushConstantData;
     struct AllocatedBuffer;
@@ -63,6 +63,29 @@ namespace MongooseVK
         VkDeviceSize GetBufferSize() const { return info.size; }
         VkDeviceSize GetOffset() const { return info.offset; }
         void* GetData() const { return info.pMappedData; }
+    };
+
+    struct TextureCreateInfo {
+        uint32_t width;
+        uint32_t height;
+        ImageFormat format;
+
+        void* data = nullptr;
+        uint64_t size = 0;
+
+        VkImageLayout imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL;
+        VkFilter filter = VK_FILTER_LINEAR;
+        VkSamplerAddressMode addressMode = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        VkBorderColor borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
+
+        uint32_t mipLevels = 1;
+        bool generateMipMaps = false;
+
+        uint8_t arrayLayers = 1;
+
+        bool compareEnabled = false;
+        VkCompareOp compareOp = VK_COMPARE_OP_ALWAYS;
     };
 
     class DeletionQueue {
@@ -127,7 +150,9 @@ namespace MongooseVK
         void DestroyBuffer(AllocatedBuffer buffer);
 
         // Texture management
-        TextureHandle CreateTexture(ImageResource imageResource);
+        TextureHandle CreateTexture(const TextureCreateInfo& createInfo);
+        VulkanTexture* GetTexture(TextureHandle textureHandle);
+        void UploadTextureData(TextureHandle textureHandle, void* data, uint64_t size);
         void UpdateTexture(TextureHandle textureHandle);
         void DestroyTexture(TextureHandle textureHandle);
 

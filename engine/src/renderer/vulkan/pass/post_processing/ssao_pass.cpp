@@ -68,7 +68,10 @@ namespace MongooseVK
     void SSAOPass::LoadPipeline()
     {
         VulkanRenderPass::RenderPassConfig config;
-        config.AddColorAttachment({.imageFormat = VK_FORMAT_R8_UNORM});
+        config.AddColorAttachment({
+            .imageFormat = VK_FORMAT_R8_UNORM,
+            .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR
+        });
 
         renderPassHandle = device->CreateRenderPass(config);
 
@@ -147,7 +150,6 @@ namespace MongooseVK
             ssaoNoiseData[i] = glm::vec4(randomFloats(generator) * 2.0f - 1.0f, randomFloats(generator) * 2.0f - 1.0f, 0.0f, 1.0f);
         }
 
-
         ImageResource imageResource;
         imageResource.width = 4;
         imageResource.height = 4;
@@ -155,7 +157,13 @@ namespace MongooseVK
         imageResource.size = ssaoNoiseData.size() * 4 * 4;
         imageResource.format = ImageFormat::RGBA32_SFLOAT;
 
-        ssaoNoiseTextureHandle = device->CreateTexture(imageResource);
+        ssaoNoiseTextureHandle = device->CreateTexture({
+            .width = imageResource.width,
+            .height = imageResource.height,
+            .format = imageResource.format,
+            .data = imageResource.data,
+            .size = imageResource.size,
+        });
     }
 
     void SSAOPass::GenerateKernel()

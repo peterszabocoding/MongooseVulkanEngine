@@ -129,7 +129,14 @@ namespace MongooseVK
     {
         LOG_INFO("Load Texture: " + textureImagePath);
         const ImageResource imageResource = LoadImageResource(textureImagePath);
-        const TextureHandle textureHandle = device->CreateTexture(imageResource);
+        const TextureHandle textureHandle = device->CreateTexture({
+            .width = imageResource.width,
+            .height = imageResource.height,
+            .format = imageResource.format,
+            .data = imageResource.data,
+            .size = imageResource.size,
+            .generateMipMaps = true,
+        });
         ReleaseImage(imageResource);
 
         return textureHandle;

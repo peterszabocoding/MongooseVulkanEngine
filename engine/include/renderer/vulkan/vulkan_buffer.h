@@ -14,11 +14,11 @@ namespace MongooseVK
         ~VulkanBuffer();
 
         VkBuffer& GetBuffer() { return allocatedBuffer.buffer; }
-        VkDeviceMemory GetBufferMemory() const { return allocatedBuffer.info.deviceMemory; }
-        VkDeviceSize GetBufferSize() const { return allocatedBuffer.info.size; }
+        VkDeviceMemory GetBufferMemory() const { return allocatedBuffer.GetBufferMemory(); }
+        VkDeviceSize GetBufferSize() const { return allocatedBuffer.GetBufferSize(); }
         VkDeviceAddress GetBufferAddress() const { return allocatedBuffer.address; }
-        VkDeviceSize GetOffset() const { return allocatedBuffer.info.offset; }
-        void* GetData() const { return allocatedBuffer.info.pMappedData; }
+        VkDeviceSize GetOffset() const { return allocatedBuffer.GetOffset(); }
+        void* GetData() const { return allocatedBuffer.GetData(); }
 
     private:
         VulkanDevice* vulkanDevice;

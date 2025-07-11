@@ -620,6 +620,10 @@ namespace MongooseVK::VulkanUtils
         {
             sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
             destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+        }else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+        {
+            sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+            destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
         } else if (oldLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
         {
             sourceStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
@@ -660,7 +664,8 @@ namespace MongooseVK::VulkanUtils
         vkCmdPipelineBarrier(cmd, srcStageMask, dstStageMask, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
     }
 
-    inline void InsertPipelineBarrier(const VkCommandBuffer cmd, const VkPipelineStageFlags srcStageMask, const VkPipelineStageFlags dstStageMask)
+    inline void InsertPipelineBarrier(const VkCommandBuffer cmd, const VkPipelineStageFlags srcStageMask,
+                                      const VkPipelineStageFlags dstStageMask)
     {
         vkCmdPipelineBarrier(cmd, srcStageMask, dstStageMask, 0, 0, nullptr, 0, nullptr, 0, nullptr);
     }

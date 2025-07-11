@@ -41,17 +41,16 @@ namespace MongooseVK
 
     void SkyboxPass::CreateFramebuffer()
     {
-        ImageResource imageResource;
-        imageResource.width = resolution.width;
-        imageResource.height = resolution.height;
-        imageResource.format = ImageFormat::RGBA16_SFLOAT;
-
-        outputTexture = device->CreateTexture(imageResource);
+        outputTexture = device->CreateTexture({
+            .width = resolution.width,
+            .height = resolution.height,
+            .format = ImageFormat::RGBA16_SFLOAT
+        });
 
         framebuffer = VulkanFramebuffer::Builder(device)
                 .SetResolution(resolution.width, resolution.height)
                 .SetRenderpass(GetRenderPass())
-                .AddAttachment(device->texturePool.Get(outputTexture.handle)->imageViews[0])
+                .AddAttachment(device->texturePool.Get(outputTexture.handle)->arrayImageViews[0])
                 .Build();
     }
 

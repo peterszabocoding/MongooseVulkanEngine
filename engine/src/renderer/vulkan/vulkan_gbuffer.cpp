@@ -1,5 +1,7 @@
 #include "renderer/vulkan/vulkan_gbuffer.h"
 
+#include <renderer/vulkan/vulkan_texture.h>
+
 #include "renderer/vulkan/vulkan_descriptor_set_layout.h"
 #include "renderer/vulkan/vulkan_image.h"
 
@@ -16,59 +18,77 @@ namespace MongooseVK
     Ref<VulkanGBuffer> VulkanGBuffer::Builder::Build(VulkanDevice* device)
     {
         Buffers buffers;
-        buffers.viewSpaceNormal = CreateAttachment(device, ImageFormat::RGBA32_SFLOAT);
-        buffers.viewSpacePosition = CreateAttachment(device, ImageFormat::RGBA32_SFLOAT);
-        buffers.depth = CreateAttachment(device, ImageFormat::DEPTH32);
+
+        // Viewspace Normal
+        {
+            const VkImageLayout imageLayout = ImageUtils::GetLayoutFromFormat(ImageFormat::RGBA32_SFLOAT);
+            TextureCreateInfo textureCreateInfo{};
+            textureCreateInfo.width = width;
+            textureCreateInfo.height = height;
+            textureCreateInfo.format = ImageFormat::RGBA32_SFLOAT;
+            textureCreateInfo.imageLayout = imageLayout;
+            textureCreateInfo.addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+
+            TextureHandle textureHandle = device->CreateTexture(textureCreateInfo);
+            VulkanTexture* texture = device->texturePool.Get(textureHandle.handle);
+
+            buffers.viewSpaceNormal.allocatedImage = texture->allocatedImage;
+            buffers.viewSpaceNormal.imageView = texture->GetImageView();
+            buffers.viewSpaceNormal.sampler = texture->sampler;
+            buffers.viewSpaceNormal.imageLayout = imageLayout;
+            buffers.viewSpaceNormal.format = VulkanUtils::ConvertImageFormat(textureCreateInfo.format);
+            buffers.viewSpaceNormal.textureHandle = textureHandle;
+        }
+
+        // Viewspace Position
+        {
+            const VkImageLayout imageLayout = ImageUtils::GetLayoutFromFormat(ImageFormat::RGBA32_SFLOAT);
+            TextureCreateInfo textureCreateInfo{};
+            textureCreateInfo.width = width;
+            textureCreateInfo.height = height;
+            textureCreateInfo.format = ImageFormat::RGBA32_SFLOAT;
+            textureCreateInfo.imageLayout = imageLayout;
+            textureCreateInfo.addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+
+            TextureHandle textureHandle = device->CreateTexture(textureCreateInfo);
+            VulkanTexture* texture = device->texturePool.Get(textureHandle.handle);
+
+            buffers.viewSpacePosition.allocatedImage = texture->allocatedImage;
+            buffers.viewSpacePosition.imageView = texture->GetImageView();
+            buffers.viewSpacePosition.sampler = texture->sampler;
+            buffers.viewSpacePosition.imageLayout = imageLayout;
+            buffers.viewSpacePosition.format = VulkanUtils::ConvertImageFormat(textureCreateInfo.format);
+            buffers.viewSpacePosition.textureHandle = textureHandle;
+        }
+
+        // Depth
+        {
+            const VkImageLayout imageLayout = ImageUtils::GetLayoutFromFormat(ImageFormat::DEPTH32);
+            TextureCreateInfo textureCreateInfo{};
+            textureCreateInfo.width = width;
+            textureCreateInfo.height = height;
+            textureCreateInfo.format = ImageFormat::DEPTH32;
+            textureCreateInfo.imageLayout = imageLayout;
+            textureCreateInfo.addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+
+            TextureHandle textureHandle = device->CreateTexture(textureCreateInfo);
+            VulkanTexture* texture = device->texturePool.Get(textureHandle.handle);
+
+            buffers.depth.allocatedImage = texture->allocatedImage;
+            buffers.depth.imageView = texture->GetImageView();
+            buffers.depth.sampler = texture->sampler;
+            buffers.depth.imageLayout = imageLayout;
+            buffers.depth.format = VulkanUtils::ConvertImageFormat(textureCreateInfo.format);
+            buffers.depth.textureHandle = textureHandle;
+        }
 
         return CreateRef<VulkanGBuffer>(device, width, height, buffers);
     }
 
-    BufferAttachment VulkanGBuffer::Builder::CreateAttachment(VulkanDevice* device, ImageFormat format)
-    {
-        const VkImageLayout imageLayout = ImageUtils::GetLayoutFromFormat(format);
-        const AllocatedImage allocatedImage = ImageBuilder(device)
-                .SetResolution(width, height)
-                .SetTiling(VK_IMAGE_TILING_OPTIMAL)
-                .SetFormat(format)
-                .AddUsage(ImageUtils::GetUsageFromFormat(format))
-                .AddUsage(VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
-                .SetInitialLayout(imageLayout)
-                .Build();
-
-        const VkImageView imageView = ImageViewBuilder(device)
-                .SetFormat(format)
-                .SetAspectFlags(ImageUtils::GetAspectFlagFromFormat(format))
-                .SetImage(allocatedImage.image)
-                .Build();
-
-        const VkSampler sampler = ImageSamplerBuilder(device)
-                .SetFilter(VK_FILTER_LINEAR, VK_FILTER_LINEAR)
-                .SetFormat(format)
-                .SetAddressMode(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
-                .SetBorderColor(VK_BORDER_COLOR_INT_OPAQUE_BLACK)
-                .Build();
-
-        return {
-            allocatedImage,
-            imageView,
-            sampler,
-            imageLayout,
-            VulkanUtils::ConvertImageFormat(format)
-        };
-    }
-
     VulkanGBuffer::~VulkanGBuffer()
     {
-        vkDestroyImageView(vulkanDevice->GetDevice(), buffers.viewSpaceNormal.imageView, nullptr);
-        vmaDestroyImage(vulkanDevice->GetVmaAllocator(), buffers.viewSpaceNormal.allocatedImage.image,
-                        buffers.viewSpaceNormal.allocatedImage.allocation);
-
-        vkDestroyImageView(vulkanDevice->GetDevice(), buffers.viewSpacePosition.imageView, nullptr);
-        vmaDestroyImage(vulkanDevice->GetVmaAllocator(), buffers.viewSpacePosition.allocatedImage.image,
-                        buffers.viewSpacePosition.allocatedImage.allocation);
-
-        vkDestroyImageView(vulkanDevice->GetDevice(), buffers.depth.imageView, nullptr);
-        vmaDestroyImage(vulkanDevice->GetVmaAllocator(), buffers.depth.allocatedImage.image,
-                        buffers.depth.allocatedImage.allocation);
+        vulkanDevice->DestroyTexture(buffers.viewSpaceNormal.textureHandle);
+        vulkanDevice->DestroyTexture(buffers.viewSpacePosition.textureHandle);
+        vulkanDevice->DestroyTexture(buffers.depth.textureHandle);
     }
 }

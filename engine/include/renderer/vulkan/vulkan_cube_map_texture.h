@@ -1,5 +1,6 @@
 #pragma once
 #include "vulkan_device.h"
+#include "vulkan_image.h"
 #include "renderer/bitmap.h"
 #include "util/core.h"
 

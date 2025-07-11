@@ -2,6 +2,7 @@
 
 #include <array>
 
+#include "vulkan_device.h"
 #include "util/core.h"
 #include "vulkan_image.h"
 #include "resource/resource.h"
@@ -15,27 +16,29 @@ namespace MongooseVK
         friend class VulkanTextureBuilder;
 
     public:
-        VulkanTexture(const AllocatedImage& _image, const std::array<VkImageView, 6>& _imageViews,
+        VulkanTexture(const AllocatedImage& _image,
+                      const VkImageView _imageView,
+                      const std::array<VkImageView, 6>& _arrayImageViews,
                       const VkSampler _sampler,
-                      const VkDeviceMemory _imageMemory,
                       const ImageResource& _imageResource): imageResource(_imageResource),
                                                             allocatedImage(_image),
-                                                            imageViews(_imageViews),
-                                                            imageMemory(_imageMemory),
+                                                            imageView(_imageView),
+                                                            arrayImageViews(_arrayImageViews),
                                                             sampler(_sampler) {}
 
         ~VulkanTexture() = default;
 
-        VkImageView GetImageView() const { return imageViews[0]; }
-        VkImageView GetImageView(const uint32_t index) const { return imageViews[index % imageViews.size()]; }
+        VkImageView GetImageView() const { return arrayImageViews[0]; }
+        VkImageView GetImageView(const uint32_t index) const { return arrayImageViews[index % arrayImageViews.size()]; }
         VkSampler GetSampler() const { return sampler; }
 
     public:
         ImageResource imageResource{};
         AllocatedImage allocatedImage{};
-        std::array<VkImageView, 6> imageViews{};
-        VkDeviceMemory imageMemory{};
+        VkImageView imageView{};
+        std::array<VkImageView, 6> arrayImageViews{};
         VkSampler sampler{};
+        TextureCreateInfo createInfo{};
     };
 
     class VulkanTextureBuilder {
@@ -124,8 +127,8 @@ namespace MongooseVK
         uint32_t arrayLayers = 1;
 
         AllocatedImage allocatedImage{};
-        std::array<VkImageView, 6> imageViews{};
         VkImageView imageView{};
+        std::array<VkImageView, 6> arrayImageViews{};
         VkDeviceMemory imageMemory{};
         VkSampler sampler{};
         ImageResource imageResource{};

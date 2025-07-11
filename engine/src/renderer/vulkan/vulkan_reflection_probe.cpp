@@ -1,4 +1,7 @@
 #include "renderer/vulkan/vulkan_reflection_probe.h"
+
+#include <renderer/vulkan/vulkan_texture.h>
+
 #include "renderer/vulkan/vulkan_descriptor_writer.h"
 #include "renderer/shader_cache.h"
 
