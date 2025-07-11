@@ -1,6 +1,7 @@
 #include "renderer/vulkan/vulkan_framebuffer.h"
 
 #include <array>
+#include <renderer/vulkan/vulkan_texture.h>
 
 #include "renderer/vulkan/vulkan_device.h"
 #include "renderer/vulkan/vulkan_renderpass.h"
@@ -8,6 +9,19 @@
 #include "util/log.h"
 
 namespace MongooseVK {
+
+    VulkanFramebuffer::Builder& VulkanFramebuffer::Builder::AddAttachment(TextureHandle textureHandle)
+    {
+        FramebufferAttachment attachment;
+        attachment.allocatedImage.image = nullptr;
+        attachment.allocatedImage.allocation = nullptr;
+        attachment.imageView = device->GetTexture(textureHandle)->imageView;
+        attachment.format = VK_FORMAT_UNDEFINED;
+
+        attachments.push_back(attachment);
+        return *this;
+    }
+
     VulkanFramebuffer::Builder& VulkanFramebuffer::Builder::AddAttachment(VkImageView imageAttachment) {
         FramebufferAttachment attachment;
         attachment.allocatedImage.image = nullptr;

@@ -46,8 +46,6 @@ namespace MongooseVK
     struct PassResource {
         std::string name;
         ResourceType type;
-        VkDescriptorSet descriptorSet;
-        Ref<VulkanDescriptorSetLayout> descriptorSetLayout;
 
         std::optional<ResourceBufferInfo> bufferInfo;
         std::optional<ResourceTextureInfo> textureInfo;

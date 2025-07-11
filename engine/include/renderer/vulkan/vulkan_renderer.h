@@ -117,6 +117,8 @@ namespace MongooseVK
         void DrawFrame(VkCommandBuffer commandBuffer, uint32_t imageIndex, Camera& camera);
 
     public:
+        VkExtent2D viewportResolution;
+        VkExtent2D renderResolution;
         float resolutionScale = 1.0f;
 
         DescriptorBuffers descriptorBuffers;
@@ -126,13 +128,9 @@ namespace MongooseVK
         RenderPasses renderPasses;
 
         Ref<VulkanShadowMap> directionalShadowMap;
-        Ref<VulkanGBuffer> gBuffer;
 
     private:
         VulkanDevice* device;
-
-        VkExtent2D viewportResolution;
-        VkExtent2D renderResolution;
         uint32_t activeImage = 0;
 
         Scene scene;

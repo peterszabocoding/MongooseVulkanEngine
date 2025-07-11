@@ -27,6 +27,8 @@ namespace MongooseVK
 
             Builder& AddAttachment(VkImageView imageAttachment);
             Builder& AddAttachment(ImageFormat attachmentFormat);
+            Builder& AddAttachment(TextureHandle textureHandle);
+
             Builder& SetRenderpass(VulkanRenderPass* renderPass);
             Builder& SetResolution(uint32_t width, uint32_t height);
 

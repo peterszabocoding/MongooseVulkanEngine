@@ -1,7 +1,6 @@
 #pragma once
 #include "vulkan_pass.h"
 #include "renderer/scene.h"
-#include "renderer/vulkan/vulkan_gbuffer.h"
 
 namespace MongooseVK
 

@@ -49,6 +49,8 @@ namespace MongooseVK
         scene = ResourceManager::LoadScene(device, gltfPath, hdrPath);
         scene.directionalLight.direction = normalize(glm::vec3(0.0f, -2.0f, -1.0f));
 
+        CreateRenderPassResources();
+
         BuildGBuffer();
 
         renderPasses.gbufferPass = CreateScope<GBufferPass>(device, scene, renderResolution);
@@ -67,8 +69,6 @@ namespace MongooseVK
 
         PrepareSSAO();
         PrecomputeIBL();
-
-        CreateRenderPassResources();
 
         isSceneLoaded = true;
     }
@@ -174,7 +174,7 @@ namespace MongooseVK
     {
         framebuffers.ssaoFramebuffer = VulkanFramebuffer::Builder(device)
                 .SetRenderpass(renderPasses.ssaoPass->GetRenderPass())
-                .SetResolution(viewportResolution.width * 0.5, viewportResolution.height * 0.5)
+                .SetResolution(renderResolution.width * 0.5, renderResolution.height * 0.5)
                 .AddAttachment(ImageFormat::R8_UNORM)
                 .Build();
 
@@ -187,10 +187,10 @@ namespace MongooseVK
 
         framebuffers.gbufferFramebuffer = VulkanFramebuffer::Builder(device)
                 .SetRenderpass(renderPasses.gbufferPass->GetRenderPass())
-                .SetResolution(viewportResolution.width, viewportResolution.height)
-                .AddAttachment(gBuffer->buffers.viewSpaceNormal.imageView)
-                .AddAttachment(gBuffer->buffers.viewSpacePosition.imageView)
-                .AddAttachment(gBuffer->buffers.depth.imageView)
+                .SetResolution(renderResolution.width, renderResolution.height)
+                .AddAttachment(renderPassResources.viewspaceNormal.textureInfo->textureHandle)
+                .AddAttachment(renderPassResources.viewspacePosition.textureInfo->textureHandle)
+                .AddAttachment(renderPassResources.depthMap.textureInfo->textureHandle)
                 .Build();
 
         const uint32_t imageCount = VulkanUtils::GetSwapchainImageCount(device->GetPhysicalDevice(), device->GetSurface());
@@ -211,6 +211,8 @@ namespace MongooseVK
         IdleWait();
         CreateSwapchain();
 
+        CreateRenderPassResources();
+
         renderPasses.gbufferPass->Resize(renderResolution);
         renderPasses.skyboxPass->Resize(renderResolution);
         renderPasses.lightingPass->Resize(renderResolution);
@@ -224,7 +226,6 @@ namespace MongooseVK
         CreatePresentDescriptorSet();
 
         PrepareSSAO();
-        CreateRenderPassResources();
     }
 
     void VulkanRenderer::CreateCameraBuffer()
@@ -334,25 +335,24 @@ namespace MongooseVK
 
     void VulkanRenderer::BuildGBuffer()
     {
-        gBuffer = VulkanGBuffer::Builder()
-                .SetResolution(viewportResolution.width, viewportResolution.height)
-                .Build(device);
-
+        VulkanTexture* viewspaceNormalTexture = device->GetTexture(renderPassResources.viewspaceNormal.textureInfo->textureHandle);
         const VkDescriptorImageInfo worldSpaceNormalInfo{
-            .sampler = gBuffer->buffers.viewSpaceNormal.sampler,
-            .imageView = gBuffer->buffers.viewSpaceNormal.imageView,
+            .sampler = viewspaceNormalTexture->sampler,
+            .imageView = viewspaceNormalTexture->imageView,
             .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         };
 
+        VulkanTexture* viewspacePositionTexture = device->GetTexture(renderPassResources.viewspacePosition.textureInfo->textureHandle);
         const VkDescriptorImageInfo positionInfo{
-            .sampler = gBuffer->buffers.viewSpacePosition.sampler,
-            .imageView = gBuffer->buffers.viewSpacePosition.imageView,
+            .sampler = viewspacePositionTexture->sampler,
+            .imageView = viewspacePositionTexture->imageView,
             .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         };
 
+        VulkanTexture* depthTexture = device->GetTexture(renderPassResources.depthMap.textureInfo->textureHandle);
         const VkDescriptorImageInfo depthInfo{
-            .sampler = gBuffer->buffers.depth.sampler,
-            .imageView = gBuffer->buffers.depth.imageView,
+            .sampler = depthTexture->sampler,
+            .imageView = depthTexture->imageView,
             .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         };
 
@@ -392,8 +392,6 @@ namespace MongooseVK
             renderPassResources.lightsBuffer = {
                 .name = "lights_buffer",
                 .type = ResourceType::Buffer,
-                .descriptorSet = shaderCache->descriptorSets.lightsDescriptorSet,
-                .descriptorSetLayout = shaderCache->descriptorSetLayouts.lightsDescriptorSetLayout,
                 .bufferInfo = lightsBufferInfo
             };
         }
@@ -403,8 +401,6 @@ namespace MongooseVK
             renderPassResources.cameraBuffer = {
                 .name = "camera_buffer",
                 .type = ResourceType::Buffer,
-                .descriptorSet = shaderCache->descriptorSets.cameraDescriptorSet,
-                .descriptorSetLayout = shaderCache->descriptorSetLayouts.cameraDescriptorSetLayout
             };
         }
 
@@ -412,18 +408,18 @@ namespace MongooseVK
         {
             ResourceTextureInfo textureInfo;
             textureInfo.textureCreateInfo = {
-                .width = viewportResolution.width,
-                .height = viewportResolution.height,
+                .width = renderResolution.width,
+                .height = renderResolution.height,
                 .format = ImageFormat::RGBA32_SFLOAT,
                 .imageLayout = ImageUtils::GetLayoutFromFormat(ImageFormat::RGBA32_SFLOAT),
                 .addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
             };
 
+            textureInfo.textureHandle = device->CreateTexture(textureInfo.textureCreateInfo);
+
             renderPassResources.viewspaceNormal = {
                 .name = "viewspace_normal",
                 .type = ResourceType::Texture,
-                .descriptorSet = shaderCache->descriptorSets.viewspaceNormalDescriptorSet,
-                .descriptorSetLayout = shaderCache->descriptorSetLayouts.viewspaceNormalDescriptorSetLayout,
                 .textureInfo = textureInfo,
             };
         }
@@ -432,18 +428,18 @@ namespace MongooseVK
         {
             ResourceTextureInfo textureInfo;
             textureInfo.textureCreateInfo = {
-                .width = viewportResolution.width,
-                .height = viewportResolution.height,
+                .width = renderResolution.width,
+                .height = renderResolution.height,
                 .format = ImageFormat::RGBA32_SFLOAT,
                 .imageLayout = ImageUtils::GetLayoutFromFormat(ImageFormat::RGBA32_SFLOAT),
                 .addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
             };
 
+            textureInfo.textureHandle = device->CreateTexture(textureInfo.textureCreateInfo);
+
             renderPassResources.viewspacePosition = {
                 .name = "viewspace_position",
                 .type = ResourceType::Texture,
-                .descriptorSet = shaderCache->descriptorSets.viewspacePositionDescriptorSet,
-                .descriptorSetLayout = shaderCache->descriptorSetLayouts.viewspacePositionDescriptorSetLayout,
                 .textureInfo = textureInfo,
             };
         }
@@ -452,28 +448,30 @@ namespace MongooseVK
         {
             ResourceTextureInfo textureInfo;
             textureInfo.textureCreateInfo = {
-                .width = viewportResolution.width,
-                .height = viewportResolution.height,
+                .width = renderResolution.width,
+                .height = renderResolution.height,
                 .format = ImageFormat::DEPTH32,
                 .imageLayout = ImageUtils::GetLayoutFromFormat(ImageFormat::DEPTH32),
                 .addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
             };
 
+            textureInfo.textureHandle = device->CreateTexture(textureInfo.textureCreateInfo);
+
             renderPassResources.depthMap = {
                 .name = "depth_map",
                 .type = ResourceType::Texture,
-                .descriptorSet = shaderCache->descriptorSets.depthMapDescriptorSet,
-                .descriptorSetLayout = shaderCache->descriptorSetLayouts.depthMapDescriptorSetLayout,
                 .textureInfo = textureInfo,
             };
         }
 
         // Directional Shadow Map
         {
+            const uint16_t SHADOW_MAP_RESOLUTION = EnumValue(scene.directionalLight.shadowMapResolution);
+
             ResourceTextureInfo textureInfo;
             textureInfo.textureCreateInfo = {
-                .width = viewportResolution.width,
-                .height = viewportResolution.height,
+                .width = SHADOW_MAP_RESOLUTION,
+                .height = SHADOW_MAP_RESOLUTION,
                 .format = ImageFormat::DEPTH32,
                 .imageLayout = ImageUtils::GetLayoutFromFormat(ImageFormat::DEPTH32),
                 .addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
@@ -486,8 +484,6 @@ namespace MongooseVK
             renderPassResources.directionalShadowMap = {
                 .name = "directional_shadow_map",
                 .type = ResourceType::Texture,
-                .descriptorSet = shaderCache->descriptorSets.directionalShadownMapDescriptorSet,
-                .descriptorSetLayout = shaderCache->descriptorSetLayouts.directionalShadowMapDescriptorSetLayout,
                 .textureInfo = textureInfo,
             };
         }
@@ -497,8 +493,6 @@ namespace MongooseVK
             renderPassResources.irradianceMap = {
                 .name = "irradiance_map",
                 .type = ResourceType::Texture,
-                .descriptorSet = shaderCache->descriptorSets.irradianceDescriptorSet,
-                .descriptorSetLayout = shaderCache->descriptorSetLayouts.irradianceDescriptorSetLayout
             };
         }
 
@@ -507,8 +501,6 @@ namespace MongooseVK
             renderPassResources.ssaoTexture = {
                 .name = "ssao_texture",
                 .type = ResourceType::Texture,
-                .descriptorSet = shaderCache->descriptorSets.postProcessingDescriptorSet,
-                .descriptorSetLayout = shaderCache->descriptorSetLayouts.postProcessingDescriptorSetLayout
             };
         }
     }

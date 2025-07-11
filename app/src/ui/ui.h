@@ -94,16 +94,25 @@ namespace VulkanDemo
                 debugTextures.clear();
             }
 
+            auto viewspaceNormal = MongooseVK::VulkanDevice::Get()->GetTexture(
+                renderer.renderPassResources.viewspaceNormal.textureInfo->textureHandle);
+
+            auto viewspacePosition = MongooseVK::VulkanDevice::Get()->GetTexture(
+                renderer.renderPassResources.viewspacePosition.textureInfo->textureHandle);
+
+            auto depthMap = MongooseVK::VulkanDevice::Get()->GetTexture(
+                renderer.renderPassResources.depthMap.textureInfo->textureHandle);
+
             debugTextures.push_back(ImGui_ImplVulkan_AddTexture(sampler,
-                                                                renderer.gBuffer->buffers.viewSpaceNormal.imageView,
+                                                                viewspaceNormal->imageView,
                                                                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
 
             debugTextures.push_back(ImGui_ImplVulkan_AddTexture(sampler,
-                                                                renderer.gBuffer->buffers.viewSpacePosition.imageView,
+                                                                viewspacePosition->imageView,
                                                                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
 
             debugTextures.push_back(ImGui_ImplVulkan_AddTexture(sampler,
-                                                                renderer.gBuffer->buffers.depth.imageView,
+                                                                depthMap->imageView,
                                                                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
 
             debugTextures.push_back(ImGui_ImplVulkan_AddTexture(sampler,
@@ -122,13 +131,13 @@ namespace VulkanDemo
 
             const ImVec2 availableSpace = ImGui::GetContentRegionAvail();
 
-            const float aspect = static_cast<float>(renderer.gBuffer->height) / static_cast<float>(renderer.gBuffer->width);
+            const float aspect = static_cast<float>(renderer.renderResolution.height) / static_cast<float>(renderer.renderResolution.width);
             const ImVec2 imageSize = {
                 std::min(availableSpace.x, availableSpace.y),
                 std::min(availableSpace.x, availableSpace.y) * aspect,
             };
 
-            ImGui::Text("Resolution: %d x %d", renderer.gBuffer->width, renderer.gBuffer->height);
+            ImGui::Text("Resolution: %d x %d", renderer.renderResolution.width, renderer.renderResolution.height);
 
             ImGui::Text("Worldspace normal:");
             ImGui::Image(reinterpret_cast<ImTextureID>(debugTextures[0]), imageSize, ImVec2(0, 0), ImVec2(1, 1));
@@ -260,10 +269,14 @@ namespace VulkanDemo
 
         virtual void Draw() override
         {
-            MongooseVK::ImGuiUtils::DrawFloatControl("SSAO Strength", renderer.renderPasses.ssaoPass->ssaoParams.strength, 0.01f, 10.0f, 0.01f, 150.0f);
-            MongooseVK::ImGuiUtils::DrawFloatControl("SSAO Radius", renderer.renderPasses.ssaoPass->ssaoParams.radius, 0.01f, 1.0f, 0.01f, 150.0f);
-            MongooseVK::ImGuiUtils::DrawFloatControl("SSAO Bias", renderer.renderPasses.ssaoPass->ssaoParams.bias, 0.001f, 1.0f, 0.001f, 150.0f);
-            MongooseVK::ImGuiUtils::DrawIntControl("SSAO Kernel Size", renderer.renderPasses.ssaoPass->ssaoParams.kernelSize, 1, 64, 150.0f);
+            MongooseVK::ImGuiUtils::DrawFloatControl("SSAO Strength", renderer.renderPasses.ssaoPass->ssaoParams.strength, 0.01f, 10.0f,
+                                                     0.01f, 150.0f);
+            MongooseVK::ImGuiUtils::DrawFloatControl("SSAO Radius", renderer.renderPasses.ssaoPass->ssaoParams.radius, 0.01f, 1.0f, 0.01f,
+                                                     150.0f);
+            MongooseVK::ImGuiUtils::DrawFloatControl("SSAO Bias", renderer.renderPasses.ssaoPass->ssaoParams.bias, 0.001f, 1.0f, 0.001f,
+                                                     150.0f);
+            MongooseVK::ImGuiUtils::DrawIntControl("SSAO Kernel Size", renderer.renderPasses.ssaoPass->ssaoParams.kernelSize, 1, 64,
+                                                   150.0f);
         }
     };
 
@@ -279,8 +292,10 @@ namespace VulkanDemo
 
         virtual void Draw() override
         {
-            MongooseVK::ImGuiUtils::DrawFloatControl("Grid size", renderer.renderPasses.gridPass->gridParams.gridSize, 0.1f, 1000.0f, 0.1f, 150.0f);
-            MongooseVK::ImGuiUtils::DrawFloatControl("Cell size", renderer.renderPasses.gridPass->gridParams.gridCellSize, 0.01f, 10.0f, 0.01f, 150.0f);
+            MongooseVK::ImGuiUtils::DrawFloatControl("Grid size", renderer.renderPasses.gridPass->gridParams.gridSize, 0.1f, 1000.0f, 0.1f,
+                                                     150.0f);
+            MongooseVK::ImGuiUtils::DrawFloatControl("Cell size", renderer.renderPasses.gridPass->gridParams.gridCellSize, 0.01f, 10.0f,
+                                                     0.01f, 150.0f);
             MongooseVK::ImGuiUtils::DrawRGBColorPicker("Primary color", renderer.renderPasses.gridPass->gridParams.gridColorThick, 150.0f);
             MongooseVK::ImGuiUtils::DrawRGBColorPicker("Secondary color", renderer.renderPasses.gridPass->gridParams.gridColorThin, 150.0f);
         }
