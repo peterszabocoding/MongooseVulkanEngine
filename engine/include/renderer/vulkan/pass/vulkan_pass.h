@@ -33,9 +33,8 @@ namespace MongooseVK
     };
 
     struct ResourceBufferInfo {
-        void* data;
         uint64_t size;
-        AllocatedBuffer buffer;
+        AllocatedBuffer allocatedBuffer;
     };
 
     struct ResourceTextureInfo {
@@ -47,8 +46,8 @@ namespace MongooseVK
         std::string name;
         ResourceType type;
 
-        std::optional<ResourceBufferInfo> bufferInfo;
-        std::optional<ResourceTextureInfo> textureInfo;
+        ResourceBufferInfo bufferInfo;
+        ResourceTextureInfo textureInfo;
     };
 
     struct PassOutput {

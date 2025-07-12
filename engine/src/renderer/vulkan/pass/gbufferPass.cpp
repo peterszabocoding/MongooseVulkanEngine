@@ -70,7 +70,7 @@ namespace MongooseVK
         VulkanRenderPass::RenderPassConfig config;
         config.AddColorAttachment({.imageFormat = VK_FORMAT_R32G32B32A32_SFLOAT});
         config.AddColorAttachment({.imageFormat = VK_FORMAT_R32G32B32A32_SFLOAT});
-        config.AddDepthAttachment({.depthFormat = VK_FORMAT_D32_SFLOAT});
+        config.AddDepthAttachment({.depthFormat = VK_FORMAT_D24_UNORM_S8_UINT});
 
         renderPassHandle = device->CreateRenderPass(config);
 
@@ -105,7 +105,7 @@ namespace MongooseVK
             ImageFormat::RGBA32_SFLOAT,
             ImageFormat::RGBA32_SFLOAT,
         };
-        pipelineConfig.depthAttachment = ImageFormat::DEPTH32;
+        pipelineConfig.depthAttachment = ImageFormat::DEPTH24_STENCIL8;
 
         gbufferPipeline = VulkanPipeline::Builder().Build(device, pipelineConfig);
     }

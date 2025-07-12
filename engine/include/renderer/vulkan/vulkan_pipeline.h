@@ -96,6 +96,7 @@ namespace MongooseVK
         PipelinePushConstantData pushConstantData{};
 
         bool enableDepthTest = true;
+        bool depthWriteEnable = true;
         bool disableBlending = true;
     };
 
@@ -116,7 +117,7 @@ namespace MongooseVK
             Builder& DisableBlending();
             Builder& AddColorAttachment(ImageFormat format, VkPipelineColorBlendAttachmentState blendState = ALPHA_BLENDING);
             Builder& SetDepthFormat(ImageFormat format);
-            Builder& EnableDepthTest();
+            Builder& EnableDepthTest(bool depthWriteEnable);
             Builder& DisableDepthTest();
             Builder& AddPushConstant(VkShaderStageFlags stageFlags, uint32_t offset, uint32_t size);
             Builder& SetRenderpass(VkRenderPass _renderpass);

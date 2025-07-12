@@ -13,7 +13,7 @@ namespace MongooseVK
     }
 
     void LightingPass::Render(VkCommandBuffer commandBuffer, Camera& camera, Ref<VulkanFramebuffer> writeBuffer,
-                            Ref<VulkanFramebuffer> readBuffer)
+                              Ref<VulkanFramebuffer> readBuffer)
     {
         device->SetViewportAndScissor(writeBuffer->GetExtent(), commandBuffer);
         GetRenderPass()->Begin(commandBuffer, writeBuffer, writeBuffer->GetExtent());
@@ -69,7 +69,10 @@ namespace MongooseVK
             .imageFormat = VK_FORMAT_R16G16B16A16_SFLOAT,
             .loadOp = VK_ATTACHMENT_LOAD_OP_LOAD
         });
-        config.AddDepthAttachment({.depthFormat = VK_FORMAT_D24_UNORM_S8_UINT});
+        config.AddDepthAttachment({
+            .depthFormat = VK_FORMAT_D24_UNORM_S8_UINT,
+            .loadOp = VK_ATTACHMENT_LOAD_OP_LOAD
+        });
 
         renderPassHandle = device->CreateRenderPass(config);
 
@@ -93,8 +96,9 @@ namespace MongooseVK
             ShaderCache::descriptorSetLayouts.reflectionDescriptorSetLayout,
         };
 
-        pipelineConfig.disableBlending = true;
+        pipelineConfig.disableBlending = false;
         pipelineConfig.enableDepthTest = true;
+        pipelineConfig.depthWriteEnable = true;
 
         pipelineConfig.renderPass = GetRenderPass()->Get();
 

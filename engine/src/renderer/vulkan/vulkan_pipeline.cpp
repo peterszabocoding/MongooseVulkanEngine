@@ -249,7 +249,7 @@ namespace MongooseVK
         // Depth testing
         if (config.enableDepthTest)
         {
-            EnableDepthTest();
+            EnableDepthTest(config.depthWriteEnable);
             SetDepthFormat(config.depthAttachment);
         } else
         {
@@ -358,10 +358,10 @@ namespace MongooseVK
         return *this;
     }
 
-    VulkanPipeline::Builder& VulkanPipeline::Builder::EnableDepthTest()
+    VulkanPipeline::Builder& VulkanPipeline::Builder::EnableDepthTest(bool depthWriteEnable)
     {
         depthStencil.depthTestEnable = VK_TRUE;
-        depthStencil.depthWriteEnable = VK_TRUE;
+        depthStencil.depthWriteEnable = depthWriteEnable ? VK_TRUE : VK_FALSE;
         depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
         depthStencil.depthBoundsTestEnable = VK_FALSE;
         depthStencil.minDepthBounds = 0.0f;

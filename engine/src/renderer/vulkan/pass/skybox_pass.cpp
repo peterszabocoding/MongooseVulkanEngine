@@ -63,6 +63,11 @@ namespace MongooseVK
             .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
         });
 
+        config.AddDepthAttachment({
+            .depthFormat = VK_FORMAT_D24_UNORM_S8_UINT,
+            .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+        });
+
         renderPassHandle = device->CreateRenderPass(config);
 
         LOG_TRACE("Building skybox pipeline");
@@ -87,6 +92,7 @@ namespace MongooseVK
         skyboxPipelineConfig.colorAttachments = {
             ImageFormat::RGBA16_SFLOAT,
         };
+        skyboxPipelineConfig.depthAttachment = ImageFormat::DEPTH24_STENCIL8;
 
         skyboxPipeline = VulkanPipeline::Builder().Build(device, skyboxPipelineConfig);
     }

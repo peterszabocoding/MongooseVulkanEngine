@@ -17,20 +17,15 @@
 
 namespace MongooseVK
 {
-    struct DescriptorBuffers {
-        AllocatedBuffer cameraBuffer{};
-        AllocatedBuffer lightsBuffer{};
-    };
-
     struct Framebuffers {
         Ref<VulkanFramebuffer> ssaoFramebuffer;
         Ref<VulkanFramebuffer> gbufferFramebuffer;
-        Ref<VulkanFramebuffer> geometryFramebuffer;
+        Ref<VulkanFramebuffer> mainFramebuffer;
         std::vector<Ref<VulkanFramebuffer>> shadowMapFramebuffers;
         std::vector<Ref<VulkanFramebuffer>> presentFramebuffers;
     };
 
-    struct TransformsBuffer {
+    struct CameraBuffer {
         glm::mat4 proj;
         glm::mat4 view;
         alignas(16) glm::vec3 cameraPosition;
@@ -61,6 +56,8 @@ namespace MongooseVK
         PassResource directionalShadowMap;
         PassResource irradianceMap;
         PassResource ssaoTexture;
+        PassResource mainFrameColorTexture;
+        PassResource mainFrameDepthTexture;
     };
 
     struct RenderPasses {
@@ -108,7 +105,8 @@ namespace MongooseVK
 
         void BuildGBuffer();
 
-        void CreateRenderPassResources();
+        void CreateRenderPassTextures();
+        void CreateRenderPassBuffers();
 
         void PrepareSSAO();
 
@@ -119,7 +117,6 @@ namespace MongooseVK
         VkExtent2D renderResolution;
         float resolutionScale = 1.0f;
 
-        DescriptorBuffers descriptorBuffers;
         Framebuffers framebuffers;
 
         RenderPassResources renderPassResources;

@@ -33,8 +33,10 @@ namespace MongooseVK
         }
 
         inline VkImageLayout GetLayoutFromFormat(ImageFormat format) {
-            if (format == ImageFormat::DEPTH24_STENCIL8 || format == ImageFormat::DEPTH32)
+            if (format == ImageFormat::DEPTH24_STENCIL8)
                 return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+            if (format == ImageFormat::DEPTH32)
+                return VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
 
             return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         }

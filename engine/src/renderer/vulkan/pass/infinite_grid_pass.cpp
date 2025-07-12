@@ -63,6 +63,7 @@ namespace MongooseVK
         pipelineConfig.frontFace = PipelineFrontFace::Counter_clockwise;
         pipelineConfig.disableBlending = false;
         pipelineConfig.enableDepthTest = true;
+        pipelineConfig.depthWriteEnable = false;
         pipelineConfig.renderPass = GetRenderPass()->Get();
         pipelineConfig.pushConstantData.shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
         pipelineConfig.pushConstantData.size = sizeof(GridParams);
