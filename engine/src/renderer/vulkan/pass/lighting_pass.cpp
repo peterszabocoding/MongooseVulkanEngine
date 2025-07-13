@@ -51,7 +51,8 @@ namespace MongooseVK
 
                 if (scene.reflectionProbe)
                 {
-                    geometryDrawParams.descriptorSets.push_back(scene.reflectionProbe->descriptorSet);
+                    geometryDrawParams.descriptorSets.push_back(ShaderCache::descriptorSets.reflectionDescriptorSet);
+                    geometryDrawParams.descriptorSets.push_back(ShaderCache::descriptorSets.brdfLutDescriptorSet);
                 }
 
                 geometryDrawParams.meshlet = &meshlet;
@@ -94,6 +95,7 @@ namespace MongooseVK
             ShaderCache::descriptorSetLayouts.irradianceDescriptorSetLayout,
             ShaderCache::descriptorSetLayouts.postProcessingDescriptorSetLayout,
             ShaderCache::descriptorSetLayouts.reflectionDescriptorSetLayout,
+            ShaderCache::descriptorSetLayouts.brdfLutDescriptorSetLayout,
         };
 
         pipelineConfig.disableBlending = false;

@@ -73,7 +73,7 @@ layout(set = 6, binding = 0)    uniform sampler2D SSAO;
 
 // Reflection uniforms
 layout(set = 7, binding = 0)    uniform samplerCube prefilterMap;
-layout(set = 7, binding = 1)    uniform sampler2D brdfLUT;
+layout(set = 8, binding = 0)    uniform sampler2D brdfLUT;
 
 // ------------------------------------------------------------------
 // VARIABLES --------------------------------------------------------

@@ -19,13 +19,15 @@ namespace MongooseVK
         std::string name = "";
         std::string filePath = "";
 
+        std::string scenePath = "";
+        std::string skyboxPath = "";
+
         // Render objects
         std::vector<Transform> transforms;
         std::vector<Ref<VulkanMesh>> meshes;
         std::vector<VulkanMaterial> materials;
 
         // Environment
-        Ref<VulkanCubeMapTexture> skybox;
         Ref<VulkanReflectionProbe> reflectionProbe;
 
         // Lights

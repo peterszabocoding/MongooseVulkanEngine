@@ -84,10 +84,14 @@ namespace MongooseVK
                 .AddBinding({0, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
                 .Build();
 
-        // prefilterMap, brdfLUT
+        // prefilterMap,
         descriptorSetLayouts.reflectionDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice)
                 .AddBinding({0, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
-                .AddBinding({1, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
+                .Build();
+
+        // brdfLUT
+        descriptorSetLayouts.brdfLutDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(vulkanDevice)
+                .AddBinding({0, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
                 .Build();
 
         // world-space normals

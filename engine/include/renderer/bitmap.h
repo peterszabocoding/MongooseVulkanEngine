@@ -303,10 +303,10 @@ namespace MongooseVK
         }
 
     public:
-        int width = 0;
-        int height = 0;
-        int depth = 1;
-        int comp = 3;
+        uint32_t width = 0;
+        uint32_t height = 0;
+        uint32_t depth = 1;
+        uint32_t comp = 3;
 
         eBitmapFormat format = eBitmapFormat_UnsignedByte;
         eBitmapType type = eBitmapType_2D;

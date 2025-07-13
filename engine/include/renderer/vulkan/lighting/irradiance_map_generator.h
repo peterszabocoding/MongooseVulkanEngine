@@ -13,7 +13,7 @@ namespace MongooseVK
         IrradianceMapGenerator(VulkanDevice* _device);
         ~IrradianceMapGenerator();
 
-        Ref<VulkanCubeMapTexture> FromCubemapTexture(const Ref<VulkanCubeMapTexture>& cubemapTexture);
+        Ref<VulkanCubeMapTexture> FromCubemapTexture();
 
         VulkanRenderPass* GetRenderPass();
 

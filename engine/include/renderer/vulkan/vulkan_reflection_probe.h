@@ -5,13 +5,11 @@ namespace MongooseVK
 {
     class VulkanReflectionProbe {
     public:
-        VulkanReflectionProbe(VulkanDevice* device, const Ref<VulkanCubeMapTexture>& prefilterMap, const Ref<VulkanTexture>& brdfLUT);
+        VulkanReflectionProbe(VulkanDevice* device, TextureHandle prefilterMap);
         ~VulkanReflectionProbe();
 
     public:
-        Ref<VulkanCubeMapTexture> prefilterMap;
-        Ref<VulkanTexture> brdfLUT;
-        VkDescriptorSet descriptorSet{};
+        TextureHandle prefilterMap;
 
     private:
         VulkanDevice* device;

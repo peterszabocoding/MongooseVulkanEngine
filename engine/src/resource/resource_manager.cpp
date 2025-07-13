@@ -216,7 +216,8 @@ namespace MongooseVK
     Scene ResourceManager::LoadScene(VulkanDevice* device, const std::string& scenePath, const std::string& skyboxPath)
     {
         Scene scene = GLTFLoader::LoadScene(device, scenePath);
-        scene.skybox = LoadHDRCubeMap(device, skyboxPath);
+        scene.scenePath = scenePath;
+        scene.skyboxPath = skyboxPath;
 
         return scene;
     }

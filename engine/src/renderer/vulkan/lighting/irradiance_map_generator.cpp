@@ -37,7 +37,7 @@ namespace MongooseVK
         device->DestroyRenderPass(renderPassHandle);
     }
 
-    Ref<VulkanCubeMapTexture> IrradianceMapGenerator::FromCubemapTexture(const Ref<VulkanCubeMapTexture>& cubemapTexture)
+    Ref<VulkanCubeMapTexture> IrradianceMapGenerator::FromCubemapTexture()
     {
 
         Ref<VulkanCubeMapTexture> irradianceMap = VulkanCubeMapTexture::Builder()
@@ -56,25 +56,12 @@ namespace MongooseVK
                     .Build();
         }
 
-        VkDescriptorSet cubemapDescriptorSet;
-        VkDescriptorImageInfo info{
-            cubemapTexture->GetSampler(),
-            cubemapTexture->GetImageView(),
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-        };
-
-        VulkanDescriptorWriter(*ShaderCache::descriptorSetLayouts.cubemapDescriptorSetLayout, device->GetShaderDescriptorPool())
-                .WriteImage(0, &info)
-                .Build(cubemapDescriptorSet);
-
         device->ImmediateSubmit([&](const VkCommandBuffer commandBuffer) {
             for (size_t faceIndex = 0; faceIndex < 6; faceIndex++)
             {
-                ComputeIrradianceMap(commandBuffer, faceIndex, iblIrradianceFramebuffes[faceIndex], cubemapDescriptorSet);
+                ComputeIrradianceMap(commandBuffer, faceIndex, iblIrradianceFramebuffes[faceIndex], ShaderCache::descriptorSets.cubemapDescriptorSet);
             }
         });
-
-        vkFreeDescriptorSets(device->GetDevice(), device->GetShaderDescriptorPool().GetDescriptorPool(), 1, &cubemapDescriptorSet);
 
         return irradianceMap;
     }

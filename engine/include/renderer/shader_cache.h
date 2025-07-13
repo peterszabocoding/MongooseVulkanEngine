@@ -15,6 +15,7 @@ namespace MongooseVK
         Ref<VulkanDescriptorSetLayout> directionalShadowMapDescriptorSetLayout;
         Ref<VulkanDescriptorSetLayout> presentDescriptorSetLayout;
         Ref<VulkanDescriptorSetLayout> irradianceDescriptorSetLayout;
+        Ref<VulkanDescriptorSetLayout> brdfLutDescriptorSetLayout;
         Ref<VulkanDescriptorSetLayout> reflectionDescriptorSetLayout;
         Ref<VulkanDescriptorSetLayout> viewspaceNormalDescriptorSetLayout;
         Ref<VulkanDescriptorSetLayout> viewspacePositionDescriptorSetLayout;
@@ -29,6 +30,7 @@ namespace MongooseVK
         VkDescriptorSet cubemapDescriptorSet;
         VkDescriptorSet cameraDescriptorSet;
         VkDescriptorSet irradianceDescriptorSet;
+        VkDescriptorSet brdfLutDescriptorSet;
         VkDescriptorSet reflectionDescriptorSet;
         VkDescriptorSet lightsDescriptorSet;
         VkDescriptorSet directionalShadownMapDescriptorSet;

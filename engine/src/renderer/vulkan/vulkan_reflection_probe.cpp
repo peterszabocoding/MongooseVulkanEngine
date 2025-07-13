@@ -8,28 +8,19 @@
 namespace MongooseVK
 {
     VulkanReflectionProbe::VulkanReflectionProbe(VulkanDevice* _device,
-                                                 const Ref<VulkanCubeMapTexture>& _prefilterMap,
-                                                 const Ref<VulkanTexture>& _brdfLUT): device(_device), prefilterMap(_prefilterMap),
-                                                                                      brdfLUT(_brdfLUT)
+                                                 TextureHandle _prefilterMap): device(_device),
+                                                                          prefilterMap(_prefilterMap)
     {
+        VulkanTexture* prefilterMapTexture = device->GetTexture(prefilterMap);
         VkDescriptorImageInfo prefilterMapInfo{};
-        prefilterMapInfo.sampler = prefilterMap->GetSampler();
+        prefilterMapInfo.sampler = prefilterMapTexture->GetSampler();
         prefilterMapInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        prefilterMapInfo.imageView = prefilterMap->GetImageView();
-
-        VkDescriptorImageInfo brdfLUTInfo{};
-        brdfLUTInfo.sampler = brdfLUT->GetSampler();
-        brdfLUTInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        brdfLUTInfo.imageView = brdfLUT->GetImageView();
+        prefilterMapInfo.imageView = prefilterMapTexture->GetImageView();
 
         VulkanDescriptorWriter(*ShaderCache::descriptorSetLayouts.reflectionDescriptorSetLayout, device->GetShaderDescriptorPool())
                 .WriteImage(0, &prefilterMapInfo)
-                .WriteImage(1, &brdfLUTInfo)
-                .Build(descriptorSet);
+                .Build(ShaderCache::descriptorSets.reflectionDescriptorSet);
     }
 
-    VulkanReflectionProbe::~VulkanReflectionProbe()
-    {
-        vkFreeDescriptorSets(device->GetDevice(), device->GetShaderDescriptorPool().GetDescriptorPool(), 1, &descriptorSet);
-    }
+    VulkanReflectionProbe::~VulkanReflectionProbe() {}
 }

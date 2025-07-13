@@ -9,23 +9,18 @@ namespace MongooseVK
         ReflectionProbeGenerator(VulkanDevice* _device);
         ~ReflectionProbeGenerator() = default;
 
-        Ref<VulkanReflectionProbe> FromCubemap(const Ref<VulkanCubeMapTexture>& cubemap);
-
+        Ref<VulkanReflectionProbe> FromCubemap(TextureHandle cubemapTextureHandle);
         VulkanRenderPass* GetRenderPass();
 
     private:
         void LoadPipeline();
-        void GenerateBrdfLUT();
-        void ComputeIblBRDF(VkCommandBuffer commandBuffer, const Ref<VulkanFramebuffer>& framebuffer);
         void ComputePrefilterMap(VkCommandBuffer commandBuffer, VkExtent2D extent, size_t faceIndex, float roughness,
-                                 const Ref<VulkanFramebuffer>& framebuffer, VkDescriptorSet cubemapDescriptorSet, uint32_t resolution);
+                                 const Ref<VulkanFramebuffer>& framebuffer, uint32_t resolution);
 
     private:
         VulkanDevice* device = nullptr;
-        Ref<VulkanTexture> brdfLUT;
-        RenderPassHandle renderPassHandle;
 
-        Ref<VulkanPipeline> brdfLutPipeline;
+        RenderPassHandle renderPassHandle;
         Ref<VulkanPipeline> prefilterPipeline;
 
         Scope<VulkanMeshlet> screenRect;

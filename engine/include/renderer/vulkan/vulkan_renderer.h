@@ -10,7 +10,9 @@
 #include "pass/present_pass.h"
 #include "pass/shadow_map_pass.h"
 #include "pass/skybox_pass.h"
+#include "pass/lighting/brdf_lut_pass.h"
 #include "pass/lighting/irradiance_map_pass.h"
+#include "pass/lighting/prefilter_map_pass.h"
 #include "pass/post_processing/ssao_pass.h"
 #include "renderer/Light.h"
 #include "renderer/shader_cache.h"
@@ -49,6 +51,7 @@ namespace MongooseVK
 
     struct RenderPassResources {
         PassResource skyboxTexture;
+        PassResource brdfLutTexture;
         PassResource viewspacePosition;
         PassResource viewspaceNormal;
         PassResource depthMap;
@@ -59,6 +62,7 @@ namespace MongooseVK
         PassResource ssaoTexture;
         PassResource mainFrameColorTexture;
         PassResource irradianceMapTexture;
+        PassResource prefilterMapTexture;
     };
 
     struct RenderPasses {
@@ -70,6 +74,8 @@ namespace MongooseVK
         Scope<SSAOPass> ssaoPass;
         Scope<InfiniteGridPass> gridPass;
         Scope<IrradianceMapPass> irradianceMapPass;
+        Scope<BrdfLUTPass> brdfLutPass;
+        Scope<PrefilterMapPass> prefilterMapPass;
     };
 
     class VulkanRenderer {
@@ -81,7 +87,6 @@ namespace MongooseVK
 
         void LoadScene(const std::string& gltfPath, const std::string& hdrPath);
 
-        void PrecomputeIBL();
         void IdleWait();
         void Resize(int width, int height);
         void Draw(float deltaTime, Camera& camera);
@@ -96,23 +101,19 @@ namespace MongooseVK
         void CreateFramebuffers();
 
         void ResizeSwapchain();
-        void CreatePresentDescriptorSet();
 
-        void CreateCameraBuffer();
         void UpdateCameraBuffer(Camera& camera) const;
         void RotateLight(float deltaTime);
 
-        void CreateLightsBuffer();
         void UpdateLightsBuffer();
 
-        void BuildGBuffer();
-
-        void CreateRenderPassTextures();
+        void CreateRenderPassResources();
         void CreateRenderPassBuffers();
+        void CreateRenderPassTextures();
 
-        void CreateSkyboxDescriptorSet();
-
-        void PrepareSSAO();
+        void PrecomputeIBL();
+        void CalculateBrdfLUT();
+        void CalculatePrefilterMap();
 
         void DrawFrame(VkCommandBuffer commandBuffer, uint32_t imageIndex, Camera& camera);
 
