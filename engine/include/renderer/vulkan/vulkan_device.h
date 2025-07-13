@@ -5,6 +5,7 @@
 #define GLFW_INCLUDE_VULKAN
 
 #include <functional>
+#include <renderer/bitmap.h>
 #include <vma/vk_mem_alloc.h>
 
 #include "GLFW/glfw3.h"
@@ -86,6 +87,9 @@ namespace MongooseVK
 
         bool compareEnabled = false;
         VkCompareOp compareOp = VK_COMPARE_OP_ALWAYS;
+
+        VkImageCreateFlags flags = 0;
+        bool isCubeMap = false;
     };
 
     class DeletionQueue {
@@ -153,6 +157,7 @@ namespace MongooseVK
         TextureHandle CreateTexture(const TextureCreateInfo& createInfo);
         VulkanTexture* GetTexture(TextureHandle textureHandle);
         void UploadTextureData(TextureHandle textureHandle, void* data, uint64_t size);
+        void UploadCubemapTextureData(TextureHandle textureHandle, Bitmap* cubemap);
         void UpdateTexture(TextureHandle textureHandle);
         void DestroyTexture(TextureHandle textureHandle);
 

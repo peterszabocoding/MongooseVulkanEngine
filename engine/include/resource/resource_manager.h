@@ -33,6 +33,7 @@ namespace MongooseVK
         static TextureHandle LoadTexture2(VulkanDevice* device, const std::string& textureImagePath);
 
         static Ref<VulkanCubeMapTexture> LoadHDRCubeMap(VulkanDevice* device, const std::string& hdrPath);
+        static Bitmap LoadHDRCubeMapBitmap(VulkanDevice* device, const std::string& hdrPath);
         static void LoadAndSaveHDR(const std::string& hdrPath);
 
         static Scene LoadScene(VulkanDevice* device, const std::string& scenePath, const std::string& skyboxPath);

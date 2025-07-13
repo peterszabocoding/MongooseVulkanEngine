@@ -3,7 +3,6 @@
 #include "renderer/scene.h"
 #include "vulkan_device.h"
 #include "vulkan_swapchain.h"
-#include "vulkan_shadow_map.h"
 #include "vulkan_cube_map_texture.h"
 #include "pass/gbufferPass.h"
 #include "pass/infinite_grid_pass.h"
@@ -11,6 +10,7 @@
 #include "pass/present_pass.h"
 #include "pass/shadow_map_pass.h"
 #include "pass/skybox_pass.h"
+#include "pass/lighting/irradiance_map_pass.h"
 #include "pass/post_processing/ssao_pass.h"
 #include "renderer/Light.h"
 #include "renderer/shader_cache.h"
@@ -23,6 +23,7 @@ namespace MongooseVK
         Ref<VulkanFramebuffer> mainFramebuffer;
         std::vector<Ref<VulkanFramebuffer>> shadowMapFramebuffers;
         std::vector<Ref<VulkanFramebuffer>> presentFramebuffers;
+        std::vector<Ref<VulkanFramebuffer>> iblIrradianceFramebuffes;
     };
 
     struct CameraBuffer {
@@ -57,7 +58,7 @@ namespace MongooseVK
         PassResource irradianceMap;
         PassResource ssaoTexture;
         PassResource mainFrameColorTexture;
-        PassResource mainFrameDepthTexture;
+        PassResource irradianceMapTexture;
     };
 
     struct RenderPasses {
@@ -68,6 +69,7 @@ namespace MongooseVK
         Scope<PresentPass> presentPass;
         Scope<SSAOPass> ssaoPass;
         Scope<InfiniteGridPass> gridPass;
+        Scope<IrradianceMapPass> irradianceMapPass;
     };
 
     class VulkanRenderer {
@@ -107,6 +109,8 @@ namespace MongooseVK
 
         void CreateRenderPassTextures();
         void CreateRenderPassBuffers();
+
+        void CreateSkyboxDescriptorSet();
 
         void PrepareSSAO();
 

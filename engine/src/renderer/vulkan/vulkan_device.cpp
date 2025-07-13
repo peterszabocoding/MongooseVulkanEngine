@@ -161,7 +161,7 @@ namespace MongooseVK
         {
             device_extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
             //validation_layer_list.push_back("VK_LAYER_LUNARG_crash_diagnostic");
-            //validation_layer_list.push_back("VK_LAYER_KHRONOS_validation");
+            validation_layer_list.push_back("VK_LAYER_KHRONOS_validation");
             //validation_layer_list.push_back("VK_LAYER_LUNARG_api_dump");
         }
 
@@ -287,7 +287,7 @@ namespace MongooseVK
 
         createInfo.mipLevels = createInfo.generateMipMaps
                                    ? static_cast<uint32_t>(std::floor(std::log2(std::max(createInfo.width, createInfo.height)))) + 1
-                                   : 1;
+                                   : createInfo.mipLevels;
 
         texture->allocatedImage = ImageBuilder(this)
                 .SetFormat(createInfo.format)
@@ -299,12 +299,19 @@ namespace MongooseVK
                 .SetInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
                 .SetMipLevels(createInfo.mipLevels)
                 .SetArrayLayers(createInfo.arrayLayers)
+                .SetFlags(createInfo.flags)
                 .Build();
 
+
+        VkImageViewType imageViewType = createInfo.isCubeMap
+                                            ? VK_IMAGE_VIEW_TYPE_CUBE
+                                            : createInfo.arrayLayers > 1
+                                                  ? VK_IMAGE_VIEW_TYPE_2D_ARRAY
+                                                  : VK_IMAGE_VIEW_TYPE_2D;
         texture->imageView = ImageViewBuilder(this)
                 .SetFormat(createInfo.format)
                 .SetImage(texture->allocatedImage.image)
-                .SetViewType(createInfo.arrayLayers > 1 ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D)
+                .SetViewType(imageViewType)
                 .SetAspectFlags(ImageUtils::GetAspectFlagFromFormat(createInfo.format))
                 .SetMipLevels(createInfo.mipLevels)
                 .SetBaseArrayLayer(0)
@@ -322,6 +329,22 @@ namespace MongooseVK
                     .SetLayerCount(1)
                     .SetBaseArrayLayer(i)
                     .Build();
+        }
+
+        for (size_t miplevel = 0; miplevel < createInfo.mipLevels; miplevel++)
+        {
+            for (size_t faceindex = 0; faceindex < 6; faceindex++)
+            {
+                texture->mipmapImageViews[miplevel][faceindex] = ImageViewBuilder(this)
+                        .SetFormat(createInfo.format)
+                        .SetImage(texture->allocatedImage.image)
+                        .SetViewType(VK_IMAGE_VIEW_TYPE_2D)
+                        .SetAspectFlags(ImageUtils::GetAspectFlagFromFormat(createInfo.format))
+                        .SetLayerCount(1)
+                        .SetBaseArrayLayer(faceindex)
+                        .SetBaseMipLevel(miplevel)
+                        .Build();
+            }
         }
 
         texture->sampler = ImageSamplerBuilder(this)
@@ -399,6 +422,57 @@ namespace MongooseVK
                                                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                                                    texture->createInfo.mipLevels);
             }
+        });
+
+        DestroyBuffer(stagingBuffer);
+    }
+
+    void VulkanDevice::UploadCubemapTextureData(TextureHandle textureHandle, Bitmap* cubemap)
+    {
+        const VulkanTexture* texture = GetTexture(textureHandle);
+        const TextureCreateInfo info = texture->createInfo;
+
+        const auto stagingBuffer = CreateBuffer(cubemap->pixelData.size(),
+                                                VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                                                VMA_MEMORY_USAGE_CPU_ONLY);
+
+        memcpy(stagingBuffer.GetData(), cubemap->pixelData.data(), cubemap->pixelData.size());
+
+        std::vector<VkBufferImageCopy> bufferCopyRegions;
+        for (uint32_t face = 0; face < 6; face++)
+        {
+            const uint64_t offset = Bitmap::GetImageOffsetForFace(*cubemap, face);
+            VkBufferImageCopy bufferCopyRegion = {};
+            bufferCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            bufferCopyRegion.imageSubresource.mipLevel = 0;
+            bufferCopyRegion.imageSubresource.baseArrayLayer = face;
+            bufferCopyRegion.imageSubresource.layerCount = 1;
+            bufferCopyRegion.imageExtent = {info.width, info.height, 1};
+            bufferCopyRegion.bufferOffset = offset;
+            bufferCopyRegions.push_back(bufferCopyRegion);
+        }
+
+        ImmediateSubmit([&](const VkCommandBuffer cmd) {
+            VulkanUtils::TransitionImageLayout(cmd,
+                                               texture->allocatedImage.image,
+                                               VK_IMAGE_ASPECT_COLOR_BIT,
+                                               VK_IMAGE_LAYOUT_UNDEFINED,
+                                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+            vkCmdCopyBufferToImage(cmd,
+                                   stagingBuffer.buffer,
+                                   texture->allocatedImage.image,
+                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                   6,
+                                   bufferCopyRegions.data());
+
+            VulkanUtils::GenerateCubemapMipmaps(cmd,
+                                                GetPhysicalDevice(),
+                                                texture->allocatedImage.image,
+                                                VulkanUtils::ConvertImageFormat(info.format),
+                                                info.width,
+                                                info.height,
+                                                info.mipLevels);
         });
 
         DestroyBuffer(stagingBuffer);

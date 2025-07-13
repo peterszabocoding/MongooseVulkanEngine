@@ -2,7 +2,6 @@
 #include <vector>
 
 #include "Light.h"
-#include "vulkan/vulkan_skybox.h"
 #include "transform.h"
 #include "vulkan/vulkan_material.h"
 #include "vulkan/vulkan_mesh.h"
@@ -26,7 +25,7 @@ namespace MongooseVK
         std::vector<VulkanMaterial> materials;
 
         // Environment
-        Scope<VulkanSkybox> skybox;
+        Ref<VulkanCubeMapTexture> skybox;
         Ref<VulkanReflectionProbe> reflectionProbe;
 
         // Lights

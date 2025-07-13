@@ -25,8 +25,11 @@ namespace VulkanDemo
         camera.SetResolution(GetWidth(), GetHeight());
         cameraController = new MongooseVK::CameraController(camera);
 
+        LOG_TRACE("Loading scene...");
+        renderer.LoadScene(scenes.CHESS_GAME, environments.NEWPORT_LOFT);
+
         LOG_TRACE("Init ImGui");
-        imGuiVulkan.Init(glfwWindow);
+        imGuiVulkan.Init(glfwWindow, &renderer);
 
         imGuiVulkan.AddWindow(reinterpret_cast<MongooseVK::ImGuiWindow*>(new PerformanceWindow(renderer)));
         imGuiVulkan.AddWindow(reinterpret_cast<MongooseVK::ImGuiWindow*>(new CameraSettingsWindow(renderer, &camera, *cameraController)));
@@ -35,9 +38,6 @@ namespace VulkanDemo
         imGuiVulkan.AddWindow(reinterpret_cast<MongooseVK::ImGuiWindow*>(new PostProcessingWindow(renderer)));
         imGuiVulkan.AddWindow(reinterpret_cast<MongooseVK::ImGuiWindow*>(new GBufferViewer(renderer)));
         imGuiVulkan.AddWindow(reinterpret_cast<MongooseVK::ImGuiWindow*>(new ShadowMapViewer(renderer)));
-
-        LOG_TRACE("Loading scene...");
-        renderer.LoadScene(scenes.CHESS_GAME, environments.NEWPORT_LOFT);
     }
 
     DemoWindow::~DemoWindow()

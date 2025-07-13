@@ -10,6 +10,7 @@ namespace MongooseVK
 {
     enum class ResourceType: uint8_t {
         Texture = 0,
+        TextureCube,
         Buffer,
     };
 
@@ -102,7 +103,7 @@ namespace MongooseVK
         }
 
         virtual void Render(VkCommandBuffer commandBuffer,
-                            Camera& camera,
+                            Camera* camera,
                             Ref<VulkanFramebuffer> writeBuffer,
                             Ref<VulkanFramebuffer> readBuffer = nullptr) = 0;
 

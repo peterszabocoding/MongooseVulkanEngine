@@ -18,9 +18,16 @@ namespace MongooseVK
     };
 
     namespace ImageUtils {
-        inline VkImageAspectFlagBits GetAspectFlagFromFormat(ImageFormat format) {
-            if (format == ImageFormat::DEPTH24_STENCIL8 || format == ImageFormat::DEPTH32)
+        inline VkImageAspectFlags GetAspectFlagFromFormat(ImageFormat format) {
+            if (format == ImageFormat::DEPTH24_STENCIL8)
+            {
+                return VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+            }
+
+            if (format == ImageFormat::DEPTH32)
+            {
                 return VK_IMAGE_ASPECT_DEPTH_BIT;
+            }
 
             return VK_IMAGE_ASPECT_COLOR_BIT;
         }

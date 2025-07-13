@@ -60,8 +60,8 @@ namespace MongooseVK
         if (cubemap)
         {
             const auto stagingBuffer = device->CreateBuffer(cubemap->pixelData.size(),
-                                                      VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-                                                      VMA_MEMORY_USAGE_CPU_ONLY);
+                                                            VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                                                            VMA_MEMORY_USAGE_CPU_ONLY);
 
             memcpy(stagingBuffer.GetData(), cubemap->pixelData.data(), cubemap->pixelData.size());
 
@@ -80,12 +80,18 @@ namespace MongooseVK
             }
 
             device->ImmediateSubmit([&](const VkCommandBuffer cmd) {
-                VulkanUtils::TransitionImageLayout(cmd, allocatedImage.image, VK_IMAGE_ASPECT_COLOR_BIT,
+                VulkanUtils::TransitionImageLayout(cmd,
+                                                   allocatedImage.image,
+                                                   VK_IMAGE_ASPECT_COLOR_BIT,
                                                    VK_IMAGE_LAYOUT_UNDEFINED,
                                                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-                vkCmdCopyBufferToImage(cmd, stagingBuffer.buffer, allocatedImage.image,
-                                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 6, bufferCopyRegions.data());
+                vkCmdCopyBufferToImage(cmd,
+                                       stagingBuffer.buffer,
+                                       allocatedImage.image,
+                                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                       6,
+                                       bufferCopyRegions.data());
 
                 VulkanUtils::GenerateCubemapMipmaps(cmd,
                                                     device->GetPhysicalDevice(),

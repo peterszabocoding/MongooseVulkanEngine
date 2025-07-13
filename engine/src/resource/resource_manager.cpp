@@ -170,6 +170,27 @@ namespace MongooseVK
         return cubemapTexture;
     }
 
+    Bitmap ResourceManager::LoadHDRCubeMapBitmap(VulkanDevice* device, const std::string& hdrPath)
+    {
+        VkImageFormatProperties properties;
+        vkGetPhysicalDeviceImageFormatProperties(device->GetPhysicalDevice(),
+                                                 VK_FORMAT_R32G32B32A32_SFLOAT,
+                                                 VK_IMAGE_TYPE_2D,
+                                                 VK_IMAGE_TILING_OPTIMAL,
+                                                 VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                                                 0,
+                                                 &properties);
+
+        LOG_INFO("Load HDR: " + hdrPath);
+        const ImageResource imageResource = LoadHDRResource(hdrPath);
+
+        const Bitmap in(imageResource.width, imageResource.height, 4, eBitmapFormat_Float, imageResource.data);
+        const Bitmap verticalCross = Bitmap::ConvertEquirectangularMapToVerticalCross(in);
+        Bitmap cubeMapBitmap = Bitmap::ConvertVerticalCrossToCubeMapFaces(verticalCross);
+
+        return cubeMapBitmap;
+    }
+
     void ResourceManager::LoadAndSaveHDR(const std::string& hdrPath)
     {
         const ImageResource imageResource = LoadHDRResource(hdrPath);
@@ -195,7 +216,7 @@ namespace MongooseVK
     Scene ResourceManager::LoadScene(VulkanDevice* device, const std::string& scenePath, const std::string& skyboxPath)
     {
         Scene scene = GLTFLoader::LoadScene(device, scenePath);
-        scene.skybox = CreateScope<VulkanSkybox>(device, LoadHDRCubeMap(device, skyboxPath));
+        scene.skybox = LoadHDRCubeMap(device, skyboxPath);
 
         return scene;
     }

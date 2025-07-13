@@ -31,6 +31,7 @@ namespace MongooseVK
         VkImage GetImage() const { return allocatedImage.image; }
         VkImageView GetImageView() const { return imageView; }
         VkImageView GetImageView(const uint32_t index) const { return arrayImageViews[index % arrayImageViews.size()]; }
+        VkImageView GetMipmapImageView(const uint32_t mipLevel, const uint32_t faceIndex) const { return mipmapImageViews[mipLevel][faceIndex]; }
         VkSampler GetSampler() const { return sampler; }
 
     public:
@@ -38,6 +39,7 @@ namespace MongooseVK
         AllocatedImage allocatedImage{};
         VkImageView imageView{};
         std::array<VkImageView, 6> arrayImageViews{};
+        std::array<std::array<VkImageView, 6>, 16> mipmapImageViews{};
         VkSampler sampler{};
         TextureCreateInfo createInfo{};
     };

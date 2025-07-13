@@ -10,7 +10,7 @@ namespace MongooseVK
         ~PresentPass() override = default;
 
         virtual void Render(VkCommandBuffer commandBuffer,
-                            Camera& camera,
+                            Camera* camera,
                             Ref<VulkanFramebuffer> writeBuffer,
                             Ref<VulkanFramebuffer> readBuffer = nullptr) override;
 

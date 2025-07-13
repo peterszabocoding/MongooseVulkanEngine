@@ -14,7 +14,7 @@ namespace MongooseVK
         LoadPipelines();
     }
 
-    void SkyboxPass::Render(VkCommandBuffer commandBuffer, Camera& camera, Ref<VulkanFramebuffer> writeBuffer,
+    void SkyboxPass::Render(VkCommandBuffer commandBuffer, Camera* camera, Ref<VulkanFramebuffer> writeBuffer,
                             Ref<VulkanFramebuffer> readBuffer)
     {
         device->SetViewportAndScissor(writeBuffer->GetExtent(), commandBuffer);
@@ -30,7 +30,7 @@ namespace MongooseVK
         };
 
         skyboxDrawParams.descriptorSets = {
-            scene.skybox->descriptorSet,
+            ShaderCache::descriptorSets.cubemapDescriptorSet,
             ShaderCache::descriptorSets.cameraDescriptorSet
         };
 

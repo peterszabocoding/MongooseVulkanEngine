@@ -15,7 +15,7 @@ namespace MongooseVK
         LoadPipelines();
     }
 
-    void GBufferPass::Render(VkCommandBuffer commandBuffer, Camera& camera, Ref<VulkanFramebuffer> writeBuffer,
+    void GBufferPass::Render(VkCommandBuffer commandBuffer, Camera* camera, Ref<VulkanFramebuffer> writeBuffer,
                              Ref<VulkanFramebuffer> readBuffer)
     {
         device->SetViewportAndScissor(resolution, commandBuffer);
@@ -33,7 +33,7 @@ namespace MongooseVK
         {
             SimplePushConstantData pushConstantData;
             pushConstantData.modelMatrix = scene.transforms[i].GetTransform();
-            pushConstantData.transform = camera.GetProjection() * camera.GetView() * pushConstantData.modelMatrix;
+            pushConstantData.transform = camera->GetProjection() * camera->GetView() * pushConstantData.modelMatrix;
 
             geometryDrawParams.pushConstantParams = {
                 &pushConstantData,

@@ -29,13 +29,13 @@ namespace MongooseVK
         ImGuiVulkan();
         ~ImGuiVulkan();
 
-        void Init(GLFWwindow* window);
+        void Init(GLFWwindow* window, VulkanRenderer* renderer);
         void Resize();
         void DrawUi();
         void AddWindow(ImGuiWindow* window);
 
     private:
-        void SetupImGui() const;
+        void SetupImGui(VulkanRenderer* renderer) const;
 
     protected:
         VulkanDevice* vulkanDevice;

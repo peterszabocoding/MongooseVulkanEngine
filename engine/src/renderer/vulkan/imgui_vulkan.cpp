@@ -163,11 +163,11 @@ namespace MongooseVK
         ImGui::DestroyContext();
     }
 
-    void ImGuiVulkan::Init(GLFWwindow* window)
+    void ImGuiVulkan::Init(GLFWwindow* window, VulkanRenderer* renderer)
     {
         vulkanDevice = VulkanDevice::Get();
         glfwWindow = window;
-        SetupImGui();
+        SetupImGui(renderer);
     }
 
     void ImGuiVulkan::Resize()
@@ -175,7 +175,7 @@ namespace MongooseVK
         for (auto& uiWindow: uiWindows) uiWindow->Resize();
     }
 
-    void ImGuiVulkan::SetupImGui() const
+    void ImGuiVulkan::SetupImGui(VulkanRenderer* renderer) const
     {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -208,7 +208,7 @@ namespace MongooseVK
         init_info.Queue = vulkanDevice->GetPresentQueue();
         init_info.DescriptorPool = vulkanDevice->GetGuiDescriptorPool();
         // TODO Pass a render pass here, otherwise ImGui doesn't work on MacOS
-        //init_info.RenderPass = renderer->GetRenderPass()->Get();
+        init_info.RenderPass = renderer->renderPasses.presentPass->GetRenderPass()->Get();
         init_info.MinImageCount = 2;
         init_info.ImageCount = 2;
         init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
