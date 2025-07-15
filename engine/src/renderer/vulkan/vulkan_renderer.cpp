@@ -8,7 +8,6 @@
 #include "renderer/vulkan/vulkan_device.h"
 #include "renderer/vulkan/vulkan_mesh.h"
 #include "renderer/vulkan/vulkan_shader_compiler.h"
-#include "renderer/vulkan/lighting/irradiance_map_generator.h"
 
 #include "imgui.h"
 
@@ -122,12 +121,31 @@ namespace MongooseVK
 
     void VulkanRenderer::PrecomputeIBL()
     {
-        irradianceMap = IrradianceMapGenerator(device)
-                .FromCubemapTexture();
+        VulkanTexture* irradianceMapTexture = device->GetTexture(renderPassResources.irradianceMapTexture.textureInfo.textureHandle);
+
+        std::vector<Ref<VulkanFramebuffer>> iblIrradianceFramebuffes;
+        iblIrradianceFramebuffes.resize(6);
+        for (size_t i = 0; i < 6; i++)
+        {
+            iblIrradianceFramebuffes[i] = VulkanFramebuffer::Builder(device)
+                    .SetRenderpass(renderPasses.irradianceMapPass->GetRenderPass())
+                    .SetResolution(32, 32)
+                    .AddAttachment(irradianceMapTexture->GetMipmapImageView(0, i))
+                    .Build();
+        }
+
+        device->ImmediateSubmit([&](const VkCommandBuffer commandBuffer) {
+            for (size_t faceIndex = 0; faceIndex < 6; faceIndex++)
+            {
+                renderPasses.irradianceMapPass->SetFaceIndex(faceIndex);
+                renderPasses.irradianceMapPass->Render(commandBuffer, nullptr, iblIrradianceFramebuffes[faceIndex]);
+            }
+        });
+
 
         const VkDescriptorImageInfo irradianceMapInfo = {
-            .sampler = irradianceMap->GetSampler(),
-            .imageView = irradianceMap->GetImageView(),
+            .sampler = irradianceMapTexture->GetSampler(),
+            .imageView = irradianceMapTexture->GetImageView(),
             .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         };
 
@@ -699,7 +717,7 @@ namespace MongooseVK
             textureInfo.textureCreateInfo.addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
             textureInfo.textureCreateInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
             textureInfo.textureCreateInfo.isCubeMap = true;
-            textureInfo.textureCreateInfo.mipLevels = 6;
+            textureInfo.textureCreateInfo.arrayLayers = 6;
 
             textureInfo.textureHandle = device->CreateTexture(textureInfo.textureCreateInfo);
 

@@ -15,7 +15,6 @@
 #include "resource/loaders/gltf_loader.h"
 #include "resource/loaders/obj_loader.h"
 #include "renderer/bitmap.h"
-#include "renderer/vulkan/vulkan_cube_map_texture.h"
 #include "renderer/vulkan/vulkan_mesh.h"
 #include "renderer/vulkan/vulkan_device.h"
 #include "renderer/vulkan/vulkan_pipeline.h"
@@ -140,34 +139,6 @@ namespace MongooseVK
         ReleaseImage(imageResource);
 
         return textureHandle;
-    }
-
-    Ref<VulkanCubeMapTexture> ResourceManager::LoadHDRCubeMap(VulkanDevice* device, const std::string& hdrPath)
-    {
-        VkImageFormatProperties properties;
-        vkGetPhysicalDeviceImageFormatProperties(device->GetPhysicalDevice(),
-                                                 VK_FORMAT_R32G32B32A32_SFLOAT,
-                                                 VK_IMAGE_TYPE_2D,
-                                                 VK_IMAGE_TILING_OPTIMAL,
-                                                 VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                                                 0,
-                                                 &properties);
-
-        LOG_INFO("Load HDR: " + hdrPath);
-        const ImageResource imageResource = LoadHDRResource(hdrPath);
-
-        const Bitmap in(imageResource.width, imageResource.height, 4, eBitmapFormat_Float, imageResource.data);
-        const Bitmap verticalCross = Bitmap::ConvertEquirectangularMapToVerticalCross(in);
-        Bitmap cubeMapBitmap = Bitmap::ConvertVerticalCrossToCubeMapFaces(verticalCross);
-
-        Ref<VulkanCubeMapTexture> cubemapTexture = VulkanCubeMapTexture::Builder()
-                .SetFormat(ImageFormat::RGBA32_SFLOAT)
-                .SetResolution(cubeMapBitmap.width, cubeMapBitmap.height)
-                .SetData(&cubeMapBitmap)
-                .Build(device);
-
-        ReleaseImage(imageResource);
-        return cubemapTexture;
     }
 
     Bitmap ResourceManager::LoadHDRCubeMapBitmap(VulkanDevice* device, const std::string& hdrPath)

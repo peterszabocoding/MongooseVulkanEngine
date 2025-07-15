@@ -5,7 +5,6 @@
 #include "transform.h"
 #include "vulkan/vulkan_material.h"
 #include "vulkan/vulkan_mesh.h"
-#include "vulkan/vulkan_reflection_probe.h"
 
 namespace MongooseVK
 {
@@ -26,9 +25,6 @@ namespace MongooseVK
         std::vector<Transform> transforms;
         std::vector<Ref<VulkanMesh>> meshes;
         std::vector<VulkanMaterial> materials;
-
-        // Environment
-        Ref<VulkanReflectionProbe> reflectionProbe;
 
         // Lights
         DirectionalLight directionalLight;

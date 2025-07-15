@@ -3,7 +3,6 @@
 #include "renderer/scene.h"
 #include "vulkan_device.h"
 #include "vulkan_swapchain.h"
-#include "vulkan_cube_map_texture.h"
 #include "pass/gbufferPass.h"
 #include "pass/infinite_grid_pass.h"
 #include "pass/lighting_pass.h"
@@ -137,7 +136,6 @@ namespace MongooseVK
         Scope<ShaderCache> shaderCache;
         Scope<VulkanSwapchain> vulkanSwapChain;
 
-        Ref<VulkanCubeMapTexture> irradianceMap;
         float lightSpinningAngle = 0.0f;
     };
 }

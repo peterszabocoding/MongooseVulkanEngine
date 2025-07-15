@@ -1,11 +1,7 @@
 #pragma once
 
-#include <complex.h>
-
 #include "renderer/bitmap.h"
 #include "renderer/scene.h"
-#include "renderer/vulkan/vulkan_image.h"
-#include "renderer/vulkan/vulkan_renderpass.h"
 #include "resource/resource.h"
 
 namespace MongooseVK
@@ -32,7 +28,6 @@ namespace MongooseVK
         static Ref<VulkanTexture> LoadTexture(VulkanDevice* device, const std::string& textureImagePath);
         static TextureHandle LoadTexture2(VulkanDevice* device, const std::string& textureImagePath);
 
-        static Ref<VulkanCubeMapTexture> LoadHDRCubeMap(VulkanDevice* device, const std::string& hdrPath);
         static Bitmap LoadHDRCubeMapBitmap(VulkanDevice* device, const std::string& hdrPath);
         static void LoadAndSaveHDR(const std::string& hdrPath);
 
