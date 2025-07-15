@@ -660,7 +660,9 @@ namespace MongooseVK::VulkanUtils
             destinationStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
         } else
         {
-            throw std::invalid_argument("unsupported layout transition!");
+            sourceStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+            destinationStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+            //throw std::invalid_argument("unsupported layout transition!");
         }
 
         vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);

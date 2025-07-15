@@ -25,38 +25,69 @@ namespace MongooseVK
     void PrefilterMapPass::Render(VkCommandBuffer commandBuffer, Camera* camera, Ref<VulkanFramebuffer> writeBuffer,
         Ref<VulkanFramebuffer> readBuffer)
     {
-        device->SetViewportAndScissor(passResolution, commandBuffer);
-        GetRenderPass()->Begin(commandBuffer, writeBuffer, passResolution);
+        constexpr uint32_t PREFILTER_MIP_LEVELS = 6;
+        constexpr uint32_t REFLECTION_RESOLUTION = 256;
 
-        DrawCommandParams drawCommandParams{};
-        drawCommandParams.commandBuffer = commandBuffer;
+        VulkanTexture* prefilterMap = device->GetTexture(targetTexture);
 
-        drawCommandParams.pipelineParams = {
-            prefilterMapPipeline->GetPipeline(),
-            prefilterMapPipeline->GetPipelineLayout()
-        };
+        for (unsigned int mip = 0; mip < PREFILTER_MIP_LEVELS; ++mip)
+        {
+            const float roughness = static_cast<float>(mip) / static_cast<float>(PREFILTER_MIP_LEVELS - 1);
+            const VkExtent2D extent = {
+                static_cast<unsigned int>(REFLECTION_RESOLUTION * std::pow(0.5, mip)),
+                static_cast<unsigned int>(REFLECTION_RESOLUTION * std::pow(0.5, mip))
+            };
 
-        drawCommandParams.meshlet = &cubeMesh->GetMeshlets()[0];
+            for (uint32_t faceIndex = 0; faceIndex < 6; faceIndex++)
+            {
+                device->SetViewportAndScissor(extent, commandBuffer);
+                GetRenderPass()->Begin(commandBuffer, writeBuffer, extent);
 
-        drawCommandParams.descriptorSets = {
-            ShaderCache::descriptorSets.cubemapDescriptorSet
-        };
+                DrawCommandParams drawCommandParams{};
+                drawCommandParams.commandBuffer = commandBuffer;
 
-        PrefilterData pushConstantData;
-        pushConstantData.projection = m_CaptureProjection;
-        pushConstantData.view = m_CaptureViews[faceIndex];
-        pushConstantData.roughness = roughness;
-        pushConstantData.resolution = cubemapResolution;
+                drawCommandParams.pipelineParams = {
+                    prefilterMapPipeline->GetPipeline(),
+                    prefilterMapPipeline->GetPipelineLayout()
+                };
 
-        drawCommandParams.pushConstantParams = {
-            &pushConstantData,
-            sizeof(PrefilterData),
-            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-        };
+                drawCommandParams.meshlet = &cubeMesh->GetMeshlets()[0];
 
-        device->DrawMeshlet(drawCommandParams);
+                drawCommandParams.descriptorSets = {
+                    ShaderCache::descriptorSets.cubemapDescriptorSet
+                };
 
-        GetRenderPass()->End(commandBuffer);
+                PrefilterData pushConstantData;
+                pushConstantData.projection = m_CaptureProjection;
+                pushConstantData.view = m_CaptureViews[faceIndex];
+                pushConstantData.roughness = roughness;
+                pushConstantData.resolution = cubemapResolution;
+
+                drawCommandParams.pushConstantParams = {
+                    &pushConstantData,
+                    sizeof(PrefilterData),
+                    VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                };
+
+                device->DrawMeshlet(drawCommandParams);
+
+                GetRenderPass()->End(commandBuffer);
+
+                const VulkanUtils::CopyParams params = {
+                    .srcMipLevel = 0,
+                    .dstMipLevel = mip,
+                    .srcBaseArrayLayer = 0,
+                    .dstBaseArrayLayer = faceIndex,
+                    .regionWidth = extent.width,
+                    .regionHeight = extent.height,
+                };
+
+                CopyImage(commandBuffer,
+                          writeBuffer->GetAttachments()[0].allocatedImage.image,
+                          prefilterMap->GetImage(),
+                          params);
+            }
+        }
     }
 
     void PrefilterMapPass::Resize(VkExtent2D _resolution)
@@ -64,23 +95,14 @@ namespace MongooseVK
         VulkanPass::Resize(_resolution);
     }
 
-    void PrefilterMapPass::SetFaceIndex(uint32_t index)
-    {
-        faceIndex = index;
-    }
-    void PrefilterMapPass::SetRoughness(float _roughness)
-    {
-        roughness = _roughness;
-    }
-
-    void PrefilterMapPass::SetPassResolution(VkExtent2D _passResolution)
-    {
-        passResolution = _passResolution;
-    }
-
     void PrefilterMapPass::SetCubemapResolution(float _cubemapResolution)
     {
         cubemapResolution = _cubemapResolution;
+    }
+
+    void PrefilterMapPass::SetTargetTexture(TextureHandle _targetTexture)
+    {
+        targetTexture = _targetTexture;
     }
 
     void PrefilterMapPass::LoadPipeline()

@@ -47,13 +47,9 @@ namespace MongooseVK
                     ShaderCache::descriptorSets.directionalShadownMapDescriptorSet,
                     ShaderCache::descriptorSets.irradianceDescriptorSet,
                     ShaderCache::descriptorSets.postProcessingDescriptorSet,
+                    ShaderCache::descriptorSets.reflectionDescriptorSet,
+                    ShaderCache::descriptorSets.brdfLutDescriptorSet,
                 };
-
-                if (scene.reflectionProbe)
-                {
-                    geometryDrawParams.descriptorSets.push_back(ShaderCache::descriptorSets.reflectionDescriptorSet);
-                    geometryDrawParams.descriptorSets.push_back(ShaderCache::descriptorSets.brdfLutDescriptorSet);
-                }
 
                 geometryDrawParams.meshlet = &meshlet;
                 device->DrawMeshlet(geometryDrawParams);

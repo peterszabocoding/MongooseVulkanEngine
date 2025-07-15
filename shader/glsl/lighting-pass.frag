@@ -190,9 +190,9 @@ void main() {
     vec2 texCoord = ((gl_FragCoord.xy + vec2(1.0)) * 0.5) / texSize;
     float SSAOValue = texture(SSAO, texCoord).r;
 
-    vec3 ambient = lights.ambientIntensity * SSAOValue * (kD * diffuse + specular);
+    vec3 ambient = lights.ambientIntensity * (kD * diffuse + specular);
 
-    vec3 color = ambient + Lo;
+    vec3 color = (ambient + Lo) * SSAOValue ;
 
     color =  color / (color + vec3(1.0));
     color = pow(color, vec3(1.0/2.2));

@@ -9,7 +9,6 @@
 #include "renderer/vulkan/vulkan_mesh.h"
 #include "renderer/vulkan/vulkan_shader_compiler.h"
 #include "renderer/vulkan/lighting/irradiance_map_generator.h"
-#include "renderer/vulkan/lighting/reflection_probe_generator.h"
 
 #include "imgui.h"
 
@@ -91,16 +90,10 @@ namespace MongooseVK
 
     void VulkanRenderer::CalculatePrefilterMap()
     {
-        scene.reflectionProbe = ReflectionProbeGenerator(device)
-                .FromCubemap(renderPassResources.skyboxTexture.textureInfo.textureHandle);
-
-        /*
-
-        constexpr uint32_t PREFILTER_MIP_LEVELS = 6;
         constexpr uint32_t REFLECTION_RESOLUTION = 256;
 
-        VulkanTexture* prefilterMap = device->GetTexture(renderPassResources.prefilterMapTexture.textureInfo.textureHandle);
         VulkanTexture* cubemap = device->GetTexture(renderPassResources.skyboxTexture.textureInfo.textureHandle);
+        VulkanTexture* prefilterMap = device->GetTexture(renderPassResources.prefilterMapTexture.textureInfo.textureHandle);
 
         const Ref<VulkanFramebuffer> framebuffer = VulkanFramebuffer::Builder(device)
                 .SetRenderpass(renderPasses.prefilterMapPass->GetRenderPass())
@@ -115,38 +108,9 @@ namespace MongooseVK
                                                VK_IMAGE_LAYOUT_UNDEFINED,
                                                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-            for (unsigned int mip = 0; mip < PREFILTER_MIP_LEVELS; ++mip)
-            {
-                const float roughness = static_cast<float>(mip) / static_cast<float>(PREFILTER_MIP_LEVELS - 1);
-                const VkExtent2D extent = {
-                    static_cast<unsigned int>(REFLECTION_RESOLUTION * std::pow(0.5, mip)),
-                    static_cast<unsigned int>(REFLECTION_RESOLUTION * std::pow(0.5, mip))
-                };
-
-                for (uint32_t faceIndex = 0; faceIndex < 6; faceIndex++)
-                {
-                    renderPasses.prefilterMapPass->SetRoughness(roughness);
-                    renderPasses.prefilterMapPass->SetFaceIndex(faceIndex);
-                    renderPasses.prefilterMapPass->SetPassResolution(extent);
-                    renderPasses.prefilterMapPass->SetCubemapResolution(cubemap->createInfo.width);
-
-                    renderPasses.prefilterMapPass->Render(commandBuffer, nullptr, framebuffer, nullptr);
-
-                    const VulkanUtils::CopyParams params = {
-                        .srcMipLevel = 0,
-                        .dstMipLevel = mip,
-                        .srcBaseArrayLayer = 0,
-                        .dstBaseArrayLayer = faceIndex,
-                        .regionWidth = extent.width,
-                        .regionHeight = extent.height,
-                    };
-
-                    CopyImage(commandBuffer,
-                              framebuffer->GetAttachments()[0].allocatedImage.image,
-                              prefilterMap->GetImage(),
-                              params);
-                }
-            }
+            renderPasses.prefilterMapPass->SetCubemapResolution(cubemap->createInfo.width);
+            renderPasses.prefilterMapPass->SetTargetTexture(renderPassResources.prefilterMapTexture.textureInfo.textureHandle);
+            renderPasses.prefilterMapPass->Render(commandBuffer, nullptr, framebuffer, nullptr);
 
             VulkanUtils::TransitionImageLayout(commandBuffer,
                                                prefilterMap->GetImage(),
@@ -154,8 +118,6 @@ namespace MongooseVK
                                                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         });
-
-        */
     }
 
     void VulkanRenderer::PrecomputeIBL()
@@ -552,26 +514,6 @@ namespace MongooseVK
                     .WriteImage(0, &renderImageInfo)
                     .BuildOrOverwrite(shaderCache->descriptorSets.presentDescriptorSet);
         }
-
-        // Irradiance Map
-        {
-            ResourceTextureInfo textureInfo;
-            textureInfo.textureCreateInfo = {
-                .width = 32,
-                .height = 32,
-                .format = ImageFormat::RGBA16_SFLOAT,
-                .imageLayout = ImageUtils::GetLayoutFromFormat(ImageFormat::RGBA16_SFLOAT),
-                .addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-            };
-
-            textureInfo.textureHandle = device->CreateTexture(textureInfo.textureCreateInfo);
-
-            renderPassResources.irradianceMapTexture = {
-                .name = "irradiance_map_texture",
-                .type = ResourceType::TextureCube,
-                .textureInfo = textureInfo,
-            };
-        }
     }
 
     void VulkanRenderer::CreateRenderPassBuffers()
@@ -731,7 +673,7 @@ namespace MongooseVK
 
             renderPassResources.prefilterMapTexture = {
                 .name = "prefilter_map_texture",
-                .type = ResourceType::Texture,
+                .type = ResourceType::TextureCube,
                 .textureInfo = textureInfo,
             };
 
@@ -744,6 +686,28 @@ namespace MongooseVK
             VulkanDescriptorWriter(*ShaderCache::descriptorSetLayouts.reflectionDescriptorSetLayout, device->GetShaderDescriptorPool())
                     .WriteImage(0, &prefilterMapInfo)
                     .Build(ShaderCache::descriptorSets.reflectionDescriptorSet);
+        }
+
+        // Irradiance Map
+        {
+            ResourceTextureInfo textureInfo;
+            textureInfo.textureCreateInfo = {};
+            textureInfo.textureCreateInfo.width = 32;
+            textureInfo.textureCreateInfo.height = 32;
+            textureInfo.textureCreateInfo.format = ImageFormat::RGBA16_SFLOAT;
+            textureInfo.textureCreateInfo.imageLayout = ImageUtils::GetLayoutFromFormat(ImageFormat::RGBA16_SFLOAT);
+            textureInfo.textureCreateInfo.addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+            textureInfo.textureCreateInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+            textureInfo.textureCreateInfo.isCubeMap = true;
+            textureInfo.textureCreateInfo.mipLevels = 6;
+
+            textureInfo.textureHandle = device->CreateTexture(textureInfo.textureCreateInfo);
+
+            renderPassResources.irradianceMapTexture = {
+                .name = "irradiance_map_texture",
+                .type = ResourceType::TextureCube,
+                .textureInfo = textureInfo,
+            };
         }
     }
 }
