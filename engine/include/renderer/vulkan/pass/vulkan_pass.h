@@ -46,10 +46,7 @@ namespace MongooseVK
             device->DestroyRenderPass(renderPassHandle);
         }
 
-        virtual void Render(VkCommandBuffer commandBuffer,
-                            Camera* camera,
-                            Ref<VulkanFramebuffer> writeBuffer,
-                            Ref<VulkanFramebuffer> readBuffer = nullptr) = 0;
+        virtual void Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBufferHandle) = 0;
 
         virtual void Resize(VkExtent2D _resolution)
         {
@@ -61,6 +58,11 @@ namespace MongooseVK
         virtual VulkanRenderPass* GetRenderPass() const
         {
             return device->renderPassPool.Get(renderPassHandle.handle);
+        }
+
+        virtual RenderPassHandle GetRenderPassHandle() const
+        {
+            return renderPassHandle;
         }
 
         void AddResource(const PassResource& resource)

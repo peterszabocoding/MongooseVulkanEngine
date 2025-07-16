@@ -9,10 +9,7 @@ namespace MongooseVK
         explicit PresentPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution);
         ~PresentPass() override = default;
 
-        virtual void Render(VkCommandBuffer commandBuffer,
-                            Camera* camera,
-                            Ref<VulkanFramebuffer> writeBuffer,
-                            Ref<VulkanFramebuffer> readBuffer = nullptr) override;
+        virtual void Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer) override;
 
     private:
         void CreateFramebuffer();

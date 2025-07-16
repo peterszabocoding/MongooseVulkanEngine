@@ -22,15 +22,12 @@ namespace MongooseVK
         LoadPipeline();
     }
 
-    void IrradianceMapPass::Render(VkCommandBuffer commandBuffer,
-                                   Camera* camera,
-                                   Ref<VulkanFramebuffer> writeBuffer,
-                                   Ref<VulkanFramebuffer> readBuffer)
+    void IrradianceMapPass::Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer)
     {
-        VkExtent2D extent = {writeBuffer->GetWidth(), writeBuffer->GetHeight()};
+        VulkanFramebuffer* framebuffer = device->GetFramebuffer(writeBuffer);
 
-        device->SetViewportAndScissor(extent, commandBuffer);
-        GetRenderPass()->Begin(commandBuffer, writeBuffer, extent);
+        device->SetViewportAndScissor(framebuffer->extent, commandBuffer);
+        GetRenderPass()->Begin(commandBuffer, framebuffer->framebuffer, framebuffer->extent);
 
         DrawCommandParams drawCommandParams{};
         drawCommandParams.commandBuffer = commandBuffer;

@@ -16,11 +16,12 @@ namespace MongooseVK
         LoadPipelines();
     }
 
-    void SkyboxPass::Render(VkCommandBuffer commandBuffer, Camera* camera, Ref<VulkanFramebuffer> writeBuffer,
-                            Ref<VulkanFramebuffer> readBuffer)
+    void SkyboxPass::Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer)
     {
-        device->SetViewportAndScissor(writeBuffer->GetExtent(), commandBuffer);
-        GetRenderPass()->Begin(commandBuffer, writeBuffer, writeBuffer->GetExtent());
+        VulkanFramebuffer* framebuffer = device->GetFramebuffer(writeBuffer);
+
+        device->SetViewportAndScissor(framebuffer->extent, commandBuffer);
+        GetRenderPass()->Begin(commandBuffer, framebuffer->framebuffer, framebuffer->extent);
 
         DrawCommandParams skyboxDrawParams{};
         skyboxDrawParams.commandBuffer = commandBuffer;
@@ -39,21 +40,6 @@ namespace MongooseVK
         device->DrawMeshlet(skyboxDrawParams);
 
         GetRenderPass()->End(commandBuffer);
-    }
-
-    void SkyboxPass::CreateFramebuffer()
-    {
-        outputTexture = device->CreateTexture({
-            .width = resolution.width,
-            .height = resolution.height,
-            .format = ImageFormat::RGBA16_SFLOAT
-        });
-
-        framebuffer = VulkanFramebuffer::Builder(device)
-                .SetResolution(resolution.width, resolution.height)
-                .SetRenderpass(GetRenderPass())
-                .AddAttachment(device->texturePool.Get(outputTexture.handle)->arrayImageViews[0])
-                .Build();
     }
 
     void SkyboxPass::LoadPipelines()

@@ -11,24 +11,21 @@ namespace MongooseVK
         LoadPipeline();
     }
 
-    void BrdfLUTPass::Render(VkCommandBuffer commandBuffer, Camera* camera, Ref<VulkanFramebuffer> writeBuffer,
-                             Ref<VulkanFramebuffer> readBuffer)
+    void BrdfLUTPass::Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBufferHandle)
     {
-        VkExtent2D extent = {writeBuffer->GetWidth(), writeBuffer->GetHeight()};
+        VulkanFramebuffer* framebuffer = device->GetFramebuffer(writeBufferHandle);
 
-        device->SetViewportAndScissor(extent, commandBuffer);
-        GetRenderPass()->Begin(commandBuffer, writeBuffer, extent);
+        device->SetViewportAndScissor(framebuffer->extent, commandBuffer);
+        GetRenderPass()->Begin(commandBuffer, framebuffer->framebuffer, framebuffer->extent);
 
         DrawCommandParams drawCommandParams{};
         drawCommandParams.commandBuffer = commandBuffer;
-
+        drawCommandParams.meshlet = screenRect.get();
         drawCommandParams.pipelineParams =
         {
             brdfLUTPipeline->GetPipeline(),
             brdfLUTPipeline->GetPipelineLayout()
         };
-
-        drawCommandParams.meshlet = screenRect.get();
 
         device->DrawMeshlet(drawCommandParams);
 
@@ -52,18 +49,11 @@ namespace MongooseVK
         iblBrdfPipelineConfig.fragmentShaderPath = "brdf.frag";
 
         iblBrdfPipelineConfig.cullMode = PipelineCullMode::Front;
-        iblBrdfPipelineConfig.polygonMode = PipelinePolygonMode::Fill;
-        iblBrdfPipelineConfig.frontFace = PipelineFrontFace::Counter_clockwise;
-
-        iblBrdfPipelineConfig.descriptorSetLayouts = {};
-
         iblBrdfPipelineConfig.colorAttachments = {
             ImageFormat::RGBA16_SFLOAT,
         };
 
-        iblBrdfPipelineConfig.disableBlending = true;
         iblBrdfPipelineConfig.enableDepthTest = false;
-
         iblBrdfPipelineConfig.renderPass = GetRenderPass()->Get();
 
         brdfLUTPipeline = VulkanPipeline::Builder()

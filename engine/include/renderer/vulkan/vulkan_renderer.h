@@ -21,12 +21,12 @@ namespace MongooseVK
     class VulkanDevice;
 
     struct Framebuffers {
-        Ref<VulkanFramebuffer> ssaoFramebuffer;
-        Ref<VulkanFramebuffer> gbufferFramebuffer;
-        Ref<VulkanFramebuffer> mainFramebuffer;
-        std::vector<Ref<VulkanFramebuffer>> shadowMapFramebuffers;
-        std::vector<Ref<VulkanFramebuffer>> presentFramebuffers;
-        std::vector<Ref<VulkanFramebuffer>> iblIrradianceFramebuffes;
+        FramebufferHandle ssaoFramebuffer;
+        FramebufferHandle gbufferFramebuffer;
+        FramebufferHandle mainFramebuffer;
+        std::vector<FramebufferHandle> shadowMapFramebuffers;
+        std::vector<FramebufferHandle> presentFramebuffers;
+        std::vector<FramebufferHandle> iblIrradianceFramebuffes;
     };
 
     struct CameraBuffer {

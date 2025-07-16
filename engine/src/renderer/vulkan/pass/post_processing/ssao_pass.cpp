@@ -26,13 +26,14 @@ namespace MongooseVK
         vkFreeDescriptorSets(device->GetDevice(), device->GetShaderDescriptorPool().GetDescriptorPool(), 1, &ssaoDescriptorSet);;
     }
 
-    void SSAOPass::Render(VkCommandBuffer commandBuffer, Camera* camera, Ref<VulkanFramebuffer> writeBuffer,
-                          Ref<VulkanFramebuffer> readBuffer)
+    void SSAOPass::Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer)
     {
-        device->SetViewportAndScissor(writeBuffer->GetExtent(), commandBuffer);
+        VulkanFramebuffer* framebuffer = device->GetFramebuffer(writeBuffer);
+
+        device->SetViewportAndScissor(framebuffer->extent, commandBuffer);
         VulkanRenderPass* renderPass = device->renderPassPool.Get(renderPassHandle.handle);
 
-        renderPass->Begin(commandBuffer, writeBuffer, writeBuffer->GetExtent());
+        renderPass->Begin(commandBuffer, framebuffer->framebuffer, framebuffer->extent);
 
         DrawCommandParams drawParams{};
         drawParams.commandBuffer = commandBuffer;

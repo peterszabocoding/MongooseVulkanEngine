@@ -63,7 +63,7 @@ namespace MongooseVK
         VulkanRenderPass() {}
         ~VulkanRenderPass() = default;
 
-        void Begin(VkCommandBuffer commandBuffer, const Ref<VulkanFramebuffer>& framebuffer, VkExtent2D extent);
+        void Begin(VkCommandBuffer commandBuffer, VkFramebuffer framebuffer, VkExtent2D extent);
         void End(VkCommandBuffer commandBuffer);
 
         [[nodiscard]] VkRenderPass Get() const { return renderPass; }

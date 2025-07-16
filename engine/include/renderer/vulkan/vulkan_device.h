@@ -93,13 +93,13 @@ namespace MongooseVK
         bool isCubeMap = false;
     };
 
-    union FramebufferCreationAttachment {
-        VkImageView imageView;
-        TextureHandle textureHandle;
+    struct  FramebufferCreationAttachment {
+        VkImageView imageView = VK_NULL_HANDLE;
+        TextureHandle textureHandle = INVALID_TEXTURE_HANDLE;
     };
 
     struct FramebufferCreateInfo {
-        std::array<FramebufferCreationAttachment, 6> attachments{};
+        std::vector<FramebufferCreationAttachment> attachments{};
         RenderPassHandle renderPassHandle = INVALID_RENDER_PASS_HANDLE;
         VkExtent2D resolution{};
     };
@@ -179,6 +179,7 @@ namespace MongooseVK
 
         // Framebuffer management
         FramebufferHandle CreateFramebuffer(FramebufferCreateInfo info);
+        VulkanFramebuffer* GetFramebuffer(FramebufferHandle framebufferHandle);
         void DestroyFramebuffer(FramebufferHandle framebufferHandle);
 
     private:

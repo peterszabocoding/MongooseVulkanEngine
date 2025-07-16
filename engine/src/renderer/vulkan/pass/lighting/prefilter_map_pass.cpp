@@ -26,8 +26,7 @@ namespace MongooseVK
         LoadPipeline();
     }
 
-    void PrefilterMapPass::Render(VkCommandBuffer commandBuffer, Camera* camera, Ref<VulkanFramebuffer> writeBuffer,
-        Ref<VulkanFramebuffer> readBuffer)
+    void PrefilterMapPass::Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer)
     {
         VulkanTexture* prefilterMap = device->GetTexture(targetTexture);
         VulkanTexture* cubemap = device->GetTexture(cubemapTextureHandle);
@@ -42,14 +41,16 @@ namespace MongooseVK
 
             for (uint32_t faceIndex = 0; faceIndex < 6; faceIndex++)
             {
-                const Ref<VulkanFramebuffer> framebuffer = VulkanFramebuffer::Builder(device)
-                                        .SetRenderpass(GetRenderPass())
-                                        .SetResolution(extent.width, extent.height)
-                                        .AddAttachment(prefilterMap->GetMipmapImageView(mip, faceIndex))
-                                        .Build();
+                FramebufferCreateInfo createInfo = {};
+                createInfo.attachments.push_back({.imageView = prefilterMap->GetMipmapImageView(mip, faceIndex)});
+                createInfo.resolution = extent;
+                createInfo.renderPassHandle = GetRenderPassHandle();
+
+                FramebufferHandle framebufferHandle = device->CreateFramebuffer(createInfo);
+                VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandle);
 
                 device->SetViewportAndScissor(extent, commandBuffer);
-                GetRenderPass()->Begin(commandBuffer, framebuffer, extent);
+                GetRenderPass()->Begin(commandBuffer, framebuffer->framebuffer, extent);
 
                 DrawCommandParams drawCommandParams{};
                 drawCommandParams.commandBuffer = commandBuffer;
@@ -80,6 +81,8 @@ namespace MongooseVK
                 device->DrawMeshlet(drawCommandParams);
 
                 GetRenderPass()->End(commandBuffer);
+
+                device->DestroyFramebuffer(framebufferHandle);
             }
         }
     }
@@ -110,10 +113,6 @@ namespace MongooseVK
         iblPrefilterPipelineConfig.vertexShaderPath = "cubemap.vert";
         iblPrefilterPipelineConfig.fragmentShaderPath = "prefilter.frag";
 
-        iblPrefilterPipelineConfig.cullMode = PipelineCullMode::Back;
-        iblPrefilterPipelineConfig.polygonMode = PipelinePolygonMode::Fill;
-        iblPrefilterPipelineConfig.frontFace = PipelineFrontFace::Counter_clockwise;
-
         iblPrefilterPipelineConfig.descriptorSetLayouts = {
             ShaderCache::descriptorSetLayouts.cubemapDescriptorSetLayout,
         };
@@ -122,7 +121,6 @@ namespace MongooseVK
             ImageFormat::RGBA16_SFLOAT,
         };
 
-        iblPrefilterPipelineConfig.disableBlending = true;
         iblPrefilterPipelineConfig.enableDepthTest = false;
 
         iblPrefilterPipelineConfig.pushConstantData = {

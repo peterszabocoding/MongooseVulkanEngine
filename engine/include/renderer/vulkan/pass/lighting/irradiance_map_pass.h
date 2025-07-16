@@ -9,10 +9,7 @@ namespace MongooseVK
         explicit IrradianceMapPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution);
         ~IrradianceMapPass() override = default;
 
-        virtual void Render(VkCommandBuffer commandBuffer,
-                            Camera* camera,
-                            Ref<VulkanFramebuffer> writeBuffer,
-                            Ref<VulkanFramebuffer> readBuffer = nullptr) override;
+        virtual void Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer) override;
 
         virtual void Resize(VkExtent2D _resolution) override;
 

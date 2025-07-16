@@ -10,10 +10,7 @@ namespace MongooseVK
         explicit LightingPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution);
         ~LightingPass() override = default;
 
-        virtual void Render(VkCommandBuffer commandBuffer,
-                            Camera* camera,
-                            Ref<VulkanFramebuffer> writeBuffer,
-                            Ref<VulkanFramebuffer> readBuffer = nullptr) override;
+        virtual void Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer) override;
         void DrawSkybox(VkCommandBuffer commandBuffer) const;
 
     private:

@@ -8,7 +8,7 @@
 
 namespace MongooseVK
 {
-    void VulkanRenderPass::Begin(const VkCommandBuffer commandBuffer, const Ref<VulkanFramebuffer>& framebuffer, const VkExtent2D extent)
+    void VulkanRenderPass::Begin(const VkCommandBuffer commandBuffer, const VkFramebuffer framebuffer, const VkExtent2D extent)
     {
         std::vector<VkClearValue> clearValues;
 
@@ -36,7 +36,7 @@ namespace MongooseVK
         VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderPassInfo.renderPass = renderPass;
-        renderPassInfo.framebuffer = framebuffer->Get();
+        renderPassInfo.framebuffer = framebuffer;
         renderPassInfo.renderArea.offset = {0, 0};
         renderPassInfo.renderArea.extent = extent;
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());

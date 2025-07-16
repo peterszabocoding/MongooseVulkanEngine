@@ -192,6 +192,7 @@ namespace MongooseVK
 
         texturePool.Init(1024);
         renderPassPool.Init(128);
+        framebufferPool.Init(128);
     }
 
     VkResult VulkanDevice::SubmitDrawCommands(VkSemaphore* signalSemaphores) const
@@ -626,24 +627,51 @@ namespace MongooseVK
     {
         VulkanFramebuffer* framebuffer = framebufferPool.Obtain();
 
+        std::vector<VkImageView> imageViews;
 
-        return { framebuffer->index};
+        for (auto& attachment: info.attachments)
+        {
+            if (attachment.imageView != VK_NULL_HANDLE)
+                imageViews.push_back(attachment.imageView);
+            if (attachment.textureHandle != INVALID_TEXTURE_HANDLE)
+                imageViews.push_back(GetTexture(attachment.textureHandle)->GetImageView());
+        }
+
+        VkFramebufferCreateInfo framebuffer_info{};
+        framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        framebuffer_info.renderPass = renderPassPool.Get(info.renderPassHandle.handle)->Get();
+        framebuffer_info.attachmentCount = static_cast<uint32_t>(imageViews.size());
+        framebuffer_info.pAttachments = imageViews.data();
+        framebuffer_info.width = info.resolution.width;
+        framebuffer_info.height = info.resolution.height;
+        framebuffer_info.layers = 1;
+
+        VkFramebuffer vkFramebuffer = VK_NULL_HANDLE;
+        VK_CHECK_MSG(vkCreateFramebuffer(GetDevice(), &framebuffer_info, nullptr, &vkFramebuffer),
+                     "Failed to create framebuffer.");
+
+        framebuffer->framebuffer = vkFramebuffer;
+        framebuffer->attachmentCount = imageViews.size();
+        framebuffer->extent = info.resolution;
+        std::copy_n(std::make_move_iterator(imageViews.begin()), imageViews.size(), framebuffer->attachments.begin());
+
+        return {framebuffer->index};
+    }
+
+    VulkanFramebuffer* VulkanDevice::GetFramebuffer(FramebufferHandle framebufferHandle)
+    {
+        return framebufferPool.Get(framebufferHandle.handle);
     }
 
     void VulkanDevice::DestroyFramebuffer(FramebufferHandle framebufferHandle)
     {
-        /*
-        LOG_INFO("Destroy framebuffer images");
-        for (const auto& attachment: params.attachments) {
-            if (attachment.allocatedImage.image && attachment.imageView) {
-                vkDestroyImageView(device->GetDevice(), attachment.imageView, nullptr);
-                vmaDestroyImage(device->GetVmaAllocator(), attachment.allocatedImage.image, attachment.allocatedImage.allocation);
-            }
-        }
+        frameDeletionQueue.Push([=] {
+            LOG_INFO("Destroy framebuffer");
+            VulkanFramebuffer* framebuffer = framebufferPool.Get(framebufferHandle.handle);
 
-        LOG_INFO("Destroy framebuffer");
-        vkDestroyFramebuffer(device->GetDevice(), params.framebuffer, nullptr);
-        */
+            vkDestroyFramebuffer(GetDevice(), framebuffer->framebuffer, nullptr);
+            framebufferPool.Release(framebuffer);
+        });
     }
 
     void VulkanDevice::ImmediateSubmit(std::function<void(VkCommandBuffer commandBuffer)>&& function) const

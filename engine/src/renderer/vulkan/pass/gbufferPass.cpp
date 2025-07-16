@@ -16,11 +16,12 @@ namespace MongooseVK
         LoadPipelines();
     }
 
-    void GBufferPass::Render(VkCommandBuffer commandBuffer, Camera* camera, Ref<VulkanFramebuffer> writeBuffer,
-                             Ref<VulkanFramebuffer> readBuffer)
+    void GBufferPass::Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer)
     {
+        VulkanFramebuffer* framebuffer = device->GetFramebuffer(writeBuffer);
+
         device->SetViewportAndScissor(resolution, commandBuffer);
-        GetRenderPass()->Begin(commandBuffer, writeBuffer, resolution);
+        GetRenderPass()->Begin(commandBuffer, framebuffer->framebuffer, resolution);
 
         DrawCommandParams geometryDrawParams{};
         geometryDrawParams.commandBuffer = commandBuffer;

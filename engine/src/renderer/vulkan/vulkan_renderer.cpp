@@ -76,15 +76,20 @@ namespace MongooseVK
     void VulkanRenderer::CalculateBrdfLUT()
     {
         const VulkanTexture* brdfLutTexture = device->GetTexture(renderPassResources.brdfLutTexture.textureInfo.textureHandle);
-        const auto brdfLutFramebuffer = VulkanFramebuffer::Builder(device)
-                .SetRenderpass(renderPasses.brdfLutPass->GetRenderPass())
-                .SetResolution(512, 512)
-                .AddAttachment(brdfLutTexture->GetImageView())
-                .Build();
+
+        FramebufferCreateInfo createInfo{};
+
+        createInfo.attachments.push_back({brdfLutTexture->GetImageView()});
+        createInfo.renderPassHandle = renderPasses.brdfLutPass->GetRenderPassHandle();
+        createInfo.resolution = {512, 512};
+
+        const auto brdfLutFramebufferHandle = device->CreateFramebuffer(createInfo);
 
         device->ImmediateSubmit([&](VkCommandBuffer commandBuffer) {
-            renderPasses.brdfLutPass->Render(commandBuffer, nullptr, brdfLutFramebuffer, nullptr);
+            renderPasses.brdfLutPass->Render(commandBuffer, nullptr, brdfLutFramebufferHandle);
         });
+
+        device->DestroyFramebuffer(brdfLutFramebufferHandle);
     }
 
     void VulkanRenderer::CalculatePrefilterMap()
@@ -92,7 +97,7 @@ namespace MongooseVK
         device->ImmediateSubmit([&](const VkCommandBuffer commandBuffer) {
             renderPasses.prefilterMapPass->SetCubemapTexture(renderPassResources.skyboxTexture.textureInfo.textureHandle);
             renderPasses.prefilterMapPass->SetTargetTexture(renderPassResources.prefilterMapTexture.textureInfo.textureHandle);
-            renderPasses.prefilterMapPass->Render(commandBuffer, nullptr, nullptr, nullptr);
+            renderPasses.prefilterMapPass->Render(commandBuffer, nullptr, INVALID_FRAMEBUFFER_HANDLE);
         });
     }
 
@@ -100,15 +105,18 @@ namespace MongooseVK
     {
         VulkanTexture* irradianceMapTexture = device->GetTexture(renderPassResources.irradianceMapTexture.textureInfo.textureHandle);
 
-        std::vector<Ref<VulkanFramebuffer>> iblIrradianceFramebuffes;
+        std::vector<FramebufferHandle> iblIrradianceFramebuffes;
         iblIrradianceFramebuffes.resize(6);
+
         for (size_t i = 0; i < 6; i++)
         {
-            iblIrradianceFramebuffes[i] = VulkanFramebuffer::Builder(device)
-                    .SetRenderpass(renderPasses.irradianceMapPass->GetRenderPass())
-                    .SetResolution(32, 32)
-                    .AddAttachment(irradianceMapTexture->GetMipmapImageView(0, i))
-                    .Build();
+            FramebufferCreateInfo createInfo{};
+
+            createInfo.attachments.push_back({irradianceMapTexture->GetMipmapImageView(0, i)});
+            createInfo.renderPassHandle = renderPasses.irradianceMapPass->GetRenderPassHandle();
+            createInfo.resolution = {32, 32};
+
+            iblIrradianceFramebuffes[i] = device->CreateFramebuffer(createInfo);
         }
 
         device->ImmediateSubmit([&](const VkCommandBuffer commandBuffer) {
@@ -118,7 +126,6 @@ namespace MongooseVK
                 renderPasses.irradianceMapPass->Render(commandBuffer, nullptr, iblIrradianceFramebuffes[faceIndex]);
             }
         });
-
 
         const VkDescriptorImageInfo irradianceMapInfo = {
             .sampler = irradianceMapTexture->GetSampler(),
@@ -188,47 +195,67 @@ namespace MongooseVK
         framebuffers.shadowMapFramebuffers.resize(SHADOW_MAP_CASCADE_COUNT);
         for (size_t i = 0; i < SHADOW_MAP_CASCADE_COUNT; i++)
         {
-            framebuffers.shadowMapFramebuffers[i] = VulkanFramebuffer::Builder(device)
-                    .SetRenderpass(renderPasses.shadowMapPass->GetRenderPass())
-                    .SetResolution(SHADOW_MAP_RESOLUTION, SHADOW_MAP_RESOLUTION)
-                    .AddAttachment(shadowMapTexture->GetImageView(i))
-                    .Build();
+            FramebufferCreateInfo createInfo{};
+            createInfo.attachments.push_back({shadowMapTexture->GetImageView(i)});
+            createInfo.renderPassHandle = renderPasses.shadowMapPass->GetRenderPassHandle();
+            createInfo.resolution = {SHADOW_MAP_RESOLUTION, SHADOW_MAP_RESOLUTION};
+
+            framebuffers.shadowMapFramebuffers[i] = device->CreateFramebuffer(createInfo);
         }
     }
 
     void VulkanRenderer::CreateFramebuffers()
     {
-        framebuffers.ssaoFramebuffer = VulkanFramebuffer::Builder(device)
-                .SetRenderpass(renderPasses.ssaoPass->GetRenderPass())
-                .SetResolution(renderResolution.width * 0.5, renderResolution.height * 0.5)
-                .AddAttachment(renderPassResources.ssaoTexture.textureInfo.textureHandle)
-                .Build();
-
-        framebuffers.mainFramebuffer = VulkanFramebuffer::Builder(device)
-                .SetRenderpass(renderPasses.lightingPass->GetRenderPass())
-                .SetResolution(renderResolution.width, renderResolution.height)
-                .AddAttachment(renderPassResources.mainFrameColorTexture.textureInfo.textureHandle)
-                .AddAttachment(renderPassResources.depthMap.textureInfo.textureHandle)
-                .Build();
-
-        framebuffers.gbufferFramebuffer = VulkanFramebuffer::Builder(device)
-                .SetRenderpass(renderPasses.gbufferPass->GetRenderPass())
-                .SetResolution(renderResolution.width, renderResolution.height)
-                .AddAttachment(renderPassResources.viewspaceNormal.textureInfo.textureHandle)
-                .AddAttachment(renderPassResources.viewspacePosition.textureInfo.textureHandle)
-                .AddAttachment(renderPassResources.depthMap.textureInfo.textureHandle)
-                .Build();
-
-        const uint32_t imageCount = VulkanUtils::GetSwapchainImageCount(device->GetPhysicalDevice(), device->GetSurface());
-        framebuffers.presentFramebuffers.clear();
-        framebuffers.presentFramebuffers.resize(imageCount);
-        for (size_t i = 0; i < imageCount; i++)
+        // SSAO
         {
-            framebuffers.presentFramebuffers[i] = VulkanFramebuffer::Builder(device)
-                    .SetRenderpass(renderPasses.presentPass->GetRenderPass())
-                    .SetResolution(viewportResolution.width, viewportResolution.height)
-                    .AddAttachment(vulkanSwapChain->GetImageViews()[i])
-                    .Build();
+            FramebufferCreateInfo createInfo{};
+            createInfo.attachments.push_back({.textureHandle = renderPassResources.ssaoTexture.textureInfo.textureHandle});
+            createInfo.renderPassHandle = renderPasses.ssaoPass->GetRenderPassHandle();
+            createInfo.resolution = {
+                static_cast<uint32_t>(renderResolution.width * 0.5),
+                static_cast<uint32_t>(renderResolution.height * 0.5)
+            };
+
+            framebuffers.ssaoFramebuffer = device->CreateFramebuffer(createInfo);
+        }
+
+        // Main frame
+        {
+            FramebufferCreateInfo createInfo{};
+            createInfo.attachments.push_back({.textureHandle = renderPassResources.mainFrameColorTexture.textureInfo.textureHandle});
+            createInfo.attachments.push_back({.textureHandle = renderPassResources.depthMap.textureInfo.textureHandle});
+            createInfo.renderPassHandle = renderPasses.lightingPass->GetRenderPassHandle();
+            createInfo.resolution = {renderResolution.width, renderResolution.height};
+
+            framebuffers.mainFramebuffer = device->CreateFramebuffer(createInfo);
+        }
+
+        // GBuffer
+        {
+            FramebufferCreateInfo createInfo{};
+            createInfo.attachments.push_back({.textureHandle = renderPassResources.viewspaceNormal.textureInfo.textureHandle});
+            createInfo.attachments.push_back({.textureHandle = renderPassResources.viewspacePosition.textureInfo.textureHandle});
+            createInfo.attachments.push_back({.textureHandle = renderPassResources.depthMap.textureInfo.textureHandle});
+            createInfo.renderPassHandle = renderPasses.gbufferPass->GetRenderPassHandle();
+            createInfo.resolution = {renderResolution.width, renderResolution.height};
+
+            framebuffers.gbufferFramebuffer = device->CreateFramebuffer(createInfo);
+        }
+
+        // Present
+        {
+            const uint32_t imageCount = VulkanUtils::GetSwapchainImageCount(device->GetPhysicalDevice(), device->GetSurface());
+            framebuffers.presentFramebuffers.clear();
+            framebuffers.presentFramebuffers.resize(imageCount);
+            for (size_t i = 0; i < imageCount; i++)
+            {
+                FramebufferCreateInfo createInfo{};
+                createInfo.attachments.push_back({.imageView = vulkanSwapChain->GetImageViews()[i]});
+                createInfo.renderPassHandle = renderPasses.presentPass->GetRenderPassHandle();
+                createInfo.resolution = {viewportResolution.width, viewportResolution.height};
+
+                framebuffers.presentFramebuffers[i] = device->CreateFramebuffer(createInfo);
+            }
         }
     }
 
@@ -306,9 +333,7 @@ namespace MongooseVK
 
         renderPasses.ssaoPass->Render(commandBuffer, &camera, framebuffers.ssaoFramebuffer);
 
-
         VulkanTexture* depthMap = device->GetTexture(renderPassResources.depthMap.textureInfo.textureHandle);
-
 
         renderPasses.skyboxPass->Render(commandBuffer, &camera, framebuffers.mainFramebuffer);
         renderPasses.gridPass->Render(commandBuffer, &camera, framebuffers.mainFramebuffer);
@@ -317,6 +342,7 @@ namespace MongooseVK
                                            VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT,
                                            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
                                            VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
+
         renderPasses.lightingPass->Render(commandBuffer, &camera, framebuffers.mainFramebuffer);
 
         VulkanUtils::TransitionImageLayout(commandBuffer, depthMap->GetImage(),
