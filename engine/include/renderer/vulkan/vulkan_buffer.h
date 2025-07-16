@@ -5,7 +5,6 @@
 
 namespace MongooseVK
 {
-    class VulkanDevice;
 
     class VulkanBuffer {
     public:

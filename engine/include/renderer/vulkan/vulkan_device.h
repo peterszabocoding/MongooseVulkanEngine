@@ -14,6 +14,7 @@
 #include "memory/resource_pool.h"
 #include "vulkan_descriptor_pool.h"
 #include "vulkan_descriptor_set_layout.h"
+#include "vulkan_image.h"
 #include "vulkan_renderpass.h"
 #include "resource/resource.h"
 
@@ -92,6 +93,17 @@ namespace MongooseVK
         bool isCubeMap = false;
     };
 
+    union FramebufferCreationAttachment {
+        VkImageView imageView;
+        TextureHandle textureHandle;
+    };
+
+    struct FramebufferCreateInfo {
+        std::array<FramebufferCreationAttachment, 6> attachments{};
+        RenderPassHandle renderPassHandle = INVALID_RENDER_PASS_HANDLE;
+        VkExtent2D resolution{};
+    };
+
     class DeletionQueue {
     public:
         void Push(const std::function<void()>& func)
@@ -163,7 +175,11 @@ namespace MongooseVK
 
         // Render pass management
         RenderPassHandle CreateRenderPass(VulkanRenderPass::RenderPassConfig config);
-        void DestroyRenderPass(RenderPassHandle textureHandle);
+        void DestroyRenderPass(RenderPassHandle renderPassHandle);
+
+        // Framebuffer management
+        FramebufferHandle CreateFramebuffer(FramebufferCreateInfo info);
+        void DestroyFramebuffer(FramebufferHandle framebufferHandle);
 
     private:
         static VkInstance CreateVkInstance(
@@ -186,6 +202,7 @@ namespace MongooseVK
         uint32_t currentFrame = 0;
         ObjectResourcePool<VulkanTexture> texturePool;
         ObjectResourcePool<VulkanRenderPass> renderPassPool;
+        ObjectResourcePool<VulkanFramebuffer> framebufferPool;
 
         VkDescriptorSet bindlessTextureDescriptorSet{};
         Ref<VulkanDescriptorSetLayout> bindlessDescriptorSetLayout;

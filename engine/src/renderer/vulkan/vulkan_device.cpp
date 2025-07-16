@@ -12,6 +12,9 @@
 
 #define VMA_IMPLEMENTATION
 
+#include <renderer/vulkan/vulkan_framebuffer.h>
+#include <renderer/vulkan/vulkan_texture.h>
+
 #include "renderer/vulkan/vulkan_descriptor_pool.h"
 #include "renderer/vulkan/vulkan_descriptor_writer.h"
 #include "renderer/camera.h"
@@ -617,6 +620,30 @@ namespace MongooseVK
             vkDestroyRenderPass(device, renderPass->Get(), nullptr);
             renderPassPool.Release(renderPass);
         });
+    }
+
+    FramebufferHandle VulkanDevice::CreateFramebuffer(FramebufferCreateInfo info)
+    {
+        VulkanFramebuffer* framebuffer = framebufferPool.Obtain();
+
+
+        return { framebuffer->index};
+    }
+
+    void VulkanDevice::DestroyFramebuffer(FramebufferHandle framebufferHandle)
+    {
+        /*
+        LOG_INFO("Destroy framebuffer images");
+        for (const auto& attachment: params.attachments) {
+            if (attachment.allocatedImage.image && attachment.imageView) {
+                vkDestroyImageView(device->GetDevice(), attachment.imageView, nullptr);
+                vmaDestroyImage(device->GetVmaAllocator(), attachment.allocatedImage.image, attachment.allocatedImage.allocation);
+            }
+        }
+
+        LOG_INFO("Destroy framebuffer");
+        vkDestroyFramebuffer(device->GetDevice(), params.framebuffer, nullptr);
+        */
     }
 
     void VulkanDevice::ImmediateSubmit(std::function<void(VkCommandBuffer commandBuffer)>&& function) const

@@ -4,13 +4,12 @@
 #include <glm/vec4.hpp>
 
 #include "vulkan_buffer.h"
-#include "vulkan_device.h"
-#include "vulkan_texture.h"
 #include "vulkan_descriptor_set_layout.h"
 
 namespace MongooseVK
 {
     class VulkanPipeline;
+    class VulkanDevice;
 
     struct MaterialParams {
         glm::vec4 tint = {1.0f, 1.0f, 1.0f, 1.0f};

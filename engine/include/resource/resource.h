@@ -43,7 +43,6 @@ namespace MongooseVK
         DEPTH32,
     };
 
-
     struct ImageResource {
         void* data = nullptr;
         char path[128] = "";
@@ -87,7 +86,15 @@ namespace MongooseVK
         bool operator!=(const BufferHandle& other) const { return handle != other.handle; }
     };
 
+    struct FramebufferHandle {
+        ResourceHandle handle;
+
+        bool operator==(const FramebufferHandle& other) const { return handle == other.handle; }
+        bool operator!=(const FramebufferHandle& other) const { return handle != other.handle; }
+    };
+
     static TextureHandle INVALID_TEXTURE_HANDLE = {INVALID_RESOURCE_HANDLE};
     static RenderPassHandle INVALID_RENDER_PASS_HANDLE = {INVALID_RESOURCE_HANDLE};
     static BufferHandle INVALID_BUFFER_HANDLE = {INVALID_RESOURCE_HANDLE};
+    static FramebufferHandle INVALID_FRAMEBUFFER_HANDLE = {INVALID_RESOURCE_HANDLE};
 }

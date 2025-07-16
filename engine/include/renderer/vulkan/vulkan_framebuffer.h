@@ -1,9 +1,9 @@
 #pragma once
 #include <vector>
+#include <memory/resource_pool.h>
 
 #include "vulkan_image.h"
 #include "util/core.h"
-#include "vulkan/vulkan.h"
 
 namespace MongooseVK
 {
@@ -12,13 +12,13 @@ namespace MongooseVK
 
     struct FramebufferAttachment {
         AllocatedImage allocatedImage{};
-        VkImageView imageView{};
-        VkSampler sampler{};
+        VkImageView imageView = VK_NULL_HANDLE;
+        VkSampler sampler = VK_NULL_HANDLE;
         VkImageLayout imageLayout{};
-        VkFormat format{};
+        VkFormat format = VK_FORMAT_UNDEFINED;
     };
 
-    class VulkanFramebuffer {
+    class VulkanFramebuffer : public PoolObject {
     public:
         class Builder {
         public:
@@ -26,7 +26,6 @@ namespace MongooseVK
             ~Builder() = default;
 
             Builder& AddAttachment(VkImageView imageAttachment);
-            Builder& AddAttachment(ImageFormat attachmentFormat);
             Builder& AddAttachment(TextureHandle textureHandle);
 
             Builder& SetRenderpass(VulkanRenderPass* renderPass);

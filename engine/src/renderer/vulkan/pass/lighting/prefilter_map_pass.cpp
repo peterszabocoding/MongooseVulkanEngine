@@ -1,10 +1,14 @@
 #include "renderer/vulkan/pass/lighting/prefilter_map_pass.h"
 
 #include <renderer/shader_cache.h>
+#include <renderer/vulkan/vulkan_mesh.h>
 #include <resource/resource_manager.h>
 
 namespace MongooseVK
 {
+    constexpr uint32_t PREFILTER_MIP_LEVELS = 6;
+    constexpr uint32_t REFLECTION_RESOLUTION = 256;
+
     const glm::mat4 m_CaptureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
     const glm::mat4 m_CaptureViews[6] = {
         lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)),
@@ -25,10 +29,8 @@ namespace MongooseVK
     void PrefilterMapPass::Render(VkCommandBuffer commandBuffer, Camera* camera, Ref<VulkanFramebuffer> writeBuffer,
         Ref<VulkanFramebuffer> readBuffer)
     {
-        constexpr uint32_t PREFILTER_MIP_LEVELS = 6;
-        constexpr uint32_t REFLECTION_RESOLUTION = 256;
-
         VulkanTexture* prefilterMap = device->GetTexture(targetTexture);
+        VulkanTexture* cubemap = device->GetTexture(cubemapTextureHandle);
 
         for (unsigned int mip = 0; mip < PREFILTER_MIP_LEVELS; ++mip)
         {
@@ -40,8 +42,14 @@ namespace MongooseVK
 
             for (uint32_t faceIndex = 0; faceIndex < 6; faceIndex++)
             {
+                const Ref<VulkanFramebuffer> framebuffer = VulkanFramebuffer::Builder(device)
+                                        .SetRenderpass(GetRenderPass())
+                                        .SetResolution(extent.width, extent.height)
+                                        .AddAttachment(prefilterMap->GetMipmapImageView(mip, faceIndex))
+                                        .Build();
+
                 device->SetViewportAndScissor(extent, commandBuffer);
-                GetRenderPass()->Begin(commandBuffer, writeBuffer, extent);
+                GetRenderPass()->Begin(commandBuffer, framebuffer, extent);
 
                 DrawCommandParams drawCommandParams{};
                 drawCommandParams.commandBuffer = commandBuffer;
@@ -61,7 +69,7 @@ namespace MongooseVK
                 pushConstantData.projection = m_CaptureProjection;
                 pushConstantData.view = m_CaptureViews[faceIndex];
                 pushConstantData.roughness = roughness;
-                pushConstantData.resolution = cubemapResolution;
+                pushConstantData.resolution = cubemap->createInfo.width;
 
                 drawCommandParams.pushConstantParams = {
                     &pushConstantData,
@@ -72,20 +80,6 @@ namespace MongooseVK
                 device->DrawMeshlet(drawCommandParams);
 
                 GetRenderPass()->End(commandBuffer);
-
-                const VulkanUtils::CopyParams params = {
-                    .srcMipLevel = 0,
-                    .dstMipLevel = mip,
-                    .srcBaseArrayLayer = 0,
-                    .dstBaseArrayLayer = faceIndex,
-                    .regionWidth = extent.width,
-                    .regionHeight = extent.height,
-                };
-
-                CopyImage(commandBuffer,
-                          writeBuffer->GetAttachments()[0].allocatedImage.image,
-                          prefilterMap->GetImage(),
-                          params);
             }
         }
     }
@@ -95,9 +89,9 @@ namespace MongooseVK
         VulkanPass::Resize(_resolution);
     }
 
-    void PrefilterMapPass::SetCubemapResolution(float _cubemapResolution)
+    void PrefilterMapPass::SetCubemapTexture(TextureHandle _cubemapTextureHandle)
     {
-        cubemapResolution = _cubemapResolution;
+        cubemapTextureHandle = _cubemapTextureHandle;
     }
 
     void PrefilterMapPass::SetTargetTexture(TextureHandle _targetTexture)
@@ -140,5 +134,10 @@ namespace MongooseVK
         iblPrefilterPipelineConfig.renderPass = GetRenderPass()->Get();
 
         prefilterMapPipeline = VulkanPipeline::Builder().Build(device, iblPrefilterPipelineConfig);
+    }
+
+    void PrefilterMapPass::SetRoughness(float _roughness)
+    {
+        roughness = _roughness;
     }
 }

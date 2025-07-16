@@ -1,10 +1,10 @@
 #pragma once
-#include <renderer/vulkan/vulkan_pipeline.h>
 
 #include "../vulkan_device.h"
 #include "../vulkan_framebuffer.h"
 #include "../../../util/core.h"
 #include "renderer/camera.h"
+#include "renderer/vulkan/vulkan_texture.h"
 
 namespace MongooseVK
 {
@@ -12,25 +12,6 @@ namespace MongooseVK
         Texture = 0,
         TextureCube,
         Buffer,
-    };
-
-    enum class LoadOp: uint8_t {
-        None = 0,
-        Clear,
-        Load,
-        DontCare
-    };
-
-    enum class StoreOp: uint8_t {
-        None = 0,
-        Store,
-        DontCare
-    };
-
-    struct PassInput {
-        std::string name;
-        ResourceType type;
-        ImageFormat format;
     };
 
     struct ResourceBufferInfo {
@@ -49,43 +30,6 @@ namespace MongooseVK
 
         ResourceBufferInfo bufferInfo;
         ResourceTextureInfo textureInfo;
-    };
-
-    struct PassOutput {
-        std::string name;
-        ImageFormat format;
-        bool isSwapchainAttachment;
-        LoadOp loadOp = LoadOp::Clear;
-        StoreOp storeOp = StoreOp::Store;
-        glm::vec4 clearValue;
-    };
-
-    struct RenderPassConfig {
-        std::string name;
-        std::vector<PassInput> inputs;
-        std::vector<PassOutput> outputs;
-        std::optional<PassOutput> depthStencilAttachment;
-
-        PipelineConfig pipelineConfig;
-        std::vector<VulkanDescriptorSetLayout> descriptorSetLayouts;
-
-        RenderPassConfig& AddInput(const PassInput& input)
-        {
-            inputs.push_back(input);
-            return *this;
-        }
-
-        RenderPassConfig& AddOutput(const PassOutput& output)
-        {
-            outputs.push_back(output);
-            return *this;
-        }
-
-        RenderPassConfig& SetDepthStencilAttachment(const PassOutput& depthStencil)
-        {
-            depthStencilAttachment = depthStencil;
-            return *this;
-        }
     };
 
     class VulkanPass {

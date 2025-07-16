@@ -1,5 +1,7 @@
 #include "renderer/vulkan/pass/lighting_pass.h"
 
+#include <renderer/vulkan/vulkan_mesh.h>
+
 #include "renderer/shader_cache.h"
 #include "resource/resource_manager.h"
 #include "util/log.h"

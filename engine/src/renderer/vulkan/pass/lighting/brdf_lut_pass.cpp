@@ -1,6 +1,7 @@
 #include "renderer/vulkan/pass/lighting/brdf_lut_pass.h"
 
 #include <renderer/mesh.h>
+#include <renderer/vulkan/vulkan_pipeline.h>
 
 namespace MongooseVK
 {

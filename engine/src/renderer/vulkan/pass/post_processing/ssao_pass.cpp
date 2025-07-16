@@ -6,6 +6,7 @@
 #include "renderer/shader_cache.h"
 #include "renderer/vulkan/vulkan_descriptor_writer.h"
 #include "renderer/vulkan/vulkan_mesh.h"
+#include "renderer/vulkan/vulkan_texture.h"
 
 namespace MongooseVK
 {

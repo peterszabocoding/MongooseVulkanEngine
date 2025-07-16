@@ -89,33 +89,10 @@ namespace MongooseVK
 
     void VulkanRenderer::CalculatePrefilterMap()
     {
-        constexpr uint32_t REFLECTION_RESOLUTION = 256;
-
-        VulkanTexture* cubemap = device->GetTexture(renderPassResources.skyboxTexture.textureInfo.textureHandle);
-        VulkanTexture* prefilterMap = device->GetTexture(renderPassResources.prefilterMapTexture.textureInfo.textureHandle);
-
-        const Ref<VulkanFramebuffer> framebuffer = VulkanFramebuffer::Builder(device)
-                .SetRenderpass(renderPasses.prefilterMapPass->GetRenderPass())
-                .SetResolution(REFLECTION_RESOLUTION, REFLECTION_RESOLUTION)
-                .AddAttachment(ImageFormat::RGBA16_SFLOAT)
-                .Build();
-
         device->ImmediateSubmit([&](const VkCommandBuffer commandBuffer) {
-            VulkanUtils::TransitionImageLayout(commandBuffer,
-                                               prefilterMap->GetImage(),
-                                               VK_IMAGE_ASPECT_COLOR_BIT,
-                                               VK_IMAGE_LAYOUT_UNDEFINED,
-                                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
-            renderPasses.prefilterMapPass->SetCubemapResolution(cubemap->createInfo.width);
+            renderPasses.prefilterMapPass->SetCubemapTexture(renderPassResources.skyboxTexture.textureInfo.textureHandle);
             renderPasses.prefilterMapPass->SetTargetTexture(renderPassResources.prefilterMapTexture.textureInfo.textureHandle);
-            renderPasses.prefilterMapPass->Render(commandBuffer, nullptr, framebuffer, nullptr);
-
-            VulkanUtils::TransitionImageLayout(commandBuffer,
-                                               prefilterMap->GetImage(),
-                                               VK_IMAGE_ASPECT_COLOR_BIT,
-                                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            renderPasses.prefilterMapPass->Render(commandBuffer, nullptr, nullptr, nullptr);
         });
     }
 

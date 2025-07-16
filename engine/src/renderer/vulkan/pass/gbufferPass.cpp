@@ -2,6 +2,7 @@
 
 #include <random>
 #include <glm/gtc/packing.inl>
+#include <renderer/vulkan/vulkan_mesh.h>
 
 #include "renderer/shader_cache.h"
 #include "renderer/vulkan/vulkan_pipeline.h"

@@ -12,8 +12,8 @@ namespace MongooseVK
 
     struct AllocatedImage {
         uint32_t width, height;
-        VkImage image;
-        VmaAllocation allocation;
+        VkImage image  = VK_NULL_HANDLE;
+        VmaAllocation allocation  = VK_NULL_HANDLE;
         VmaAllocationInfo allocationInfo;
     };
 

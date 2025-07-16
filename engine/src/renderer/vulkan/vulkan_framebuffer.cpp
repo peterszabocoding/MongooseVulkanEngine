@@ -8,81 +8,40 @@
 #include "renderer/vulkan/vulkan_utils.h"
 #include "util/log.h"
 
-namespace MongooseVK {
-
+namespace MongooseVK
+{
     VulkanFramebuffer::Builder& VulkanFramebuffer::Builder::AddAttachment(TextureHandle textureHandle)
     {
-        FramebufferAttachment attachment;
-        attachment.allocatedImage.image = nullptr;
-        attachment.allocatedImage.allocation = nullptr;
-        attachment.imageView = device->GetTexture(textureHandle)->imageView;
-        attachment.format = VK_FORMAT_UNDEFINED;
-
-        attachments.push_back(attachment);
-        return *this;
+        return AddAttachment(device->GetTexture(textureHandle)->imageView);
     }
 
-    VulkanFramebuffer::Builder& VulkanFramebuffer::Builder::AddAttachment(VkImageView imageAttachment) {
-        FramebufferAttachment attachment;
-        attachment.allocatedImage.image = nullptr;
-        attachment.allocatedImage.allocation = nullptr;
-        attachment.imageView = imageAttachment;
-        attachment.format = VK_FORMAT_UNDEFINED;
-
-        attachments.push_back(attachment);
-        return *this;
-    }
-
-    VulkanFramebuffer::Builder& VulkanFramebuffer::Builder::AddAttachment(ImageFormat attachmentFormat) {
-        const VkImageLayout imageLayout = ImageUtils::GetLayoutFromFormat(attachmentFormat);
-        const AllocatedImage allocatedImage = ImageBuilder(device)
-                .SetResolution(width, height)
-                .SetTiling(VK_IMAGE_TILING_OPTIMAL)
-                .SetFormat(attachmentFormat)
-                .AddUsage(ImageUtils::GetUsageFromFormat(attachmentFormat))
-                .AddUsage(VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
-                .SetInitialLayout(imageLayout)
-                .Build();
-
-        const VkImageView imageView = ImageViewBuilder(device)
-                .SetFormat(attachmentFormat)
-                .SetAspectFlags(ImageUtils::GetAspectFlagFromFormat(attachmentFormat))
-                .SetImage(allocatedImage.image)
-                .Build();
-
-        const VkSampler sampler = ImageSamplerBuilder(device)
-                .SetFilter(VK_FILTER_LINEAR, VK_FILTER_LINEAR)
-                .SetFormat(attachmentFormat)
-                .SetAddressMode(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
-                .SetBorderColor(VK_BORDER_COLOR_INT_OPAQUE_BLACK)
-                .Build();
-
+    VulkanFramebuffer::Builder& VulkanFramebuffer::Builder::AddAttachment(VkImageView imageAttachment)
+    {
         attachments.push_back({
-            allocatedImage,
-            imageView,
-            sampler,
-            imageLayout,
-            VulkanUtils::ConvertImageFormat(attachmentFormat)
+            .imageView = imageAttachment,
         });
-
         return *this;
     }
 
-    VulkanFramebuffer::Builder& VulkanFramebuffer::Builder::SetRenderpass(VulkanRenderPass* _renderPass) {
+    VulkanFramebuffer::Builder& VulkanFramebuffer::Builder::SetRenderpass(VulkanRenderPass* _renderPass)
+    {
         renderPass = _renderPass;
         return *this;
     }
 
-    VulkanFramebuffer::Builder& VulkanFramebuffer::Builder::SetResolution(uint32_t _width, uint32_t _height) {
+    VulkanFramebuffer::Builder& VulkanFramebuffer::Builder::SetResolution(uint32_t _width, uint32_t _height)
+    {
         width = _width;
         height = _height;
         return *this;
     }
 
-    Ref<VulkanFramebuffer> VulkanFramebuffer::Builder::Build() {
+    Ref<VulkanFramebuffer> VulkanFramebuffer::Builder::Build()
+    {
         std::vector<VkImageView> imageViews;
 
-        for (int i = 0; i < attachments.size(); i++) {
+        for (int i = 0; i < attachments.size(); i++)
+        {
             imageViews.push_back(attachments[i].imageView);
         }
 
@@ -109,10 +68,13 @@ namespace MongooseVK {
         return CreateRef<VulkanFramebuffer>(device, params);
     }
 
-    VulkanFramebuffer::~VulkanFramebuffer() {
+    VulkanFramebuffer::~VulkanFramebuffer()
+    {
         LOG_INFO("Destroy framebuffer images");
-        for (const auto& attachment: params.attachments) {
-            if (attachment.allocatedImage.image && attachment.imageView) {
+        for (const auto& attachment: params.attachments)
+        {
+            if (attachment.allocatedImage.image && attachment.imageView)
+            {
                 vkDestroyImageView(device->GetDevice(), attachment.imageView, nullptr);
                 vmaDestroyImage(device->GetVmaAllocator(), attachment.allocatedImage.image, attachment.allocatedImage.allocation);
             }

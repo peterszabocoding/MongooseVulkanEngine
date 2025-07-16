@@ -1,13 +1,15 @@
 #pragma once
 #include <vector>
+#include <util/core.h>
 
 #include "Light.h"
 #include "transform.h"
-#include "vulkan/vulkan_material.h"
-#include "vulkan/vulkan_mesh.h"
 
 namespace MongooseVK
 {
+    class VulkanMaterial;
+    class VulkanMesh;
+
     struct Renderable {
         Ref<VulkanMesh> mesh;
         Ref<VulkanMaterial> material;

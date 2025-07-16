@@ -1,5 +1,7 @@
 #include "renderer/vulkan/pass/shadow_map_pass.h"
 
+#include <renderer/vulkan/vulkan_mesh.h>
+
 #include "renderer/shader_cache.h"
 #include "util/log.h"
 

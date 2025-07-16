@@ -1,7 +1,6 @@
 #pragma once
 
 #include "renderer/scene.h"
-#include "vulkan_device.h"
 #include "vulkan_swapchain.h"
 #include "pass/gbufferPass.h"
 #include "pass/infinite_grid_pass.h"
@@ -18,6 +17,9 @@
 
 namespace MongooseVK
 {
+
+    class VulkanDevice;
+
     struct Framebuffers {
         Ref<VulkanFramebuffer> ssaoFramebuffer;
         Ref<VulkanFramebuffer> gbufferFramebuffer;

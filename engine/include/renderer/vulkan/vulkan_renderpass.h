@@ -2,14 +2,30 @@
 
 #include <array>
 #include <glm/vec4.hpp>
+#include "util/core.h"
 #include <memory/resource_pool.h>
 #include <vulkan/vulkan_core.h>
-#include "util/core.h"
 
 namespace MongooseVK
 {
     class VulkanFramebuffer;
     class VulkanDevice;
+
+    namespace RenderPassOperation
+    {
+        enum class LoadOp: uint8_t {
+            None = 0,
+            Clear,
+            Load,
+            DontCare
+        };
+
+        enum class StoreOp: uint8_t {
+            None = 0,
+            Store,
+            DontCare
+        };
+    }
 
     class VulkanRenderPass : public PoolObject {
     public:

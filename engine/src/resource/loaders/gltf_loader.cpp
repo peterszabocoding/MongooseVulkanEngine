@@ -6,6 +6,7 @@
 
 #include <math/math.h>
 
+#include "renderer/vulkan/vulkan_device.h"
 #include "renderer/transform.h"
 #include "renderer/mesh.h"
 #include "renderer/vulkan/vulkan_material.h"

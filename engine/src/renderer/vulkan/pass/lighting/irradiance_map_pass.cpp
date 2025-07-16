@@ -1,6 +1,7 @@
 #include "renderer/vulkan/pass/lighting/irradiance_map_pass.h"
 
 #include <renderer/shader_cache.h>
+#include <renderer/vulkan/vulkan_mesh.h>
 #include <resource/resource_manager.h>
 
 namespace MongooseVK
