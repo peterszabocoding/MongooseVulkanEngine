@@ -25,8 +25,8 @@ namespace MongooseVK
         geometryDrawParams.commandBuffer = commandBuffer;
         geometryDrawParams.pipelineParams =
         {
-            geometryPipeline->GetPipeline(),
-            geometryPipeline->GetPipelineLayout()
+            geometryPipeline->pipeline,
+            geometryPipeline->pipelineLayout
         };
 
         for (size_t i = 0; i < scene.meshes.size(); i++)
@@ -77,7 +77,7 @@ namespace MongooseVK
         renderPassHandle = device->CreateRenderPass(config);
 
         LOG_TRACE("Building lighting pipeline");
-        PipelineConfig pipelineConfig;
+        PipelineCreate pipelineConfig;
         pipelineConfig.vertexShaderPath = "base-pass.vert";
         pipelineConfig.fragmentShaderPath = "lighting-pass.frag";
 
@@ -86,7 +86,7 @@ namespace MongooseVK
         pipelineConfig.frontFace = PipelineFrontFace::Counter_clockwise;
 
         pipelineConfig.descriptorSetLayouts = {
-            device->bindlessDescriptorSetLayout,
+            device->bindlessDescriptorSetLayoutHandle,
             ShaderCache::descriptorSetLayouts.materialDescriptorSetLayout,
             ShaderCache::descriptorSetLayouts.cameraDescriptorSetLayout,
             ShaderCache::descriptorSetLayouts.lightsDescriptorSetLayout,
@@ -113,6 +113,6 @@ namespace MongooseVK
 
         pipelineConfig.depthAttachment = ImageFormat::DEPTH24_STENCIL8;
 
-        geometryPipeline = VulkanPipeline::Builder().Build(device, pipelineConfig);
+        geometryPipeline = VulkanPipelineBuilder().Build(device, pipelineConfig);
     }
 }

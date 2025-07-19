@@ -26,8 +26,8 @@ namespace MongooseVK
         screenRectDrawParams.commandBuffer = commandBuffer;
 
         screenRectDrawParams.pipelineParams = {
-            presentPipeline->GetPipeline(),
-            presentPipeline->GetPipelineLayout()
+            presentPipeline->pipeline,
+            presentPipeline->pipelineLayout
         };
 
         screenRectDrawParams.descriptorSets = {
@@ -54,7 +54,7 @@ namespace MongooseVK
 
         renderPassHandle = device->CreateRenderPass(config);
 
-        PipelineConfig presentPipelineConfig;
+        PipelineCreate presentPipelineConfig;
         presentPipelineConfig.name = "present_pipeline";
         presentPipelineConfig.vertexShaderPath = "quad.vert";
         presentPipelineConfig.fragmentShaderPath = "quad.frag";
@@ -76,6 +76,6 @@ namespace MongooseVK
             ImageFormat::RGBA8_UNORM,
         };
 
-        presentPipeline = VulkanPipeline::Builder().Build(device, presentPipelineConfig);
+        presentPipeline = VulkanPipelineBuilder().Build(device, presentPipelineConfig);
     }
 }

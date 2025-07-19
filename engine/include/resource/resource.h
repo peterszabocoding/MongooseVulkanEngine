@@ -93,8 +93,24 @@ namespace MongooseVK
         bool operator!=(const FramebufferHandle& other) const { return handle != other.handle; }
     };
 
+    struct PipelineHandle {
+        ResourceHandle handle;
+
+        bool operator==(const PipelineHandle& other) const { return handle == other.handle; }
+        bool operator!=(const PipelineHandle& other) const { return handle != other.handle; }
+    };
+
+    struct DescriptorSetLayoutHandle {
+        ResourceHandle handle;
+
+        bool operator==(const DescriptorSetLayoutHandle& other) const { return handle == other.handle; }
+        bool operator!=(const DescriptorSetLayoutHandle& other) const { return handle != other.handle; }
+    };
+
     static TextureHandle INVALID_TEXTURE_HANDLE = {INVALID_RESOURCE_HANDLE};
     static RenderPassHandle INVALID_RENDER_PASS_HANDLE = {INVALID_RESOURCE_HANDLE};
     static BufferHandle INVALID_BUFFER_HANDLE = {INVALID_RESOURCE_HANDLE};
     static FramebufferHandle INVALID_FRAMEBUFFER_HANDLE = {INVALID_RESOURCE_HANDLE};
+    static PipelineHandle INVALID_PIPELINE_HANDLE = {INVALID_RESOURCE_HANDLE};
+    static PipelineHandle INVALID_DESCRIPTOR_SET_LAYOUT_HANDLE = {INVALID_RESOURCE_HANDLE};
 }

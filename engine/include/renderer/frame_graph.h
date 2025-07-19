@@ -34,8 +34,9 @@ namespace MongooseVK
             struct {
                 size_t size;
                 VkBufferUsageFlags flags;
+                VmaMemoryUsage memoryUsage;
 
-                BufferHandle buffer;
+                AllocatedBuffer buffer;
             } buffer;
 
             struct {
@@ -43,7 +44,7 @@ namespace MongooseVK
                 uint32_t height;
                 uint32_t depth;
 
-                VkFormat format;
+                ImageFormat format;
                 VkImageUsageFlags flags;
 
                 RenderPassOperation::LoadOp loadOp;
@@ -54,6 +55,8 @@ namespace MongooseVK
     };
 
     struct FrameGraphResource {
+        const char* name = nullptr;
+
         FrameGraphResourceType type;
         FrameGraphResourceInfo resourceInfo;
 
@@ -61,34 +64,30 @@ namespace MongooseVK
         FrameGraphResourceHandle outputHandle;
 
         int32_t ref_count = 0;
-
-        const char* name = nullptr;
     };
 
     struct FrameGraphResourceInputCreation {
+        const char* name;
         FrameGraphResourceType type;
         FrameGraphResourceInfo resourceInfo;
-
-        const char* name;
     };
 
     struct FrameGraphResourceOutputCreation {
+        const char* name;
         FrameGraphResourceType type;
         FrameGraphResourceInfo resourceInfo;
-
-        const char* name;
     };
 
     struct FrameGraphNodeCreation {
-        std::vector<FrameGraphResourceInputCreation> inputs;
-        std::vector<FrameGraphResourceOutputCreation> outputs;
-
-        bool enabled;
-
         const char* name;
+        std::vector<FrameGraphResourceInputCreation> inputs{};
+        std::vector<FrameGraphResourceOutputCreation> outputs{};
+
+        bool enabled = true;
     };
 
-    struct FrameGraphRenderPass {
+    class FrameGraphRenderPass {
+    public:
         virtual ~FrameGraphRenderPass() = default;
         virtual void PreRender(VkCommandBuffer cmd, Scene* scene) {}
         virtual void Render(VkCommandBuffer cmd, Scene* scene) {}
@@ -96,7 +95,7 @@ namespace MongooseVK
     };
 
     struct FrameGraphNode {
-        int32_t ref_count = 0;
+        const char* name = nullptr;
 
         RenderPassHandle renderPass;
         FramebufferHandle framebuffer;
@@ -109,7 +108,6 @@ namespace MongooseVK
         std::vector<FrameGraphNodeHandle> edges;
 
         bool enabled = true;
-
-        const char* name = nullptr;
+        int32_t refCount = 0;
     };
 }

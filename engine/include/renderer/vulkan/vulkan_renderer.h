@@ -1,5 +1,7 @@
 #pragma once
 
+#include <renderer/frame_graph.h>
+
 #include "renderer/scene.h"
 #include "vulkan_swapchain.h"
 #include "pass/gbufferPass.h"
@@ -79,6 +81,10 @@ namespace MongooseVK
         Scope<PrefilterMapPass> prefilterMapPass;
     };
 
+    struct FrameGraphNodes {
+        FrameGraphNode gbufferPass;
+    };
+
     class VulkanRenderer {
     public:
         VulkanRenderer() = default;
@@ -124,7 +130,6 @@ namespace MongooseVK
         float resolutionScale = 1.0f;
 
         Framebuffers framebuffers;
-
         RenderPassResources renderPassResources;
         RenderPasses renderPasses;
 

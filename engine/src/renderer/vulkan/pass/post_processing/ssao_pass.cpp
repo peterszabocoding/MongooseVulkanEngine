@@ -40,8 +40,8 @@ namespace MongooseVK
         drawParams.meshlet = screenRect.get();
 
         drawParams.pipelineParams = {
-            ssaoPipeline->GetPipeline(),
-            ssaoPipeline->GetPipelineLayout()
+            ssaoPipeline->pipeline,
+            ssaoPipeline->pipelineLayout
         };
 
         drawParams.descriptorSets = {
@@ -78,7 +78,7 @@ namespace MongooseVK
         renderPassHandle = device->CreateRenderPass(config);
 
         LOG_TRACE("Building SSAO pipeline");
-        PipelineConfig pipelineConfig;
+        PipelineCreate pipelineConfig;
         pipelineConfig.vertexShaderPath = "quad.vert";
         pipelineConfig.fragmentShaderPath = "post_processing_ssao.frag";
 
@@ -107,7 +107,7 @@ namespace MongooseVK
         pipelineConfig.pushConstantData.offset = 0;
         pipelineConfig.pushConstantData.size = sizeof(SSAOParams);
 
-        ssaoPipeline = VulkanPipeline::Builder().Build(device, pipelineConfig);
+        ssaoPipeline = VulkanPipelineBuilder().Build(device, pipelineConfig);
     }
 
     void SSAOPass::InitDescriptorSet()
@@ -134,7 +134,8 @@ namespace MongooseVK
         ssaoNoiseTextureInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         ssaoNoiseTextureInfo.imageView = ssaoNoiseTexture->GetImageView();
 
-        VulkanDescriptorWriter(*ShaderCache::descriptorSetLayouts.ssaoDescriptorSetLayout, device->GetShaderDescriptorPool())
+        auto descriptorSetLayout = device->GetDescriptorSetLayout(ShaderCache::descriptorSetLayouts.ssaoDescriptorSetLayout);
+        VulkanDescriptorWriter(*descriptorSetLayout, device->GetShaderDescriptorPool())
                 .WriteBuffer(0, &bufferInfo)
                 .WriteImage(1, &ssaoNoiseTextureInfo)
                 .Build(ssaoDescriptorSet);

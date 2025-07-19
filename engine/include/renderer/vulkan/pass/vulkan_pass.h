@@ -8,28 +8,41 @@
 
 namespace MongooseVK
 {
-    enum class ResourceType: uint8_t {
+    enum class ResourceType: int8_t {
+        Invalid = -1,
         Texture = 0,
         TextureCube,
         Buffer,
     };
 
-    struct ResourceBufferInfo {
-        uint64_t size;
-        AllocatedBuffer allocatedBuffer;
-    };
+    struct RenderPassResourceInfo {
+        union {
+            struct {
+                uint64_t size;
+                AllocatedBuffer allocatedBuffer;
+            } buffer;
 
-    struct ResourceTextureInfo {
-        TextureHandle textureHandle;
-        TextureCreateInfo textureCreateInfo;
+            struct {
+                TextureHandle textureHandle;
+                TextureCreateInfo textureCreateInfo;
+            } texture;
+        };
     };
 
     struct PassResource {
         std::string name;
         ResourceType type;
+        RenderPassResourceInfo resourceInfo{};
+    };
 
-        ResourceBufferInfo bufferInfo;
-        ResourceTextureInfo textureInfo;
+    struct RenderPass {
+        std::string name;
+
+        RenderPassHandle renderPass;
+        FramebufferHandle framebuffer;
+
+        std::vector<PassResource> inputs;
+
     };
 
     class VulkanPass {

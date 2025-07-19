@@ -8,22 +8,22 @@ namespace MongooseVK
     constexpr auto SHADER_PATH = "shader/glsl/";
 
     struct DescriptorSetLayouts {
-        Ref<VulkanDescriptorSetLayout> cubemapDescriptorSetLayout;
-        Ref<VulkanDescriptorSetLayout> materialDescriptorSetLayout;
-        Ref<VulkanDescriptorSetLayout> cameraDescriptorSetLayout;
-        Ref<VulkanDescriptorSetLayout> lightsDescriptorSetLayout;
-        Ref<VulkanDescriptorSetLayout> directionalShadowMapDescriptorSetLayout;
-        Ref<VulkanDescriptorSetLayout> presentDescriptorSetLayout;
-        Ref<VulkanDescriptorSetLayout> irradianceDescriptorSetLayout;
-        Ref<VulkanDescriptorSetLayout> brdfLutDescriptorSetLayout;
-        Ref<VulkanDescriptorSetLayout> reflectionDescriptorSetLayout;
-        Ref<VulkanDescriptorSetLayout> viewspaceNormalDescriptorSetLayout;
-        Ref<VulkanDescriptorSetLayout> viewspacePositionDescriptorSetLayout;
-        Ref<VulkanDescriptorSetLayout> depthMapDescriptorSetLayout;
-        Ref<VulkanDescriptorSetLayout> ssaoDescriptorSetLayout;
-        Ref<VulkanDescriptorSetLayout> postProcessingDescriptorSetLayout;
-        Ref<VulkanDescriptorSetLayout> ppBoxBlurDescriptorSetLayout;
-        Ref<VulkanDescriptorSetLayout> toneMappingDescriptorSetLayout;
+        DescriptorSetLayoutHandle cubemapDescriptorSetLayout;
+        DescriptorSetLayoutHandle materialDescriptorSetLayout;
+        DescriptorSetLayoutHandle cameraDescriptorSetLayout;
+        DescriptorSetLayoutHandle lightsDescriptorSetLayout;
+        DescriptorSetLayoutHandle directionalShadowMapDescriptorSetLayout;
+        DescriptorSetLayoutHandle presentDescriptorSetLayout;
+        DescriptorSetLayoutHandle irradianceDescriptorSetLayout;
+        DescriptorSetLayoutHandle brdfLutDescriptorSetLayout;
+        DescriptorSetLayoutHandle reflectionDescriptorSetLayout;
+        DescriptorSetLayoutHandle viewspaceNormalDescriptorSetLayout;
+        DescriptorSetLayoutHandle viewspacePositionDescriptorSetLayout;
+        DescriptorSetLayoutHandle depthMapDescriptorSetLayout;
+        DescriptorSetLayoutHandle ssaoDescriptorSetLayout;
+        DescriptorSetLayoutHandle postProcessingDescriptorSetLayout;
+        DescriptorSetLayoutHandle ppBoxBlurDescriptorSetLayout;
+        DescriptorSetLayoutHandle toneMappingDescriptorSetLayout;
     };
 
     struct DescriptorSets {

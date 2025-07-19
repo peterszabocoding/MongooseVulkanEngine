@@ -185,14 +185,16 @@ namespace MongooseVK
         allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
         vmaCreateAllocator(&allocatorInfo, &vmaAllocator);
 
+        texturePool.Init(1024);
+        renderPassPool.Init(128);
+        framebufferPool.Init(128);
+        pipelinePool.Init(128);
+        descriptorSetLayoutPool.Init(128);
+
         CreateCommandPool();
         CreateDescriptorPool();
         CreateCommandBuffers();
         CreateSyncObjects();
-
-        texturePool.Init(1024);
-        renderPassPool.Init(128);
-        framebufferPool.Init(128);
     }
 
     VkResult VulkanDevice::SubmitDrawCommands(VkSemaphore* signalSemaphores) const
@@ -485,6 +487,7 @@ namespace MongooseVK
     void VulkanDevice::UpdateTexture(TextureHandle textureHandle)
     {
         VulkanTexture* texture = GetTexture(textureHandle);
+        auto bindlessDescriptorSetLayout = GetDescriptorSetLayout(bindlessDescriptorSetLayoutHandle);
         VulkanDescriptorWriter descriptorWriter = VulkanDescriptorWriter(*bindlessDescriptorSetLayout, *bindlessDescriptorPool);
 
         VkDescriptorImageInfo imageInfo{};
@@ -815,6 +818,8 @@ namespace MongooseVK
         return presentQueue;
     }
 
+
+
     VkInstance VulkanDevice::CreateVkInstance(const std::vector<const char*>& deviceExtensions,
                                               const std::vector<const char*>& validationLayers)
     {
@@ -950,13 +955,15 @@ namespace MongooseVK
                 .Build();
 
         // Bindless Textures
-        bindlessDescriptorSetLayout = VulkanDescriptorSetLayout::Builder(this)
+        bindlessDescriptorSetLayoutHandle = VulkanDescriptorSetLayoutBuilder(this)
                 .AddBinding({0, DescriptorSetBindingType::TextureSampler, {ShaderStage::VertexShader, ShaderStage::FragmentShader}},
                             MAX_BINDLESS_RESOURCES)
                 .AddBinding({1, DescriptorSetBindingType::StorageImage, {ShaderStage::VertexShader, ShaderStage::FragmentShader}},
                             MAX_BINDLESS_RESOURCES)
                 .Build();
 
+
+        auto bindlessDescriptorSetLayout = GetDescriptorSetLayout(bindlessDescriptorSetLayoutHandle);
         VulkanDescriptorWriter(*bindlessDescriptorSetLayout, *bindlessDescriptorPool)
                 .Build(bindlessTextureDescriptorSet);
     }
@@ -1029,6 +1036,69 @@ namespace MongooseVK
             copy_region.dstOffset = 0;
             copy_region.size = src.GetBufferSize();
             vkCmdCopyBuffer(commandBuffer, src.buffer, dst.buffer, 1, &copy_region);
+        });
+    }
+
+    PipelineHandle VulkanDevice::CreatePipeline(PipelineCreate& info)
+    {
+        return INVALID_PIPELINE_HANDLE;
+    }
+
+    VulkanPipeline* VulkanDevice::GetPipeline(PipelineHandle pipelineHandle)
+    {
+        return new VulkanPipeline();
+    }
+
+    void VulkanDevice::DestroyPipeline(PipelineHandle pipelineHandle)
+    {
+        VulkanPipeline* pipeline = pipelinePool.Get(pipelineHandle.handle);
+
+        vkDestroyShaderModule(GetDevice(), pipeline->vertexShaderModule, nullptr);
+        vkDestroyShaderModule(GetDevice(), pipeline->fragmentShaderModule, nullptr);
+        vkDestroyPipeline(GetDevice(), pipeline->pipeline, nullptr);
+        vkDestroyPipelineLayout(GetDevice(), pipeline->pipelineLayout, nullptr);
+    }
+
+    DescriptorSetLayoutHandle VulkanDevice::CreateDescriptorSetLayout(DescriptorSetLayoutCreateInfo& info)
+    {
+        VulkanDescriptorSetLayout* descriptorSetLayout = descriptorSetLayoutPool.Obtain();
+
+        descriptorSetLayout->bindingCount = info.bindings.size();
+
+        for (auto [bindingIndex, layoutBinding]: info.bindings)
+            descriptorSetLayout->bindings[bindingIndex] = layoutBinding;
+
+        for (auto [bindingIndex, flags]: info.bindingFlags)
+            descriptorSetLayout->bindingFlags[bindingIndex] = flags;
+
+        VkDescriptorSetLayoutBindingFlagsCreateInfo layoutBindingFlags{};
+        layoutBindingFlags.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
+        layoutBindingFlags.bindingCount = descriptorSetLayout->bindingCount;
+        layoutBindingFlags.pBindingFlags = descriptorSetLayout->bindingFlags.data();
+
+        VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo{};
+        descriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        descriptorSetLayoutInfo.bindingCount = descriptorSetLayout->bindingCount;
+        descriptorSetLayoutInfo.pBindings = descriptorSetLayout->bindings.data();
+        descriptorSetLayoutInfo.pNext = &layoutBindingFlags;
+        descriptorSetLayoutInfo.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT_EXT;
+
+        VK_CHECK_MSG(vkCreateDescriptorSetLayout(GetDevice(), &descriptorSetLayoutInfo, nullptr, &descriptorSetLayout->descriptorSetLayout),
+                     "Failed to create descriptor set layout.");
+
+        return {descriptorSetLayout->index};
+    }
+
+    VulkanDescriptorSetLayout* VulkanDevice::GetDescriptorSetLayout(DescriptorSetLayoutHandle descriptorSetLayoutHandle)
+    {
+        return descriptorSetLayoutPool.Get(descriptorSetLayoutHandle.handle);
+    }
+
+    void VulkanDevice::DestroyDescriptorSetLayout(DescriptorSetLayoutHandle descriptorSetLayoutHandle)
+    {
+        frameDeletionQueue.Push([&] {
+            const VulkanDescriptorSetLayout* descriptorSetLayout = descriptorSetLayoutPool.Get(descriptorSetLayoutHandle.handle);
+            vkDestroyDescriptorSetLayout(GetDevice(), descriptorSetLayout->descriptorSetLayout, nullptr);
         });
     }
 }

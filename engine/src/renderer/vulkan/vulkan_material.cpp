@@ -62,9 +62,9 @@ namespace MongooseVK
         return *this;
     }
 
-    VulkanMaterialBuilder& VulkanMaterialBuilder::SetDescriptorSetLayout(Ref<VulkanDescriptorSetLayout> _descriptorSetLayout)
+    VulkanMaterialBuilder& VulkanMaterialBuilder::SetDescriptorSetLayout(DescriptorSetLayoutHandle _descriptorSetLayout)
     {
-        descriptorSetLayout = _descriptorSetLayout;
+        descriptorSetLayoutHandle = _descriptorSetLayout;
         return *this;
     }
 
@@ -82,6 +82,7 @@ namespace MongooseVK
         bufferInfo.offset = 0;
         bufferInfo.range = sizeof(MaterialParams);
 
+        auto descriptorSetLayout = vulkanDevice->GetDescriptorSetLayout(descriptorSetLayoutHandle);
         auto descriptorWriter = VulkanDescriptorWriter(*descriptorSetLayout, vulkanDevice->GetShaderDescriptorPool());
         descriptorWriter.WriteBuffer(0, &bufferInfo);
 

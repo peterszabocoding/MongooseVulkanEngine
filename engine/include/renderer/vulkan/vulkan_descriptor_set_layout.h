@@ -1,9 +1,12 @@
 #pragma once
 
+#include <array>
 #include <memory>
 #include <vulkan/vulkan.h>
 #include <vector>
 #include <unordered_map>
+#include <memory/resource_pool.h>
+#include <resource/resource.h>
 
 #include "util/core.h"
 
@@ -32,36 +35,30 @@ namespace MongooseVK
         std::vector<ShaderStage> stages = {ShaderStage::Unknown};
     };
 
-    class VulkanDescriptorSetLayout {
+    struct DescriptorSetLayoutCreateInfo {
+        std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings;
+        std::unordered_map<uint32_t, VkDescriptorBindingFlags> bindingFlags;
+    };
+
+    struct VulkanDescriptorSetLayout : PoolObject {
+        VulkanDevice* vulkanDevice;
+        VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
+
+        uint32_t bindingCount = 0;
+        std::array<VkDescriptorSetLayoutBinding, 16> bindings{};
+        std::array<VkDescriptorBindingFlags, 16> bindingFlags{};
+    };
+
+    class VulkanDescriptorSetLayoutBuilder {
     public:
-        class Builder {
-        public:
-            explicit Builder(VulkanDevice* vulkanDevice): vulkanDevice(vulkanDevice) {}
+        explicit VulkanDescriptorSetLayoutBuilder(VulkanDevice* vulkanDevice): vulkanDevice(vulkanDevice) {}
 
-            Builder& AddBinding(DescriptorSetBinding binding, uint32_t count = 1);
-            Ref<VulkanDescriptorSetLayout> Build() const;
-
-        private:
-            VulkanDevice* vulkanDevice;
-            std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings;
-            std::unordered_map<uint32_t, VkDescriptorBindingFlags> bindingFlags;
-        };
-
-    public:
-        VulkanDescriptorSetLayout(VulkanDevice* vulkanDevice, std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings,
-                                  std::unordered_map<uint32_t, VkDescriptorBindingFlags> _bindingFlags);
-        ~VulkanDescriptorSetLayout();
-        VulkanDescriptorSetLayout(const VulkanDescriptorSetLayout&) = delete;
-        VulkanDescriptorSetLayout& operator=(const VulkanDescriptorSetLayout&) = delete;
-
-        VkDescriptorSetLayout& GetDescriptorSetLayout() { return descriptorSetLayout; }
+        VulkanDescriptorSetLayoutBuilder& AddBinding(const DescriptorSetBinding& binding, uint32_t count = 1);
+        DescriptorSetLayoutHandle Build() const;
 
     private:
         VulkanDevice* vulkanDevice;
-        VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
         std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings;
         std::unordered_map<uint32_t, VkDescriptorBindingFlags> bindingFlags;
-
-        friend class VulkanDescriptorWriter;
     };
 }

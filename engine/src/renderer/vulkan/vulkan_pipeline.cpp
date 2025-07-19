@@ -62,7 +62,7 @@ namespace MongooseVK
         }
     }
 
-    VkPipelineColorBlendAttachmentState VulkanPipeline::Builder::ADDITIVE_BLENDING = {
+    VkPipelineColorBlendAttachmentState VulkanPipelineBuilder::ADDITIVE_BLENDING = {
         VK_TRUE,
         VK_BLEND_FACTOR_SRC_ALPHA,
         VK_BLEND_FACTOR_ONE,
@@ -73,7 +73,7 @@ namespace MongooseVK
         VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
     };
 
-    VkPipelineColorBlendAttachmentState VulkanPipeline::Builder::ALPHA_BLENDING = {
+    VkPipelineColorBlendAttachmentState VulkanPipelineBuilder::ALPHA_BLENDING = {
         VK_TRUE,
         VK_BLEND_FACTOR_SRC_ALPHA,
         VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
@@ -84,17 +84,9 @@ namespace MongooseVK
         VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
     };
 
-    VulkanPipeline::~VulkanPipeline()
-    {
-        vkDestroyShaderModule(vulkanDevice->GetDevice(), params.vertexShaderModule, nullptr);
-        vkDestroyShaderModule(vulkanDevice->GetDevice(), params.fragmentShaderModule, nullptr);
-        vkDestroyPipeline(vulkanDevice->GetDevice(), params.pipeline, nullptr);
-        vkDestroyPipelineLayout(vulkanDevice->GetDevice(), params.pipelineLayout, nullptr);
-    }
+    VulkanPipelineBuilder::VulkanPipelineBuilder() { clear(); }
 
-    VulkanPipeline::Builder::Builder() { clear(); }
-
-    Ref<VulkanPipeline> VulkanPipeline::Builder::Build(VulkanDevice* vulkanDevice)
+    Ref<VulkanPipeline> VulkanPipelineBuilder::Build(VulkanDevice* vulkanDevice)
     {
         std::vector<VkPipelineShaderStageCreateInfo> pipelineShaderStageCreateInfos;
 
@@ -164,14 +156,16 @@ namespace MongooseVK
 
 
         std::vector<VkDescriptorSetLayout> vkDescriptorSetLayouts{};
-        for (auto& descriptorSetLayout: descriptorSetLayouts)
-            vkDescriptorSetLayouts.push_back(descriptorSetLayout->GetDescriptorSetLayout());
+        for (auto& handle: descriptorSetLayouts)
+        {
+            auto descriptorSetLayout = vulkanDevice->GetDescriptorSetLayout(handle);
+            vkDescriptorSetLayouts.push_back(descriptorSetLayout->descriptorSetLayout);
+        }
 
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = vkDescriptorSetLayouts.size();
         pipelineLayoutInfo.pSetLayouts = vkDescriptorSetLayouts.data();
-
 
         if (!pushConstantRanges.empty())
         {
@@ -231,164 +225,103 @@ namespace MongooseVK
 
         params.descriptorSetLayouts = descriptorSetLayouts;
 
-        return CreateRef<VulkanPipeline>(vulkanDevice, params);
+        Ref<VulkanPipeline> pipelineRef = CreateRef<VulkanPipeline>();
+
+        pipelineRef->pipeline = pipeline;
+        pipelineRef->pipelineLayout = pipelineLayout;
+
+        pipelineRef->vertexShaderPath = vertexShaderPath;
+        pipelineRef->fragmentShaderPath = fragmentShaderPath;
+
+        pipelineRef->vertexShaderModule = vertexShaderModule;
+        pipelineRef->fragmentShaderModule = fragmentShaderModule;
+
+        pipelineRef->descriptorSetLayouts = descriptorSetLayouts;
+
+        return pipelineRef;
     }
 
-    Ref<VulkanPipeline> VulkanPipeline::Builder::Build(VulkanDevice* vulkanDevice, PipelineConfig& config)
+    Ref<VulkanPipeline> VulkanPipelineBuilder::Build(VulkanDevice* vulkanDevice, PipelineCreate& config)
     {
         // SPR-V Shader source
-        SetShaders(config.vertexShaderPath, config.fragmentShaderPath);
+        vertexShaderPath = config.vertexShaderPath;
+        fragmentShaderPath = config.fragmentShaderPath;
 
         // Various flags
-        SetPolygonMode(Utils::ConvertPolygonMode(config.polygonMode));
-        SetCullMode(Utils::ConvertCullMode(config.cullMode), Utils::ConvertFrontFace(config.frontFace));
-        SetMultisampling();
-        SetRenderpass(config.renderPass);
-        if (config.disableBlending) DisableBlending();
+        polygonMode = Utils::ConvertPolygonMode(config.polygonMode);
+
+        cullMode = Utils::ConvertCullMode(config.cullMode);
+        frontFace = Utils::ConvertFrontFace(config.frontFace);
+
+        multisampling.sampleShadingEnable = VK_FALSE;
+        multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+        multisampling.minSampleShading = 1.0f;
+        multisampling.pSampleMask = nullptr;
+        multisampling.alphaToCoverageEnable = VK_FALSE;
+        multisampling.alphaToOneEnable = VK_FALSE;
+
+        renderpass = config.renderPass;
+
+        disableBlending = config.disableBlending;
 
         // Depth testing
         if (config.enableDepthTest)
         {
-            EnableDepthTest(config.depthWriteEnable);
-            SetDepthFormat(config.depthAttachment);
+            depthStencil.depthTestEnable = VK_TRUE;
+            depthStencil.depthWriteEnable = config.depthWriteEnable ? VK_TRUE : VK_FALSE;
+            depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+            depthStencil.depthBoundsTestEnable = VK_FALSE;
+            depthStencil.minDepthBounds = 0.0f;
+            depthStencil.maxDepthBounds = 1.0f;
+            depthStencil.stencilTestEnable = VK_FALSE;
+            depthStencil.back.failOp = VK_STENCIL_OP_KEEP;
+            depthStencil.back.passOp = VK_STENCIL_OP_KEEP;
+            depthStencil.back.compareOp = VK_COMPARE_OP_ALWAYS;
+            depthStencil.front = depthStencil.back;
+
+            renderInfo.depthAttachmentFormat = VulkanUtils::ConvertImageFormat(config.depthAttachment);
         } else
         {
-            DisableDepthTest();
+            depthStencil.depthTestEnable = VK_FALSE;
+            depthStencil.depthWriteEnable = VK_FALSE;
+            depthStencil.depthCompareOp = VK_COMPARE_OP_NEVER;
+            depthStencil.depthBoundsTestEnable = VK_FALSE;
+            depthStencil.minDepthBounds = 0.0f;
+            depthStencil.maxDepthBounds = 1.0f;
+            depthStencil.stencilTestEnable = VK_FALSE;
+            depthStencil.front = {};
+            depthStencil.back = {};
         }
 
         // Descriptor Set Layout
 
-        for (const auto& layout: config.descriptorSetLayouts)
-            AddDescriptorSetLayout(layout);
+        for (const auto& layoutHandle: config.descriptorSetLayouts)
+        {
+            descriptorSetLayouts.push_back(layoutHandle);
+        }
 
         // Color attachments
         for (const auto& colorAttachment: config.colorAttachments)
-            AddColorAttachment(colorAttachment);
-
+        {
+            colorAttachmentFormats.push_back(VulkanUtils::ConvertImageFormat(colorAttachment));
+            colorBlendAttachments.push_back(ALPHA_BLENDING);
+        }
 
         // Optional push constant
         if (config.pushConstantData.size > 0)
         {
-            AddPushConstant(config.pushConstantData.shaderStageBits,
-                            config.pushConstantData.offset,
-                            config.pushConstantData.size);
+            VkPushConstantRange pushConstantRange{};
+            pushConstantRange.stageFlags = config.pushConstantData.shaderStageBits;
+            pushConstantRange.offset = config.pushConstantData.offset;
+            pushConstantRange.size = config.pushConstantData.size;
+
+            pushConstantRanges.push_back(pushConstantRange);
         }
 
         return Build(vulkanDevice);
     }
 
-    VulkanPipeline::Builder& VulkanPipeline::Builder::SetShaders(const std::string& _vertexShaderPath,
-                                                                 const std::string& _fragmentShaderPath)
-    {
-        vertexShaderPath = _vertexShaderPath;
-        fragmentShaderPath = _fragmentShaderPath;
-        return *this;
-    }
-
-    VulkanPipeline::Builder& VulkanPipeline::Builder::SetInputTopology(const VkPrimitiveTopology _topology)
-    {
-        topology = _topology;
-        return *this;
-    }
-
-    VulkanPipeline::Builder& VulkanPipeline::Builder::SetPolygonMode(const VkPolygonMode _polygonMode)
-    {
-        polygonMode = _polygonMode;
-        return *this;
-    }
-
-    VulkanPipeline::Builder& VulkanPipeline::Builder::SetCullMode(const VkCullModeFlags _cullMode, const VkFrontFace _frontFace)
-    {
-        cullMode = _cullMode;
-        frontFace = _frontFace;
-        return *this;
-    }
-
-    VulkanPipeline::Builder& VulkanPipeline::Builder::SetMultisampling(const VkSampleCountFlagBits sampleCountFlagBits)
-    {
-        multisampling.sampleShadingEnable = VK_FALSE;
-        multisampling.rasterizationSamples = sampleCountFlagBits;
-        multisampling.minSampleShading = 1.0f;
-        multisampling.pSampleMask = nullptr;
-        multisampling.alphaToCoverageEnable = VK_FALSE;
-        multisampling.alphaToOneEnable = VK_FALSE;
-        return *this;
-    }
-
-    VulkanPipeline::Builder& VulkanPipeline::Builder::AddDescriptorSetLayout(Ref<VulkanDescriptorSetLayout> _descriptorSetLayout)
-    {
-        descriptorSetLayouts.push_back(_descriptorSetLayout);
-        return *this;
-    }
-
-    VulkanPipeline::Builder& VulkanPipeline::Builder::DisableBlending()
-    {
-        disableBlending = true;
-        return *this;
-    }
-
-    VulkanPipeline::Builder& VulkanPipeline::Builder::AddColorAttachment(const ImageFormat format, VkPipelineColorBlendAttachmentState blendState)
-    {
-        colorAttachmentFormats.push_back(VulkanUtils::ConvertImageFormat(format));
-        colorBlendAttachments.push_back(blendState);
-        return *this;
-    }
-
-    VulkanPipeline::Builder& VulkanPipeline::Builder::SetDepthFormat(const ImageFormat format)
-    {
-        renderInfo.depthAttachmentFormat = VulkanUtils::ConvertImageFormat(format);
-        return *this;
-    }
-
-    VulkanPipeline::Builder& VulkanPipeline::Builder::AddPushConstant(const VkShaderStageFlags stageFlags, const uint32_t offset,
-                                                                      const uint32_t size)
-    {
-        VkPushConstantRange pushConstantRange{};
-        pushConstantRange.stageFlags = stageFlags;
-        pushConstantRange.offset = offset;
-        pushConstantRange.size = size;
-
-        pushConstantRanges.push_back(pushConstantRange);
-        return *this;
-    }
-
-    VulkanPipeline::Builder& VulkanPipeline::Builder::SetRenderpass(VkRenderPass _renderpass)
-    {
-        renderpass = _renderpass;
-        return *this;
-    }
-
-    VulkanPipeline::Builder& VulkanPipeline::Builder::EnableDepthTest(bool depthWriteEnable)
-    {
-        depthStencil.depthTestEnable = VK_TRUE;
-        depthStencil.depthWriteEnable = depthWriteEnable ? VK_TRUE : VK_FALSE;
-        depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
-        depthStencil.depthBoundsTestEnable = VK_FALSE;
-        depthStencil.minDepthBounds = 0.0f;
-        depthStencil.maxDepthBounds = 1.0f;
-        depthStencil.stencilTestEnable = VK_FALSE;
-        depthStencil.back.failOp = VK_STENCIL_OP_KEEP;
-        depthStencil.back.passOp = VK_STENCIL_OP_KEEP;
-        depthStencil.back.compareOp = VK_COMPARE_OP_ALWAYS;
-        depthStencil.front = depthStencil.back;
-        return *this;
-    }
-
-    VulkanPipeline::Builder& VulkanPipeline::Builder::DisableDepthTest()
-    {
-        depthStencil.depthTestEnable = VK_FALSE;
-        depthStencil.depthWriteEnable = VK_FALSE;
-        depthStencil.depthCompareOp = VK_COMPARE_OP_NEVER;
-        depthStencil.depthBoundsTestEnable = VK_FALSE;
-        depthStencil.stencilTestEnable = VK_FALSE;
-        depthStencil.front = {};
-        depthStencil.back = {};
-        depthStencil.minDepthBounds = 0.0f;
-        depthStencil.maxDepthBounds = 1.0f;
-        return *this;
-    }
-
-    void VulkanPipeline::Builder::clear()
+    void VulkanPipelineBuilder::clear()
     {
         inputAssembly = {};
         inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;

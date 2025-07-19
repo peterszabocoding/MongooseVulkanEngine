@@ -20,6 +20,7 @@ namespace MongooseVK
 
                 default:
                     ASSERT(false, "Unknown descriptor type");
+                    return VK_DESCRIPTOR_TYPE_MAX_ENUM;
             }
         }
 
@@ -48,10 +49,10 @@ namespace MongooseVK
     }
 
     // *************** Descriptor Set Layout Builder *********************
-    VulkanDescriptorSetLayout::Builder& VulkanDescriptorSetLayout::Builder::AddBinding(
-        const DescriptorSetBinding binding, const uint32_t count)
+    VulkanDescriptorSetLayoutBuilder& VulkanDescriptorSetLayoutBuilder::AddBinding(
+        const DescriptorSetBinding& binding, const uint32_t count)
     {
-        ASSERT(bindings.count(binding.location) == 0, "Binding already in use");
+        ASSERT(bindings.contains(binding.location) == 0, "Binding already in use");
 
         VkShaderStageFlags stageFlags = 0;
 
@@ -70,49 +71,10 @@ namespace MongooseVK
         return *this;
     }
 
-    Ref<VulkanDescriptorSetLayout> VulkanDescriptorSetLayout::Builder::Build() const
+    DescriptorSetLayoutHandle VulkanDescriptorSetLayoutBuilder::Build() const
     {
-        return CreateScope<VulkanDescriptorSetLayout>(vulkanDevice, bindings, bindingFlags);
+        DescriptorSetLayoutCreateInfo createInfo{bindings, bindingFlags};
+        return vulkanDevice->CreateDescriptorSetLayout(createInfo);
     }
 
-    // *************** Descriptor Set Layout *********************
-
-    VulkanDescriptorSetLayout::VulkanDescriptorSetLayout(
-        VulkanDevice* device, std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> _bindings,
-        std::unordered_map<uint32_t, VkDescriptorBindingFlags> _bindingFlags)
-        : vulkanDevice{device}, bindings{_bindings}, bindingFlags(_bindingFlags)
-    {
-        std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings{};
-        std::vector<VkDescriptorBindingFlags> setLayoutBindingFlags{};
-
-        for (auto kv: bindings)
-        {
-            setLayoutBindings.push_back(kv.second);
-        }
-
-        for (auto kv: bindingFlags)
-        {
-            setLayoutBindingFlags.push_back(kv.second);
-        }
-
-        VkDescriptorSetLayoutBindingFlagsCreateInfo layoutBindingFlags{};
-        layoutBindingFlags.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
-        layoutBindingFlags.bindingCount = static_cast<uint32_t>(setLayoutBindings.size());
-        layoutBindingFlags.pBindingFlags = setLayoutBindingFlags.data();
-
-        VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo{};
-        descriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        descriptorSetLayoutInfo.bindingCount = static_cast<uint32_t>(setLayoutBindings.size());
-        descriptorSetLayoutInfo.pBindings = setLayoutBindings.data();
-        descriptorSetLayoutInfo.pNext = &layoutBindingFlags;
-        descriptorSetLayoutInfo.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT_EXT;
-
-        VK_CHECK_MSG(vkCreateDescriptorSetLayout(vulkanDevice->GetDevice(),&descriptorSetLayoutInfo,nullptr,&descriptorSetLayout),
-                     "Failed to create descriptor set layout.");
-    }
-
-    VulkanDescriptorSetLayout::~VulkanDescriptorSetLayout()
-    {
-        vkDestroyDescriptorSetLayout(vulkanDevice->GetDevice(), descriptorSetLayout, nullptr);
-    }
 }

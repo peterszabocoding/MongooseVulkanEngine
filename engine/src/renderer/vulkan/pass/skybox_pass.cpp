@@ -18,7 +18,7 @@ namespace MongooseVK
 
     void SkyboxPass::Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer)
     {
-        VulkanFramebuffer* framebuffer = device->GetFramebuffer(writeBuffer);
+        const VulkanFramebuffer* framebuffer = device->GetFramebuffer(writeBuffer);
 
         device->SetViewportAndScissor(framebuffer->extent, commandBuffer);
         GetRenderPass()->Begin(commandBuffer, framebuffer->framebuffer, framebuffer->extent);
@@ -26,12 +26,10 @@ namespace MongooseVK
         DrawCommandParams skyboxDrawParams{};
         skyboxDrawParams.commandBuffer = commandBuffer;
         skyboxDrawParams.meshlet = &cubeMesh->GetMeshlets()[0];
-
         skyboxDrawParams.pipelineParams = {
-            skyboxPipeline->GetPipeline(),
-            skyboxPipeline->GetPipelineLayout()
+            skyboxPipeline->pipeline,
+            skyboxPipeline->pipelineLayout
         };
-
         skyboxDrawParams.descriptorSets = {
             ShaderCache::descriptorSets.cubemapDescriptorSet,
             ShaderCache::descriptorSets.cameraDescriptorSet
@@ -59,29 +57,20 @@ namespace MongooseVK
         renderPassHandle = device->CreateRenderPass(config);
 
         LOG_TRACE("Building skybox pipeline");
-        PipelineConfig skyboxPipelineConfig;
+        PipelineCreate skyboxPipelineConfig;
         skyboxPipelineConfig.vertexShaderPath = "skybox.vert";
         skyboxPipelineConfig.fragmentShaderPath = "skybox.frag";
 
         skyboxPipelineConfig.cullMode = PipelineCullMode::Front;
-        skyboxPipelineConfig.polygonMode = PipelinePolygonMode::Fill;
-        skyboxPipelineConfig.frontFace = PipelineFrontFace::Counter_clockwise;
-
+        skyboxPipelineConfig.enableDepthTest = false;
+        skyboxPipelineConfig.renderPass = GetRenderPass()->Get();
+        skyboxPipelineConfig.colorAttachments = {ImageFormat::RGBA16_SFLOAT,};
+        skyboxPipelineConfig.depthAttachment = ImageFormat::DEPTH24_STENCIL8;
         skyboxPipelineConfig.descriptorSetLayouts = {
             ShaderCache::descriptorSetLayouts.cubemapDescriptorSetLayout,
             ShaderCache::descriptorSetLayouts.cameraDescriptorSetLayout,
         };
 
-        skyboxPipelineConfig.disableBlending = true;
-        skyboxPipelineConfig.enableDepthTest = false;
-
-        skyboxPipelineConfig.renderPass = GetRenderPass()->Get();
-
-        skyboxPipelineConfig.colorAttachments = {
-            ImageFormat::RGBA16_SFLOAT,
-        };
-        skyboxPipelineConfig.depthAttachment = ImageFormat::DEPTH24_STENCIL8;
-
-        skyboxPipeline = VulkanPipeline::Builder().Build(device, skyboxPipelineConfig);
+        skyboxPipeline = VulkanPipelineBuilder().Build(device, skyboxPipelineConfig);
     }
 }

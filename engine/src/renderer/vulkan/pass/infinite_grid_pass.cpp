@@ -27,8 +27,8 @@ namespace MongooseVK
         screenRectDrawParams.pushConstantParams.size = sizeof(GridParams);
 
         screenRectDrawParams.pipelineParams = {
-            gridPipeline->GetPipeline(),
-            gridPipeline->GetPipelineLayout()
+            gridPipeline->pipeline,
+            gridPipeline->pipelineLayout
         };
 
         screenRectDrawParams.descriptorSets = {
@@ -55,7 +55,7 @@ namespace MongooseVK
         renderPassHandle = device->CreateRenderPass(config);
 
         LOG_TRACE("Building present pipeline");
-        PipelineConfig pipelineConfig;
+        PipelineCreate pipelineConfig;
         pipelineConfig.vertexShaderPath = "infinite_grid.vert";
         pipelineConfig.fragmentShaderPath = "infinite_grid.frag";
 
@@ -79,6 +79,6 @@ namespace MongooseVK
 
         pipelineConfig.depthAttachment = ImageFormat::DEPTH24_STENCIL8;
 
-        gridPipeline = VulkanPipeline::Builder().Build(device, pipelineConfig);
+        gridPipeline = VulkanPipelineBuilder().Build(device, pipelineConfig);
     }
 }

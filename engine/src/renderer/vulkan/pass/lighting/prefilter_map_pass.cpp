@@ -56,8 +56,8 @@ namespace MongooseVK
                 drawCommandParams.commandBuffer = commandBuffer;
 
                 drawCommandParams.pipelineParams = {
-                    prefilterMapPipeline->GetPipeline(),
-                    prefilterMapPipeline->GetPipelineLayout()
+                    prefilterMapPipeline->pipeline,
+                    prefilterMapPipeline->pipelineLayout
                 };
 
                 drawCommandParams.meshlet = &cubeMesh->GetMeshlets()[0];
@@ -109,7 +109,7 @@ namespace MongooseVK
 
         renderPassHandle = device->CreateRenderPass(config);
 
-        PipelineConfig iblPrefilterPipelineConfig;
+        PipelineCreate iblPrefilterPipelineConfig;
         iblPrefilterPipelineConfig.vertexShaderPath = "cubemap.vert";
         iblPrefilterPipelineConfig.fragmentShaderPath = "prefilter.frag";
 
@@ -131,7 +131,7 @@ namespace MongooseVK
 
         iblPrefilterPipelineConfig.renderPass = GetRenderPass()->Get();
 
-        prefilterMapPipeline = VulkanPipeline::Builder().Build(device, iblPrefilterPipelineConfig);
+        prefilterMapPipeline = VulkanPipelineBuilder().Build(device, iblPrefilterPipelineConfig);
     }
 
     void PrefilterMapPass::SetRoughness(float _roughness)

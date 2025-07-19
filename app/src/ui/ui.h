@@ -102,7 +102,7 @@ namespace VulkanDemo
             // Viewspace Normal
             {
                 auto viewspaceNormal = MongooseVK::VulkanDevice::Get()->GetTexture(
-                    renderer.renderPassResources.viewspaceNormal.textureInfo.textureHandle);
+                    renderer.renderPassResources.viewspaceNormal.resourceInfo.texture.textureHandle);
 
                 debugTextures.push_back(ImGui_ImplVulkan_AddTexture(sampler,
                                                                     viewspaceNormal->imageView,
@@ -112,7 +112,7 @@ namespace VulkanDemo
             // Viewspace Position
             {
                 auto viewspacePosition = MongooseVK::VulkanDevice::Get()->GetTexture(
-                    renderer.renderPassResources.viewspacePosition.textureInfo.textureHandle);
+                    renderer.renderPassResources.viewspacePosition.resourceInfo.texture.textureHandle);
 
                 debugTextures.push_back(ImGui_ImplVulkan_AddTexture(sampler,
                                                                     viewspacePosition->imageView,
@@ -123,16 +123,16 @@ namespace VulkanDemo
             // Depth map
             {
                 auto depthMap = MongooseVK::VulkanDevice::Get()->GetTexture(
-                    renderer.renderPassResources.depthMap.textureInfo.textureHandle);
+                    renderer.renderPassResources.depthMap.resourceInfo.texture.textureHandle);
 
                 debugTextures.push_back(ImGui_ImplVulkan_AddTexture(depthSampler,
                                                                     depthMap->imageView,
-                                                                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
+                                                                    VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL));
             }
 
             // SSAO
             {
-                auto ssao = MongooseVK::VulkanDevice::Get()->GetTexture(renderer.renderPassResources.ssaoTexture.textureInfo.textureHandle);
+                auto ssao = MongooseVK::VulkanDevice::Get()->GetTexture(renderer.renderPassResources.ssaoTexture.resourceInfo.texture.textureHandle);
 
                 debugTextures.push_back(ImGui_ImplVulkan_AddTexture(sampler,
                                                                     ssao->imageView,
@@ -214,7 +214,7 @@ namespace VulkanDemo
             }
 
             MongooseVK::VulkanTexture* shadowMap = MongooseVK::VulkanDevice::Get()->GetTexture(
-                renderer.renderPassResources.directionalShadowMap.textureInfo.textureHandle);
+                renderer.renderPassResources.directionalShadowMap.resourceInfo.texture.textureHandle);
             if (shadowMap->GetImage())
             {
                 for (size_t i = 0; i < MongooseVK::SHADOW_MAP_CASCADE_COUNT; i++)

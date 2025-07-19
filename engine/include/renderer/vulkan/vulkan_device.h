@@ -14,7 +14,7 @@
 #include "memory/resource_pool.h"
 #include "vulkan_descriptor_pool.h"
 #include "vulkan_descriptor_set_layout.h"
-#include "vulkan_image.h"
+#include "vulkan_pipeline.h"
 #include "vulkan_renderpass.h"
 #include "resource/resource.h"
 
@@ -182,6 +182,16 @@ namespace MongooseVK
         VulkanFramebuffer* GetFramebuffer(FramebufferHandle framebufferHandle);
         void DestroyFramebuffer(FramebufferHandle framebufferHandle);
 
+        // Pipeline management
+        PipelineHandle CreatePipeline(PipelineCreate& info);
+        VulkanPipeline* GetPipeline(PipelineHandle pipelineHandle);
+        void DestroyPipeline(PipelineHandle pipelineHandle);
+
+        // DescriptorSetLayout management
+        DescriptorSetLayoutHandle CreateDescriptorSetLayout(DescriptorSetLayoutCreateInfo& info);
+        VulkanDescriptorSetLayout* GetDescriptorSetLayout(DescriptorSetLayoutHandle descriptorSetLayoutHandle);
+        void DestroyDescriptorSetLayout(DescriptorSetLayoutHandle descriptorSetLayoutHandle);
+
     private:
         static VkInstance CreateVkInstance(
             const std::vector<const char*>& deviceExtensions,
@@ -204,9 +214,11 @@ namespace MongooseVK
         ObjectResourcePool<VulkanTexture> texturePool;
         ObjectResourcePool<VulkanRenderPass> renderPassPool;
         ObjectResourcePool<VulkanFramebuffer> framebufferPool;
+        ObjectResourcePool<VulkanPipeline> pipelinePool;
+        ObjectResourcePool<VulkanDescriptorSetLayout> descriptorSetLayoutPool;
 
         VkDescriptorSet bindlessTextureDescriptorSet{};
-        Ref<VulkanDescriptorSetLayout> bindlessDescriptorSetLayout;
+        DescriptorSetLayoutHandle bindlessDescriptorSetLayoutHandle;
 
         DeletionQueue frameDeletionQueue;
 
@@ -241,8 +253,6 @@ namespace MongooseVK
         Scope<VulkanDescriptorPool> shaderDescriptorPool{};
         Scope<VulkanDescriptorPool> imguiDescriptorPool{};
         Scope<VulkanDescriptorPool> bindlessDescriptorPool{};
-
-        ObjectResourcePool<VulkanDescriptorSetLayout> descriptorSetLayoutPool{};
 
         VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
     };

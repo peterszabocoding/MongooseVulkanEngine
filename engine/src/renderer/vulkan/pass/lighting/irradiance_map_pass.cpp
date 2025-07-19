@@ -37,8 +37,8 @@ namespace MongooseVK
         };
 
         drawCommandParams.pipelineParams = {
-            irradianceMapPipeline->GetPipeline(),
-            irradianceMapPipeline->GetPipelineLayout()
+            irradianceMapPipeline->pipeline,
+            irradianceMapPipeline->pipelineLayout
         };
 
         TransformPushConstantData pushConstantData;
@@ -69,7 +69,7 @@ namespace MongooseVK
 
         renderPassHandle = device->CreateRenderPass(config);
 
-        PipelineConfig iblIrradianceMapPipelineConfig;
+        PipelineCreate iblIrradianceMapPipelineConfig;
         iblIrradianceMapPipelineConfig.vertexShaderPath = "cubemap.vert";
         iblIrradianceMapPipelineConfig.fragmentShaderPath = "irradiance_convolution.frag";
 
@@ -94,7 +94,7 @@ namespace MongooseVK
         iblIrradianceMapPipelineConfig.pushConstantData.offset = 0;
         iblIrradianceMapPipelineConfig.pushConstantData.size = sizeof(TransformPushConstantData);
 
-        irradianceMapPipeline = VulkanPipeline::Builder().Build(device, iblIrradianceMapPipelineConfig);
+        irradianceMapPipeline = VulkanPipelineBuilder().Build(device, iblIrradianceMapPipelineConfig);
     }
 
     void IrradianceMapPass::SetFaceIndex(uint8_t _faceIndex)

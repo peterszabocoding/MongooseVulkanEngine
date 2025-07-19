@@ -54,14 +54,14 @@ namespace MongooseVK
         VulkanMaterialBuilder& SetAlphaTested(bool _alphaTested);
 
         VulkanMaterialBuilder& SetParams(const MaterialParams& params);
-        VulkanMaterialBuilder& SetDescriptorSetLayout(Ref<VulkanDescriptorSetLayout> _descriptorSetLayout);
+        VulkanMaterialBuilder& SetDescriptorSetLayout(DescriptorSetLayoutHandle _descriptorSetLayout);
         VulkanMaterial Build();
 
     private:
         int index = 0;
         VulkanDevice* vulkanDevice;
 
-        Ref<VulkanDescriptorSetLayout> descriptorSetLayout;
+        DescriptorSetLayoutHandle descriptorSetLayoutHandle;
         MaterialParams params;
 
         TextureHandle baseColorTextureHandle = INVALID_TEXTURE_HANDLE;

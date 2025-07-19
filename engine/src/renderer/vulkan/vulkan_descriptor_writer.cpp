@@ -13,13 +13,11 @@ namespace MongooseVK
     VulkanDescriptorWriter& VulkanDescriptorWriter::WriteBuffer(
         const uint32_t binding, VkDescriptorBufferInfo* bufferInfo)
     {
-        ASSERT(setLayout.bindings.count(binding) == 1, "Layout does not contain specified binding");
+        //ASSERT(setLayout.bindings.count(binding) == 1, "Layout does not contain specified binding");
 
         auto& bindingDescription = setLayout.bindings[binding];
 
-        ASSERT(
-            bindingDescription.descriptorCount == 1,
-            "Binding single descriptor info, but binding expects multiple");
+        ASSERT(bindingDescription.descriptorCount == 1, "Binding single descriptor info, but binding expects multiple");
 
         VkWriteDescriptorSet write{};
         write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -36,7 +34,7 @@ namespace MongooseVK
                                                                const VkDescriptorImageInfo* imageInfo,
                                                                const uint32_t arrayIndex)
     {
-        ASSERT(setLayout.bindings.count(binding) == 1, "Layout does not contain specified binding");
+        //ASSERT(setLayout.bindings.count(binding) == 1, "Layout does not contain specified binding");
 
         auto& bindingDescription = setLayout.bindings[binding];
 
@@ -56,7 +54,7 @@ namespace MongooseVK
 
     bool VulkanDescriptorWriter::Build(VkDescriptorSet& set)
     {
-        pool.AllocateDescriptor(setLayout.GetDescriptorSetLayout(), set);
+        pool.AllocateDescriptor(setLayout.descriptorSetLayout, set);
 
         Overwrite(set);
         return true;

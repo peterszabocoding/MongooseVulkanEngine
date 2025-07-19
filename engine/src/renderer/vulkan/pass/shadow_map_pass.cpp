@@ -23,8 +23,8 @@ namespace MongooseVK
         DrawCommandParams geometryDrawParams{};
         geometryDrawParams.commandBuffer = commandBuffer;
         geometryDrawParams.pipelineParams = {
-            directionalShadowMapPipeline->GetPipeline(),
-            directionalShadowMapPipeline->GetPipelineLayout()
+            directionalShadowMapPipeline->pipeline,
+            directionalShadowMapPipeline->pipelineLayout
         };
 
         SimplePushConstantData pushConstantData;
@@ -58,7 +58,7 @@ namespace MongooseVK
         renderPassHandle = device->CreateRenderPass(config);
 
         LOG_TRACE("Building directional shadow map pipeline");
-        PipelineConfig dirShadowMapPipelineConfig;
+        PipelineCreate dirShadowMapPipelineConfig;
         dirShadowMapPipelineConfig.vertexShaderPath = "depth_only.vert";
         dirShadowMapPipelineConfig.fragmentShaderPath = "empty.frag";
 
@@ -78,6 +78,6 @@ namespace MongooseVK
 
         dirShadowMapPipelineConfig.depthAttachment = ImageFormat::DEPTH32;
 
-        directionalShadowMapPipeline = VulkanPipeline::Builder().Build(device, dirShadowMapPipelineConfig);
+        directionalShadowMapPipeline = VulkanPipelineBuilder().Build(device, dirShadowMapPipelineConfig);
     }
 }

@@ -27,8 +27,8 @@ namespace MongooseVK
         geometryDrawParams.commandBuffer = commandBuffer;
         geometryDrawParams.pipelineParams =
         {
-            gbufferPipeline->GetPipeline(),
-            gbufferPipeline->GetPipelineLayout()
+            gbufferPipeline->pipeline,
+            gbufferPipeline->pipelineLayout
         };
 
         for (size_t i = 0; i < scene.meshes.size(); i++)
@@ -82,12 +82,12 @@ namespace MongooseVK
             .size = sizeof(SimplePushConstantData),
         };
 
-        PipelineConfig pipelineConfig;
+        PipelineCreate pipelineConfig;
         pipelineConfig.vertexShaderPath = "gbuffer.vert";
         pipelineConfig.fragmentShaderPath = "gbuffer.frag";
 
         pipelineConfig.descriptorSetLayouts = {
-            device->bindlessDescriptorSetLayout,
+            device->bindlessDescriptorSetLayoutHandle,
             ShaderCache::descriptorSetLayouts.materialDescriptorSetLayout,
             ShaderCache::descriptorSetLayouts.cameraDescriptorSetLayout,
         };
@@ -109,6 +109,6 @@ namespace MongooseVK
         };
         pipelineConfig.depthAttachment = ImageFormat::DEPTH24_STENCIL8;
 
-        gbufferPipeline = VulkanPipeline::Builder().Build(device, pipelineConfig);
+        gbufferPipeline = VulkanPipelineBuilder().Build(device, pipelineConfig);
     }
 }

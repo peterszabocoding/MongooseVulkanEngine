@@ -49,7 +49,7 @@ namespace MongooseVK
         VkPipeline pipeline;
         VkPipelineLayout pipelineLayout;
 
-        std::vector<Ref<VulkanDescriptorSetLayout>> descriptorSetLayouts{};
+        std::vector<DescriptorSetLayoutHandle> descriptorSetLayouts{};
     };
 
 
@@ -78,12 +78,12 @@ namespace MongooseVK
         uint32_t size = 0;
     };
 
-    struct PipelineConfig {
+    struct PipelineCreate {
         std::string name;
         std::string vertexShaderPath;
         std::string fragmentShaderPath;
 
-        std::vector<Ref<VulkanDescriptorSetLayout>> descriptorSetLayouts{};
+        std::vector<DescriptorSetLayoutHandle> descriptorSetLayouts{};
         std::vector<ImageFormat> colorAttachments;
         ImageFormat depthAttachment = ImageFormat::DEPTH24_STENCIL8;
 
@@ -100,75 +100,58 @@ namespace MongooseVK
         bool disableBlending = true;
     };
 
+    struct VulkanPipeline {
+        std::string vertexShaderPath;
+        std::string fragmentShaderPath;
 
-    class VulkanPipeline {
+        VkShaderModule vertexShaderModule = VK_NULL_HANDLE;
+        VkShaderModule fragmentShaderModule = VK_NULL_HANDLE;
+
+        VkPipeline pipeline;
+        VkPipelineLayout pipelineLayout;
+
+        std::vector<DescriptorSetLayoutHandle> descriptorSetLayouts{};
+    };
+
+    class VulkanPipelineBuilder {
     public:
-        class Builder {
-        public:
-            Builder();
-            ~Builder() = default;
+        VulkanPipelineBuilder();
+        ~VulkanPipelineBuilder() = default;
 
-            Builder& SetShaders(const std::string& vertexShaderPath, const std::string& fragmentShaderPath);
-            Builder& SetInputTopology(VkPrimitiveTopology topology);
-            Builder& SetPolygonMode(VkPolygonMode mode);
-            Builder& SetCullMode(VkCullModeFlags cullMode, VkFrontFace frontFace);
-            Builder& SetMultisampling(VkSampleCountFlagBits sampleCountFlagBits = VK_SAMPLE_COUNT_1_BIT);
-            Builder& AddDescriptorSetLayout(Ref<VulkanDescriptorSetLayout> _descriptorSetLayout);
-            Builder& DisableBlending();
-            Builder& AddColorAttachment(ImageFormat format, VkPipelineColorBlendAttachmentState blendState = ALPHA_BLENDING);
-            Builder& SetDepthFormat(ImageFormat format);
-            Builder& EnableDepthTest(bool depthWriteEnable);
-            Builder& DisableDepthTest();
-            Builder& AddPushConstant(VkShaderStageFlags stageFlags, uint32_t offset, uint32_t size);
-            Builder& SetRenderpass(VkRenderPass _renderpass);
-
-            Ref<VulkanPipeline> Build(VulkanDevice* vulkanDevice);
-            Ref<VulkanPipeline> Build(VulkanDevice* vulkanDevice, PipelineConfig& config);
-
-        private:
-            void clear();
-
-        public:
-            static VkPipelineColorBlendAttachmentState ADDITIVE_BLENDING;
-            static VkPipelineColorBlendAttachmentState ALPHA_BLENDING;
-
-        private:
-            std::string vertexShaderPath;
-            std::string fragmentShaderPath;
-            VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
-            VkPipelineRasterizationStateCreateInfo rasterizer{};
-
-            std::vector<VkFormat> colorAttachmentFormats;
-            std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments{};
-
-            VkPipelineMultisampleStateCreateInfo multisampling{};
-            VkPipelineDepthStencilStateCreateInfo depthStencil{};
-            VkPipelineRenderingCreateInfo renderInfo{};
-
-            std::vector<VkPushConstantRange> pushConstantRanges{};
-
-            VkPolygonMode polygonMode;
-            VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-            VkCullModeFlags cullMode;
-            VkFrontFace frontFace;
-
-            std::vector<Ref<VulkanDescriptorSetLayout>> descriptorSetLayouts;
-
-            bool disableBlending = false;
-
-            VkRenderPass renderpass;
-        };
-
-    public:
-        explicit VulkanPipeline(VulkanDevice* _vulkanDevice, PipelineParams& _params): vulkanDevice(_vulkanDevice), params(_params) {}
-        ~VulkanPipeline();
-
-        VkPipeline GetPipeline() const { return params.pipeline; }
-        VkPipelineLayout GetPipelineLayout() const { return params.pipelineLayout; }
-        std::vector<Ref<VulkanDescriptorSetLayout>> GetDescriptorSetLayouts() const { return params.descriptorSetLayouts; }
+        Ref<VulkanPipeline> Build(VulkanDevice* vulkanDevice, PipelineCreate& config);
 
     private:
-        VulkanDevice* vulkanDevice;
-        PipelineParams params;
+        Ref<VulkanPipeline> Build(VulkanDevice* vulkanDevice);
+        void clear();
+
+    public:
+        static VkPipelineColorBlendAttachmentState ADDITIVE_BLENDING;
+        static VkPipelineColorBlendAttachmentState ALPHA_BLENDING;
+
+    private:
+        std::string vertexShaderPath;
+        std::string fragmentShaderPath;
+        VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
+        VkPipelineRasterizationStateCreateInfo rasterizer{};
+
+        std::vector<VkFormat> colorAttachmentFormats;
+        std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments{};
+
+        VkPipelineMultisampleStateCreateInfo multisampling{};
+        VkPipelineDepthStencilStateCreateInfo depthStencil{};
+        VkPipelineRenderingCreateInfo renderInfo{};
+
+        std::vector<VkPushConstantRange> pushConstantRanges{};
+
+        VkPolygonMode polygonMode;
+        VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+        VkCullModeFlags cullMode;
+        VkFrontFace frontFace;
+
+        std::vector<DescriptorSetLayoutHandle> descriptorSetLayouts;
+
+        bool disableBlending = false;
+
+        VkRenderPass renderpass;
     };
-}
+};
