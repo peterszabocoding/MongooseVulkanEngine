@@ -40,7 +40,7 @@ namespace MongooseVK
     void BrdfLUTPass::LoadPipeline()
     {
         VulkanRenderPass::RenderPassConfig config;
-        config.AddColorAttachment({.imageFormat = VK_FORMAT_R16G16B16A16_SFLOAT});
+        config.AddColorAttachment({.imageFormat = ImageFormat::RGBA16_SFLOAT});
 
         renderPassHandle = device->CreateRenderPass(config);
 

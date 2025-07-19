@@ -70,9 +70,9 @@ namespace MongooseVK
         LOG_TRACE("Building gbuffer pipeline");
 
         VulkanRenderPass::RenderPassConfig config;
-        config.AddColorAttachment({.imageFormat = VK_FORMAT_R32G32B32A32_SFLOAT});
-        config.AddColorAttachment({.imageFormat = VK_FORMAT_R32G32B32A32_SFLOAT});
-        config.AddDepthAttachment({.depthFormat = VK_FORMAT_D24_UNORM_S8_UINT});
+        config.AddColorAttachment({.imageFormat = ImageFormat::RGBA32_SFLOAT});
+        config.AddColorAttachment({.imageFormat = ImageFormat::RGBA32_SFLOAT});
+        config.AddDepthAttachment({.depthFormat = ImageFormat::DEPTH24_STENCIL8});
 
         renderPassHandle = device->CreateRenderPass(config);
 
@@ -92,17 +92,8 @@ namespace MongooseVK
             ShaderCache::descriptorSetLayouts.cameraDescriptorSetLayout,
         };
 
-        pipelineConfig.polygonMode = PipelinePolygonMode::Fill;
-        pipelineConfig.frontFace = PipelineFrontFace::Counter_clockwise;
-        pipelineConfig.cullMode = PipelineCullMode::Back;
-
         pipelineConfig.renderPass = GetRenderPass()->Get();
-
         pipelineConfig.pushConstantData = pushConstantData;
-
-        pipelineConfig.enableDepthTest = true;
-        pipelineConfig.disableBlending = true;
-
         pipelineConfig.colorAttachments = {
             ImageFormat::RGBA32_SFLOAT,
             ImageFormat::RGBA32_SFLOAT,

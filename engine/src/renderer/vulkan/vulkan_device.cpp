@@ -532,7 +532,7 @@ namespace MongooseVK
             VulkanRenderPass::ColorAttachment colorAttachment = config.colorAttachments[i];
 
             VkAttachmentDescription attachment{};
-            attachment.format = colorAttachment.imageFormat;
+            attachment.format = VulkanUtils::ConvertImageFormat(colorAttachment.imageFormat);
             attachment.samples = colorAttachment.sampleCount;
             attachment.loadOp = colorAttachment.loadOp;
             attachment.storeOp = colorAttachment.storeOp;
@@ -555,7 +555,7 @@ namespace MongooseVK
         if (config.depthAttachment.has_value())
         {
             VkAttachmentDescription attachment{};
-            attachment.format = config.depthAttachment->depthFormat;
+            attachment.format = VulkanUtils::ConvertImageFormat(config.depthAttachment->depthFormat);
             attachment.samples = VK_SAMPLE_COUNT_1_BIT;
             attachment.loadOp = config.depthAttachment->loadOp;
             attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;

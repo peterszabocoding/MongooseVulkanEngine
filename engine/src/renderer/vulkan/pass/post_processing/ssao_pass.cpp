@@ -71,7 +71,7 @@ namespace MongooseVK
     {
         VulkanRenderPass::RenderPassConfig config;
         config.AddColorAttachment({
-            .imageFormat = VK_FORMAT_R8_UNORM,
+            .imageFormat = ImageFormat::R8_UNORM,
             .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR
         });
 

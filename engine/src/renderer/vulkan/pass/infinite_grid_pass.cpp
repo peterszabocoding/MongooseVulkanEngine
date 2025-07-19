@@ -44,11 +44,11 @@ namespace MongooseVK
         VulkanRenderPass::RenderPassConfig config;
 
         config.AddColorAttachment({
-            .imageFormat = VK_FORMAT_R16G16B16A16_SFLOAT,
+            .imageFormat = ImageFormat::RGBA16_SFLOAT,
             .loadOp = VK_ATTACHMENT_LOAD_OP_LOAD
         });
         config.AddDepthAttachment({
-            .depthFormat = VK_FORMAT_D24_UNORM_S8_UINT,
+            .depthFormat = ImageFormat::DEPTH24_STENCIL8,
             .loadOp = VK_ATTACHMENT_LOAD_OP_LOAD
         });
 

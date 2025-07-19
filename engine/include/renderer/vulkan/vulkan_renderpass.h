@@ -4,6 +4,7 @@
 #include <glm/vec4.hpp>
 #include "util/core.h"
 #include <memory/resource_pool.h>
+#include <resource/resource.h>
 #include <vulkan/vulkan_core.h>
 
 namespace MongooseVK
@@ -30,7 +31,7 @@ namespace MongooseVK
     class VulkanRenderPass : public PoolObject {
     public:
         struct ColorAttachment {
-            VkFormat imageFormat;
+            ImageFormat imageFormat;
             VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT;
             glm::vec4 clearColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
             VkAttachmentLoadOp loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -39,7 +40,7 @@ namespace MongooseVK
         };
 
         struct DepthAttachment {
-            VkFormat depthFormat = VK_FORMAT_D24_UNORM_S8_UINT;
+            ImageFormat depthFormat = ImageFormat::DEPTH24_STENCIL8;
             VkAttachmentLoadOp loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
         };
 

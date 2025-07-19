@@ -105,7 +105,7 @@ namespace MongooseVK
     void PrefilterMapPass::LoadPipeline()
     {
         VulkanRenderPass::RenderPassConfig config;
-        config.AddColorAttachment({.imageFormat = VK_FORMAT_R16G16B16A16_SFLOAT});
+        config.AddColorAttachment({.imageFormat = ImageFormat::RGBA16_SFLOAT});
 
         renderPassHandle = device->CreateRenderPass(config);
 
@@ -117,7 +117,7 @@ namespace MongooseVK
             ShaderCache::descriptorSetLayouts.cubemapDescriptorSetLayout,
         };
 
-        pipelineConfig.colorAttachments = {ImageFormat::RGBA16_SFLOAT,};
+        pipelineConfig.colorAttachments = {ImageFormat::RGBA16_SFLOAT};
         pipelineConfig.enableDepthTest = false;
         pipelineConfig.pushConstantData = {VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PrefilterData)};
         pipelineConfig.renderPass = GetRenderPass()->Get();

@@ -64,7 +64,7 @@ namespace MongooseVK
     {
         VulkanRenderPass::RenderPassConfig config;
         config.AddColorAttachment({
-            .imageFormat = VK_FORMAT_R16G16B16A16_SFLOAT
+            .imageFormat = ImageFormat::RGBA16_SFLOAT
         });
 
         renderPassHandle = device->CreateRenderPass(config);

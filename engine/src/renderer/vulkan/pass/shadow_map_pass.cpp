@@ -53,7 +53,7 @@ namespace MongooseVK
     void ShadowMapPass::LoadPipelines()
     {
         VulkanRenderPass::RenderPassConfig config;
-        config.AddDepthAttachment({.depthFormat = VK_FORMAT_D32_SFLOAT});
+        config.AddDepthAttachment({.depthFormat = ImageFormat::DEPTH32});
 
         renderPassHandle = device->CreateRenderPass(config);
 

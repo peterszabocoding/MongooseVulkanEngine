@@ -44,13 +44,13 @@ namespace MongooseVK
     {
         VulkanRenderPass::RenderPassConfig config;
         config.AddColorAttachment({
-            .imageFormat = VK_FORMAT_R16G16B16A16_SFLOAT,
+            .imageFormat = ImageFormat::RGBA16_SFLOAT,
             .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
             .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
         });
 
         config.AddDepthAttachment({
-            .depthFormat = VK_FORMAT_D24_UNORM_S8_UINT,
+            .depthFormat = ImageFormat::DEPTH24_STENCIL8,
             .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
         });
 
@@ -64,7 +64,7 @@ namespace MongooseVK
         pipelineConfig.cullMode = PipelineCullMode::Front;
         pipelineConfig.enableDepthTest = false;
         pipelineConfig.renderPass = GetRenderPass()->Get();
-        pipelineConfig.colorAttachments = {ImageFormat::RGBA16_SFLOAT,};
+        pipelineConfig.colorAttachments = {ImageFormat::RGBA16_SFLOAT};
         pipelineConfig.depthAttachment = ImageFormat::DEPTH24_STENCIL8;
         pipelineConfig.descriptorSetLayouts = {
             ShaderCache::descriptorSetLayouts.cubemapDescriptorSetLayout,

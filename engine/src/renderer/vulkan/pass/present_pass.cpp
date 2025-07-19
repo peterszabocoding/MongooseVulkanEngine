@@ -48,7 +48,7 @@ namespace MongooseVK
         LOG_TRACE("Building present pipeline");
         VulkanRenderPass::RenderPassConfig config;
         config.AddColorAttachment({
-            .imageFormat = VK_FORMAT_R8G8B8A8_UNORM,
+            .imageFormat = ImageFormat::RGBA8_UNORM,
             .isSwapchainAttachment = true
         });
 
