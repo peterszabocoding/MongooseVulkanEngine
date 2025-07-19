@@ -56,8 +56,8 @@ namespace MongooseVK
                 drawCommandParams.commandBuffer = commandBuffer;
 
                 drawCommandParams.pipelineParams = {
-                    prefilterMapPipeline->pipeline,
-                    prefilterMapPipeline->pipelineLayout
+                    pipeline->pipeline,
+                    pipeline->pipelineLayout
                 };
 
                 drawCommandParams.meshlet = &cubeMesh->GetMeshlets()[0];
@@ -109,29 +109,21 @@ namespace MongooseVK
 
         renderPassHandle = device->CreateRenderPass(config);
 
-        PipelineCreate iblPrefilterPipelineConfig;
-        iblPrefilterPipelineConfig.vertexShaderPath = "cubemap.vert";
-        iblPrefilterPipelineConfig.fragmentShaderPath = "prefilter.frag";
+        PipelineCreate pipelineConfig;
+        pipelineConfig.vertexShaderPath = "cubemap.vert";
+        pipelineConfig.fragmentShaderPath = "prefilter.frag";
 
-        iblPrefilterPipelineConfig.descriptorSetLayouts = {
+        pipelineConfig.descriptorSetLayouts = {
             ShaderCache::descriptorSetLayouts.cubemapDescriptorSetLayout,
         };
 
-        iblPrefilterPipelineConfig.colorAttachments = {
-            ImageFormat::RGBA16_SFLOAT,
-        };
+        pipelineConfig.colorAttachments = {ImageFormat::RGBA16_SFLOAT,};
+        pipelineConfig.enableDepthTest = false;
+        pipelineConfig.pushConstantData = {VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PrefilterData)};
+        pipelineConfig.renderPass = GetRenderPass()->Get();
 
-        iblPrefilterPipelineConfig.enableDepthTest = false;
-
-        iblPrefilterPipelineConfig.pushConstantData = {
-            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-            0,
-            sizeof(PrefilterData)
-        };
-
-        iblPrefilterPipelineConfig.renderPass = GetRenderPass()->Get();
-
-        prefilterMapPipeline = VulkanPipelineBuilder().Build(device, iblPrefilterPipelineConfig);
+        pipelineHandle = VulkanPipelineBuilder().Build(device, pipelineConfig);
+        pipeline = device->GetPipeline(pipelineHandle);
     }
 
     void PrefilterMapPass::SetRoughness(float _roughness)

@@ -17,7 +17,6 @@ namespace MongooseVK
 
     private:
         Scope<VulkanMeshlet> screenRect;
-        Ref<VulkanPipeline> presentPipeline;
         Scope<VulkanFramebuffer> framebuffer;
     };
 }

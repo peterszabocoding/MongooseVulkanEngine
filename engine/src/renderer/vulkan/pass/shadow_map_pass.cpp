@@ -23,8 +23,8 @@ namespace MongooseVK
         DrawCommandParams geometryDrawParams{};
         geometryDrawParams.commandBuffer = commandBuffer;
         geometryDrawParams.pipelineParams = {
-            directionalShadowMapPipeline->pipeline,
-            directionalShadowMapPipeline->pipelineLayout
+            pipeline->pipeline,
+            pipeline->pipelineLayout
         };
 
         SimplePushConstantData pushConstantData;
@@ -58,26 +58,27 @@ namespace MongooseVK
         renderPassHandle = device->CreateRenderPass(config);
 
         LOG_TRACE("Building directional shadow map pipeline");
-        PipelineCreate dirShadowMapPipelineConfig;
-        dirShadowMapPipelineConfig.vertexShaderPath = "depth_only.vert";
-        dirShadowMapPipelineConfig.fragmentShaderPath = "empty.frag";
+        PipelineCreate pipelineConfig;
+        pipelineConfig.vertexShaderPath = "depth_only.vert";
+        pipelineConfig.fragmentShaderPath = "empty.frag";
 
-        dirShadowMapPipelineConfig.cullMode = PipelineCullMode::Front;
-        dirShadowMapPipelineConfig.polygonMode = PipelinePolygonMode::Fill;
-        dirShadowMapPipelineConfig.frontFace = PipelineFrontFace::Counter_clockwise;
+        pipelineConfig.cullMode = PipelineCullMode::Front;
+        pipelineConfig.polygonMode = PipelinePolygonMode::Fill;
+        pipelineConfig.frontFace = PipelineFrontFace::Counter_clockwise;
 
-        dirShadowMapPipelineConfig.disableBlending = true;
-        dirShadowMapPipelineConfig.enableDepthTest = true;
+        pipelineConfig.disableBlending = true;
+        pipelineConfig.enableDepthTest = true;
 
 
-        dirShadowMapPipelineConfig.renderPass = GetRenderPass()->Get();
+        pipelineConfig.renderPass = GetRenderPass()->Get();
 
-        dirShadowMapPipelineConfig.pushConstantData.shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-        dirShadowMapPipelineConfig.pushConstantData.offset = 0;
-        dirShadowMapPipelineConfig.pushConstantData.size = sizeof(SimplePushConstantData);
+        pipelineConfig.pushConstantData.shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+        pipelineConfig.pushConstantData.offset = 0;
+        pipelineConfig.pushConstantData.size = sizeof(SimplePushConstantData);
 
-        dirShadowMapPipelineConfig.depthAttachment = ImageFormat::DEPTH32;
+        pipelineConfig.depthAttachment = ImageFormat::DEPTH32;
 
-        directionalShadowMapPipeline = VulkanPipelineBuilder().Build(device, dirShadowMapPipelineConfig);
+        pipelineHandle = VulkanPipelineBuilder().Build(device, pipelineConfig);
+        pipeline = device->GetPipeline(pipelineHandle);
     }
 }

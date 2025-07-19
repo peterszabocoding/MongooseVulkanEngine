@@ -100,17 +100,14 @@ namespace MongooseVK
         bool disableBlending = true;
     };
 
-    struct VulkanPipeline {
-        std::string vertexShaderPath;
-        std::string fragmentShaderPath;
-
+    struct VulkanPipeline: PoolObject {
         VkShaderModule vertexShaderModule = VK_NULL_HANDLE;
         VkShaderModule fragmentShaderModule = VK_NULL_HANDLE;
 
         VkPipeline pipeline;
         VkPipelineLayout pipelineLayout;
 
-        std::vector<DescriptorSetLayoutHandle> descriptorSetLayouts{};
+        std::array<DescriptorSetLayoutHandle, 16> descriptorSetLayouts{};
     };
 
     class VulkanPipelineBuilder {
@@ -118,10 +115,10 @@ namespace MongooseVK
         VulkanPipelineBuilder();
         ~VulkanPipelineBuilder() = default;
 
-        Ref<VulkanPipeline> Build(VulkanDevice* vulkanDevice, PipelineCreate& config);
+        PipelineHandle Build(VulkanDevice* vulkanDevice, PipelineCreate& config);
 
     private:
-        Ref<VulkanPipeline> Build(VulkanDevice* vulkanDevice);
+        PipelineHandle Build(VulkanDevice* vulkanDevice);
         void clear();
 
     public:

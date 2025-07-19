@@ -20,6 +20,5 @@ namespace MongooseVK
     private:
         Scene& scene;
         uint32_t cascadeIndex = 0;
-        Ref<VulkanPipeline> directionalShadowMapPipeline;
     };
 }

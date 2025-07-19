@@ -37,8 +37,8 @@ namespace MongooseVK
         };
 
         drawCommandParams.pipelineParams = {
-            irradianceMapPipeline->pipeline,
-            irradianceMapPipeline->pipelineLayout
+            pipeline->pipeline,
+            pipeline->pipelineLayout
         };
 
         TransformPushConstantData pushConstantData;
@@ -69,32 +69,33 @@ namespace MongooseVK
 
         renderPassHandle = device->CreateRenderPass(config);
 
-        PipelineCreate iblIrradianceMapPipelineConfig;
-        iblIrradianceMapPipelineConfig.vertexShaderPath = "cubemap.vert";
-        iblIrradianceMapPipelineConfig.fragmentShaderPath = "irradiance_convolution.frag";
+        PipelineCreate pipelineConfig;
+        pipelineConfig.vertexShaderPath = "cubemap.vert";
+        pipelineConfig.fragmentShaderPath = "irradiance_convolution.frag";
 
-        iblIrradianceMapPipelineConfig.cullMode = PipelineCullMode::Back;
-        iblIrradianceMapPipelineConfig.polygonMode = PipelinePolygonMode::Fill;
-        iblIrradianceMapPipelineConfig.frontFace = PipelineFrontFace::Counter_clockwise;
+        pipelineConfig.cullMode = PipelineCullMode::Back;
+        pipelineConfig.polygonMode = PipelinePolygonMode::Fill;
+        pipelineConfig.frontFace = PipelineFrontFace::Counter_clockwise;
 
-        iblIrradianceMapPipelineConfig.descriptorSetLayouts = {
+        pipelineConfig.descriptorSetLayouts = {
             ShaderCache::descriptorSetLayouts.cubemapDescriptorSetLayout,
         };
 
-        iblIrradianceMapPipelineConfig.colorAttachments = {
+        pipelineConfig.colorAttachments = {
             ImageFormat::RGBA16_SFLOAT,
         };
 
-        iblIrradianceMapPipelineConfig.disableBlending = true;
-        iblIrradianceMapPipelineConfig.enableDepthTest = false;
+        pipelineConfig.disableBlending = true;
+        pipelineConfig.enableDepthTest = false;
 
-        iblIrradianceMapPipelineConfig.renderPass = GetRenderPass()->Get();
+        pipelineConfig.renderPass = GetRenderPass()->Get();
 
-        iblIrradianceMapPipelineConfig.pushConstantData.shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-        iblIrradianceMapPipelineConfig.pushConstantData.offset = 0;
-        iblIrradianceMapPipelineConfig.pushConstantData.size = sizeof(TransformPushConstantData);
+        pipelineConfig.pushConstantData.shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+        pipelineConfig.pushConstantData.offset = 0;
+        pipelineConfig.pushConstantData.size = sizeof(TransformPushConstantData);
 
-        irradianceMapPipeline = VulkanPipelineBuilder().Build(device, iblIrradianceMapPipelineConfig);
+        pipelineHandle = VulkanPipelineBuilder().Build(device, pipelineConfig);
+        pipeline = device->GetPipeline(pipelineHandle);
     }
 
     void IrradianceMapPass::SetFaceIndex(uint8_t _faceIndex)

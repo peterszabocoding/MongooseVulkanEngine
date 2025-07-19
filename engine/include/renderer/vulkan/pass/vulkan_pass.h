@@ -57,6 +57,7 @@ namespace MongooseVK
         virtual ~VulkanPass()
         {
             device->DestroyRenderPass(renderPassHandle);
+            device->DestroyPipeline(pipelineHandle);
         }
 
         virtual void Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBufferHandle) = 0;
@@ -93,6 +94,9 @@ namespace MongooseVK
         VkExtent2D resolution;
 
         RenderPassHandle renderPassHandle = {INVALID_RENDER_PASS_HANDLE};
+
+        PipelineHandle pipelineHandle;
+        VulkanPipeline* pipeline;
 
         std::vector<PassResource> resources;
     };

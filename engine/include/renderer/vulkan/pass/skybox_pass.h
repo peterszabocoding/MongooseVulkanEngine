@@ -17,11 +17,9 @@ namespace MongooseVK
     private:
         Scene& scene;
 
-        Ref<VulkanPipeline> skyboxPipeline;
         Ref<VulkanMesh> cubeMesh;
 
         TextureHandle outputTexture;
-
         Ref<VulkanFramebuffer> framebuffer;
     };
 } // Raytracing

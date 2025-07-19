@@ -819,7 +819,6 @@ namespace MongooseVK
     }
 
 
-
     VkInstance VulkanDevice::CreateVkInstance(const std::vector<const char*>& deviceExtensions,
                                               const std::vector<const char*>& validationLayers)
     {
@@ -1039,14 +1038,16 @@ namespace MongooseVK
         });
     }
 
-    PipelineHandle VulkanDevice::CreatePipeline(PipelineCreate& info)
+    PipelineHandle VulkanDevice::CreatePipeline()
     {
-        return INVALID_PIPELINE_HANDLE;
+        const VulkanPipeline* pipeline = pipelinePool.Obtain();
+
+        return {pipeline->index};
     }
 
     VulkanPipeline* VulkanDevice::GetPipeline(PipelineHandle pipelineHandle)
     {
-        return new VulkanPipeline();
+        return pipelinePool.Get(pipelineHandle.handle);
     }
 
     void VulkanDevice::DestroyPipeline(PipelineHandle pipelineHandle)

@@ -18,6 +18,5 @@ namespace MongooseVK
 
     private:
         Scene& scene;
-        Ref<VulkanPipeline> gbufferPipeline;
     };
 }

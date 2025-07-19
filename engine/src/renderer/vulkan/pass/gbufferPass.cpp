@@ -27,8 +27,8 @@ namespace MongooseVK
         geometryDrawParams.commandBuffer = commandBuffer;
         geometryDrawParams.pipelineParams =
         {
-            gbufferPipeline->pipeline,
-            gbufferPipeline->pipelineLayout
+            pipeline->pipeline,
+            pipeline->pipelineLayout
         };
 
         for (size_t i = 0; i < scene.meshes.size(); i++)
@@ -109,6 +109,7 @@ namespace MongooseVK
         };
         pipelineConfig.depthAttachment = ImageFormat::DEPTH24_STENCIL8;
 
-        gbufferPipeline = VulkanPipelineBuilder().Build(device, pipelineConfig);
+        pipelineHandle = VulkanPipelineBuilder().Build(device, pipelineConfig);
+        pipeline = device->GetPipeline(pipelineHandle);
     }
 }

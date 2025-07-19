@@ -27,8 +27,8 @@ namespace MongooseVK
         skyboxDrawParams.commandBuffer = commandBuffer;
         skyboxDrawParams.meshlet = &cubeMesh->GetMeshlets()[0];
         skyboxDrawParams.pipelineParams = {
-            skyboxPipeline->pipeline,
-            skyboxPipeline->pipelineLayout
+            pipeline->pipeline,
+            pipeline->pipelineLayout
         };
         skyboxDrawParams.descriptorSets = {
             ShaderCache::descriptorSets.cubemapDescriptorSet,
@@ -57,20 +57,21 @@ namespace MongooseVK
         renderPassHandle = device->CreateRenderPass(config);
 
         LOG_TRACE("Building skybox pipeline");
-        PipelineCreate skyboxPipelineConfig;
-        skyboxPipelineConfig.vertexShaderPath = "skybox.vert";
-        skyboxPipelineConfig.fragmentShaderPath = "skybox.frag";
+        PipelineCreate pipelineConfig;
+        pipelineConfig.vertexShaderPath = "skybox.vert";
+        pipelineConfig.fragmentShaderPath = "skybox.frag";
 
-        skyboxPipelineConfig.cullMode = PipelineCullMode::Front;
-        skyboxPipelineConfig.enableDepthTest = false;
-        skyboxPipelineConfig.renderPass = GetRenderPass()->Get();
-        skyboxPipelineConfig.colorAttachments = {ImageFormat::RGBA16_SFLOAT,};
-        skyboxPipelineConfig.depthAttachment = ImageFormat::DEPTH24_STENCIL8;
-        skyboxPipelineConfig.descriptorSetLayouts = {
+        pipelineConfig.cullMode = PipelineCullMode::Front;
+        pipelineConfig.enableDepthTest = false;
+        pipelineConfig.renderPass = GetRenderPass()->Get();
+        pipelineConfig.colorAttachments = {ImageFormat::RGBA16_SFLOAT,};
+        pipelineConfig.depthAttachment = ImageFormat::DEPTH24_STENCIL8;
+        pipelineConfig.descriptorSetLayouts = {
             ShaderCache::descriptorSetLayouts.cubemapDescriptorSetLayout,
             ShaderCache::descriptorSetLayouts.cameraDescriptorSetLayout,
         };
 
-        skyboxPipeline = VulkanPipelineBuilder().Build(device, skyboxPipelineConfig);
+        pipelineHandle = VulkanPipelineBuilder().Build(device, pipelineConfig);
+        pipeline = device->GetPipeline(pipelineHandle);
     }
 }

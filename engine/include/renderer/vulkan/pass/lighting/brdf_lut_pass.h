@@ -16,7 +16,6 @@ namespace MongooseVK
         void LoadPipeline();
 
     private:
-        Ref<VulkanPipeline> brdfLUTPipeline;
         Ref<VulkanMeshlet> screenRect;
     };
 }

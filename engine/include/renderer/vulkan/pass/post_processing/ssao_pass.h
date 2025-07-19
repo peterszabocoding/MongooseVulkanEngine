@@ -38,9 +38,6 @@ namespace MongooseVK
         SSAOParams ssaoParams;
 
     private:
-        Ref<VulkanPipeline> ssaoPipeline;
-        Ref<VulkanPipeline> blurPipeline;
-
         SSAOBuffer buffer;
         std::vector<glm::vec4> ssaoNoiseData;
 

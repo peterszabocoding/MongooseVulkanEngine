@@ -22,7 +22,6 @@ namespace MongooseVK
         void LoadPipelines();
 
     public:
-        Ref<VulkanPipeline> gridPipeline;
         GridParams gridParams;
 
     private:

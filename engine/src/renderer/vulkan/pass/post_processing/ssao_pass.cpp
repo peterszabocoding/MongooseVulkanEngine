@@ -23,7 +23,7 @@ namespace MongooseVK
 
     SSAOPass::~SSAOPass()
     {
-        vkFreeDescriptorSets(device->GetDevice(), device->GetShaderDescriptorPool().GetDescriptorPool(), 1, &ssaoDescriptorSet);;
+        vkFreeDescriptorSets(device->GetDevice(), device->GetShaderDescriptorPool().GetDescriptorPool(), 1, &ssaoDescriptorSet);
     }
 
     void SSAOPass::Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer)
@@ -40,8 +40,8 @@ namespace MongooseVK
         drawParams.meshlet = screenRect.get();
 
         drawParams.pipelineParams = {
-            ssaoPipeline->pipeline,
-            ssaoPipeline->pipelineLayout
+            pipeline->pipeline,
+            pipeline->pipelineLayout
         };
 
         drawParams.descriptorSets = {
@@ -107,7 +107,8 @@ namespace MongooseVK
         pipelineConfig.pushConstantData.offset = 0;
         pipelineConfig.pushConstantData.size = sizeof(SSAOParams);
 
-        ssaoPipeline = VulkanPipelineBuilder().Build(device, pipelineConfig);
+        pipelineHandle = VulkanPipelineBuilder().Build(device, pipelineConfig);
+        pipeline = device->GetPipeline(pipelineHandle);
     }
 
     void SSAOPass::InitDescriptorSet()

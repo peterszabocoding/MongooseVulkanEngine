@@ -26,8 +26,8 @@ namespace MongooseVK
         screenRectDrawParams.commandBuffer = commandBuffer;
 
         screenRectDrawParams.pipelineParams = {
-            presentPipeline->pipeline,
-            presentPipeline->pipelineLayout
+            pipeline->pipeline,
+            pipeline->pipelineLayout
         };
 
         screenRectDrawParams.descriptorSets = {
@@ -54,28 +54,29 @@ namespace MongooseVK
 
         renderPassHandle = device->CreateRenderPass(config);
 
-        PipelineCreate presentPipelineConfig;
-        presentPipelineConfig.name = "present_pipeline";
-        presentPipelineConfig.vertexShaderPath = "quad.vert";
-        presentPipelineConfig.fragmentShaderPath = "quad.frag";
+        PipelineCreate pipelineConfig;
+        pipelineConfig.name = "present_pipeline";
+        pipelineConfig.vertexShaderPath = "quad.vert";
+        pipelineConfig.fragmentShaderPath = "quad.frag";
 
-        presentPipelineConfig.cullMode = PipelineCullMode::Front;
-        presentPipelineConfig.polygonMode = PipelinePolygonMode::Fill;
-        presentPipelineConfig.frontFace = PipelineFrontFace::Counter_clockwise;
+       pipelineConfig.cullMode = PipelineCullMode::Front;
+       pipelineConfig.polygonMode = PipelinePolygonMode::Fill;
+       pipelineConfig.frontFace = PipelineFrontFace::Counter_clockwise;
 
-        presentPipelineConfig.descriptorSetLayouts = {
+        pipelineConfig.descriptorSetLayouts = {
             ShaderCache::descriptorSetLayouts.presentDescriptorSetLayout
         };
 
-        presentPipelineConfig.disableBlending = true;
-        presentPipelineConfig.enableDepthTest = false;
+        pipelineConfig.disableBlending = true;
+        pipelineConfig.enableDepthTest = false;
 
-        presentPipelineConfig.renderPass = GetRenderPass()->Get();
+        pipelineConfig.renderPass = GetRenderPass()->Get();
 
-        presentPipelineConfig.colorAttachments = {
+        pipelineConfig.colorAttachments = {
             ImageFormat::RGBA8_UNORM,
         };
 
-        presentPipeline = VulkanPipelineBuilder().Build(device, presentPipelineConfig);
+        pipelineHandle = VulkanPipelineBuilder().Build(device, pipelineConfig);
+        pipeline = device->GetPipeline(pipelineHandle);
     }
 }

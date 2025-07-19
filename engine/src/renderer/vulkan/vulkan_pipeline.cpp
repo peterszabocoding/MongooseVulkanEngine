@@ -86,7 +86,7 @@ namespace MongooseVK
 
     VulkanPipelineBuilder::VulkanPipelineBuilder() { clear(); }
 
-    Ref<VulkanPipeline> VulkanPipelineBuilder::Build(VulkanDevice* vulkanDevice)
+    PipelineHandle VulkanPipelineBuilder::Build(VulkanDevice* vulkanDevice)
     {
         std::vector<VkPipelineShaderStageCreateInfo> pipelineShaderStageCreateInfos;
 
@@ -214,34 +214,22 @@ namespace MongooseVK
             vkCreateGraphicsPipelines(vulkanDevice->GetDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline),
             "Failed to create graphics pipeline.");
 
-        PipelineParams params{};
-        params.pipeline = pipeline;
-        params.pipelineLayout = pipelineLayout;
-        params.fragmentShaderModule = fragmentShaderModule;
-        params.vertexShaderModule = vertexShaderModule;
+        PipelineHandle pipelineHandle = vulkanDevice->CreatePipeline();
+        VulkanPipeline* vkPipeline = vulkanDevice->GetPipeline(pipelineHandle);
 
-        params.vertexShaderPath = vertexShaderPath;
-        params.fragmentShaderPath = fragmentShaderPath;
+        vkPipeline->pipeline = pipeline;
+        vkPipeline->pipelineLayout = pipelineLayout;
 
-        params.descriptorSetLayouts = descriptorSetLayouts;
+        vkPipeline->vertexShaderModule = vertexShaderModule;
+        vkPipeline->fragmentShaderModule = fragmentShaderModule;
 
-        Ref<VulkanPipeline> pipelineRef = CreateRef<VulkanPipeline>();
+        for (size_t i = 0; i < descriptorSetLayouts.size(); i++)
+            vkPipeline->descriptorSetLayouts[i] = descriptorSetLayouts[i];
 
-        pipelineRef->pipeline = pipeline;
-        pipelineRef->pipelineLayout = pipelineLayout;
-
-        pipelineRef->vertexShaderPath = vertexShaderPath;
-        pipelineRef->fragmentShaderPath = fragmentShaderPath;
-
-        pipelineRef->vertexShaderModule = vertexShaderModule;
-        pipelineRef->fragmentShaderModule = fragmentShaderModule;
-
-        pipelineRef->descriptorSetLayouts = descriptorSetLayouts;
-
-        return pipelineRef;
+        return pipelineHandle;
     }
 
-    Ref<VulkanPipeline> VulkanPipelineBuilder::Build(VulkanDevice* vulkanDevice, PipelineCreate& config)
+    PipelineHandle VulkanPipelineBuilder::Build(VulkanDevice* vulkanDevice, PipelineCreate& config)
     {
         // SPR-V Shader source
         vertexShaderPath = config.vertexShaderPath;

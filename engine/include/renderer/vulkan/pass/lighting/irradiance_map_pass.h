@@ -10,7 +10,6 @@ namespace MongooseVK
         ~IrradianceMapPass() override = default;
 
         virtual void Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer) override;
-
         virtual void Resize(VkExtent2D _resolution) override;
 
         void SetFaceIndex(uint8_t index);
@@ -19,9 +18,7 @@ namespace MongooseVK
         void LoadPipeline();
 
     private:
-        Ref<VulkanMesh> cubeMesh;
-        Ref<VulkanPipeline> irradianceMapPipeline;
-
         uint8_t faceIndex = 0;
+        Ref<VulkanMesh> cubeMesh;
     };
 }

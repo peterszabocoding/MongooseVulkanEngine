@@ -27,8 +27,8 @@ namespace MongooseVK
         screenRectDrawParams.pushConstantParams.size = sizeof(GridParams);
 
         screenRectDrawParams.pipelineParams = {
-            gridPipeline->pipeline,
-            gridPipeline->pipelineLayout
+            pipeline->pipeline,
+            pipeline->pipelineLayout
         };
 
         screenRectDrawParams.descriptorSets = {
@@ -79,6 +79,7 @@ namespace MongooseVK
 
         pipelineConfig.depthAttachment = ImageFormat::DEPTH24_STENCIL8;
 
-        gridPipeline = VulkanPipelineBuilder().Build(device, pipelineConfig);
+        pipelineHandle = VulkanPipelineBuilder().Build(device, pipelineConfig);
+        pipeline = device->GetPipeline(pipelineHandle);
     }
 }

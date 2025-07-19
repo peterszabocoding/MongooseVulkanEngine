@@ -23,8 +23,8 @@ namespace MongooseVK
         drawCommandParams.meshlet = screenRect.get();
         drawCommandParams.pipelineParams =
         {
-            brdfLUTPipeline->pipeline,
-            brdfLUTPipeline->pipelineLayout
+            pipeline->pipeline,
+            pipeline->pipelineLayout
         };
 
         device->DrawMeshlet(drawCommandParams);
@@ -44,19 +44,19 @@ namespace MongooseVK
 
         renderPassHandle = device->CreateRenderPass(config);
 
-        PipelineCreate iblBrdfPipelineConfig;
-        iblBrdfPipelineConfig.vertexShaderPath = "brdf.vert";
-        iblBrdfPipelineConfig.fragmentShaderPath = "brdf.frag";
+        PipelineCreate pipelineConfig;
+        pipelineConfig.vertexShaderPath = "brdf.vert";
+        pipelineConfig.fragmentShaderPath = "brdf.frag";
 
-        iblBrdfPipelineConfig.cullMode = PipelineCullMode::Front;
-        iblBrdfPipelineConfig.colorAttachments = {
+        pipelineConfig.cullMode = PipelineCullMode::Front;
+        pipelineConfig.colorAttachments = {
             ImageFormat::RGBA16_SFLOAT,
         };
 
-        iblBrdfPipelineConfig.enableDepthTest = false;
-        iblBrdfPipelineConfig.renderPass = GetRenderPass()->Get();
+        pipelineConfig.enableDepthTest = false;
+        pipelineConfig.renderPass = GetRenderPass()->Get();
 
-        brdfLUTPipeline = VulkanPipelineBuilder()
-                .Build(device, iblBrdfPipelineConfig);
+        pipelineHandle = VulkanPipelineBuilder().Build(device, pipelineConfig);
+        pipeline = device->GetPipeline(pipelineHandle);
     }
 }

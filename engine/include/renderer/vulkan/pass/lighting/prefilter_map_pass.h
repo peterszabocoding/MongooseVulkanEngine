@@ -20,7 +20,6 @@ namespace MongooseVK
 
     private:
         Ref<VulkanMesh> cubeMesh;
-        Ref<VulkanPipeline> prefilterMapPipeline;
 
         float roughness = 0.0f;
         TextureHandle cubemapTextureHandle;

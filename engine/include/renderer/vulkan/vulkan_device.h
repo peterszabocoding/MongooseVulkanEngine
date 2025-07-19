@@ -183,7 +183,7 @@ namespace MongooseVK
         void DestroyFramebuffer(FramebufferHandle framebufferHandle);
 
         // Pipeline management
-        PipelineHandle CreatePipeline(PipelineCreate& info);
+        PipelineHandle CreatePipeline();
         VulkanPipeline* GetPipeline(PipelineHandle pipelineHandle);
         void DestroyPipeline(PipelineHandle pipelineHandle);
 
