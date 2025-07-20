@@ -1,4 +1,4 @@
-#pragma once;
+#pragma once
 
 #include <backends/imgui_impl_vulkan.h>
 #include <input/camera_controller.h>

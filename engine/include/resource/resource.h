@@ -48,9 +48,9 @@ namespace MongooseVK
 
     struct AllocatedImage {
         uint32_t width, height;
-        VkImage image  = VK_NULL_HANDLE;
+        VkImage image = VK_NULL_HANDLE;
         VkImageLayout imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        VmaAllocation allocation  = VK_NULL_HANDLE;
+        VmaAllocation allocation = VK_NULL_HANDLE;
         VmaAllocationInfo allocationInfo;
     };
 
@@ -71,6 +71,18 @@ namespace MongooseVK
         uint32_t width = 0;
         uint32_t height = 0;
         ImageFormat format = ImageFormat::Unknown;
+    };
+
+    struct AllocatedBuffer {
+        VkBuffer buffer;
+        VmaAllocation allocation;
+        VmaAllocationInfo info;
+        VkDeviceAddress address;
+
+        VkDeviceMemory GetBufferMemory() const { return info.deviceMemory; }
+        VkDeviceSize GetBufferSize() const { return info.size; }
+        VkDeviceSize GetOffset() const { return info.offset; }
+        void* GetData() const { return info.pMappedData; }
     };
 
     typedef uint32_t ResourceHandle;
@@ -118,10 +130,18 @@ namespace MongooseVK
         bool operator!=(const DescriptorSetLayoutHandle& other) const { return handle != other.handle; }
     };
 
+    struct MaterialHandle {
+        ResourceHandle handle;
+
+        bool operator==(const MaterialHandle& other) const { return handle == other.handle; }
+        bool operator!=(const MaterialHandle& other) const { return handle != other.handle; }
+    };
+
     static TextureHandle INVALID_TEXTURE_HANDLE = {INVALID_RESOURCE_HANDLE};
     static RenderPassHandle INVALID_RENDER_PASS_HANDLE = {INVALID_RESOURCE_HANDLE};
     static BufferHandle INVALID_BUFFER_HANDLE = {INVALID_RESOURCE_HANDLE};
     static FramebufferHandle INVALID_FRAMEBUFFER_HANDLE = {INVALID_RESOURCE_HANDLE};
     static PipelineHandle INVALID_PIPELINE_HANDLE = {INVALID_RESOURCE_HANDLE};
     static DescriptorSetLayoutHandle INVALID_DESCRIPTOR_SET_LAYOUT_HANDLE = {INVALID_RESOURCE_HANDLE};
+    static MaterialHandle INVALID_MATERIAL_HANDLE = {INVALID_RESOURCE_HANDLE};
 }

@@ -4,6 +4,7 @@
 layout(push_constant) uniform Push {
     mat4 transform;
     mat4 modelMatrix;
+    uint materialIndex;
 } push;
 
 layout(set = 2, binding = 0) uniform Transforms {

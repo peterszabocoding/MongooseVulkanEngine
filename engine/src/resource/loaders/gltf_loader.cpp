@@ -217,34 +217,33 @@ namespace MongooseVK
             return textures;
         }
 
-        static std::vector<VulkanMaterial> LoadMaterials(const tinygltf::Model& model, VulkanDevice* device,
+        static std::vector<MaterialHandle> LoadMaterials(const tinygltf::Model& model, VulkanDevice* device,
                                                          const std::vector<Ref<VulkanTexture>>& textures,
                                                          const std::vector<TextureHandle>& textureHandles)
         {
-            std::vector<VulkanMaterial> materials;
+            std::vector<MaterialHandle> materials;
             for (const tinygltf::Material& material: model.materials)
             {
-                VulkanMaterialBuilder builder(device);
-                builder.SetDescriptorSetLayout(ShaderCache::descriptorSetLayouts.materialDescriptorSetLayout);
+                MaterialCreateInfo materialCreateInfo{};
+                materialCreateInfo.baseColor = glm::make_vec4(material.pbrMetallicRoughness.baseColorFactor.data());
+                materialCreateInfo.metallic = material.pbrMetallicRoughness.metallicFactor;
+                materialCreateInfo.roughness = material.pbrMetallicRoughness.roughnessFactor;
+                materialCreateInfo.isAlphaTested = material.alphaMode != "OPAQUE";
 
-                builder.SetBaseColorTexture(material.pbrMetallicRoughness.baseColorTexture.index >= 0
-                                                      ? textureHandles[material.pbrMetallicRoughness.baseColorTexture.index]
-                                                      : INVALID_TEXTURE_HANDLE);
+                materialCreateInfo.baseColorTextureHandle = material.pbrMetallicRoughness.baseColorTexture.index >= 0
+                                                                ? textureHandles[material.pbrMetallicRoughness.baseColorTexture.index]
+                                                                : INVALID_TEXTURE_HANDLE;
 
-                builder.SetMetallicRoughnessTexture(material.pbrMetallicRoughness.metallicRoughnessTexture.index >= 0
-                                                              ? textureHandles[material.pbrMetallicRoughness.metallicRoughnessTexture.index]
-                                                              : INVALID_TEXTURE_HANDLE);
+                materialCreateInfo.metallicRoughnessTextureHandle = material.pbrMetallicRoughness.metallicRoughnessTexture.index >= 0
+                                                                        ? textureHandles[material.pbrMetallicRoughness.
+                                                                            metallicRoughnessTexture.index]
+                                                                        : INVALID_TEXTURE_HANDLE;
 
-                builder.SetNormalMapTexture(material.normalTexture.index >= 0
-                                                      ? textureHandles[material.normalTexture.index]
-                                                      : INVALID_TEXTURE_HANDLE);
+                materialCreateInfo.normalMapTextureHandle = material.normalTexture.index >= 0
+                                                ? textureHandles[material.normalTexture.index]
+                                                : INVALID_TEXTURE_HANDLE;
 
-                builder.SetBaseColor(glm::make_vec4(material.pbrMetallicRoughness.baseColorFactor.data()));
-                builder.SetMetallic(material.pbrMetallicRoughness.metallicFactor);
-                builder.SetRoughness(material.pbrMetallicRoughness.roughnessFactor);
-                builder.SetAlphaTested(material.alphaMode != "OPAQUE");
-
-                materials.push_back(builder.Build());
+                materials.push_back(device->CreateMaterial(materialCreateInfo));
             }
             return materials;
         }
@@ -280,7 +279,7 @@ namespace MongooseVK
         const std::vector<Ref<VulkanTexture>> textures = ImageUtils::LoadTextures(model, device, gltfFilePath.parent_path());
         const std::vector<TextureHandle> textureHandles = ImageUtils::LoadTextures2(model, device, gltfFilePath.parent_path());
 
-        const std::vector<VulkanMaterial> materials = ImageUtils::LoadMaterials(model, device, textures, textureHandles);
+        const std::vector<MaterialHandle> materials = ImageUtils::LoadMaterials(model, device, textures, textureHandles);
 
         mesh->SetMaterials(materials);
 
@@ -311,7 +310,7 @@ namespace MongooseVK
         const std::vector<Ref<VulkanTexture>> textures = ImageUtils::LoadTextures(model, device, gltfFilePath.parent_path());
         const std::vector<TextureHandle> textureHandles = ImageUtils::LoadTextures2(model, device, gltfFilePath.parent_path());
 
-        const std::vector<VulkanMaterial> materials = ImageUtils::LoadMaterials(model, device, textures, textureHandles);
+        const std::vector<MaterialHandle> materials = ImageUtils::LoadMaterials(model, device, textures, textureHandles);
         std::vector<Ref<VulkanMesh>> meshes;
         std::vector<Transform> transforms;
 

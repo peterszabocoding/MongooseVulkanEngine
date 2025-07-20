@@ -33,22 +33,25 @@ namespace MongooseVK
 
         for (size_t i = 0; i < scene.meshes.size(); i++)
         {
-            SimplePushConstantData pushConstantData;
-            pushConstantData.modelMatrix = scene.transforms[i].GetTransform();
-            pushConstantData.transform = camera->GetProjection() * camera->GetView() * pushConstantData.modelMatrix;
-
-            geometryDrawParams.pushConstantParams = {
-                &pushConstantData,
-                sizeof(SimplePushConstantData)
-            };
-
             for (auto& meshlet: scene.meshes[i]->GetMeshlets())
             {
-                if (scene.meshes[i]->GetMaterial(meshlet).params.alphaTested) continue;
+                VulkanMaterial* material = device->GetMaterial(scene.meshes[i]->GetMaterial(meshlet));
+
+                SimplePushConstantData pushConstantData;
+                pushConstantData.modelMatrix = scene.transforms[i].GetTransform();
+                pushConstantData.transform = camera->GetProjection() * camera->GetView() * pushConstantData.modelMatrix;
+                pushConstantData.materialIndex = material->index;
+
+                geometryDrawParams.pushConstantParams = {
+                    &pushConstantData,
+                    sizeof(SimplePushConstantData)
+                };
+
+                if (material->params.alphaTested) continue;
 
                 geometryDrawParams.descriptorSets = {
                     device->bindlessTextureDescriptorSet,
-                    scene.meshes[i]->GetMaterial(meshlet).descriptorSet,
+                    device->materialDescriptorSet,
                     ShaderCache::descriptorSets.cameraDescriptorSet,
                 };
 
@@ -87,8 +90,8 @@ namespace MongooseVK
         pipelineConfig.fragmentShaderPath = "gbuffer.frag";
 
         pipelineConfig.descriptorSetLayouts = {
-            device->bindlessDescriptorSetLayoutHandle,
-            ShaderCache::descriptorSetLayouts.materialDescriptorSetLayout,
+            device->bindlessTexturesDescriptorSetLayoutHandle,
+            device->materialsDescriptorSetLayoutHandle,
             ShaderCache::descriptorSetLayouts.cameraDescriptorSetLayout,
         };
 

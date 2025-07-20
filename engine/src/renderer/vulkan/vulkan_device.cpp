@@ -12,8 +12,10 @@
 
 #define VMA_IMPLEMENTATION
 
+#include <renderer/shader_cache.h>
 #include <renderer/vulkan/vulkan_framebuffer.h>
 #include <renderer/vulkan/vulkan_texture.h>
+#include <tiny_gltf/tiny_gltf.h>
 
 #include "renderer/vulkan/vulkan_descriptor_pool.h"
 #include "renderer/vulkan/vulkan_descriptor_writer.h"
@@ -164,7 +166,7 @@ namespace MongooseVK
         {
             device_extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
             //validation_layer_list.push_back("VK_LAYER_LUNARG_crash_diagnostic");
-            //validation_layer_list.push_back("VK_LAYER_KHRONOS_validation");
+            validation_layer_list.push_back("VK_LAYER_KHRONOS_validation");
             //validation_layer_list.push_back("VK_LAYER_LUNARG_api_dump");
         }
 
@@ -186,6 +188,7 @@ namespace MongooseVK
         vmaCreateAllocator(&allocatorInfo, &vmaAllocator);
 
         texturePool.Init(1024);
+        materialPool.Init(10000);
         renderPassPool.Init(128);
         framebufferPool.Init(128);
         pipelinePool.Init(128);
@@ -378,7 +381,7 @@ namespace MongooseVK
             });
         }
 
-        UpdateTexture({texture->index});
+        MakeBindlessTexture({texture->index});
 
         return textureHandle;
     }
@@ -484,19 +487,19 @@ namespace MongooseVK
         DestroyBuffer(stagingBuffer);
     }
 
-    void VulkanDevice::UpdateTexture(TextureHandle textureHandle)
+    void VulkanDevice::MakeBindlessTexture(TextureHandle textureHandle)
     {
-        VulkanTexture* texture = GetTexture(textureHandle);
-        auto bindlessDescriptorSetLayout = GetDescriptorSetLayout(bindlessDescriptorSetLayoutHandle);
-        VulkanDescriptorWriter descriptorWriter = VulkanDescriptorWriter(*bindlessDescriptorSetLayout, *bindlessDescriptorPool);
+        const VulkanTexture* texture = GetTexture(textureHandle);
+        const auto bindlessDescriptorSetLayout = GetDescriptorSetLayout(bindlessTexturesDescriptorSetLayoutHandle);
 
         VkDescriptorImageInfo imageInfo{};
         imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         imageInfo.imageView = texture->GetImageView();
         imageInfo.sampler = texture->GetSampler();
 
-        descriptorWriter.WriteImage(0, &imageInfo, texture->index);
-        descriptorWriter.BuildOrOverwrite(bindlessTextureDescriptorSet);
+        VulkanDescriptorWriter(*bindlessDescriptorSetLayout, *bindlessDescriptorPool)
+                .WriteImage(0, &imageInfo, texture->index)
+                .BuildOrOverwrite(bindlessTextureDescriptorSet);
     }
 
     void VulkanDevice::DestroyTexture(TextureHandle textureHandle)
@@ -515,6 +518,49 @@ namespace MongooseVK
             vmaDestroyImage(vmaAllocator, texture->allocatedImage.image, texture->allocatedImage.allocation);
 
             texturePool.Release(texture);
+        });
+    }
+
+    MaterialHandle VulkanDevice::CreateMaterial(const MaterialCreateInfo& info)
+    {
+        VulkanMaterial* material = materialPool.Obtain();
+
+        MaterialParams params{};
+        params.baseColor = info.baseColor;
+        params.metallic = info.metallic;
+        params.roughness = info.roughness;
+        params.baseColorTextureIndex = info.baseColorTextureHandle.handle;
+        params.normalMapTextureIndex = info.normalMapTextureHandle.handle;
+        params.metallicRoughnessTextureIndex = info.metallicRoughnessTextureHandle.handle;
+        params.alphaTested = info.isAlphaTested;
+
+        material->params = params;
+
+        // Get specific params location from buffer and write into that
+        void* materialParams;
+
+        vmaMapMemory(vmaAllocator, materialBuffer.allocation, &materialParams);
+        static_cast<MaterialParams*>(materialParams)[material->index] = params;
+
+        vmaUnmapMemory(vmaAllocator, materialBuffer.allocation);
+
+        return {material->index};
+    }
+
+    VulkanMaterial* VulkanDevice::GetMaterial(MaterialHandle materialHandle)
+    {
+        ASSERT(materialHandle != INVALID_MATERIAL_HANDLE, "Invalid material handle");
+        return materialPool.Get(materialHandle.handle);
+    }
+
+    void VulkanDevice::DestroyMaterial(MaterialHandle materialHandle)
+    {
+        if (materialHandle == INVALID_MATERIAL_HANDLE) return;
+        frameDeletionQueue.Push([=] {
+            VulkanMaterial* material = GetMaterial(materialHandle);
+
+            DestroyBuffer(material->materialBuffer);
+            materialPool.Release(material);
         });
     }
 
@@ -940,6 +986,7 @@ namespace MongooseVK
                 .SetMaxSets(100)
                 .AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 100)
                 .AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100)
+                .AddPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 100)
                 .SetPoolFlags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT | VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT)
                 .Build();
 
@@ -957,17 +1004,39 @@ namespace MongooseVK
                 .Build();
 
         // Bindless Textures
-        bindlessDescriptorSetLayoutHandle = VulkanDescriptorSetLayoutBuilder(this)
-                .AddBinding({0, DescriptorSetBindingType::TextureSampler, {ShaderStage::VertexShader, ShaderStage::FragmentShader}},
-                            MAX_BINDLESS_RESOURCES)
-                .AddBinding({1, DescriptorSetBindingType::StorageImage, {ShaderStage::VertexShader, ShaderStage::FragmentShader}},
-                            MAX_BINDLESS_RESOURCES)
-                .Build();
+        {
+            bindlessTexturesDescriptorSetLayoutHandle = VulkanDescriptorSetLayoutBuilder(this)
+                    .AddBinding({0, DescriptorSetBindingType::TextureSampler, {ShaderStage::VertexShader, ShaderStage::FragmentShader}},
+                                MAX_BINDLESS_RESOURCES)
+                    .AddBinding({1, DescriptorSetBindingType::StorageImage, {ShaderStage::VertexShader, ShaderStage::FragmentShader}},
+                                MAX_BINDLESS_RESOURCES)
+                    .Build();
 
+            auto descriptorSetLayout = GetDescriptorSetLayout(bindlessTexturesDescriptorSetLayoutHandle);
+            VulkanDescriptorWriter(*descriptorSetLayout, *bindlessDescriptorPool)
+                    .Build(bindlessTextureDescriptorSet);
+        }
 
-        auto bindlessDescriptorSetLayout = GetDescriptorSetLayout(bindlessDescriptorSetLayoutHandle);
-        VulkanDescriptorWriter(*bindlessDescriptorSetLayout, *bindlessDescriptorPool)
-                .Build(bindlessTextureDescriptorSet);
+        // Bindless materials
+        {
+            const uint64_t bufferSize = sizeof(MaterialParams) * MAX_OBJECTS;
+
+            materialBuffer = CreateBuffer(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+
+            materialsDescriptorSetLayoutHandle = VulkanDescriptorSetLayoutBuilder(this)
+                    .AddBinding({0, DescriptorSetBindingType::StorageBuffer, {ShaderStage::FragmentShader}})
+                    .Build();
+
+            VkDescriptorBufferInfo bufferInfo{};
+            bufferInfo.buffer = materialBuffer.buffer;
+            bufferInfo.offset = 0;
+            bufferInfo.range = bufferSize;
+
+            auto descriptorSetLayout = GetDescriptorSetLayout(materialsDescriptorSetLayoutHandle);
+            VulkanDescriptorWriter(*descriptorSetLayout, *shaderDescriptorPool)
+                    .WriteBuffer(0, &bufferInfo)
+                    .Build(materialDescriptorSet);
+        }
     }
 
     void VulkanDevice::CreateCommandBuffers()
@@ -1063,6 +1132,8 @@ namespace MongooseVK
             vkDestroyShaderModule(GetDevice(), pipeline->fragmentShaderModule, nullptr);
             vkDestroyPipeline(GetDevice(), pipeline->pipeline, nullptr);
             vkDestroyPipelineLayout(GetDevice(), pipeline->pipelineLayout, nullptr);
+
+            pipelinePool.Release(pipeline);
         });
     }
 

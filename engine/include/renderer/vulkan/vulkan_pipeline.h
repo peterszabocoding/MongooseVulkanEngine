@@ -19,6 +19,7 @@ namespace MongooseVK
     struct SimplePushConstantData {
         glm::mat4 transform{1.f};
         glm::mat4 modelMatrix{1.f};
+        uint32_t materialIndex = 0;
     };
 
     struct TransformPushConstantData {

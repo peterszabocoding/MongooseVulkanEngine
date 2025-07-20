@@ -17,6 +17,8 @@ namespace MongooseVK
                     return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
                 case DescriptorSetBindingType::StorageImage:
                     return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+                case DescriptorSetBindingType::StorageBuffer:
+                    return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 
                 default:
                     ASSERT(false, "Unknown descriptor type");

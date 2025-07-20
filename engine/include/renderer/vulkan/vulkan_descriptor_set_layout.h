@@ -19,6 +19,7 @@ namespace MongooseVK
         UniformBuffer = 1,
         TextureSampler = 2,
         StorageImage = 3,
+        StorageBuffer = 4,
     };
 
     enum class ShaderStage {

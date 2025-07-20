@@ -1,10 +1,12 @@
 #pragma once
 
+#include <resource/resource.h>
 #include <vma/vk_mem_alloc.h>
-#include "vulkan_device.h"
+
 
 namespace MongooseVK
 {
+    class VulkanDevice;
 
     class VulkanBuffer {
     public:

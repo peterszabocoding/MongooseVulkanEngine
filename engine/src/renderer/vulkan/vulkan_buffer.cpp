@@ -1,8 +1,6 @@
 #include "renderer/vulkan/vulkan_buffer.h"
 
 #include "renderer/vulkan/vulkan_device.h"
-#include "renderer/vulkan/vulkan_utils.h"
-#include "util/log.h"
 
 namespace MongooseVK
 {

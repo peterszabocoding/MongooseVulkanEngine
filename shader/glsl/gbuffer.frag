@@ -31,10 +31,16 @@ layout(location = 1)            out vec4 outWorldPosition;
 // UNIFORMS ---------------------------------------------------------
 // ------------------------------------------------------------------
 
+layout(push_constant) uniform Push {
+    mat4 transform;
+    mat4 modelMatrix;
+    uint materialIndex;
+} push;
+
 layout(set = 0, binding = 0) uniform sampler2D textures[];
 
-// Material uniforms
-layout(set = 1, binding = 0) uniform MaterialParams {
+
+struct MaterialParamsObject {
     vec4 tint;
     vec4 baseColor;
 
@@ -46,7 +52,11 @@ layout(set = 1, binding = 0) uniform MaterialParams {
     uint metallicRoughnessTextureIndex;
 
     bool alphaTested;
-} materialParams;
+};
+
+layout(std140,set = 1, binding = 0) readonly buffer MaterialBuffer{
+    MaterialParamsObject params[];
+} materials;
 
 vec3 CalcSurfaceNormal(vec3 normalFromTexture, mat3 TBN)
 {
@@ -58,11 +68,13 @@ vec3 CalcSurfaceNormal(vec3 normalFromTexture, mat3 TBN)
 }
 
 void main() {
-    vec4 baseColorSampled = texture(textures[materialParams.baseColorTextureIndex], fragTexCoord);
-    vec3 baseColor = materialParams.baseColorTextureIndex < INVALID_TEXTURE_INDEX ? pow(baseColorSampled.rgb, vec3(2.2)) : materialParams.baseColor.rgb;
+    MaterialParamsObject material = materials.params[push.materialIndex];
 
-    vec3 normalMapColor = texture(textures[materialParams.normalMapTextureIndex], fragTexCoord).rgb;
-    vec3 N = materialParams.normalMapTextureIndex < INVALID_TEXTURE_INDEX ? CalcSurfaceNormal(normalMapColor, TBN) : fragNormal;
+    vec4 baseColorSampled = texture(textures[material.baseColorTextureIndex], fragTexCoord);
+    vec3 baseColor = material.baseColorTextureIndex < INVALID_TEXTURE_INDEX ? pow(baseColorSampled.rgb, vec3(2.2)) : material.baseColor.rgb;
+
+    vec3 normalMapColor = texture(textures[material.normalMapTextureIndex], fragTexCoord).rgb;
+    vec3 N = material.normalMapTextureIndex < INVALID_TEXTURE_INDEX ? CalcSurfaceNormal(normalMapColor, TBN) : fragNormal;
 
     /////////////////   GBuffer   ////////////////////////
     normalImage = vec4(N, 1.0);

@@ -14,6 +14,7 @@
 #include "memory/resource_pool.h"
 #include "vulkan_descriptor_pool.h"
 #include "vulkan_descriptor_set_layout.h"
+#include "vulkan_material.h"
 #include "vulkan_pipeline.h"
 #include "vulkan_renderpass.h"
 #include "resource/resource.h"
@@ -32,6 +33,7 @@ namespace MongooseVK
     constexpr int MAX_FRAMES_IN_FLIGHT = 1;
     constexpr int DESCRIPTOR_SET_LAYOUT_POOL_SIZE = 10000;
     constexpr uint32_t MAX_BINDLESS_RESOURCES = 100;
+    constexpr uint32_t MAX_OBJECTS = 10000;
 
     typedef std::function<void(VkCommandBuffer commandBuffer, uint32_t imageIndex)>&& DrawFrameFunction;
     typedef std::function<void()>&& OutOfDateErrorCallback;
@@ -55,17 +57,7 @@ namespace MongooseVK
         std::vector<VkDescriptorSet> descriptorSets{};
     };
 
-    struct AllocatedBuffer {
-        VkBuffer buffer;
-        VmaAllocation allocation;
-        VmaAllocationInfo info;
-        VkDeviceAddress address;
 
-        VkDeviceMemory GetBufferMemory() const { return info.deviceMemory; }
-        VkDeviceSize GetBufferSize() const { return info.size; }
-        VkDeviceSize GetOffset() const { return info.offset; }
-        void* GetData() const { return info.pMappedData; }
-    };
 
     struct TextureCreateInfo {
         uint32_t width;
@@ -170,8 +162,13 @@ namespace MongooseVK
         VulkanTexture* GetTexture(TextureHandle textureHandle);
         void UploadTextureData(TextureHandle textureHandle, void* data, uint64_t size);
         void UploadCubemapTextureData(TextureHandle textureHandle, Bitmap* cubemap);
-        void UpdateTexture(TextureHandle textureHandle);
+        void MakeBindlessTexture(TextureHandle textureHandle);
         void DestroyTexture(TextureHandle textureHandle);
+
+        // Material management
+        MaterialHandle CreateMaterial(const MaterialCreateInfo& info);
+        VulkanMaterial* GetMaterial(MaterialHandle materialHandle);
+        void DestroyMaterial(MaterialHandle materialHandle);
 
         // Render pass management
         RenderPassHandle CreateRenderPass(VulkanRenderPass::RenderPassConfig config);
@@ -211,14 +208,20 @@ namespace MongooseVK
 
     public:
         uint32_t currentFrame = 0;
+
         ObjectResourcePool<VulkanTexture> texturePool;
+        ObjectResourcePool<VulkanMaterial> materialPool;
         ObjectResourcePool<VulkanRenderPass> renderPassPool;
         ObjectResourcePool<VulkanFramebuffer> framebufferPool;
         ObjectResourcePool<VulkanPipeline> pipelinePool;
         ObjectResourcePool<VulkanDescriptorSetLayout> descriptorSetLayoutPool;
 
         VkDescriptorSet bindlessTextureDescriptorSet{};
-        DescriptorSetLayoutHandle bindlessDescriptorSetLayoutHandle;
+        DescriptorSetLayoutHandle bindlessTexturesDescriptorSetLayoutHandle;
+
+        VkDescriptorSet materialDescriptorSet{};
+        DescriptorSetLayoutHandle materialsDescriptorSetLayoutHandle;
+        AllocatedBuffer materialBuffer;
 
         DeletionQueue frameDeletionQueue;
 

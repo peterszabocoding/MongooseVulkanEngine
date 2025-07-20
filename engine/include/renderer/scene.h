@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <resource/resource.h>
 #include <util/core.h>
 
 #include "Light.h"
@@ -26,7 +27,7 @@ namespace MongooseVK
         // Render objects
         std::vector<Transform> transforms;
         std::vector<Ref<VulkanMesh>> meshes;
-        std::vector<VulkanMaterial> materials;
+        std::vector<MaterialHandle> materials;
 
         // Lights
         DirectionalLight directionalLight;

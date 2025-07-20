@@ -26,7 +26,7 @@ namespace VulkanDemo
         cameraController = new MongooseVK::CameraController(camera);
 
         LOG_TRACE("Loading scene...");
-        renderer.LoadScene(scenes.CHESS_GAME, environments.NEWPORT_LOFT);
+        renderer.LoadScene(scenes.DAMAGED_HELMET, environments.NEWPORT_LOFT);
 
         LOG_TRACE("Init ImGui");
         imGuiVulkan.Init(glfwWindow, &renderer);

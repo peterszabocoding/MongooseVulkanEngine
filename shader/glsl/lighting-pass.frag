@@ -30,10 +30,16 @@ layout(location = 0) out vec4 finalImage;
 // UNIFORMS ---------------------------------------------------------
 // ------------------------------------------------------------------
 
+layout(push_constant) uniform Push {
+    mat4 transform;
+    mat4 modelMatrix;
+    uint materialIndex;
+} push;
+
 layout(set = 0, binding = 0) uniform sampler2D textures[];
 
-// Material uniforms
-layout(set = 1, binding = 0) uniform MaterialParams {
+
+struct MaterialParamsObject {
     vec4 tint;
     vec4 baseColor;
     float metallic;
@@ -44,7 +50,11 @@ layout(set = 1, binding = 0) uniform MaterialParams {
     uint metallicRoughnessTextureIndex;
 
     bool alphaTested;
-} materialParams;
+};
+
+layout(std140,set = 1, binding = 0) readonly buffer MaterialBuffer{
+    MaterialParamsObject params[];
+} materials;
 
 // Transform uniforms
 layout(set = 2, binding = 0) uniform Transforms {
@@ -75,6 +85,8 @@ layout(set = 6, binding = 0)    uniform sampler2D SSAO;
 layout(set = 7, binding = 0)    uniform samplerCube prefilterMap;
 layout(set = 8, binding = 0)    uniform sampler2D brdfLUT;
 
+
+
 // ------------------------------------------------------------------
 // VARIABLES --------------------------------------------------------
 // ------------------------------------------------------------------
@@ -91,7 +103,7 @@ const mat4 biasMat = mat4(
 0.5, 0.0, 0.0, 0.0,
 0.0, 0.5, 0.0, 0.0,
 0.0, 0.0, 1.0, 0.0,
-0.5, 0.5, 0.0, 1.0 );
+0.5, 0.5, 0.0, 1.0);
 
 vec3 CalcSurfaceNormal(vec3 normalFromTexture, mat3 TBN)
 {
@@ -113,46 +125,48 @@ vec3 CalcDirectionalLightRadiance(vec3 direction, vec4 shadowMapCoord, int casca
 
 void main() {
     vec3 baseColor;
-    if (materialParams.baseColorTextureIndex < INVALID_TEXTURE_INDEX)
+    MaterialParamsObject material = materials.params[push.materialIndex];
+
+    if (material.baseColorTextureIndex < INVALID_TEXTURE_INDEX)
     {
-        vec4 baseColorSampled = texture(textures[materialParams.baseColorTextureIndex], fragTexCoord);
+        vec4 baseColorSampled = texture(textures[material.baseColorTextureIndex], fragTexCoord);
         if (baseColorSampled.a < 0.5) discard;
 
         baseColor = pow(baseColorSampled.rgb, vec3(2.2));
     } else {
-        if (materialParams.baseColor.a < 0.5) discard;
-        baseColor = materialParams.baseColor.rgb;
+        if (material.baseColor.a < 0.5) discard;
+        baseColor = material.baseColor.rgb;
     }
 
     int cascadeIndex = 0;
-    for(int i = 0; i < SHADOW_MAP_CASCADE_COUNT - 1; ++i) {
-        if(inViewPosition.z < lights.cascadeSplits[i]) {
+    for (int i = 0; i < SHADOW_MAP_CASCADE_COUNT - 1; ++i) {
+        if (inViewPosition.z < lights.cascadeSplits[i]) {
             cascadeIndex = i + 1;
         }
     }
 
     vec4 shadowMapCoord = (biasMat * lights.lightProjection[cascadeIndex]) * inWorldPosition;
 
-    vec3 albedo = fragColor * materialParams.tint.rgb * baseColor;
+    vec3 albedo = fragColor * material.tint.rgb * baseColor;
 
-    float metallic = materialParams.metallic;
-    float roughness = materialParams.roughness;
+    float metallic = material.metallic;
+    float roughness = material.roughness;
     float occlusion = 1.0;
 
-    if (materialParams.metallicRoughnessTextureIndex < INVALID_TEXTURE_INDEX)
+    if (material.metallicRoughnessTextureIndex < INVALID_TEXTURE_INDEX)
     {
-        vec4 metallicRoughness = texture(textures[materialParams.metallicRoughnessTextureIndex], fragTexCoord);
+        vec4 metallicRoughness = texture(textures[material.metallicRoughnessTextureIndex], fragTexCoord);
 
         occlusion =  metallicRoughness.r;
         metallic =  metallicRoughness.b;
         roughness = metallicRoughness.g;
     }
 
-    vec3 normalMapColor = texture(textures[materialParams.normalMapTextureIndex], fragTexCoord).rgb;
+    vec3 normalMapColor = texture(textures[material.normalMapTextureIndex], fragTexCoord).rgb;
 
-    N = materialParams.normalMapTextureIndex < INVALID_TEXTURE_INDEX
-        ? CalcSurfaceNormal(normalMapColor, TBN)
-        : fragNormal;
+    N = material.normalMapTextureIndex < INVALID_TEXTURE_INDEX
+    ? CalcSurfaceNormal(normalMapColor, TBN)
+    : fragNormal;
     V = normalize(transforms.cameraPosition - inWorldPosition.xyz);
 
     vec3 lightPosition = vec3(0.0);
@@ -192,7 +206,7 @@ void main() {
 
     vec3 ambient = lights.ambientIntensity * (kD * diffuse + specular);
 
-    vec3 color = (ambient + Lo) * SSAOValue ;
+    vec3 color = (ambient + Lo) * SSAOValue;
 
     color =  color / (color + vec3(1.0));
     color = pow(color, vec3(1.0/2.2));

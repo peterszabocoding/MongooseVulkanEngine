@@ -10,8 +10,8 @@ namespace MongooseVK
     VulkanDescriptorWriter::VulkanDescriptorWriter(VulkanDescriptorSetLayout& setLayout, VulkanDescriptorPool& pool)
         : setLayout{setLayout}, pool{pool} {}
 
-    VulkanDescriptorWriter& VulkanDescriptorWriter::WriteBuffer(
-        const uint32_t binding, VkDescriptorBufferInfo* bufferInfo)
+    VulkanDescriptorWriter& VulkanDescriptorWriter::WriteBuffer(const uint32_t binding,
+                                                                const VkDescriptorBufferInfo* bufferInfo)
     {
         //ASSERT(setLayout.bindings.count(binding) == 1, "Layout does not contain specified binding");
 

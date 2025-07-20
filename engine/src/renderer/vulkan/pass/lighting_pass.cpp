@@ -31,20 +31,23 @@ namespace MongooseVK
 
         for (size_t i = 0; i < scene.meshes.size(); i++)
         {
-            SimplePushConstantData pushConstantData;
-            pushConstantData.modelMatrix = scene.transforms[i].GetTransform();
-            pushConstantData.transform = camera->GetProjection() * camera->GetView() * pushConstantData.modelMatrix;
-
-            geometryDrawParams.pushConstantParams = {
-                &pushConstantData,
-                sizeof(SimplePushConstantData)
-            };
-
             for (auto& meshlet: scene.meshes[i]->GetMeshlets())
             {
+                VulkanMaterial* material = device->GetMaterial(scene.meshes[i]->GetMaterial(meshlet));
+
+                SimplePushConstantData pushConstantData;
+                pushConstantData.modelMatrix = scene.transforms[i].GetTransform();
+                pushConstantData.transform = camera->GetProjection() * camera->GetView() * pushConstantData.modelMatrix;
+                pushConstantData.materialIndex = material->index;
+
+                geometryDrawParams.pushConstantParams = {
+                    &pushConstantData,
+                    sizeof(SimplePushConstantData)
+                };
+
                 geometryDrawParams.descriptorSets = {
                     device->bindlessTextureDescriptorSet,
-                    scene.meshes[i]->GetMaterial(meshlet).descriptorSet,
+                    device->materialDescriptorSet,
                     ShaderCache::descriptorSets.cameraDescriptorSet,
                     ShaderCache::descriptorSets.lightsDescriptorSet,
                     ShaderCache::descriptorSets.directionalShadownMapDescriptorSet,
@@ -82,12 +85,10 @@ namespace MongooseVK
         pipelineConfig.fragmentShaderPath = "lighting-pass.frag";
 
         pipelineConfig.cullMode = PipelineCullMode::Back;
-        pipelineConfig.polygonMode = PipelinePolygonMode::Fill;
-        pipelineConfig.frontFace = PipelineFrontFace::Counter_clockwise;
 
         pipelineConfig.descriptorSetLayouts = {
-            device->bindlessDescriptorSetLayoutHandle,
-            ShaderCache::descriptorSetLayouts.materialDescriptorSetLayout,
+            device->bindlessTexturesDescriptorSetLayoutHandle,
+            device->materialsDescriptorSetLayoutHandle,
             ShaderCache::descriptorSetLayouts.cameraDescriptorSetLayout,
             ShaderCache::descriptorSetLayouts.lightsDescriptorSetLayout,
             ShaderCache::descriptorSetLayouts.directionalShadowMapDescriptorSetLayout,
@@ -98,8 +99,6 @@ namespace MongooseVK
         };
 
         pipelineConfig.disableBlending = false;
-        pipelineConfig.enableDepthTest = true;
-        pipelineConfig.depthWriteEnable = true;
 
         pipelineConfig.renderPass = GetRenderPass()->Get();
 
