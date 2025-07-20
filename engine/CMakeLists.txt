@@ -52,7 +52,7 @@ FetchContent_MakeAvailable(glm)
 message(STATUS "Fetching ImGui...")
 FetchContent_MakeAvailable(imgui)
 
-message(STATUS "Fetching fmt...")
+message(STATUS "Fetching spdlog...")
 FetchContent_MakeAvailable(spdlog)
 
 set(SPDLOG_INCLUDE_DIR ${spdlog_SOURCE_DIR}/include)
