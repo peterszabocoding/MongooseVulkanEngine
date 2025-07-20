@@ -61,7 +61,7 @@ namespace MongooseVK
     };
 
     enum class PipelineCullMode {
-        Unknown = 0,
+        None = 0,
         Front,
         Back,
         Front_and_Back,

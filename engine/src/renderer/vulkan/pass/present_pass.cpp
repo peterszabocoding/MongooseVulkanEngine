@@ -41,8 +41,6 @@ namespace MongooseVK
         GetRenderPass()->End(commandBuffer);
     }
 
-    void PresentPass::CreateFramebuffer() {}
-
     void PresentPass::LoadPipeline()
     {
         LOG_TRACE("Building present pipeline");

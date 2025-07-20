@@ -28,8 +28,10 @@ namespace MongooseVK
         virtual void Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer) override;
         virtual void Resize(VkExtent2D _resolution) override;
 
+    protected:
+        virtual void LoadPipeline() override;
+
     private:
-        void LoadPipeline();
         void InitDescriptorSet();
         void GenerateNoiseData();
         void GenerateKernel();
@@ -42,8 +44,6 @@ namespace MongooseVK
         std::vector<glm::vec4> ssaoNoiseData;
 
         VkDescriptorSet ssaoDescriptorSet{};
-        VkDescriptorSet boxBlurDescriptorSet;
-
         TextureHandle ssaoNoiseTextureHandle;
 
         Ref<VulkanBuffer> ssaoBuffer;

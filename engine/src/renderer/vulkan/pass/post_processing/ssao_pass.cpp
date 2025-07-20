@@ -72,7 +72,7 @@ namespace MongooseVK
         VulkanRenderPass::RenderPassConfig config;
         config.AddColorAttachment({
             .imageFormat = ImageFormat::R8_UNORM,
-            .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR
+            .loadOp = RenderPassOperation::LoadOp::Clear
         });
 
         renderPassHandle = device->CreateRenderPass(config);
@@ -119,7 +119,6 @@ namespace MongooseVK
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
             VMA_MEMORY_USAGE_CPU_TO_GPU);
-
 
         memcpy(ssaoBuffer->GetData(), &buffer, sizeof(SSAOBuffer));
 

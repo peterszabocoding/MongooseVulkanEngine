@@ -2,7 +2,6 @@
 
 #include <array>
 #include <glm/vec4.hpp>
-#include "util/core.h"
 #include <memory/resource_pool.h>
 #include <resource/resource.h>
 #include <vulkan/vulkan_core.h>
@@ -26,6 +25,31 @@ namespace MongooseVK
             Store,
             DontCare
         };
+
+        inline VkAttachmentLoadOp convertLoadOpToVk(LoadOp loadOp)
+        {
+            switch (loadOp)
+            {
+                case LoadOp::None: return VK_ATTACHMENT_LOAD_OP_NONE;
+                case LoadOp::Clear: return VK_ATTACHMENT_LOAD_OP_CLEAR;
+                case LoadOp::Load: return VK_ATTACHMENT_LOAD_OP_LOAD;
+                case LoadOp::DontCare: return VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            }
+
+            return VK_ATTACHMENT_LOAD_OP_NONE;
+        }
+
+        inline VkAttachmentStoreOp convertStoreOpToVk(StoreOp storeOp)
+        {
+            switch (storeOp)
+            {
+                case StoreOp::None: return VK_ATTACHMENT_STORE_OP_NONE;
+                case StoreOp::Store: return VK_ATTACHMENT_STORE_OP_STORE;
+                case StoreOp::DontCare: return VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            }
+
+            return VK_ATTACHMENT_STORE_OP_NONE;
+        }
     }
 
     class VulkanRenderPass : public PoolObject {
@@ -34,14 +58,14 @@ namespace MongooseVK
             ImageFormat imageFormat;
             VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT;
             glm::vec4 clearColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-            VkAttachmentLoadOp loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-            VkAttachmentStoreOp storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+            RenderPassOperation::LoadOp loadOp = RenderPassOperation::LoadOp::Clear;
+            RenderPassOperation::StoreOp storeOp = RenderPassOperation::StoreOp::Store;
             bool isSwapchainAttachment = false;
         };
 
         struct DepthAttachment {
             ImageFormat depthFormat = ImageFormat::DEPTH24_STENCIL8;
-            VkAttachmentLoadOp loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+            RenderPassOperation::LoadOp loadOp = RenderPassOperation::LoadOp::Clear;
         };
 
         struct RenderPassConfig {

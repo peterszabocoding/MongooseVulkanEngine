@@ -10,12 +10,16 @@ namespace MongooseVK
     InfiniteGridPass::InfiniteGridPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution): VulkanPass(vulkanDevice, _resolution)
     {
         screenRect = CreateScope<VulkanMeshlet>(device, Primitives::GRID_VERTICES, Primitives::GRID_INDICES);
-        LoadPipelines();
+    }
+
+    void InfiniteGridPass::Init()
+    {
+        VulkanPass::Init();
     }
 
     void InfiniteGridPass::Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer)
     {
-        VulkanFramebuffer* framebuffer = device->GetFramebuffer(writeBuffer);
+        VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandle);
 
         device->SetViewportAndScissor(framebuffer->extent, commandBuffer);
         GetRenderPass()->Begin(commandBuffer, framebuffer->framebuffer, framebuffer->extent);
@@ -31,53 +35,25 @@ namespace MongooseVK
             pipeline->pipelineLayout
         };
 
-        screenRectDrawParams.descriptorSets = {
-            ShaderCache::descriptorSets.cameraDescriptorSet,
-        };
+        screenRectDrawParams.descriptorSets = {descriptorSet};
 
         device->DrawMeshlet(screenRectDrawParams);
         GetRenderPass()->End(commandBuffer);
     }
 
-    void InfiniteGridPass::LoadPipelines()
+    void InfiniteGridPass::LoadPipeline()
     {
-        VulkanRenderPass::RenderPassConfig config;
-
-        config.AddColorAttachment({
-            .imageFormat = ImageFormat::RGBA16_SFLOAT,
-            .loadOp = VK_ATTACHMENT_LOAD_OP_LOAD
-        });
-        config.AddDepthAttachment({
-            .depthFormat = ImageFormat::DEPTH24_STENCIL8,
-            .loadOp = VK_ATTACHMENT_LOAD_OP_LOAD
-        });
-
-        renderPassHandle = device->CreateRenderPass(config);
-
         LOG_TRACE("Building present pipeline");
-        PipelineCreate pipelineConfig;
+
         pipelineConfig.vertexShaderPath = "infinite_grid.vert";
         pipelineConfig.fragmentShaderPath = "infinite_grid.frag";
-
-        pipelineConfig.cullMode = PipelineCullMode::Unknown;
-        pipelineConfig.polygonMode = PipelinePolygonMode::Fill;
-        pipelineConfig.frontFace = PipelineFrontFace::Counter_clockwise;
+        pipelineConfig.cullMode = PipelineCullMode::None;
         pipelineConfig.disableBlending = false;
-        pipelineConfig.enableDepthTest = true;
         pipelineConfig.depthWriteEnable = false;
         pipelineConfig.renderPass = GetRenderPass()->Get();
         pipelineConfig.pushConstantData.shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
         pipelineConfig.pushConstantData.size = sizeof(GridParams);
-
-        pipelineConfig.descriptorSetLayouts = {
-            ShaderCache::descriptorSetLayouts.cameraDescriptorSetLayout
-        };
-
-        pipelineConfig.colorAttachments = {
-            ImageFormat::RGBA16_SFLOAT,
-        };
-
-        pipelineConfig.depthAttachment = ImageFormat::DEPTH24_STENCIL8;
+        pipelineConfig.descriptorSetLayouts = {descriptorSetLayoutHandle};
 
         pipelineHandle = VulkanPipelineBuilder().Build(device, pipelineConfig);
         pipeline = device->GetPipeline(pipelineHandle);

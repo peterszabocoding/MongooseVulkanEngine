@@ -3,7 +3,7 @@
 
 namespace MongooseVK
 {
-    class PrefilterMapPass: public VulkanPass {
+    class PrefilterMapPass final: public VulkanPass {
     public:
         PrefilterMapPass(VulkanDevice* vulkanDevice, const VkExtent2D& _resolution);
 
@@ -15,8 +15,8 @@ namespace MongooseVK
         void SetCubemapTexture(TextureHandle _cubemapTextureHandle);
         void SetTargetTexture(TextureHandle _targetTexture);
 
-    private:
-        void LoadPipeline();
+    protected:
+        virtual void LoadPipeline() override;
 
     private:
         Ref<VulkanMesh> cubeMesh;

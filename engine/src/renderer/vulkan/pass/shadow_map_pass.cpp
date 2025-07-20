@@ -10,7 +10,7 @@ namespace MongooseVK
     ShadowMapPass::ShadowMapPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution): VulkanPass(vulkanDevice, _resolution),
         scene(_scene)
     {
-        LoadPipelines();
+        LoadPipeline();
     }
 
     void ShadowMapPass::Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer)
@@ -50,7 +50,7 @@ namespace MongooseVK
         GetRenderPass()->End(commandBuffer);
     }
 
-    void ShadowMapPass::LoadPipelines()
+    void ShadowMapPass::LoadPipeline()
     {
         VulkanRenderPass::RenderPassConfig config;
         config.AddDepthAttachment({.depthFormat = ImageFormat::DEPTH32});

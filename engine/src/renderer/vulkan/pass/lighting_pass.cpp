@@ -11,7 +11,7 @@ namespace MongooseVK
     LightingPass::LightingPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution): VulkanPass(vulkanDevice, _resolution),
         scene(_scene)
     {
-        LoadPipelines();
+        LoadPipeline();
     }
 
     void LightingPass::Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer)
@@ -62,16 +62,16 @@ namespace MongooseVK
         GetRenderPass()->End(commandBuffer);
     }
 
-    void LightingPass::LoadPipelines()
+    void LightingPass::LoadPipeline()
     {
         VulkanRenderPass::RenderPassConfig config;
         config.AddColorAttachment({
             .imageFormat = ImageFormat::RGBA16_SFLOAT,
-            .loadOp = VK_ATTACHMENT_LOAD_OP_LOAD
+            .loadOp = RenderPassOperation::LoadOp::Load
         });
         config.AddDepthAttachment({
             .depthFormat = ImageFormat::DEPTH24_STENCIL8,
-            .loadOp = VK_ATTACHMENT_LOAD_OP_LOAD
+            .loadOp = RenderPassOperation::LoadOp::Load
         });
 
         renderPassHandle = device->CreateRenderPass(config);

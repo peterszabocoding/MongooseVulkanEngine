@@ -13,8 +13,8 @@ namespace MongooseVK
         virtual void Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer) override;
         void DrawSkybox(VkCommandBuffer commandBuffer) const;
 
-    private:
-        void LoadPipelines();
+    protected:
+        virtual void LoadPipeline() override;
 
     private:
         Scene& scene;

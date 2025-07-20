@@ -14,8 +14,8 @@ namespace MongooseVK
 
         virtual void Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer) override;
 
-    private:
-        void LoadPipelines();
+    protected:
+        virtual void LoadPipeline() override;
 
     private:
         Scene& scene;

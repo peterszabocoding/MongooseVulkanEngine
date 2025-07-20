@@ -60,11 +60,9 @@ namespace MongooseVK
 
     void VulkanShadowMap::TransitionToDepthRendering(VkCommandBuffer cmd)
     {
-        /*
-        VulkanUtils::TransitionImageLayout(cmd, allocatedImage.image, VK_IMAGE_ASPECT_DEPTH_BIT, imageLayout,
-                                           VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-*/
 
+        VulkanUtils::TransitionImageLayout(cmd, allocatedImage, VK_IMAGE_ASPECT_DEPTH_BIT, imageLayout,
+                                           VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
         VkImageSubresourceRange subresourceRange;
         subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;

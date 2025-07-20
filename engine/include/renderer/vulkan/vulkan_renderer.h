@@ -143,6 +143,8 @@ namespace MongooseVK
         Scope<ShaderCache> shaderCache;
         Scope<VulkanSwapchain> vulkanSwapChain;
 
+        std::unordered_map<std::string, PassResource> renderPassResourceMap;
+
         float lightSpinningAngle = 0.0f;
     };
 }

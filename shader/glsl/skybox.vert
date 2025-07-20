@@ -7,7 +7,7 @@ layout(location = 3) in vec3 inNormal;
 layout(location = 4) in vec3 inTangent;
 layout(location = 5) in vec3 inBitangent;
 
-layout(set = 1, binding = 0) uniform Transforms {
+layout(set = 0, binding = 1) uniform Transforms {
     mat4 projection;
     mat4 view;
     vec3 cameraPosition;

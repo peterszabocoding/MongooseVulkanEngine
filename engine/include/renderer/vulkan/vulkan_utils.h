@@ -585,7 +585,7 @@ namespace MongooseVK::VulkanUtils
     }
 
     inline void TransitionImageLayout(const VkCommandBuffer commandBuffer,
-                                      const VkImage image,
+                                      AllocatedImage& image,
                                       const VkImageAspectFlags aspectFlags,
                                       const VkImageLayout oldLayout,
                                       const VkImageLayout newLayout,
@@ -597,7 +597,7 @@ namespace MongooseVK::VulkanUtils
         barrier.newLayout = newLayout;
         barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barrier.image = image;
+        barrier.image = image.image;
         barrier.subresourceRange.aspectMask = aspectFlags;
         barrier.subresourceRange.baseMipLevel = 0;
         barrier.subresourceRange.levelCount = mipLevels;
@@ -666,6 +666,8 @@ namespace MongooseVK::VulkanUtils
         }
 
         vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+
+        image.imageLayout = newLayout;
     }
 
     inline void InsertImageMemoryBarrier(const VkCommandBuffer cmd, const VkImage image,
@@ -724,7 +726,7 @@ namespace MongooseVK::VulkanUtils
         );
     }
 
-    inline void CopyImage(const VkCommandBuffer commandBuffer, const VkImage srcImage, const VkImage dstImage, CopyParams params)
+    inline void CopyImage(const VkCommandBuffer commandBuffer, AllocatedImage& srcImage, const VkImage dstImage, CopyParams params)
     {
         TransitionImageLayout(commandBuffer, srcImage,
                               VK_IMAGE_ASPECT_COLOR_BIT,
@@ -751,7 +753,7 @@ namespace MongooseVK::VulkanUtils
         copyRegion.extent.depth = 1;
 
         vkCmdCopyImage(commandBuffer,
-                       srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                       srcImage.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                        dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                        1, &copyRegion);
 
@@ -782,7 +784,7 @@ namespace MongooseVK::VulkanUtils
 
     inline void GenerateMipmaps(const VkCommandBuffer commandBuffer,
                                 const VkPhysicalDevice physicalDevice,
-                                const VkImage image,
+                                AllocatedImage& image,
                                 const VkFormat imageFormat,
                                 const int32_t width,
                                 const int32_t height,
@@ -798,7 +800,7 @@ namespace MongooseVK::VulkanUtils
 
         VkImageMemoryBarrier barrier{};
         barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-        barrier.image = image;
+        barrier.image = image.image;
         barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -842,8 +844,8 @@ namespace MongooseVK::VulkanUtils
             blit.dstSubresource.layerCount = 1;
 
             vkCmdBlitImage(commandBuffer,
-                           image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                           image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                           image.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                           image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                            1, &blit,
                            VK_FILTER_LINEAR);
 
@@ -873,11 +875,13 @@ namespace MongooseVK::VulkanUtils
                              0, nullptr,
                              0, nullptr,
                              1, &barrier);
+
+        image.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     }
 
     inline void GenerateCubemapMipmaps(const VkCommandBuffer commandBuffer,
                                        VkPhysicalDevice physicalDevice,
-                                       const VkImage image,
+                                       AllocatedImage& image,
                                        VkFormat imageFormat,
                                        const int32_t width,
                                        const int32_t height,
@@ -887,7 +891,7 @@ namespace MongooseVK::VulkanUtils
         {
             VkImageMemoryBarrier barrier{};
             barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-            barrier.image = image;
+            barrier.image = image.image;
             barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -931,8 +935,8 @@ namespace MongooseVK::VulkanUtils
                 blit.dstSubresource.layerCount = 1;
 
                 vkCmdBlitImage(commandBuffer,
-                               image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                               image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                               image.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                               image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                1, &blit,
                                VK_FILTER_LINEAR);
 

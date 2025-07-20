@@ -4,18 +4,10 @@
 #include "util/core.h"
 #include "vulkan_utils.h"
 #include "resource/resource.h"
-#include "vma/vk_mem_alloc.h"
 
 namespace MongooseVK
 {
     class VulkanDevice;
-
-    struct AllocatedImage {
-        uint32_t width, height;
-        VkImage image  = VK_NULL_HANDLE;
-        VmaAllocation allocation  = VK_NULL_HANDLE;
-        VmaAllocationInfo allocationInfo;
-    };
 
     namespace ImageUtils {
         inline VkImageAspectFlags GetAspectFlagFromFormat(ImageFormat format) {

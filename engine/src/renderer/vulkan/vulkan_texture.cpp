@@ -56,7 +56,7 @@ namespace MongooseVK
             memcpy(stagingBuffer.GetData(), data, stagingBuffer.GetBufferSize());
 
             device->ImmediateSubmit([&](const VkCommandBuffer cmd) {
-                VulkanUtils::TransitionImageLayout(cmd, allocatedImage.image,
+                VulkanUtils::TransitionImageLayout(cmd, allocatedImage,
                                                    VK_IMAGE_ASPECT_COLOR_BIT,
                                                    VK_IMAGE_LAYOUT_UNDEFINED,
                                                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -73,7 +73,7 @@ namespace MongooseVK
                 device->ImmediateSubmit([&](const VkCommandBuffer cmd) {
                     VulkanUtils::GenerateMipmaps(cmd,
                                                  device->GetPhysicalDevice(),
-                                                 allocatedImage.image,
+                                                 allocatedImage,
                                                  VulkanUtils::ConvertImageFormat(format),
                                                  width,
                                                  height,
@@ -82,7 +82,7 @@ namespace MongooseVK
             } else
             {
                 device->ImmediateSubmit([&](const VkCommandBuffer cmd) {
-                    VulkanUtils::TransitionImageLayout(cmd, allocatedImage.image,
+                    VulkanUtils::TransitionImageLayout(cmd, allocatedImage,
                                                        VK_IMAGE_ASPECT_COLOR_BIT,
                                                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                                        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
@@ -142,7 +142,7 @@ namespace MongooseVK
             memcpy(stagingBuffer.GetData(), data, stagingBuffer.GetBufferSize());
 
             device->ImmediateSubmit([&](const VkCommandBuffer cmd) {
-                VulkanUtils::TransitionImageLayout(cmd, allocatedImage.image,
+                VulkanUtils::TransitionImageLayout(cmd, allocatedImage,
                                                    VK_IMAGE_ASPECT_COLOR_BIT,
                                                    VK_IMAGE_LAYOUT_UNDEFINED,
                                                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -158,14 +158,14 @@ namespace MongooseVK
                 {
                     VulkanUtils::GenerateMipmaps(cmd,
                                                  device->GetPhysicalDevice(),
-                                                 allocatedImage.image,
+                                                 allocatedImage,
                                                  VulkanUtils::ConvertImageFormat(format),
                                                  width,
                                                  height,
                                                  mipLevels);
                 } else
                 {
-                    VulkanUtils::TransitionImageLayout(cmd, allocatedImage.image,
+                    VulkanUtils::TransitionImageLayout(cmd, allocatedImage,
                                                        VK_IMAGE_ASPECT_COLOR_BIT,
                                                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                                        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,

@@ -164,7 +164,7 @@ namespace MongooseVK
         {
             device_extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
             //validation_layer_list.push_back("VK_LAYER_LUNARG_crash_diagnostic");
-            validation_layer_list.push_back("VK_LAYER_KHRONOS_validation");
+            //validation_layer_list.push_back("VK_LAYER_KHRONOS_validation");
             //validation_layer_list.push_back("VK_LAYER_LUNARG_api_dump");
         }
 
@@ -370,7 +370,7 @@ namespace MongooseVK
         } else if (createInfo.imageLayout != VK_IMAGE_LAYOUT_UNDEFINED)
         {
             ImmediateSubmit([&](const VkCommandBuffer cmd) {
-                VulkanUtils::TransitionImageLayout(cmd, texture->allocatedImage.image,
+                VulkanUtils::TransitionImageLayout(cmd, texture->allocatedImage,
                                                    ImageUtils::GetAspectFlagFromFormat(createInfo.format),
                                                    VK_IMAGE_LAYOUT_UNDEFINED,
                                                    createInfo.imageLayout,
@@ -392,7 +392,7 @@ namespace MongooseVK
     {
         if (!data || size == 0) return;
 
-        const VulkanTexture* texture = GetTexture(textureHandle);
+        VulkanTexture* texture = GetTexture(textureHandle);
         const auto stagingBuffer = CreateBuffer(size,
                                                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                                                 VMA_MEMORY_USAGE_CPU_ONLY);
@@ -400,7 +400,7 @@ namespace MongooseVK
         memcpy(stagingBuffer.GetData(), data, stagingBuffer.GetBufferSize());
 
         ImmediateSubmit([&](const VkCommandBuffer cmd) {
-            VulkanUtils::TransitionImageLayout(cmd, texture->allocatedImage.image,
+            VulkanUtils::TransitionImageLayout(cmd, texture->allocatedImage,
                                                VK_IMAGE_ASPECT_COLOR_BIT,
                                                VK_IMAGE_LAYOUT_UNDEFINED,
                                                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -415,14 +415,14 @@ namespace MongooseVK
             {
                 VulkanUtils::GenerateMipmaps(cmd,
                                              GetPhysicalDevice(),
-                                             texture->allocatedImage.image,
+                                             texture->allocatedImage,
                                              VulkanUtils::ConvertImageFormat(texture->createInfo.format),
                                              texture->createInfo.width,
                                              texture->createInfo.height,
                                              texture->createInfo.mipLevels);
             } else
             {
-                VulkanUtils::TransitionImageLayout(cmd, texture->allocatedImage.image,
+                VulkanUtils::TransitionImageLayout(cmd, texture->allocatedImage,
                                                    VK_IMAGE_ASPECT_COLOR_BIT,
                                                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
@@ -435,7 +435,7 @@ namespace MongooseVK
 
     void VulkanDevice::UploadCubemapTextureData(TextureHandle textureHandle, Bitmap* cubemap)
     {
-        const VulkanTexture* texture = GetTexture(textureHandle);
+        VulkanTexture* texture = GetTexture(textureHandle);
         const TextureCreateInfo info = texture->createInfo;
 
         const auto stagingBuffer = CreateBuffer(cubemap->pixelData.size(),
@@ -460,7 +460,7 @@ namespace MongooseVK
 
         ImmediateSubmit([&](const VkCommandBuffer cmd) {
             VulkanUtils::TransitionImageLayout(cmd,
-                                               texture->allocatedImage.image,
+                                               texture->allocatedImage,
                                                VK_IMAGE_ASPECT_COLOR_BIT,
                                                VK_IMAGE_LAYOUT_UNDEFINED,
                                                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
@@ -474,7 +474,7 @@ namespace MongooseVK
 
             VulkanUtils::GenerateCubemapMipmaps(cmd,
                                                 GetPhysicalDevice(),
-                                                texture->allocatedImage.image,
+                                                texture->allocatedImage,
                                                 VulkanUtils::ConvertImageFormat(info.format),
                                                 info.width,
                                                 info.height,
@@ -501,6 +501,7 @@ namespace MongooseVK
 
     void VulkanDevice::DestroyTexture(TextureHandle textureHandle)
     {
+        if (textureHandle == INVALID_TEXTURE_HANDLE) return;
         frameDeletionQueue.Push([=] {
             VulkanTexture* texture = GetTexture(textureHandle);
 
@@ -534,8 +535,8 @@ namespace MongooseVK
             VkAttachmentDescription attachment{};
             attachment.format = VulkanUtils::ConvertImageFormat(colorAttachment.imageFormat);
             attachment.samples = colorAttachment.sampleCount;
-            attachment.loadOp = colorAttachment.loadOp;
-            attachment.storeOp = colorAttachment.storeOp;
+            attachment.loadOp = convertLoadOpToVk(colorAttachment.loadOp);
+            attachment.storeOp = convertStoreOpToVk(colorAttachment.storeOp);
             attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
             attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
             attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -557,7 +558,7 @@ namespace MongooseVK
             VkAttachmentDescription attachment{};
             attachment.format = VulkanUtils::ConvertImageFormat(config.depthAttachment->depthFormat);
             attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-            attachment.loadOp = config.depthAttachment->loadOp;
+            attachment.loadOp = convertLoadOpToVk(config.depthAttachment->loadOp);
             attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
             attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
             attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -619,6 +620,7 @@ namespace MongooseVK
 
     void VulkanDevice::DestroyRenderPass(RenderPassHandle renderPassHandle)
     {
+        if (renderPassHandle == INVALID_RENDER_PASS_HANDLE) return;
         frameDeletionQueue.Push([=] {
             VulkanRenderPass* renderPass = renderPassPool.Get(renderPassHandle.handle);
             vkDestroyRenderPass(device, renderPass->Get(), nullptr);
@@ -668,6 +670,7 @@ namespace MongooseVK
 
     void VulkanDevice::DestroyFramebuffer(FramebufferHandle framebufferHandle)
     {
+        if (framebufferHandle == INVALID_FRAMEBUFFER_HANDLE) return;
         frameDeletionQueue.Push([=] {
             LOG_INFO("Destroy framebuffer");
             VulkanFramebuffer* framebuffer = framebufferPool.Get(framebufferHandle.handle);
@@ -1052,12 +1055,15 @@ namespace MongooseVK
 
     void VulkanDevice::DestroyPipeline(PipelineHandle pipelineHandle)
     {
-        VulkanPipeline* pipeline = pipelinePool.Get(pipelineHandle.handle);
+        if (pipelineHandle == INVALID_PIPELINE_HANDLE) return;
+        frameDeletionQueue.Push([=] {
+            VulkanPipeline* pipeline = pipelinePool.Get(pipelineHandle.handle);
 
-        vkDestroyShaderModule(GetDevice(), pipeline->vertexShaderModule, nullptr);
-        vkDestroyShaderModule(GetDevice(), pipeline->fragmentShaderModule, nullptr);
-        vkDestroyPipeline(GetDevice(), pipeline->pipeline, nullptr);
-        vkDestroyPipelineLayout(GetDevice(), pipeline->pipelineLayout, nullptr);
+            vkDestroyShaderModule(GetDevice(), pipeline->vertexShaderModule, nullptr);
+            vkDestroyShaderModule(GetDevice(), pipeline->fragmentShaderModule, nullptr);
+            vkDestroyPipeline(GetDevice(), pipeline->pipeline, nullptr);
+            vkDestroyPipelineLayout(GetDevice(), pipeline->pipelineLayout, nullptr);
+        });
     }
 
     DescriptorSetLayoutHandle VulkanDevice::CreateDescriptorSetLayout(DescriptorSetLayoutCreateInfo& info)
@@ -1097,6 +1103,7 @@ namespace MongooseVK
 
     void VulkanDevice::DestroyDescriptorSetLayout(DescriptorSetLayoutHandle descriptorSetLayoutHandle)
     {
+        if (descriptorSetLayoutHandle == INVALID_DESCRIPTOR_SET_LAYOUT_HANDLE) return;
         frameDeletionQueue.Push([&] {
             const VulkanDescriptorSetLayout* descriptorSetLayout = descriptorSetLayoutPool.Get(descriptorSetLayoutHandle.handle);
             vkDestroyDescriptorSetLayout(GetDevice(), descriptorSetLayout->descriptorSetLayout, nullptr);

@@ -13,12 +13,11 @@ namespace MongooseVK
         scene(_scene)
     {
         cubeMesh = ResourceManager::LoadMesh(device, "resources/models/cube.obj");
-        LoadPipelines();
     }
 
     void SkyboxPass::Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer)
     {
-        const VulkanFramebuffer* framebuffer = device->GetFramebuffer(writeBuffer);
+        const VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandle);
 
         device->SetViewportAndScissor(framebuffer->extent, commandBuffer);
         GetRenderPass()->Begin(commandBuffer, framebuffer->framebuffer, framebuffer->extent);
@@ -30,46 +29,23 @@ namespace MongooseVK
             pipeline->pipeline,
             pipeline->pipelineLayout
         };
-        skyboxDrawParams.descriptorSets = {
-            ShaderCache::descriptorSets.cubemapDescriptorSet,
-            ShaderCache::descriptorSets.cameraDescriptorSet
-        };
+        skyboxDrawParams.descriptorSets = {descriptorSet};
 
         device->DrawMeshlet(skyboxDrawParams);
 
         GetRenderPass()->End(commandBuffer);
     }
 
-    void SkyboxPass::LoadPipelines()
+    void SkyboxPass::LoadPipeline()
     {
-        VulkanRenderPass::RenderPassConfig config;
-        config.AddColorAttachment({
-            .imageFormat = ImageFormat::RGBA16_SFLOAT,
-            .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-            .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-        });
-
-        config.AddDepthAttachment({
-            .depthFormat = ImageFormat::DEPTH24_STENCIL8,
-            .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-        });
-
-        renderPassHandle = device->CreateRenderPass(config);
-
         LOG_TRACE("Building skybox pipeline");
-        PipelineCreate pipelineConfig;
         pipelineConfig.vertexShaderPath = "skybox.vert";
         pipelineConfig.fragmentShaderPath = "skybox.frag";
 
         pipelineConfig.cullMode = PipelineCullMode::Front;
         pipelineConfig.enableDepthTest = false;
         pipelineConfig.renderPass = GetRenderPass()->Get();
-        pipelineConfig.colorAttachments = {ImageFormat::RGBA16_SFLOAT};
-        pipelineConfig.depthAttachment = ImageFormat::DEPTH24_STENCIL8;
-        pipelineConfig.descriptorSetLayouts = {
-            ShaderCache::descriptorSetLayouts.cubemapDescriptorSetLayout,
-            ShaderCache::descriptorSetLayouts.cameraDescriptorSetLayout,
-        };
+        pipelineConfig.descriptorSetLayouts = {descriptorSetLayoutHandle};
 
         pipelineHandle = VulkanPipelineBuilder().Build(device, pipelineConfig);
         pipeline = device->GetPipeline(pipelineHandle);

@@ -1,5 +1,8 @@
 #pragma once
 
+#include <vulkan/vulkan_core.h>
+#include <vma/vk_mem_alloc.h>
+
 namespace MongooseVK
 {
     enum class ImageFormat {
@@ -41,6 +44,14 @@ namespace MongooseVK
 
         DEPTH24_STENCIL8,
         DEPTH32,
+    };
+
+    struct AllocatedImage {
+        uint32_t width, height;
+        VkImage image  = VK_NULL_HANDLE;
+        VkImageLayout imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        VmaAllocation allocation  = VK_NULL_HANDLE;
+        VmaAllocationInfo allocationInfo;
     };
 
     struct ImageResource {
@@ -112,5 +123,5 @@ namespace MongooseVK
     static BufferHandle INVALID_BUFFER_HANDLE = {INVALID_RESOURCE_HANDLE};
     static FramebufferHandle INVALID_FRAMEBUFFER_HANDLE = {INVALID_RESOURCE_HANDLE};
     static PipelineHandle INVALID_PIPELINE_HANDLE = {INVALID_RESOURCE_HANDLE};
-    static PipelineHandle INVALID_DESCRIPTOR_SET_LAYOUT_HANDLE = {INVALID_RESOURCE_HANDLE};
+    static DescriptorSetLayoutHandle INVALID_DESCRIPTOR_SET_LAYOUT_HANDLE = {INVALID_RESOURCE_HANDLE};
 }

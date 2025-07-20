@@ -13,7 +13,7 @@ namespace MongooseVK
     GBufferPass::GBufferPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution): VulkanPass(vulkanDevice, _resolution),
         scene(_scene)
     {
-        LoadPipelines();
+        LoadPipeline();
     }
 
     void GBufferPass::Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer)
@@ -65,7 +65,7 @@ namespace MongooseVK
         VulkanPass::Resize(_resolution);
     }
 
-    void GBufferPass::LoadPipelines()
+    void GBufferPass::LoadPipeline()
     {
         LOG_TRACE("Building gbuffer pipeline");
 

@@ -12,8 +12,8 @@ namespace MongooseVK
         virtual void Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBufferHandle) override;
         virtual void Resize(VkExtent2D _resolution) override;
 
-    private:
-        void LoadPipeline();
+    protected:
+        virtual void LoadPipeline() override;
 
     private:
         Ref<VulkanMeshlet> screenRect;
