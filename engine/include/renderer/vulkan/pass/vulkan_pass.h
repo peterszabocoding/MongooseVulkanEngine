@@ -86,8 +86,10 @@ namespace MongooseVK
             pipelineConfig = {};
 
             // Framebuffer
-            device->DestroyFramebuffer(framebufferHandle);
-            framebufferHandle = INVALID_FRAMEBUFFER_HANDLE;
+            for (const auto handle: framebufferHandles)
+                device->DestroyFramebuffer(handle);
+
+            framebufferHandles.clear();
 
             // Render pass
             device->DestroyRenderPass(renderPassHandle);
@@ -174,8 +176,8 @@ namespace MongooseVK
             for (uint32_t i = 0; i < inputs.size(); i++)
             {
                 const DescriptorSetBindingType type = inputs[i].type == ResourceType::Buffer
-                                                    ? DescriptorSetBindingType::UniformBuffer
-                                                    : DescriptorSetBindingType::TextureSampler;
+                                                          ? DescriptorSetBindingType::UniformBuffer
+                                                          : DescriptorSetBindingType::TextureSampler;
                 descriptorSetLayoutBuilder.AddBinding({i, type, {ShaderStage::VertexShader, ShaderStage::FragmentShader}});
             }
             passDescriptorSetLayoutHandle = descriptorSetLayoutBuilder.Build();
@@ -219,9 +221,12 @@ namespace MongooseVK
             };
 
             for (const auto& output: outputs)
-                framebufferCreateInfo.attachments.push_back({.textureHandle = output.resource.resourceInfo.texture.textureHandle});
+            {
+                const TextureHandle outputTextureHandle = output.resource.resourceInfo.texture.textureHandle;
+                framebufferCreateInfo.attachments.push_back({.textureHandle = outputTextureHandle});
+            }
 
-            framebufferHandle = device->CreateFramebuffer(framebufferCreateInfo);
+            framebufferHandles.push_back(device->CreateFramebuffer(framebufferCreateInfo));
         }
 
     protected:
@@ -235,10 +240,10 @@ namespace MongooseVK
         VulkanRenderPass::RenderPassConfig renderpassConfig{};
         RenderPassHandle renderPassHandle = INVALID_RENDER_PASS_HANDLE;
 
+        std::vector<FramebufferHandle> framebufferHandles;
+
         DescriptorSetLayoutHandle passDescriptorSetLayoutHandle = INVALID_DESCRIPTOR_SET_LAYOUT_HANDLE;
         VkDescriptorSet passDescriptorSet = VK_NULL_HANDLE;
-
-        FramebufferHandle framebufferHandle = INVALID_FRAMEBUFFER_HANDLE;
 
         std::vector<PassResource> inputs;
         std::vector<PassOutput> outputs;

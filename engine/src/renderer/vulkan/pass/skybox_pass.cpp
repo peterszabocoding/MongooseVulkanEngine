@@ -17,7 +17,7 @@ namespace MongooseVK
 
     void SkyboxPass::Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer)
     {
-        const VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandle);
+        const VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandles[0]);
 
         device->SetViewportAndScissor(framebuffer->extent, commandBuffer);
         GetRenderPass()->Begin(commandBuffer, framebuffer->framebuffer, framebuffer->extent);

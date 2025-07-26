@@ -13,7 +13,6 @@ namespace MongooseVK
     SSAOPass::SSAOPass(VulkanDevice* _device, VkExtent2D _resolution): VulkanPass(_device, _resolution)
     {
         screenRect = CreateScope<VulkanMeshlet>(device, Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
-        LoadPipeline();
 
         GenerateKernel();
         GenerateNoiseData();
@@ -26,9 +25,14 @@ namespace MongooseVK
         vkFreeDescriptorSets(device->GetDevice(), device->GetShaderDescriptorPool().GetDescriptorPool(), 1, &ssaoDescriptorSet);
     }
 
+    void SSAOPass::Init()
+    {
+        VulkanPass::Init();
+    }
+
     void SSAOPass::Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer)
     {
-        VulkanFramebuffer* framebuffer = device->GetFramebuffer(writeBuffer);
+        VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandles[0]);
 
         device->SetViewportAndScissor(framebuffer->extent, commandBuffer);
         VulkanRenderPass* renderPass = device->renderPassPool.Get(renderPassHandle.handle);
@@ -45,10 +49,7 @@ namespace MongooseVK
         };
 
         drawParams.descriptorSets = {
-            ShaderCache::descriptorSets.viewspaceNormalDescriptorSet,
-            ShaderCache::descriptorSets.viewspacePositionDescriptorSet,
-            ShaderCache::descriptorSets.depthMapDescriptorSet,
-            ShaderCache::descriptorSets.cameraDescriptorSet,
+            passDescriptorSet,
             ssaoDescriptorSet,
         };
 
@@ -69,16 +70,7 @@ namespace MongooseVK
 
     void SSAOPass::LoadPipeline()
     {
-        VulkanRenderPass::RenderPassConfig config;
-        config.AddColorAttachment({
-            .imageFormat = ImageFormat::R8_UNORM,
-            .loadOp = RenderPassOperation::LoadOp::Clear
-        });
-
-        renderPassHandle = device->CreateRenderPass(config);
-
         LOG_TRACE("Building SSAO pipeline");
-        PipelineCreate pipelineConfig;
         pipelineConfig.vertexShaderPath = "quad.vert";
         pipelineConfig.fragmentShaderPath = "post_processing_ssao.frag";
 
@@ -87,15 +79,8 @@ namespace MongooseVK
         pipelineConfig.frontFace = PipelineFrontFace::Counter_clockwise;
 
         pipelineConfig.descriptorSetLayouts = {
-            ShaderCache::descriptorSetLayouts.viewspaceNormalDescriptorSetLayout,
-            ShaderCache::descriptorSetLayouts.viewspacePositionDescriptorSetLayout,
-            ShaderCache::descriptorSetLayouts.depthMapDescriptorSetLayout,
-            ShaderCache::descriptorSetLayouts.cameraDescriptorSetLayout,
+            passDescriptorSetLayoutHandle,
             ShaderCache::descriptorSetLayouts.ssaoDescriptorSetLayout,
-        };
-
-        pipelineConfig.colorAttachments = {
-            ImageFormat::R8_UNORM,
         };
 
         pipelineConfig.disableBlending = true;

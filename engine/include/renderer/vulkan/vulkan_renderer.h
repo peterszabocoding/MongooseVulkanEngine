@@ -23,7 +23,6 @@ namespace MongooseVK
     class VulkanDevice;
 
     struct Framebuffers {
-        FramebufferHandle ssaoFramebuffer;
         std::vector<FramebufferHandle> shadowMapFramebuffers;
         std::vector<FramebufferHandle> presentFramebuffers;
         std::vector<FramebufferHandle> iblIrradianceFramebuffes;
@@ -89,6 +88,7 @@ namespace MongooseVK
         ~VulkanRenderer();
 
         void Init(uint32_t width, uint32_t height);
+        void InitializeRenderPasses();
 
         void LoadScene(const std::string& gltfPath, const std::string& hdrPath);
 

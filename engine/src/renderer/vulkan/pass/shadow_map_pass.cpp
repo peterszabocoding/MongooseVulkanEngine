@@ -9,56 +9,76 @@ namespace MongooseVK
 {
     ShadowMapPass::ShadowMapPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution): VulkanPass(vulkanDevice, _resolution),
         scene(_scene)
+    {}
+
+    void ShadowMapPass::Init()
     {
-        LoadPipeline();
+        VulkanPass::Init();
+    }
+
+    void ShadowMapPass::InitFramebuffer()
+    {
+        const TextureHandle outputTextureHandle = outputs[0].resource.resourceInfo.texture.textureHandle;
+        const VulkanTexture* outputTexture = device->GetTexture(outputTextureHandle);
+
+        for (uint32_t i = 0; i < outputTexture->createInfo.arrayLayers; i++)
+        {
+            FramebufferCreateInfo framebufferCreateInfo = {
+                .attachments = {},
+                .renderPassHandle = renderPassHandle,
+                .resolution = resolution,
+            };
+
+            framebufferCreateInfo.attachments.push_back({.imageView = outputTexture->arrayImageViews[i]});
+
+            framebufferHandles.push_back(device->CreateFramebuffer(framebufferCreateInfo));
+        }
+
     }
 
     void ShadowMapPass::Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer)
     {
-        VulkanFramebuffer* framebuffer = device->GetFramebuffer(writeBuffer);
-
-        device->SetViewportAndScissor(framebuffer->extent, commandBuffer);
-        GetRenderPass()->Begin(commandBuffer, framebuffer->framebuffer, framebuffer->extent);
-
-        DrawCommandParams geometryDrawParams{};
-        geometryDrawParams.commandBuffer = commandBuffer;
-        geometryDrawParams.pipelineParams = {
-            pipeline->pipeline,
-            pipeline->pipelineLayout
-        };
-
-        SimplePushConstantData pushConstantData;
-
-        pushConstantData.transform = scene.directionalLight.cascades[cascadeIndex].viewProjMatrix;
-
-        for (size_t i = 0; i < scene.meshes.size(); i++)
+        for (uint32_t i = 0; i < framebufferHandles.size(); i++)
         {
-            pushConstantData.modelMatrix = scene.transforms[i].GetTransform();
+            VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandles[i]);
 
-            geometryDrawParams.pushConstantParams = {
-                &pushConstantData,
-                sizeof(SimplePushConstantData)
+            device->SetViewportAndScissor(framebuffer->extent, commandBuffer);
+            GetRenderPass()->Begin(commandBuffer, framebuffer->framebuffer, framebuffer->extent);
+
+            DrawCommandParams geometryDrawParams{};
+            geometryDrawParams.commandBuffer = commandBuffer;
+            geometryDrawParams.pipelineParams = {
+                pipeline->pipeline,
+                pipeline->pipelineLayout
             };
 
-            for (auto& meshlet: scene.meshes[i]->GetMeshlets())
-            {
-                geometryDrawParams.meshlet = &meshlet;
-                device->DrawMeshlet(geometryDrawParams);
-            }
-        }
+            SimplePushConstantData pushConstantData;
 
-        GetRenderPass()->End(commandBuffer);
+            pushConstantData.transform = scene.directionalLight.cascades[i].viewProjMatrix;
+
+            for (size_t i = 0; i < scene.meshes.size(); i++)
+            {
+                pushConstantData.modelMatrix = scene.transforms[i].GetTransform();
+
+                geometryDrawParams.pushConstantParams = {
+                    &pushConstantData,
+                    sizeof(SimplePushConstantData)
+                };
+
+                for (auto& meshlet: scene.meshes[i]->GetMeshlets())
+                {
+                    geometryDrawParams.meshlet = &meshlet;
+                    device->DrawMeshlet(geometryDrawParams);
+                }
+            }
+
+            GetRenderPass()->End(commandBuffer);
+        }
     }
 
     void ShadowMapPass::LoadPipeline()
     {
-        VulkanRenderPass::RenderPassConfig config;
-        config.AddDepthAttachment({.depthFormat = ImageFormat::DEPTH32});
-
-        renderPassHandle = device->CreateRenderPass(config);
-
         LOG_TRACE("Building directional shadow map pipeline");
-        PipelineCreate pipelineConfig;
         pipelineConfig.vertexShaderPath = "depth_only.vert";
         pipelineConfig.fragmentShaderPath = "empty.frag";
 
@@ -69,14 +89,11 @@ namespace MongooseVK
         pipelineConfig.disableBlending = true;
         pipelineConfig.enableDepthTest = true;
 
-
         pipelineConfig.renderPass = GetRenderPass()->Get();
 
         pipelineConfig.pushConstantData.shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
         pipelineConfig.pushConstantData.offset = 0;
         pipelineConfig.pushConstantData.size = sizeof(SimplePushConstantData);
-
-        pipelineConfig.depthAttachment = ImageFormat::DEPTH32;
 
         pipelineHandle = VulkanPipelineBuilder().Build(device, pipelineConfig);
         pipeline = device->GetPipeline(pipelineHandle);

@@ -86,7 +86,7 @@ namespace MongooseVK
         bool isCubeMap = false;
     };
 
-    struct  FramebufferCreationAttachment {
+    struct FramebufferCreationAttachment {
         VkImageView imageView = VK_NULL_HANDLE;
         TextureHandle textureHandle = INVALID_TEXTURE_HANDLE;
     };

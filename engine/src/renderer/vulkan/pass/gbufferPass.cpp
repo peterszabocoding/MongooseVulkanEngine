@@ -20,7 +20,7 @@ namespace MongooseVK
 
     void GBufferPass::Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer)
     {
-        VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandle);
+        VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandles[0]);
 
         device->SetViewportAndScissor(resolution, commandBuffer);
         GetRenderPass()->Begin(commandBuffer, framebuffer->framebuffer, resolution);

@@ -39,33 +39,8 @@ namespace MongooseVK
         CreateSwapchain();
     }
 
-    void VulkanRenderer::LoadScene(const std::string& gltfPath, const std::string& hdrPath)
+    void VulkanRenderer::InitializeRenderPasses()
     {
-        isSceneLoaded = false;
-
-        LOG_TRACE("Load scene");
-        scene = ResourceManager::LoadScene(device, gltfPath, hdrPath);
-        scene.directionalLight.direction = normalize(glm::vec3(0.0f, -2.0f, -1.0f));
-
-        CreateRenderPassTextures();
-        CreateRenderPassResources();
-        CreateRenderPassBuffers();
-
-        renderPasses.gbufferPass = CreateScope<GBufferPass>(device, scene, renderResolution);
-
-        renderPasses.lightingPass = CreateScope<LightingPass>(device, scene, renderResolution);
-        renderPasses.shadowMapPass = CreateScope<ShadowMapPass>(device, scene, renderResolution);
-        renderPasses.presentPass = CreateScope<PresentPass>(device, renderResolution);
-        renderPasses.ssaoPass = CreateScope<SSAOPass>(device, VkExtent2D{
-                                                          static_cast<uint32_t>(renderResolution.width * 0.5),
-                                                          static_cast<uint32_t>(renderResolution.height * 0.5)
-                                                      });
-        renderPasses.irradianceMapPass = CreateScope<IrradianceMapPass>(device, renderResolution);
-        renderPasses.brdfLutPass = CreateScope<BrdfLUTPass>(device, VkExtent2D{512, 512});
-        renderPasses.prefilterMapPass = CreateScope<PrefilterMapPass>(device, renderResolution);
-        renderPasses.skyboxPass = CreateScope<SkyboxPass>(device, scene, renderResolution);
-        renderPasses.gridPass = CreateScope<InfiniteGridPass>(device, renderResolution);
-
         // Skybox pass
         {
             renderPasses.skyboxPass->Reset();
@@ -182,6 +157,70 @@ namespace MongooseVK
 
             renderPasses.lightingPass->Init();
         }
+
+        // SSAO pass
+        {
+            renderPasses.ssaoPass->Reset();
+
+            renderPasses.ssaoPass->AddInput({renderPassResources.viewspaceNormal});
+            renderPasses.ssaoPass->AddInput({renderPassResources.viewspacePosition});
+            renderPasses.ssaoPass->AddInput({renderPassResources.depthMap});
+            renderPasses.ssaoPass->AddInput({renderPassResources.cameraBuffer});
+
+            renderPasses.ssaoPass->AddOutput({
+                .resource = renderPassResources.ssaoTexture,
+                .loadOp = RenderPassOperation::LoadOp::Clear,
+                .storeOp = RenderPassOperation::StoreOp::Store
+            });
+
+            renderPasses.ssaoPass->Init();
+        }
+
+        // Shadow map pass
+        {
+            renderPasses.shadowMapPass->Reset();
+
+            renderPasses.shadowMapPass->AddOutput({
+                .resource = renderPassResources.directionalShadowMap,
+                .loadOp = RenderPassOperation::LoadOp::Clear,
+                .storeOp = RenderPassOperation::StoreOp::Store
+            });
+
+            renderPasses.shadowMapPass->Init();
+        }
+    }
+
+    void VulkanRenderer::LoadScene(const std::string& gltfPath, const std::string& hdrPath)
+    {
+        isSceneLoaded = false;
+
+        LOG_TRACE("Load scene");
+        scene = ResourceManager::LoadScene(device, gltfPath, hdrPath);
+        scene.directionalLight.direction = normalize(glm::vec3(0.0f, -2.0f, -1.0f));
+
+        CreateRenderPassTextures();
+        CreateRenderPassResources();
+        CreateRenderPassBuffers();
+
+        const uint16_t SHADOW_MAP_RESOLUTION = EnumValue(scene.directionalLight.shadowMapResolution);
+        const VkExtent2D SSAO_RESOLUTION = {
+            static_cast<uint32_t>(renderResolution.width * 0.5),
+            static_cast<uint32_t>(renderResolution.height * 0.5)
+        };
+
+        renderPasses.gbufferPass = CreateScope<GBufferPass>(device, scene, renderResolution);
+
+        renderPasses.lightingPass = CreateScope<LightingPass>(device, scene, renderResolution);
+        renderPasses.shadowMapPass = CreateScope<ShadowMapPass>(device, scene, VkExtent2D{SHADOW_MAP_RESOLUTION, SHADOW_MAP_RESOLUTION});
+        renderPasses.presentPass = CreateScope<PresentPass>(device, renderResolution);
+        renderPasses.ssaoPass = CreateScope<SSAOPass>(device, SSAO_RESOLUTION);
+        renderPasses.irradianceMapPass = CreateScope<IrradianceMapPass>(device, renderResolution);
+        renderPasses.brdfLutPass = CreateScope<BrdfLUTPass>(device, VkExtent2D{512, 512});
+        renderPasses.prefilterMapPass = CreateScope<PrefilterMapPass>(device, renderResolution);
+        renderPasses.skyboxPass = CreateScope<SkyboxPass>(device, scene, renderResolution);
+        renderPasses.gridPass = CreateScope<InfiniteGridPass>(device, renderResolution);
+
+        InitializeRenderPasses();
 
         CreateShadowMap();
         CreateFramebuffers();
@@ -316,19 +355,6 @@ namespace MongooseVK
 
     void VulkanRenderer::CreateFramebuffers()
     {
-        // SSAO
-        {
-            FramebufferCreateInfo createInfo{};
-            createInfo.attachments.push_back({.textureHandle = renderPassResources.ssaoTexture.resourceInfo.texture.textureHandle});
-            createInfo.renderPassHandle = renderPasses.ssaoPass->GetRenderPassHandle();
-            createInfo.resolution = {
-                static_cast<uint32_t>(renderResolution.width * 0.5),
-                static_cast<uint32_t>(renderResolution.height * 0.5)
-            };
-
-            framebuffers.ssaoFramebuffer = device->CreateFramebuffer(createInfo);
-        }
-
         // Present
         {
             const uint32_t imageCount = VulkanUtils::GetSwapchainImageCount(device->GetPhysicalDevice(), device->GetSurface());
@@ -356,113 +382,14 @@ namespace MongooseVK
         renderPasses.gbufferPass->Resize(renderResolution);
         renderPasses.skyboxPass->Resize(renderResolution);
         renderPasses.lightingPass->Resize(renderResolution);
-        renderPasses.ssaoPass->Resize(renderResolution);
+        renderPasses.ssaoPass->Resize(VkExtent2D{
+            static_cast<uint32_t>(renderResolution.width * 0.5),
+            static_cast<uint32_t>(renderResolution.height * 0.5)
+        });
         renderPasses.gridPass->Resize(renderResolution);
         renderPasses.presentPass->Resize(viewportResolution);
 
-        // Skybox pass
-        {
-            renderPasses.skyboxPass->Reset();
-
-            renderPasses.skyboxPass->AddInput({
-                renderPassResources.skyboxTexture
-            });
-            renderPasses.skyboxPass->AddInput({
-                renderPassResources.cameraBuffer
-            });
-
-            renderPasses.skyboxPass->AddOutput({
-                .resource = renderPassResources.mainFrameColorTexture,
-                .loadOp = RenderPassOperation::LoadOp::Clear,
-                .storeOp = RenderPassOperation::StoreOp::Store
-            });
-            renderPasses.skyboxPass->AddOutput({
-                .resource = renderPassResources.depthMap,
-                .loadOp = RenderPassOperation::LoadOp::Clear,
-                .storeOp = RenderPassOperation::StoreOp::Store
-            });
-
-            renderPasses.skyboxPass->Init();
-        }
-
-        // Grid pass
-        {
-            renderPasses.gridPass->Reset();
-
-            renderPasses.gridPass->AddInput({
-                renderPassResources.cameraBuffer
-            });
-
-            renderPasses.gridPass->AddOutput({
-                .resource = renderPassResources.mainFrameColorTexture,
-                .loadOp = RenderPassOperation::LoadOp::Load,
-                .storeOp = RenderPassOperation::StoreOp::Store
-            });
-
-            renderPasses.gridPass->AddOutput({
-                .resource = renderPassResources.depthMap,
-                .loadOp = RenderPassOperation::LoadOp::Load,
-                .storeOp = RenderPassOperation::StoreOp::Store
-            });
-
-            renderPasses.gridPass->Init();
-        }
-
-        // GBuffer pass
-        {
-            renderPasses.gbufferPass->Reset();
-
-            renderPasses.gbufferPass->AddInput({
-                renderPassResources.cameraBuffer
-            });
-
-            renderPasses.gbufferPass->AddOutput({
-                .resource = renderPassResources.viewspaceNormal,
-                .loadOp = RenderPassOperation::LoadOp::Clear,
-                .storeOp = RenderPassOperation::StoreOp::Store
-            });
-
-            renderPasses.gbufferPass->AddOutput({
-                .resource = renderPassResources.viewspacePosition,
-                .loadOp = RenderPassOperation::LoadOp::Clear,
-                .storeOp = RenderPassOperation::StoreOp::Store
-            });
-
-            renderPasses.gbufferPass->AddOutput({
-                .resource = renderPassResources.depthMap,
-                .loadOp = RenderPassOperation::LoadOp::Clear,
-                .storeOp = RenderPassOperation::StoreOp::Store
-            });
-
-            renderPasses.gbufferPass->Init();
-        }
-
-        // Lighting pass
-        {
-            renderPasses.lightingPass->Reset();
-
-            renderPasses.lightingPass->AddInput(renderPassResources.cameraBuffer);
-            renderPasses.lightingPass->AddInput(renderPassResources.lightsBuffer);
-            renderPasses.lightingPass->AddInput(renderPassResources.directionalShadowMap);
-            renderPasses.lightingPass->AddInput(renderPassResources.irradianceMapTexture);
-            renderPasses.lightingPass->AddInput(renderPassResources.ssaoTexture);
-            renderPasses.lightingPass->AddInput(renderPassResources.prefilterMapTexture);
-            renderPasses.lightingPass->AddInput(renderPassResources.brdfLutTexture);
-
-            renderPasses.lightingPass->AddOutput({
-                .resource = renderPassResources.mainFrameColorTexture,
-                .loadOp = RenderPassOperation::LoadOp::Load,
-                .storeOp = RenderPassOperation::StoreOp::Store
-            });
-
-            renderPasses.lightingPass->AddOutput({
-                .resource = renderPassResources.depthMap,
-                .loadOp = RenderPassOperation::LoadOp::Load,
-                .storeOp = RenderPassOperation::StoreOp::Store
-            });
-
-            renderPasses.lightingPass->Init();
-        }
+        InitializeRenderPasses();
 
         CreateFramebuffers();
     }
@@ -510,6 +437,8 @@ namespace MongooseVK
         activeImage = imageIndex;
 
         renderPasses.gbufferPass->Render(commandBuffer, &camera, INVALID_FRAMEBUFFER_HANDLE);
+
+        /*
         // TODO Don't forget to add image barriers back later
         //directionalShadowMap->TransitionToDepthRendering(commandBuffer);
         for (size_t i = 0; i < SHADOW_MAP_CASCADE_COUNT; i++)
@@ -518,8 +447,11 @@ namespace MongooseVK
             renderPasses.shadowMapPass->Render(commandBuffer, &camera, framebuffers.shadowMapFramebuffers[i]);
         }
         //directionalShadowMap->TransitionToShaderRead(commandBuffer);
+        */
 
-        renderPasses.ssaoPass->Render(commandBuffer, &camera, framebuffers.ssaoFramebuffer);
+        renderPasses.shadowMapPass->Render(commandBuffer, &camera, INVALID_FRAMEBUFFER_HANDLE);
+
+        renderPasses.ssaoPass->Render(commandBuffer, &camera, INVALID_FRAMEBUFFER_HANDLE);
 
         VulkanTexture* depthMap = device->GetTexture(renderPassResources.depthMap.resourceInfo.texture.textureHandle);
 

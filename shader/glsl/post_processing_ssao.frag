@@ -8,21 +8,21 @@ layout(location = 0) out float FragColor;
 
 // GBuffer
 layout(set = 0, binding = 0) uniform sampler2D gNormal;
-layout(set = 1, binding = 0) uniform sampler2D gPosition;
-layout(set = 2, binding = 0) uniform sampler2D gDepth;
+layout(set = 0, binding = 1) uniform sampler2D gPosition;
+layout(set = 0, binding = 2) uniform sampler2D gDepth;
 
-layout(set = 3, binding = 0) uniform Transforms {
+layout(set = 0, binding = 3) uniform Transforms {
     mat4 projection;
     mat4 view;
     vec3 cameraPosition;
 } transforms;
 
 // SSAO
-layout(set = 4, binding = 0) uniform SSAOParams {
+layout(set = 1, binding = 0) uniform SSAOParams {
     vec4 samples[64];
 } ssaoParams;
 
-layout(set = 4, binding = 1) uniform sampler2D texNoise;
+layout(set = 1, binding = 1) uniform sampler2D texNoise;
 
 // tile noise texture over screen, based on screen dimensions divided by noise size
 layout(push_constant) uniform Push {

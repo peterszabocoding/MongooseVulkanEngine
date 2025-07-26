@@ -12,6 +12,8 @@ namespace MongooseVK
 
         void SetCascadeIndex(uint32_t _cascadeIndex) { cascadeIndex = _cascadeIndex; }
 
+        virtual void Init() override;
+        virtual void InitFramebuffer() override;
         virtual void Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer) override;
 
     protected:

@@ -17,7 +17,7 @@ namespace MongooseVK
 
     void BrdfLUTPass::Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBufferHandle)
     {
-        VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandle);
+        VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandles[0]);
 
         device->SetViewportAndScissor(framebuffer->extent, commandBuffer);
         GetRenderPass()->Begin(commandBuffer, framebuffer->framebuffer, framebuffer->extent);
