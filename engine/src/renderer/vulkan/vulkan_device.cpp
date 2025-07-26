@@ -194,6 +194,13 @@ namespace MongooseVK
         pipelinePool.Init(128);
         descriptorSetLayoutPool.Init(128);
 
+
+        for (uint32_t i = 0; i < 128; i++)
+        {
+            VulkanDescriptorSetLayout* descriptorSetLayout = descriptorSetLayoutPool.Get(i);
+            *descriptorSetLayout = VulkanDescriptorSetLayout();
+        }
+
         CreateCommandPool();
         CreateDescriptorPool();
         CreateCommandBuffers();
@@ -305,7 +312,7 @@ namespace MongooseVK
                 .AddUsage(VK_IMAGE_USAGE_TRANSFER_DST_BIT)
                 .AddUsage(VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
                 .AddUsage(ImageUtils::GetUsageFromFormat(createInfo.format))
-                .SetInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+                .SetInitialLayout(createInfo.imageInitialLayout)
                 .SetMipLevels(createInfo.mipLevels)
                 .SetArrayLayers(createInfo.arrayLayers)
                 .SetFlags(createInfo.flags)
@@ -498,7 +505,7 @@ namespace MongooseVK
         imageInfo.sampler = texture->GetSampler();
 
         VulkanDescriptorWriter(*bindlessDescriptorSetLayout, *bindlessDescriptorPool)
-                .WriteImage(0, &imageInfo, texture->index)
+                .WriteImage(0, imageInfo, texture->index)
                 .BuildOrOverwrite(bindlessTextureDescriptorSet);
     }
 
@@ -585,10 +592,10 @@ namespace MongooseVK
             attachment.storeOp = convertStoreOpToVk(colorAttachment.storeOp);
             attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
             attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-            attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            attachment.initialLayout = colorAttachment.initialLayout;
             attachment.finalLayout = colorAttachment.isSwapchainAttachment
                                          ? VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
-                                         : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                                         : colorAttachment.finalLayout;
 
             attachmentDescriptions.push_back(attachment);
 
@@ -608,7 +615,9 @@ namespace MongooseVK
             attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
             attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
             attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-            attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            attachment.initialLayout = config.depthAttachment->loadOp == RenderPassOperation::LoadOp::Load
+                                           ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+                                           : VK_IMAGE_LAYOUT_UNDEFINED;
             attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
             attachmentDescriptions.push_back(attachment);
@@ -1034,7 +1043,7 @@ namespace MongooseVK
 
             auto descriptorSetLayout = GetDescriptorSetLayout(materialsDescriptorSetLayoutHandle);
             VulkanDescriptorWriter(*descriptorSetLayout, *shaderDescriptorPool)
-                    .WriteBuffer(0, &bufferInfo)
+                    .WriteBuffer(0, bufferInfo)
                     .Build(materialDescriptorSet);
         }
     }
@@ -1175,9 +1184,13 @@ namespace MongooseVK
     void VulkanDevice::DestroyDescriptorSetLayout(DescriptorSetLayoutHandle descriptorSetLayoutHandle)
     {
         if (descriptorSetLayoutHandle == INVALID_DESCRIPTOR_SET_LAYOUT_HANDLE) return;
-        frameDeletionQueue.Push([&] {
-            const VulkanDescriptorSetLayout* descriptorSetLayout = descriptorSetLayoutPool.Get(descriptorSetLayoutHandle.handle);
-            vkDestroyDescriptorSetLayout(GetDevice(), descriptorSetLayout->descriptorSetLayout, nullptr);
+        frameDeletionQueue.Push([=] {
+            VulkanDescriptorSetLayout* descriptorSetLayout = descriptorSetLayoutPool.Get(descriptorSetLayoutHandle.handle);
+            if (descriptorSetLayout && descriptorSetLayout->descriptorSetLayout)
+            {
+                vkDestroyDescriptorSetLayout(GetDevice(), descriptorSetLayout->descriptorSetLayout, nullptr);
+                descriptorSetLayoutPool.Release(descriptorSetLayout);
+            }
         });
     }
 }

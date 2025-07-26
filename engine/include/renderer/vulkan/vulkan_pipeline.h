@@ -108,6 +108,7 @@ namespace MongooseVK
         VkPipeline pipeline;
         VkPipelineLayout pipelineLayout;
 
+        uint32_t descriptorSetLayoutCount = 0;
         std::array<DescriptorSetLayoutHandle, 16> descriptorSetLayouts{};
     };
 

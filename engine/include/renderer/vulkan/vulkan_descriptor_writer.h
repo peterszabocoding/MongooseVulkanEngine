@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <vulkan/vulkan.h>
 #include <vector>
 
@@ -12,8 +13,8 @@ namespace MongooseVK
     public:
         VulkanDescriptorWriter(VulkanDescriptorSetLayout& setLayout, VulkanDescriptorPool& pool);
 
-        VulkanDescriptorWriter& WriteBuffer(uint32_t binding, const VkDescriptorBufferInfo* bufferInfo);
-        VulkanDescriptorWriter& WriteImage(uint32_t binding, const VkDescriptorImageInfo* imageInfo, uint32_t arrayIndex = 0);
+        VulkanDescriptorWriter& WriteBuffer(uint32_t binding, VkDescriptorBufferInfo bufferInfo);
+        VulkanDescriptorWriter& WriteImage(uint32_t binding, VkDescriptorImageInfo imageInfo, uint32_t arrayIndex = 0);
 
         bool Build(VkDescriptorSet& set);
         void Overwrite(VkDescriptorSet& set);
@@ -22,6 +23,13 @@ namespace MongooseVK
     private:
         VulkanDescriptorSetLayout& setLayout;
         VulkanDescriptorPool& pool;
+
+        uint32_t bufferInfoCount = 0;
+        std::array<VkDescriptorBufferInfo, 32> bufferInfos;
+
+        uint32_t imageInfoCount = 0;
+        std::array<VkDescriptorImageInfo, 32> imageInfos;
+
         std::vector<VkWriteDescriptorSet> writes;
     };
 }

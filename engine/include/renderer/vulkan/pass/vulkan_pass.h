@@ -95,11 +95,11 @@ namespace MongooseVK
             renderpassConfig = {};
 
             // Descriptors
-            device->DestroyDescriptorSetLayout(descriptorSetLayoutHandle);
-            descriptorSetLayoutHandle = INVALID_DESCRIPTOR_SET_LAYOUT_HANDLE;
+            device->DestroyDescriptorSetLayout(passDescriptorSetLayoutHandle);
+            passDescriptorSetLayoutHandle = INVALID_DESCRIPTOR_SET_LAYOUT_HANDLE;
 
-            vkFreeDescriptorSets(device->GetDevice(), device->GetShaderDescriptorPool().GetDescriptorPool(), 1, &descriptorSet);
-            descriptorSet = VK_NULL_HANDLE;
+            vkFreeDescriptorSets(device->GetDevice(), device->GetShaderDescriptorPool().GetDescriptorPool(), 1, &passDescriptorSet);
+            passDescriptorSet = VK_NULL_HANDLE;
 
             inputs.clear();
             outputs.clear();
@@ -150,7 +150,8 @@ namespace MongooseVK
                         .imageFormat = format,
                         .loadOp = output.loadOp,
                         .storeOp = output.storeOp,
-
+                        .initialLayout = output.resource.resourceInfo.texture.textureCreateInfo.imageInitialLayout,
+                        .finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                     });
                     pipelineConfig.colorAttachments.push_back(format);
                 } else
@@ -172,45 +173,41 @@ namespace MongooseVK
 
             for (uint32_t i = 0; i < inputs.size(); i++)
             {
-                descriptorSetLayoutBuilder.AddBinding({
-                    i,
-                    inputs[i].type == ResourceType::Buffer
-                        ? DescriptorSetBindingType::UniformBuffer
-                        : DescriptorSetBindingType::TextureSampler,
-                    {ShaderStage::VertexShader, ShaderStage::FragmentShader}
-                });
+                const DescriptorSetBindingType type = inputs[i].type == ResourceType::Buffer
+                                                    ? DescriptorSetBindingType::UniformBuffer
+                                                    : DescriptorSetBindingType::TextureSampler;
+                descriptorSetLayoutBuilder.AddBinding({i, type, {ShaderStage::VertexShader, ShaderStage::FragmentShader}});
             }
-            descriptorSetLayoutHandle = descriptorSetLayoutBuilder.Build();
+            passDescriptorSetLayoutHandle = descriptorSetLayoutBuilder.Build();
 
-            auto descriptorSetWriter = VulkanDescriptorWriter(*device->GetDescriptorSetLayout(descriptorSetLayoutHandle),
+            auto descriptorSetWriter = VulkanDescriptorWriter(*device->GetDescriptorSetLayout(passDescriptorSetLayoutHandle),
                                                               device->GetShaderDescriptorPool());
             for (uint32_t i = 0; i < inputs.size(); i++)
             {
                 if (inputs[i].type == ResourceType::Buffer)
                 {
-                    VkDescriptorBufferInfo info{};
-                    info.buffer = inputs[i].resourceInfo.buffer.allocatedBuffer.buffer;
-                    info.offset = 0;
-                    info.range = inputs[i].resourceInfo.buffer.size;
+                    VkDescriptorBufferInfo bufferInfo{};
+                    bufferInfo.buffer = inputs[i].resourceInfo.buffer.allocatedBuffer.buffer;
+                    bufferInfo.offset = 0;
+                    bufferInfo.range = inputs[i].resourceInfo.buffer.size;
 
-                    descriptorSetWriter.WriteBuffer(i, &info);
+                    descriptorSetWriter.WriteBuffer(i, bufferInfo);
                 }
 
                 if (inputs[i].type == ResourceType::Texture || inputs[i].type == ResourceType::TextureCube)
                 {
-                    VulkanTexture* texture = device->GetTexture(inputs[i].resourceInfo.texture.textureHandle);
+                    const VulkanTexture* texture = device->GetTexture(inputs[i].resourceInfo.texture.textureHandle);
 
-                    VkDescriptorImageInfo info{
-                        texture->GetSampler(),
-                        texture->GetImageView(),
-                        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-                    };
+                    VkDescriptorImageInfo imageInfo{};
+                    imageInfo.sampler = texture->GetSampler();
+                    imageInfo.imageView = texture->GetImageView();
+                    imageInfo.imageLayout = texture->createInfo.imageLayout;
 
-                    descriptorSetWriter.WriteImage(i, &info);
+                    descriptorSetWriter.WriteImage(i, imageInfo);
                 }
             }
 
-            descriptorSetWriter.Build(descriptorSet);
+            descriptorSetWriter.Build(passDescriptorSet);
         }
 
         virtual void InitFramebuffer()
@@ -238,8 +235,8 @@ namespace MongooseVK
         VulkanRenderPass::RenderPassConfig renderpassConfig{};
         RenderPassHandle renderPassHandle = INVALID_RENDER_PASS_HANDLE;
 
-        DescriptorSetLayoutHandle descriptorSetLayoutHandle = INVALID_DESCRIPTOR_SET_LAYOUT_HANDLE;
-        VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
+        DescriptorSetLayoutHandle passDescriptorSetLayoutHandle = INVALID_DESCRIPTOR_SET_LAYOUT_HANDLE;
+        VkDescriptorSet passDescriptorSet = VK_NULL_HANDLE;
 
         FramebufferHandle framebufferHandle = INVALID_FRAMEBUFFER_HANDLE;
 

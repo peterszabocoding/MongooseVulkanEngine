@@ -9,21 +9,18 @@
 namespace MongooseVK
 {
     LightingPass::LightingPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution): VulkanPass(vulkanDevice, _resolution),
-        scene(_scene)
-    {
-        LoadPipeline();
-    }
+        scene(_scene){}
 
     void LightingPass::Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer)
     {
-        VulkanFramebuffer* framebuffer = device->GetFramebuffer(writeBuffer);
+        VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandle);
 
         device->SetViewportAndScissor(framebuffer->extent, commandBuffer);
         GetRenderPass()->Begin(commandBuffer, framebuffer->framebuffer, framebuffer->extent);
 
-        DrawCommandParams geometryDrawParams{};
-        geometryDrawParams.commandBuffer = commandBuffer;
-        geometryDrawParams.pipelineParams =
+        DrawCommandParams drawCommandParams{};
+        drawCommandParams.commandBuffer = commandBuffer;
+        drawCommandParams.pipelineParams =
         {
             pipeline->pipeline,
             pipeline->pipelineLayout
@@ -40,25 +37,19 @@ namespace MongooseVK
                 pushConstantData.transform = camera->GetProjection() * camera->GetView() * pushConstantData.modelMatrix;
                 pushConstantData.materialIndex = material->index;
 
-                geometryDrawParams.pushConstantParams = {
+                drawCommandParams.pushConstantParams = {
                     &pushConstantData,
                     sizeof(SimplePushConstantData)
                 };
 
-                geometryDrawParams.descriptorSets = {
+                drawCommandParams.descriptorSets = {
                     device->bindlessTextureDescriptorSet,
                     device->materialDescriptorSet,
-                    ShaderCache::descriptorSets.cameraDescriptorSet,
-                    ShaderCache::descriptorSets.lightsDescriptorSet,
-                    ShaderCache::descriptorSets.directionalShadownMapDescriptorSet,
-                    ShaderCache::descriptorSets.irradianceDescriptorSet,
-                    ShaderCache::descriptorSets.postProcessingDescriptorSet,
-                    ShaderCache::descriptorSets.reflectionDescriptorSet,
-                    ShaderCache::descriptorSets.brdfLutDescriptorSet,
+                    passDescriptorSet
                 };
 
-                geometryDrawParams.meshlet = &meshlet;
-                device->DrawMeshlet(geometryDrawParams);
+                drawCommandParams.meshlet = &meshlet;
+                device->DrawMeshlet(drawCommandParams);
             }
         }
 
@@ -67,20 +58,7 @@ namespace MongooseVK
 
     void LightingPass::LoadPipeline()
     {
-        VulkanRenderPass::RenderPassConfig config;
-        config.AddColorAttachment({
-            .imageFormat = ImageFormat::RGBA16_SFLOAT,
-            .loadOp = RenderPassOperation::LoadOp::Load
-        });
-        config.AddDepthAttachment({
-            .depthFormat = ImageFormat::DEPTH24_STENCIL8,
-            .loadOp = RenderPassOperation::LoadOp::Load
-        });
-
-        renderPassHandle = device->CreateRenderPass(config);
-
         LOG_TRACE("Building lighting pipeline");
-        PipelineCreate pipelineConfig;
         pipelineConfig.vertexShaderPath = "base-pass.vert";
         pipelineConfig.fragmentShaderPath = "lighting-pass.frag";
 
@@ -89,13 +67,7 @@ namespace MongooseVK
         pipelineConfig.descriptorSetLayouts = {
             device->bindlessTexturesDescriptorSetLayoutHandle,
             device->materialsDescriptorSetLayoutHandle,
-            ShaderCache::descriptorSetLayouts.cameraDescriptorSetLayout,
-            ShaderCache::descriptorSetLayouts.lightsDescriptorSetLayout,
-            ShaderCache::descriptorSetLayouts.directionalShadowMapDescriptorSetLayout,
-            ShaderCache::descriptorSetLayouts.irradianceDescriptorSetLayout,
-            ShaderCache::descriptorSetLayouts.postProcessingDescriptorSetLayout,
-            ShaderCache::descriptorSetLayouts.reflectionDescriptorSetLayout,
-            ShaderCache::descriptorSetLayouts.brdfLutDescriptorSetLayout,
+            passDescriptorSetLayoutHandle
         };
 
         pipelineConfig.disableBlending = false;
@@ -105,12 +77,6 @@ namespace MongooseVK
         pipelineConfig.pushConstantData.shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
         pipelineConfig.pushConstantData.offset = 0;
         pipelineConfig.pushConstantData.size = sizeof(SimplePushConstantData);
-
-        pipelineConfig.colorAttachments = {
-            ImageFormat::RGBA16_SFLOAT,
-        };
-
-        pipelineConfig.depthAttachment = ImageFormat::DEPTH24_STENCIL8;
 
         pipelineHandle = VulkanPipelineBuilder().Build(device, pipelineConfig);
         pipeline = device->GetPipeline(pipelineHandle);

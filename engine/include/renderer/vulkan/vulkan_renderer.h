@@ -24,8 +24,6 @@ namespace MongooseVK
 
     struct Framebuffers {
         FramebufferHandle ssaoFramebuffer;
-        FramebufferHandle gbufferFramebuffer;
-        FramebufferHandle mainFramebuffer;
         std::vector<FramebufferHandle> shadowMapFramebuffers;
         std::vector<FramebufferHandle> presentFramebuffers;
         std::vector<FramebufferHandle> iblIrradianceFramebuffes;
@@ -41,7 +39,7 @@ namespace MongooseVK
         glm::mat4 lightProjection[SHADOW_MAP_CASCADE_COUNT];
         glm::vec4 color = glm::vec4(1.0f);
         glm::vec3 direction = glm::vec3(0.0f, -1.0f, 0.0f);
-        float ambientIntensity = 0.1f;
+        alignas(4)float ambientIntensity = 0.1f;
         alignas(4) float cascadeSplits[4];
         alignas(4) float intensity = 1.0f;
         alignas(4) float bias = 0.005f;

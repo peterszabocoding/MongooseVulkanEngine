@@ -9,6 +9,7 @@ namespace MongooseVK
         BrdfLUTPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution);
         ~BrdfLUTPass() override = default;
 
+        virtual void Init() override;
         virtual void Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBufferHandle) override;
         virtual void Resize(VkExtent2D _resolution) override;
 

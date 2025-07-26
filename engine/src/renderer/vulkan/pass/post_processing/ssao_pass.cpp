@@ -136,8 +136,8 @@ namespace MongooseVK
 
         auto descriptorSetLayout = device->GetDescriptorSetLayout(ShaderCache::descriptorSetLayouts.ssaoDescriptorSetLayout);
         VulkanDescriptorWriter(*descriptorSetLayout, device->GetShaderDescriptorPool())
-                .WriteBuffer(0, &bufferInfo)
-                .WriteImage(1, &ssaoNoiseTextureInfo)
+                .WriteBuffer(0, bufferInfo)
+                .WriteImage(1, ssaoNoiseTextureInfo)
                 .Build(ssaoDescriptorSet);
     }
 

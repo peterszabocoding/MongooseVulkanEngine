@@ -60,6 +60,8 @@ namespace MongooseVK
             glm::vec4 clearColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
             RenderPassOperation::LoadOp loadOp = RenderPassOperation::LoadOp::Clear;
             RenderPassOperation::StoreOp storeOp = RenderPassOperation::StoreOp::Store;
+            VkImageLayout initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            VkImageLayout finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             bool isSwapchainAttachment = false;
         };
 

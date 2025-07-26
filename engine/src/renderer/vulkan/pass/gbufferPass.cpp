@@ -11,21 +11,23 @@
 namespace MongooseVK
 {
     GBufferPass::GBufferPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution): VulkanPass(vulkanDevice, _resolution),
-        scene(_scene)
+        scene(_scene){}
+
+    void GBufferPass::Init()
     {
-        LoadPipeline();
+        VulkanPass::Init();
     }
 
     void GBufferPass::Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer)
     {
-        VulkanFramebuffer* framebuffer = device->GetFramebuffer(writeBuffer);
+        VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandle);
 
         device->SetViewportAndScissor(resolution, commandBuffer);
         GetRenderPass()->Begin(commandBuffer, framebuffer->framebuffer, resolution);
 
-        DrawCommandParams geometryDrawParams{};
-        geometryDrawParams.commandBuffer = commandBuffer;
-        geometryDrawParams.pipelineParams =
+        DrawCommandParams drawCommandParams{};
+        drawCommandParams.commandBuffer = commandBuffer;
+        drawCommandParams.pipelineParams =
         {
             pipeline->pipeline,
             pipeline->pipelineLayout
@@ -42,21 +44,21 @@ namespace MongooseVK
                 pushConstantData.transform = camera->GetProjection() * camera->GetView() * pushConstantData.modelMatrix;
                 pushConstantData.materialIndex = material->index;
 
-                geometryDrawParams.pushConstantParams = {
+                drawCommandParams.pushConstantParams = {
                     &pushConstantData,
                     sizeof(SimplePushConstantData)
                 };
 
                 if (material->params.alphaTested) continue;
 
-                geometryDrawParams.descriptorSets = {
+                drawCommandParams.descriptorSets = {
                     device->bindlessTextureDescriptorSet,
                     device->materialDescriptorSet,
-                    ShaderCache::descriptorSets.cameraDescriptorSet,
+                    passDescriptorSet
                 };
 
-                geometryDrawParams.meshlet = &meshlet;
-                device->DrawMeshlet(geometryDrawParams);
+                drawCommandParams.meshlet = &meshlet;
+                device->DrawMeshlet(drawCommandParams);
             }
         }
 
@@ -71,37 +73,23 @@ namespace MongooseVK
     void GBufferPass::LoadPipeline()
     {
         LOG_TRACE("Building gbuffer pipeline");
-
-        VulkanRenderPass::RenderPassConfig config;
-        config.AddColorAttachment({.imageFormat = ImageFormat::RGBA32_SFLOAT});
-        config.AddColorAttachment({.imageFormat = ImageFormat::RGBA32_SFLOAT});
-        config.AddDepthAttachment({.depthFormat = ImageFormat::DEPTH24_STENCIL8});
-
-        renderPassHandle = device->CreateRenderPass(config);
-
         constexpr PipelinePushConstantData pushConstantData = {
             .shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
             .offset = 0,
             .size = sizeof(SimplePushConstantData),
         };
 
-        PipelineCreate pipelineConfig;
         pipelineConfig.vertexShaderPath = "gbuffer.vert";
         pipelineConfig.fragmentShaderPath = "gbuffer.frag";
 
         pipelineConfig.descriptorSetLayouts = {
             device->bindlessTexturesDescriptorSetLayoutHandle,
             device->materialsDescriptorSetLayoutHandle,
-            ShaderCache::descriptorSetLayouts.cameraDescriptorSetLayout,
+            passDescriptorSetLayoutHandle
         };
 
         pipelineConfig.renderPass = GetRenderPass()->Get();
         pipelineConfig.pushConstantData = pushConstantData;
-        pipelineConfig.colorAttachments = {
-            ImageFormat::RGBA32_SFLOAT,
-            ImageFormat::RGBA32_SFLOAT,
-        };
-        pipelineConfig.depthAttachment = ImageFormat::DEPTH24_STENCIL8;
 
         pipelineHandle = VulkanPipelineBuilder().Build(device, pipelineConfig);
         pipeline = device->GetPipeline(pipelineHandle);

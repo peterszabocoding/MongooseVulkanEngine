@@ -8,8 +8,6 @@
 #include <memory/resource_pool.h>
 #include <resource/resource.h>
 
-#include "util/core.h"
-
 namespace MongooseVK
 {
     class VulkanDevice;
@@ -42,7 +40,6 @@ namespace MongooseVK
     };
 
     struct VulkanDescriptorSetLayout : PoolObject {
-        VulkanDevice* vulkanDevice;
         VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
 
         uint32_t bindingCount = 0;

@@ -38,7 +38,6 @@ layout(push_constant) uniform Push {
 
 layout(set = 0, binding = 0) uniform sampler2D textures[];
 
-
 struct MaterialParamsObject {
     vec4 tint;
     vec4 baseColor;
@@ -64,7 +63,7 @@ layout(set = 2, binding = 0) uniform Transforms {
 } transforms;
 
 // Light uniforms
-layout(std430, set = 3, binding = 0) uniform Lights {
+layout(std430, set = 2, binding = 1) uniform Lights {
     mat4[SHADOW_MAP_CASCADE_COUNT] lightProjection;
     vec4 color;
     vec3 direction;
@@ -73,17 +72,18 @@ layout(std430, set = 3, binding = 0) uniform Lights {
     float intensity;
     float bias;
 } lights;
-layout(set = 4, binding = 0)    uniform sampler2DArray shadowMap;
+
+layout(set = 2, binding = 2)    uniform sampler2DArray shadowMap;
 
 // Irradiance uniforms
-layout(set = 5, binding = 0)    uniform samplerCube irradianceMap;
+layout(set = 2, binding = 3)    uniform samplerCube irradianceMap;
 
 // Post Processing
-layout(set = 6, binding = 0)    uniform sampler2D SSAO;
+layout(set = 2, binding = 4)    uniform sampler2D SSAO;
 
 // Reflection uniforms
-layout(set = 7, binding = 0)    uniform samplerCube prefilterMap;
-layout(set = 8, binding = 0)    uniform sampler2D brdfLUT;
+layout(set = 2, binding = 5)    uniform samplerCube prefilterMap;
+layout(set = 2, binding = 6)    uniform sampler2D brdfLUT;
 
 
 

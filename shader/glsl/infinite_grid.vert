@@ -26,7 +26,7 @@ layout(push_constant) uniform Push {
     float gridCellSize;
 } push;
 
-layout(set = 0, binding = 0) uniform Transforms {
+layout(set = 2, binding = 0) uniform Transforms {
     mat4 projection;
     mat4 view;
     vec3 cameraPosition;

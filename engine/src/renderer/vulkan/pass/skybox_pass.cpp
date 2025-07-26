@@ -29,7 +29,11 @@ namespace MongooseVK
             pipeline->pipeline,
             pipeline->pipelineLayout
         };
-        skyboxDrawParams.descriptorSets = {descriptorSet};
+        skyboxDrawParams.descriptorSets = {
+            device->bindlessTextureDescriptorSet,
+            device->materialDescriptorSet,
+            passDescriptorSet
+        };
 
         device->DrawMeshlet(skyboxDrawParams);
 
@@ -45,7 +49,11 @@ namespace MongooseVK
         pipelineConfig.cullMode = PipelineCullMode::Front;
         pipelineConfig.enableDepthTest = false;
         pipelineConfig.renderPass = GetRenderPass()->Get();
-        pipelineConfig.descriptorSetLayouts = {descriptorSetLayoutHandle};
+        pipelineConfig.descriptorSetLayouts = {
+            device->bindlessTexturesDescriptorSetLayoutHandle,
+            device->materialsDescriptorSetLayoutHandle,
+            passDescriptorSetLayoutHandle
+        };
 
         pipelineHandle = VulkanPipelineBuilder().Build(device, pipelineConfig);
         pipeline = device->GetPipeline(pipelineHandle);

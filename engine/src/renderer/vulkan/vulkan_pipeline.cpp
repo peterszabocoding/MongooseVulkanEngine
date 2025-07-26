@@ -88,6 +88,9 @@ namespace MongooseVK
 
     PipelineHandle VulkanPipelineBuilder::Build(VulkanDevice* vulkanDevice)
     {
+        PipelineHandle pipelineHandle = vulkanDevice->CreatePipeline();
+        VulkanPipeline* vulkanPipeline = vulkanDevice->GetPipeline(pipelineHandle);
+
         std::vector<VkPipelineShaderStageCreateInfo> pipelineShaderStageCreateInfos;
 
         const auto vert_shader_code = ShaderCache::shaderCache.at(vertexShaderPath);
@@ -154,7 +157,6 @@ namespace MongooseVK
         dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
         dynamicState.pDynamicStates = dynamicStates.data();
 
-
         std::vector<VkDescriptorSetLayout> vkDescriptorSetLayouts{};
         for (auto& handle: descriptorSetLayouts)
         {
@@ -173,9 +175,8 @@ namespace MongooseVK
             pipelineLayoutInfo.pPushConstantRanges = pushConstantRanges.data();
         }
 
-        VkPipelineLayout pipelineLayout{};
         VK_CHECK_MSG(
-            vkCreatePipelineLayout(vulkanDevice->GetDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout),
+            vkCreatePipelineLayout(vulkanDevice->GetDevice(), &pipelineLayoutInfo, nullptr, &vulkanPipeline->pipelineLayout),
             "Failed to create pipeline layout.");
 
         renderInfo.colorAttachmentCount = colorAttachmentFormats.size();
@@ -203,28 +204,22 @@ namespace MongooseVK
         pipelineInfo.pMultisampleState = &multisampling;
         pipelineInfo.pColorBlendState = &color_blending;
         pipelineInfo.pDynamicState = &dynamicState;
-        pipelineInfo.layout = pipelineLayout;
+        pipelineInfo.layout = vulkanPipeline->pipelineLayout;
         pipelineInfo.renderPass = renderpass;
         pipelineInfo.subpass = 0;
         pipelineInfo.pDepthStencilState = &depthStencil;
         pipelineInfo.pNext = &renderInfo;
 
-        VkPipeline pipeline{};
         VK_CHECK_MSG(
-            vkCreateGraphicsPipelines(vulkanDevice->GetDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline),
+            vkCreateGraphicsPipelines(vulkanDevice->GetDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &vulkanPipeline->pipeline),
             "Failed to create graphics pipeline.");
 
-        PipelineHandle pipelineHandle = vulkanDevice->CreatePipeline();
-        VulkanPipeline* vkPipeline = vulkanDevice->GetPipeline(pipelineHandle);
+        vulkanPipeline->vertexShaderModule = vertexShaderModule;
+        vulkanPipeline->fragmentShaderModule = fragmentShaderModule;
 
-        vkPipeline->pipeline = pipeline;
-        vkPipeline->pipelineLayout = pipelineLayout;
-
-        vkPipeline->vertexShaderModule = vertexShaderModule;
-        vkPipeline->fragmentShaderModule = fragmentShaderModule;
-
+        vulkanPipeline->descriptorSetLayoutCount = descriptorSetLayouts.size();
         for (size_t i = 0; i < descriptorSetLayouts.size(); i++)
-            vkPipeline->descriptorSetLayouts[i] = descriptorSetLayouts[i];
+            vulkanPipeline->descriptorSetLayouts[i] = descriptorSetLayouts[i];
 
         return pipelineHandle;
     }

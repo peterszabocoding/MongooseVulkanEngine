@@ -37,7 +37,7 @@ namespace MongooseVK
         VkDescriptorSet viewspaceNormalDescriptorSet;
         VkDescriptorSet viewspacePositionDescriptorSet;
         VkDescriptorSet depthMapDescriptorSet;
-        VkDescriptorSet postProcessingDescriptorSet;
+        VkDescriptorSet ssaoDescriptorSet;
         VkDescriptorSet toneMappingDescriptorSet;
         VkDescriptorSet presentDescriptorSet;
     };

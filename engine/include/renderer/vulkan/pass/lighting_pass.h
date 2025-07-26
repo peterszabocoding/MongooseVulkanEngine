@@ -11,7 +11,6 @@ namespace MongooseVK
         ~LightingPass() override = default;
 
         virtual void Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer) override;
-        void DrawSkybox(VkCommandBuffer commandBuffer) const;
 
     protected:
         virtual void LoadPipeline() override;

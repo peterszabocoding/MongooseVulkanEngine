@@ -68,6 +68,7 @@ namespace MongooseVK
         uint64_t size = 0;
 
         VkImageLayout imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        VkImageLayout imageInitialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL;
         VkFilter filter = VK_FILTER_LINEAR;
         VkSamplerAddressMode addressMode = VK_SAMPLER_ADDRESS_MODE_REPEAT;

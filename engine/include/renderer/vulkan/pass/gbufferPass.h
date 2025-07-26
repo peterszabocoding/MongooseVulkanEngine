@@ -10,6 +10,7 @@ namespace MongooseVK
         explicit GBufferPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution);
         ~GBufferPass() override = default;
 
+        virtual void Init() override;
         virtual void Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer) override;
         virtual void Resize(VkExtent2D _resolution) override;
 
