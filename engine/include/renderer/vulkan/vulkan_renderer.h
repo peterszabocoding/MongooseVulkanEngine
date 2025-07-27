@@ -107,7 +107,7 @@ namespace MongooseVK
 
         void ResizeSwapchain();
 
-        void UpdateCameraBuffer(Camera& camera) const;
+        void UpdateCameraBuffer(Camera& camera);
         void RotateLight(float deltaTime);
 
         void UpdateLightsBuffer();

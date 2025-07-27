@@ -9,36 +9,14 @@ namespace MongooseVK
 
     struct DescriptorSetLayouts {
         DescriptorSetLayoutHandle cubemapDescriptorSetLayout;
-        DescriptorSetLayoutHandle materialDescriptorSetLayout;
-        DescriptorSetLayoutHandle cameraDescriptorSetLayout;
-        DescriptorSetLayoutHandle lightsDescriptorSetLayout;
-        DescriptorSetLayoutHandle directionalShadowMapDescriptorSetLayout;
         DescriptorSetLayoutHandle presentDescriptorSetLayout;
         DescriptorSetLayoutHandle irradianceDescriptorSetLayout;
-        DescriptorSetLayoutHandle brdfLutDescriptorSetLayout;
-        DescriptorSetLayoutHandle reflectionDescriptorSetLayout;
-        DescriptorSetLayoutHandle viewspaceNormalDescriptorSetLayout;
-        DescriptorSetLayoutHandle viewspacePositionDescriptorSetLayout;
-        DescriptorSetLayoutHandle depthMapDescriptorSetLayout;
         DescriptorSetLayoutHandle ssaoDescriptorSetLayout;
-        DescriptorSetLayoutHandle postProcessingDescriptorSetLayout;
-        DescriptorSetLayoutHandle ppBoxBlurDescriptorSetLayout;
-        DescriptorSetLayoutHandle toneMappingDescriptorSetLayout;
     };
 
     struct DescriptorSets {
         VkDescriptorSet cubemapDescriptorSet;
-        VkDescriptorSet cameraDescriptorSet;
         VkDescriptorSet irradianceDescriptorSet;
-        VkDescriptorSet brdfLutDescriptorSet;
-        VkDescriptorSet reflectionDescriptorSet;
-        VkDescriptorSet lightsDescriptorSet;
-        VkDescriptorSet directionalShadownMapDescriptorSet;
-        VkDescriptorSet viewspaceNormalDescriptorSet;
-        VkDescriptorSet viewspacePositionDescriptorSet;
-        VkDescriptorSet depthMapDescriptorSet;
-        VkDescriptorSet ssaoDescriptorSet;
-        VkDescriptorSet toneMappingDescriptorSet;
         VkDescriptorSet presentDescriptorSet;
     };
 
