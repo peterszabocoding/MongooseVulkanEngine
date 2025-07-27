@@ -143,7 +143,7 @@ namespace MongooseVK
         {
             for (const auto& output: outputs)
             {
-                if (output.resource.type != ResourceType::Texture) continue;
+                if (output.resource.type == ResourceType::Buffer) continue;
 
                 ImageFormat format = output.resource.resourceInfo.texture.textureCreateInfo.format;
                 if (format != ImageFormat::DEPTH32 && format != ImageFormat::DEPTH24_STENCIL8)

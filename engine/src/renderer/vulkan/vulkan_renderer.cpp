@@ -19,8 +19,8 @@ namespace MongooseVK
 {
     VulkanRenderer::~VulkanRenderer()
     {
-        device->DestroyBuffer(renderPassResources.cameraBuffer.resourceInfo.buffer.allocatedBuffer);
-        device->DestroyBuffer(renderPassResources.cameraBuffer.resourceInfo.buffer.allocatedBuffer);
+        device->DestroyBuffer(renderPassResourceMap["camera_buffer"].resourceInfo.buffer.allocatedBuffer);
+        device->DestroyBuffer(renderPassResourceMap["lights_buffer"].resourceInfo.buffer.allocatedBuffer);
     }
 
     void VulkanRenderer::Init(const uint32_t width, const uint32_t height)
@@ -180,6 +180,21 @@ namespace MongooseVK
 
             renderPasses.shadowMapPass->Init();
         }
+
+        // Prefilter map pass
+        {
+            renderPasses.prefilterMapPass->Reset();
+
+            renderPasses.prefilterMapPass->AddInput(renderPassResourceMap["skybox_texture"]);
+
+            renderPasses.prefilterMapPass->AddOutput({
+                .resource = renderPassResourceMap["prefilter_map_texture"],
+                .loadOp = RenderPassOperation::LoadOp::Clear,
+                .storeOp = RenderPassOperation::StoreOp::Store
+            });
+
+            renderPasses.prefilterMapPass->Init();
+        }
     }
 
     void VulkanRenderer::LoadScene(const std::string& gltfPath, const std::string& hdrPath)
@@ -218,27 +233,13 @@ namespace MongooseVK
         CreateFramebuffers();
 
         PrecomputeIBL();
-        CalculateBrdfLUT();
-        CalculatePrefilterMap();
 
-        isSceneLoaded = true;
-    }
-
-    void VulkanRenderer::CalculateBrdfLUT()
-    {
         device->ImmediateSubmit([&](VkCommandBuffer commandBuffer) {
             renderPasses.brdfLutPass->Render(commandBuffer, nullptr, INVALID_FRAMEBUFFER_HANDLE);
-        });
-    }
-
-    void VulkanRenderer::CalculatePrefilterMap()
-    {
-        device->ImmediateSubmit([&](const VkCommandBuffer commandBuffer) {
-            renderPasses.prefilterMapPass->SetCubemapTexture(renderPassResources.skyboxTexture.resourceInfo.texture.textureHandle);
-            renderPasses.prefilterMapPass->SetTargetTexture(
-                renderPassResourceMap["prefilter_map_texture"].resourceInfo.texture.textureHandle);
             renderPasses.prefilterMapPass->Render(commandBuffer, nullptr, INVALID_FRAMEBUFFER_HANDLE);
         });
+
+        isSceneLoaded = true;
     }
 
     void VulkanRenderer::PrecomputeIBL()
@@ -434,7 +435,7 @@ namespace MongooseVK
         renderPasses.shadowMapPass->Render(commandBuffer, &camera, INVALID_FRAMEBUFFER_HANDLE);
         renderPasses.ssaoPass->Render(commandBuffer, &camera, INVALID_FRAMEBUFFER_HANDLE);
 
-        VulkanTexture* depthMap = device->GetTexture(renderPassResources.depthMap.resourceInfo.texture.textureHandle);
+        VulkanTexture* depthMap = device->GetTexture(renderPassResourceMap["depth_map"].resourceInfo.texture.textureHandle);
 
         renderPasses.skyboxPass->Render(commandBuffer, &camera, INVALID_FRAMEBUFFER_HANDLE);
         renderPasses.gridPass->Render(commandBuffer, &camera, INVALID_FRAMEBUFFER_HANDLE);
@@ -695,18 +696,17 @@ namespace MongooseVK
             constexpr uint32_t REFLECTION_RESOLUTION = 256;
 
             RenderPassResourceInfo resourceInfo{};
-            TextureCreateInfo textureCreateInfo = {};
-            textureCreateInfo.width = REFLECTION_RESOLUTION;
-            textureCreateInfo.height = REFLECTION_RESOLUTION;
-            textureCreateInfo.format = ImageFormat::RGBA16_SFLOAT;
-            textureCreateInfo.imageLayout = ImageUtils::GetLayoutFromFormat(ImageFormat::RGBA16_SFLOAT);
-            textureCreateInfo.addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-            textureCreateInfo.mipLevels = PREFILTER_MIP_LEVELS;
-            textureCreateInfo.arrayLayers = 6;
-            textureCreateInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
-            textureCreateInfo.isCubeMap = true;
+            resourceInfo.texture.textureCreateInfo.width = REFLECTION_RESOLUTION;
+            resourceInfo.texture.textureCreateInfo.height = REFLECTION_RESOLUTION;
+            resourceInfo.texture.textureCreateInfo.format = ImageFormat::RGBA16_SFLOAT;
+            resourceInfo.texture.textureCreateInfo.imageLayout = ImageUtils::GetLayoutFromFormat(ImageFormat::RGBA16_SFLOAT);
+            resourceInfo.texture.textureCreateInfo.addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+            resourceInfo.texture.textureCreateInfo.mipLevels = PREFILTER_MIP_LEVELS;
+            resourceInfo.texture.textureCreateInfo.arrayLayers = 6;
+            resourceInfo.texture.textureCreateInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+            resourceInfo.texture.textureCreateInfo.isCubeMap = true;
 
-            resourceInfo.texture.textureHandle = device->CreateTexture(textureCreateInfo);
+            resourceInfo.texture.textureHandle = device->CreateTexture(resourceInfo.texture.textureCreateInfo);
 
             PassResource passResource;
             passResource = {

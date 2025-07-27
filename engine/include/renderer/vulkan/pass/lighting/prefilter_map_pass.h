@@ -7,8 +7,9 @@ namespace MongooseVK
     public:
         PrefilterMapPass(VulkanDevice* vulkanDevice, const VkExtent2D& _resolution);
 
+        virtual void Init() override;
+        virtual void InitFramebuffer() override;
         virtual void Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer) override;
-
         virtual void Resize(VkExtent2D _resolution) override;
 
         void SetRoughness(float _roughness);

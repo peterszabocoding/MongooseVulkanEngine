@@ -49,22 +49,6 @@ namespace MongooseVK
         std::string hdrPath;
     };
 
-    struct RenderPassResources {
-        PassResource skyboxTexture;
-        PassResource brdfLutTexture;
-        PassResource viewspacePosition;
-        PassResource viewspaceNormal;
-        PassResource depthMap;
-        PassResource cameraBuffer;
-        PassResource lightsBuffer;
-        PassResource directionalShadowMap;
-        PassResource irradianceMap;
-        PassResource ssaoTexture;
-        PassResource mainFrameColorTexture;
-        PassResource irradianceMapTexture;
-        PassResource prefilterMapTexture;
-    };
-
     struct RenderPasses {
         Scope<GBufferPass> gbufferPass;
         Scope<SkyboxPass> skyboxPass;
@@ -117,8 +101,6 @@ namespace MongooseVK
         void CreateRenderPassTextures();
 
         void PrecomputeIBL();
-        void CalculateBrdfLUT();
-        void CalculatePrefilterMap();
 
         void DrawFrame(VkCommandBuffer commandBuffer, uint32_t imageIndex, Camera& camera);
 
@@ -128,8 +110,8 @@ namespace MongooseVK
         float resolutionScale = 1.0f;
 
         Framebuffers framebuffers;
-        RenderPassResources renderPassResources;
         RenderPasses renderPasses;
+        std::unordered_map<std::string, PassResource> renderPassResourceMap;
 
     private:
         VulkanDevice* device;
@@ -141,7 +123,6 @@ namespace MongooseVK
         Scope<ShaderCache> shaderCache;
         Scope<VulkanSwapchain> vulkanSwapChain;
 
-        std::unordered_map<std::string, PassResource> renderPassResourceMap;
 
         float lightSpinningAngle = 0.0f;
     };

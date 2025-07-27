@@ -23,34 +23,50 @@ namespace MongooseVK
         : VulkanPass(vulkanDevice, _resolution)
     {
         cubeMesh = ResourceManager::LoadMesh(device, "resources/models/cube.obj");
-        LoadPipeline();
     }
 
-    void PrefilterMapPass::Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer)
+    void PrefilterMapPass::Init()
     {
-        VulkanTexture* prefilterMap = device->GetTexture(targetTexture);
-        VulkanTexture* cubemap = device->GetTexture(cubemapTextureHandle);
+        VulkanPass::Init();
+    }
+
+    void PrefilterMapPass::InitFramebuffer()
+    {
+        const TextureHandle outputTextureHandle = outputs[0].resource.resourceInfo.texture.textureHandle;
+        const VulkanTexture* outputTexture = device->GetTexture(outputTextureHandle);
 
         for (unsigned int mip = 0; mip < PREFILTER_MIP_LEVELS; ++mip)
         {
-            const float roughness = static_cast<float>(mip) / static_cast<float>(PREFILTER_MIP_LEVELS - 1);
             const VkExtent2D extent = {
                 static_cast<unsigned int>(REFLECTION_RESOLUTION * std::pow(0.5, mip)),
                 static_cast<unsigned int>(REFLECTION_RESOLUTION * std::pow(0.5, mip))
             };
-
             for (uint32_t faceIndex = 0; faceIndex < 6; faceIndex++)
             {
                 FramebufferCreateInfo createInfo = {};
-                createInfo.attachments.push_back({.imageView = prefilterMap->GetMipmapImageView(mip, faceIndex)});
+                createInfo.attachments.push_back({.imageView = outputTexture->GetMipmapImageView(mip, faceIndex)});
                 createInfo.resolution = extent;
                 createInfo.renderPassHandle = GetRenderPassHandle();
 
                 FramebufferHandle framebufferHandle = device->CreateFramebuffer(createInfo);
-                VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandle);
+                framebufferHandles.push_back(framebufferHandle);
+            }
+        }
+    }
 
-                device->SetViewportAndScissor(extent, commandBuffer);
-                GetRenderPass()->Begin(commandBuffer, framebuffer->framebuffer, extent);
+    void PrefilterMapPass::Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer)
+    {
+        const VulkanTexture* cubemap = device->GetTexture(inputs[0].resourceInfo.texture.textureHandle);
+
+        for (unsigned int mip = 0; mip < PREFILTER_MIP_LEVELS; ++mip)
+        {
+            const float roughness = static_cast<float>(mip) / static_cast<float>(PREFILTER_MIP_LEVELS - 1);
+            for (uint32_t faceIndex = 0; faceIndex < 6; faceIndex++)
+            {
+                VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandles[mip * 6 + faceIndex]);
+
+                device->SetViewportAndScissor(framebuffer->extent, commandBuffer);
+                GetRenderPass()->Begin(commandBuffer, framebuffer->framebuffer, framebuffer->extent);
 
                 DrawCommandParams drawCommandParams{};
                 drawCommandParams.commandBuffer = commandBuffer;
@@ -63,7 +79,7 @@ namespace MongooseVK
                 drawCommandParams.meshlet = &cubeMesh->GetMeshlets()[0];
 
                 drawCommandParams.descriptorSets = {
-                    ShaderCache::descriptorSets.cubemapDescriptorSet
+                    passDescriptorSet
                 };
 
                 PrefilterData pushConstantData;
@@ -81,8 +97,6 @@ namespace MongooseVK
                 device->DrawMeshlet(drawCommandParams);
 
                 GetRenderPass()->End(commandBuffer);
-
-                device->DestroyFramebuffer(framebufferHandle);
             }
         }
     }
@@ -104,20 +118,13 @@ namespace MongooseVK
 
     void PrefilterMapPass::LoadPipeline()
     {
-        VulkanRenderPass::RenderPassConfig config;
-        config.AddColorAttachment({.imageFormat = ImageFormat::RGBA16_SFLOAT});
-
-        renderPassHandle = device->CreateRenderPass(config);
-
-        PipelineCreate pipelineConfig;
         pipelineConfig.vertexShaderPath = "cubemap.vert";
         pipelineConfig.fragmentShaderPath = "prefilter.frag";
 
         pipelineConfig.descriptorSetLayouts = {
-            ShaderCache::descriptorSetLayouts.cubemapDescriptorSetLayout,
+            passDescriptorSetLayoutHandle,
         };
 
-        pipelineConfig.colorAttachments = {ImageFormat::RGBA16_SFLOAT};
         pipelineConfig.enableDepthTest = false;
         pipelineConfig.pushConstantData = {VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PrefilterData)};
         pipelineConfig.renderPass = GetRenderPass()->Get();
