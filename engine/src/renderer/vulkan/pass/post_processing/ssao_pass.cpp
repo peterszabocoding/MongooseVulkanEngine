@@ -16,8 +16,6 @@ namespace MongooseVK
 
         GenerateKernel();
         GenerateNoiseData();
-
-        InitDescriptorSet();
     }
 
     SSAOPass::~SSAOPass()
@@ -25,10 +23,16 @@ namespace MongooseVK
         vkFreeDescriptorSets(device->GetDevice(), device->GetShaderDescriptorPool().GetDescriptorPool(), 1, &ssaoDescriptorSet);
     }
 
-    void SSAOPass::Init()
+    void SSAOPass::InitDescriptors()
     {
-        VulkanPass::Init();
+        ssaoDescriptorSetLayout = VulkanDescriptorSetLayoutBuilder(device)
+                .AddBinding({0, DescriptorSetBindingType::UniformBuffer, {ShaderStage::FragmentShader}})
+                .AddBinding({1, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
+                .Build();
+        InitDescriptorSet();
+        VulkanPass::InitDescriptors();
     }
+
 
     void SSAOPass::Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer)
     {
@@ -80,7 +84,7 @@ namespace MongooseVK
 
         pipelineConfig.descriptorSetLayouts = {
             passDescriptorSetLayoutHandle,
-            ShaderCache::descriptorSetLayouts.ssaoDescriptorSetLayout,
+            ssaoDescriptorSetLayout,
         };
 
         pipelineConfig.disableBlending = true;
@@ -119,7 +123,7 @@ namespace MongooseVK
         ssaoNoiseTextureInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         ssaoNoiseTextureInfo.imageView = ssaoNoiseTexture->GetImageView();
 
-        auto descriptorSetLayout = device->GetDescriptorSetLayout(ShaderCache::descriptorSetLayouts.ssaoDescriptorSetLayout);
+        auto descriptorSetLayout = device->GetDescriptorSetLayout(ssaoDescriptorSetLayout);
         VulkanDescriptorWriter(*descriptorSetLayout, device->GetShaderDescriptorPool())
                 .WriteBuffer(0, bufferInfo)
                 .WriteImage(1, ssaoNoiseTextureInfo)

@@ -56,10 +56,10 @@ namespace MongooseVK::VulkanUtils
     };
 
     struct CopyParams {
-        uint32_t srcMipLevel;
-        uint32_t dstMipLevel;
-        uint32_t srcBaseArrayLayer;
-        uint32_t dstBaseArrayLayer;
+        uint32_t srcMipLevel = 0;
+        uint32_t dstMipLevel = 0;
+        uint32_t srcBaseArrayLayer = 0;
+        uint32_t dstBaseArrayLayer = 0;
 
         uint32_t regionWidth;
         uint32_t regionHeight;
@@ -546,6 +546,9 @@ namespace MongooseVK::VulkanUtils
             case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
                 imageBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
                 break;
+            case VK_IMAGE_LAYOUT_PRESENT_SRC_KHR:
+                imageBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+                break;
             default:
                 throw std::invalid_argument("Unsupported layout type");
         }
@@ -579,17 +582,22 @@ namespace MongooseVK::VulkanUtils
                 imageBarrier.srcAccessMask |= VK_ACCESS_HOST_READ_BIT | VK_ACCESS_TRANSFER_READ_BIT;
                 imageBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
                 break;
+            case VK_IMAGE_LAYOUT_PRESENT_SRC_KHR:
+                imageBarrier.srcAccessMask |= VK_ACCESS_HOST_READ_BIT | VK_ACCESS_TRANSFER_READ_BIT;
+                imageBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+                break;
             default:
                 throw std::invalid_argument("Unsupported layout type");
         }
     }
 
     inline void TransitionImageLayout(const VkCommandBuffer commandBuffer,
-                                      AllocatedImage& image,
+                                      const VkImage image,
                                       const VkImageAspectFlags aspectFlags,
                                       const VkImageLayout oldLayout,
                                       const VkImageLayout newLayout,
-                                      const uint32_t mipLevels = 1)
+                                      const uint32_t mipLevels = 1,
+                                      const uint32_t layerCount = 1)
     {
         VkImageMemoryBarrier barrier{};
         barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -597,12 +605,12 @@ namespace MongooseVK::VulkanUtils
         barrier.newLayout = newLayout;
         barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barrier.image = image.image;
+        barrier.image = image;
         barrier.subresourceRange.aspectMask = aspectFlags;
         barrier.subresourceRange.baseMipLevel = 0;
         barrier.subresourceRange.levelCount = mipLevels;
         barrier.subresourceRange.baseArrayLayer = 0;
-        barrier.subresourceRange.layerCount = 1;
+        barrier.subresourceRange.layerCount = layerCount;
         barrier.srcAccessMask = 0;
         barrier.dstAccessMask = 0;
 
@@ -666,7 +674,16 @@ namespace MongooseVK::VulkanUtils
         }
 
         vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+    }
 
+    inline void TransitionImageLayout(const VkCommandBuffer commandBuffer,
+                                      AllocatedImage& image,
+                                      const VkImageAspectFlags aspectFlags,
+                                      const VkImageLayout oldLayout,
+                                      const VkImageLayout newLayout,
+                                      const uint32_t mipLevels = 1)
+    {
+        TransitionImageLayout(commandBuffer, image.image, aspectFlags, oldLayout, newLayout, mipLevels);
         image.imageLayout = newLayout;
     }
 

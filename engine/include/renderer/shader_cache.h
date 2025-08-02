@@ -7,19 +7,6 @@ namespace MongooseVK
 {
     constexpr auto SHADER_PATH = "shader/glsl/";
 
-    struct DescriptorSetLayouts {
-        DescriptorSetLayoutHandle cubemapDescriptorSetLayout;
-        DescriptorSetLayoutHandle presentDescriptorSetLayout;
-        DescriptorSetLayoutHandle irradianceDescriptorSetLayout;
-        DescriptorSetLayoutHandle ssaoDescriptorSetLayout;
-    };
-
-    struct DescriptorSets {
-        VkDescriptorSet cubemapDescriptorSet;
-        VkDescriptorSet irradianceDescriptorSet;
-        VkDescriptorSet presentDescriptorSet;
-    };
-
     class ShaderCache {
     public:
         ShaderCache(VulkanDevice* _vulkanDevice): vulkanDevice(_vulkanDevice) { Load(); }
@@ -31,13 +18,10 @@ namespace MongooseVK
         void Load();
 
     public:
-        static DescriptorSetLayouts descriptorSetLayouts;
-        static DescriptorSets descriptorSets;
         static std::unordered_map<std::string, std::vector<uint32_t>> shaderCache;
 
     private:
         void LoadShaders();
-        void LoadDescriptorLayouts();
         void LoadPipelines();
         void LoadRenderpasses();
 

@@ -25,7 +25,7 @@ namespace MongooseVK
         explicit SSAOPass(VulkanDevice* _device, VkExtent2D _resolution);
         ~SSAOPass() override;
 
-        virtual void Init() override;
+        virtual void InitDescriptors() override;
         virtual void Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer) override;
         virtual void Resize(VkExtent2D _resolution) override;
 
@@ -44,7 +44,9 @@ namespace MongooseVK
         SSAOBuffer buffer;
         std::vector<glm::vec4> ssaoNoiseData;
 
+        DescriptorSetLayoutHandle ssaoDescriptorSetLayout;
         VkDescriptorSet ssaoDescriptorSet{};
+
         TextureHandle ssaoNoiseTextureHandle;
 
         Ref<VulkanBuffer> ssaoBuffer;

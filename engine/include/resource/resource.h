@@ -46,6 +46,11 @@ namespace MongooseVK
         DEPTH32,
     };
 
+    inline bool IsDepthFormat(const ImageFormat format)
+    {
+        return format == ImageFormat::DEPTH24_STENCIL8 || format == ImageFormat::DEPTH32;
+    }
+
     struct AllocatedImage {
         uint32_t width, height;
         VkImage image = VK_NULL_HANDLE;

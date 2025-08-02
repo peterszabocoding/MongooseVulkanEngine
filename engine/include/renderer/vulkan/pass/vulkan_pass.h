@@ -146,7 +146,7 @@ namespace MongooseVK
                 if (output.resource.type == ResourceType::Buffer) continue;
 
                 ImageFormat format = output.resource.resourceInfo.texture.textureCreateInfo.format;
-                if (format != ImageFormat::DEPTH32 && format != ImageFormat::DEPTH24_STENCIL8)
+                if (!IsDepthFormat(format))
                 {
                     renderpassConfig.AddColorAttachment({
                         .imageFormat = format,
@@ -199,11 +199,16 @@ namespace MongooseVK
                 if (inputs[i].type == ResourceType::Texture || inputs[i].type == ResourceType::TextureCube)
                 {
                     const VulkanTexture* texture = device->GetTexture(inputs[i].resourceInfo.texture.textureHandle);
+                    const ImageFormat format = texture->createInfo.format;
 
                     VkDescriptorImageInfo imageInfo{};
                     imageInfo.sampler = texture->GetSampler();
                     imageInfo.imageView = texture->GetImageView();
-                    imageInfo.imageLayout = texture->createInfo.imageLayout;
+                    imageInfo.imageLayout = IsDepthFormat(format)
+                                                ? format == ImageFormat::DEPTH32
+                                                      ? VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL
+                                                      : VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
+                                                : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
                     descriptorSetWriter.WriteImage(i, imageInfo);
                 }

@@ -19,40 +19,62 @@ namespace MongooseVK
     IrradianceMapPass::IrradianceMapPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution): VulkanPass(vulkanDevice, _resolution)
     {
         cubeMesh = ResourceManager::LoadMesh(device, "resources/models/cube.obj");
-        LoadPipeline();
+    }
+
+    void IrradianceMapPass::InitFramebuffer()
+    {
+        TextureHandle outputHandle = outputs[0].resource.resourceInfo.texture.textureHandle;
+        VulkanTexture* outputTexture = device->GetTexture(outputHandle);
+
+        std::vector<FramebufferHandle> iblIrradianceFramebuffes;
+        iblIrradianceFramebuffes.resize(6);
+
+        for (size_t i = 0; i < 6; i++)
+        {
+            FramebufferCreateInfo createInfo{};
+
+            createInfo.attachments.push_back({outputTexture->GetMipmapImageView(0, i)});
+            createInfo.renderPassHandle = GetRenderPassHandle();
+            createInfo.resolution = {32, 32};
+
+            framebufferHandles.push_back(device->CreateFramebuffer(createInfo));
+        }
     }
 
     void IrradianceMapPass::Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer)
     {
-        VulkanFramebuffer* framebuffer = device->GetFramebuffer(writeBuffer);
+        for (uint32_t faceIndex = 0; faceIndex < 6; faceIndex++)
+        {
+            VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandles[faceIndex]);
 
-        device->SetViewportAndScissor(framebuffer->extent, commandBuffer);
-        GetRenderPass()->Begin(commandBuffer, framebuffer->framebuffer, framebuffer->extent);
+            device->SetViewportAndScissor(framebuffer->extent, commandBuffer);
+            GetRenderPass()->Begin(commandBuffer, framebuffer->framebuffer, framebuffer->extent);
 
-        DrawCommandParams drawCommandParams{};
-        drawCommandParams.commandBuffer = commandBuffer;
-        drawCommandParams.meshlet = &cubeMesh->GetMeshlets()[0];
-        drawCommandParams.descriptorSets = {
-            ShaderCache::descriptorSets.cubemapDescriptorSet
-        };
+            DrawCommandParams drawCommandParams{};
+            drawCommandParams.commandBuffer = commandBuffer;
+            drawCommandParams.meshlet = &cubeMesh->GetMeshlets()[0];
+            drawCommandParams.descriptorSets = {
+                passDescriptorSet
+            };
 
-        drawCommandParams.pipelineParams = {
-            pipeline->pipeline,
-            pipeline->pipelineLayout
-        };
+            drawCommandParams.pipelineParams = {
+                pipeline->pipeline,
+                pipeline->pipelineLayout
+            };
 
-        TransformPushConstantData pushConstantData;
-        pushConstantData.projection = m_CaptureProjection;
-        pushConstantData.view = m_CaptureViews[faceIndex];
+            TransformPushConstantData pushConstantData;
+            pushConstantData.projection = m_CaptureProjection;
+            pushConstantData.view = m_CaptureViews[faceIndex];
 
-        drawCommandParams.pushConstantParams = {
-            &pushConstantData,
-            sizeof(TransformPushConstantData)
-        };
+            drawCommandParams.pushConstantParams = {
+                &pushConstantData,
+                sizeof(TransformPushConstantData)
+            };
 
-        device->DrawMeshlet(drawCommandParams);
+            device->DrawMeshlet(drawCommandParams);
 
-        GetRenderPass()->End(commandBuffer);
+            GetRenderPass()->End(commandBuffer);
+        }
     }
 
     void IrradianceMapPass::Resize(VkExtent2D _resolution)
@@ -62,14 +84,6 @@ namespace MongooseVK
 
     void IrradianceMapPass::LoadPipeline()
     {
-        VulkanRenderPass::RenderPassConfig config;
-        config.AddColorAttachment({
-            .imageFormat = ImageFormat::RGBA16_SFLOAT
-        });
-
-        renderPassHandle = device->CreateRenderPass(config);
-
-        PipelineCreate pipelineConfig;
         pipelineConfig.vertexShaderPath = "cubemap.vert";
         pipelineConfig.fragmentShaderPath = "irradiance_convolution.frag";
 
@@ -78,11 +92,7 @@ namespace MongooseVK
         pipelineConfig.frontFace = PipelineFrontFace::Counter_clockwise;
 
         pipelineConfig.descriptorSetLayouts = {
-            ShaderCache::descriptorSetLayouts.cubemapDescriptorSetLayout,
-        };
-
-        pipelineConfig.colorAttachments = {
-            ImageFormat::RGBA16_SFLOAT,
+            passDescriptorSetLayoutHandle
         };
 
         pipelineConfig.disableBlending = true;

@@ -22,14 +22,11 @@ namespace MongooseVK
         }
     }
 
-    DescriptorSetLayouts ShaderCache::descriptorSetLayouts;
-    DescriptorSets ShaderCache::descriptorSets;
     std::unordered_map<std::string, std::vector<uint32_t>> ShaderCache::shaderCache;
 
     void ShaderCache::Load()
     {
         LoadShaders();
-        LoadDescriptorLayouts();
     }
 
     void ShaderCache::LoadShaders()
@@ -46,30 +43,5 @@ namespace MongooseVK
             const std::vector<uint32_t> sprv_source = compiler.CompileFile(compilationInfo);
             shaderCache[file.filename().string()] = sprv_source;
         }
-    }
-
-    void ShaderCache::LoadDescriptorLayouts()
-    {
-        // skyboxSampler
-        descriptorSetLayouts.cubemapDescriptorSetLayout = VulkanDescriptorSetLayoutBuilder(vulkanDevice)
-                .AddBinding({0, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
-                .Build();
-
-        // imageSampler
-        descriptorSetLayouts.presentDescriptorSetLayout = VulkanDescriptorSetLayoutBuilder(vulkanDevice)
-                .AddBinding({0, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
-                .Build();
-
-        // irradianceMap
-        descriptorSetLayouts.irradianceDescriptorSetLayout = VulkanDescriptorSetLayoutBuilder(vulkanDevice)
-                .AddBinding({0, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
-                .Build();
-
-
-        // samples, noise texture
-        descriptorSetLayouts.ssaoDescriptorSetLayout = VulkanDescriptorSetLayoutBuilder(vulkanDevice)
-                .AddBinding({0, DescriptorSetBindingType::UniformBuffer, {ShaderStage::FragmentShader}})
-                .AddBinding({1, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
-                .Build();
     }
 }

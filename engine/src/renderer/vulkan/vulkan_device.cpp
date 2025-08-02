@@ -693,6 +693,7 @@ namespace MongooseVK
         {
             if (attachment.imageView != VK_NULL_HANDLE)
                 imageViews.push_back(attachment.imageView);
+
             if (attachment.textureHandle != INVALID_TEXTURE_HANDLE)
                 imageViews.push_back(GetTexture(attachment.textureHandle)->GetImageView());
         }

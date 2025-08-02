@@ -7,9 +7,9 @@
 #include "pass/gbufferPass.h"
 #include "pass/infinite_grid_pass.h"
 #include "pass/lighting_pass.h"
-#include "pass/present_pass.h"
 #include "pass/shadow_map_pass.h"
 #include "pass/skybox_pass.h"
+#include "pass/ui_pass.h"
 #include "pass/lighting/brdf_lut_pass.h"
 #include "pass/lighting/irradiance_map_pass.h"
 #include "pass/lighting/prefilter_map_pass.h"
@@ -19,7 +19,6 @@
 
 namespace MongooseVK
 {
-
     class VulkanDevice;
 
     struct Framebuffers {
@@ -54,7 +53,7 @@ namespace MongooseVK
         Scope<SkyboxPass> skyboxPass;
         Scope<LightingPass> lightingPass;
         Scope<ShadowMapPass> shadowMapPass;
-        Scope<PresentPass> presentPass;
+        Scope<UiPass> uiPass;
         Scope<SSAOPass> ssaoPass;
         Scope<InfiniteGridPass> gridPass;
         Scope<IrradianceMapPass> irradianceMapPass;
@@ -86,9 +85,6 @@ namespace MongooseVK
 
     private:
         void CreateSwapchain();
-        void CreateShadowMap();
-        void CreateFramebuffers();
-
         void ResizeSwapchain();
 
         void UpdateCameraBuffer(Camera& camera);
@@ -123,6 +119,8 @@ namespace MongooseVK
         Scope<ShaderCache> shaderCache;
         Scope<VulkanSwapchain> vulkanSwapChain;
 
+        VkDescriptorSet presentDescriptorSet = VK_NULL_HANDLE;
+        DescriptorSetLayoutHandle presentDescriptorSetLayout;
 
         float lightSpinningAngle = 0.0f;
     };
