@@ -107,7 +107,7 @@ namespace MongooseVK
             outputs.clear();
         }
 
-        virtual void Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBufferHandle) = 0;
+        virtual void Render(VkCommandBuffer commandBuffer) = 0;
 
         virtual void Resize(VkExtent2D _resolution)
         {

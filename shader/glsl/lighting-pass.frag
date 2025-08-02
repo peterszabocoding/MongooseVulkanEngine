@@ -31,7 +31,6 @@ layout(location = 0) out vec4 finalImage;
 // ------------------------------------------------------------------
 
 layout(push_constant) uniform Push {
-    mat4 transform;
     mat4 modelMatrix;
     uint materialIndex;
 } push;
@@ -56,11 +55,11 @@ layout(std140,set = 1, binding = 0) readonly buffer MaterialBuffer{
 } materials;
 
 // Transform uniforms
-layout(set = 2, binding = 0) uniform Transforms {
+layout(set = 2, binding = 0) uniform CameraBuffer {
     mat4 projection;
     mat4 view;
     vec3 cameraPosition;
-} transforms;
+} camera;
 
 // Light uniforms
 layout(std430, set = 2, binding = 1) uniform Lights {
@@ -68,14 +67,14 @@ layout(std430, set = 2, binding = 1) uniform Lights {
     vec4 color;
     vec3 direction;
     float ambientIntensity;
-    float[SHADOW_MAP_CASCADE_COUNT] cascadeSplits;
+    vec4[SHADOW_MAP_CASCADE_COUNT] cascadeSplits;
     float intensity;
     float bias;
 } lights;
 
 layout(set = 2, binding = 2)    uniform sampler2DArray shadowMap;
 
-// Irradiance uniforms
+// Irradiance uniformsí
 layout(set = 2, binding = 3)    uniform samplerCube irradianceMap;
 
 // Post Processing
@@ -140,7 +139,7 @@ void main() {
 
     int cascadeIndex = 0;
     for (int i = 0; i < SHADOW_MAP_CASCADE_COUNT - 1; ++i) {
-        if (inViewPosition.z < lights.cascadeSplits[i]) {
+        if (inViewPosition.z < lights.cascadeSplits[i].x) {
             cascadeIndex = i + 1;
         }
     }
@@ -167,7 +166,7 @@ void main() {
     N = material.normalMapTextureIndex < INVALID_TEXTURE_INDEX
     ? CalcSurfaceNormal(normalMapColor, TBN)
     : fragNormal;
-    V = normalize(transforms.cameraPosition - inWorldPosition.xyz);
+    V = normalize(camera.cameraPosition - inWorldPosition.xyz);
 
     vec3 lightPosition = vec3(0.0);
     // vec3 L = normalize(lightPosition - inWorldPosition.xyz);

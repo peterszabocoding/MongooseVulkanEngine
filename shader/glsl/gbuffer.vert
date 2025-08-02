@@ -2,7 +2,6 @@
 #extension GL_EXT_scalar_block_layout : require
 
 layout(push_constant) uniform Push {
-    mat4 transform;
     mat4 modelMatrix;
     uint materialIndex;
 } push;

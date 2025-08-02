@@ -17,7 +17,7 @@ namespace MongooseVK
         ~InfiniteGridPass() override = default;
 
         virtual void Init() override;
-        virtual void Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer) override;
+        virtual void Render(VkCommandBuffer commandBuffer) override;
 
     protected:
         virtual void LoadPipeline() override;

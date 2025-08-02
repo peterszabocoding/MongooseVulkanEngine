@@ -17,7 +17,7 @@ namespace MongooseVK
         VulkanPass::Init();
     }
 
-    void InfiniteGridPass::Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer)
+    void InfiniteGridPass::Render(VkCommandBuffer commandBuffer)
     {
         VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandles[0]);
 

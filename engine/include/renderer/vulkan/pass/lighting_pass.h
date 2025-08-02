@@ -10,7 +10,7 @@ namespace MongooseVK
         explicit LightingPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution);
         ~LightingPass() override = default;
 
-        virtual void Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer) override;
+        virtual void Render(VkCommandBuffer commandBuffer) override;
 
     protected:
         virtual void LoadPipeline() override;

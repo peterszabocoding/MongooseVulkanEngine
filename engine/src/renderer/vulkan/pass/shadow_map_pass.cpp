@@ -36,7 +36,7 @@ namespace MongooseVK
 
     }
 
-    void ShadowMapPass::Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer)
+    void ShadowMapPass::Render(VkCommandBuffer commandBuffer)
     {
         for (uint32_t i = 0; i < framebufferHandles.size(); i++)
         {
@@ -52,9 +52,9 @@ namespace MongooseVK
                 pipeline->pipelineLayout
             };
 
-            SimplePushConstantData pushConstantData;
+            ShadowMapPushConstantData pushConstantData;
 
-            pushConstantData.transform = scene.directionalLight.cascades[i].viewProjMatrix;
+            pushConstantData.projection = scene.directionalLight.cascades[i].viewProjMatrix;
 
             for (size_t i = 0; i < scene.meshes.size(); i++)
             {
@@ -62,7 +62,7 @@ namespace MongooseVK
 
                 geometryDrawParams.pushConstantParams = {
                     &pushConstantData,
-                    sizeof(SimplePushConstantData)
+                    sizeof(ShadowMapPushConstantData)
                 };
 
                 for (auto& meshlet: scene.meshes[i]->GetMeshlets())
@@ -93,7 +93,7 @@ namespace MongooseVK
 
         pipelineConfig.pushConstantData.shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
         pipelineConfig.pushConstantData.offset = 0;
-        pipelineConfig.pushConstantData.size = sizeof(SimplePushConstantData);
+        pipelineConfig.pushConstantData.size = sizeof(ShadowMapPushConstantData);
 
         pipelineHandle = VulkanPipelineBuilder().Build(device, pipelineConfig);
         pipeline = device->GetPipeline(pipelineHandle);

@@ -2,16 +2,15 @@
 #extension GL_EXT_scalar_block_layout : require
 
 layout(push_constant) uniform Push {
-    mat4 transform;
     mat4 modelMatrix;
     uint materialIndex;
 } push;
 
-layout(set = 2, binding = 0) uniform Transforms {
+layout(set = 2, binding = 0) uniform CameraBuffer {
     mat4 projection;
     mat4 view;
     vec3 cameraPosition;
-} transforms;
+} camera;
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inColor;
@@ -31,7 +30,7 @@ layout(location = 6) out mat3 TBN;
 
 void main() {
     vec4 worldPosition = push.modelMatrix * vec4(inPosition, 1.0);
-    vec4 viewPosition = transforms.view * vec4(worldPosition.xyz, 1.0);
+    vec4 viewPosition = camera.view * vec4(worldPosition.xyz, 1.0);
 
     outWorldPosition = worldPosition;
     outViewPosition = viewPosition.xyz;
@@ -46,5 +45,5 @@ void main() {
     vec3 B = normalize(vec3(push.modelMatrix * vec4(inBitangent, 0.0)));
     TBN = mat3(T, B, N);
 
-    gl_Position = transforms.projection * viewPosition;
+    gl_Position = camera.projection * viewPosition;
 }

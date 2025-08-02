@@ -34,7 +34,7 @@ namespace MongooseVK
     }
 
 
-    void SSAOPass::Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer)
+    void SSAOPass::Render(VkCommandBuffer commandBuffer)
     {
         VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandles[0]);
 

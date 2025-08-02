@@ -12,7 +12,7 @@ layout(location = 0) in vec3 inPosition;
 // ------------------------------------------------------------------
 
 layout(push_constant) uniform Push {
-    mat4 transform;
+    mat4 projection;
     mat4 modelMatrix;
 } push;
 
@@ -20,5 +20,5 @@ layout(push_constant) uniform Push {
 
 void main()
 {
-    gl_Position = push.transform * push.modelMatrix * vec4(inPosition, 1.0);
+    gl_Position = push.projection * push.modelMatrix * vec4(inPosition, 1.0);
 }

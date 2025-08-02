@@ -18,7 +18,7 @@ namespace MongooseVK
         VulkanPass::Init();
     }
 
-    void GBufferPass::Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer)
+    void GBufferPass::Render(VkCommandBuffer commandBuffer)
     {
         VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandles[0]);
 
@@ -41,7 +41,6 @@ namespace MongooseVK
 
                 SimplePushConstantData pushConstantData;
                 pushConstantData.modelMatrix = scene.transforms[i].GetTransform();
-                pushConstantData.transform = camera->GetProjection() * camera->GetView() * pushConstantData.modelMatrix;
                 pushConstantData.materialIndex = material->index;
 
                 drawCommandParams.pushConstantParams = {

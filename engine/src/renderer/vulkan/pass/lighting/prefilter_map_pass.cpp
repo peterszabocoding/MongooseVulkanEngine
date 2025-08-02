@@ -54,7 +54,7 @@ namespace MongooseVK
         }
     }
 
-    void PrefilterMapPass::Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer)
+    void PrefilterMapPass::Render(VkCommandBuffer commandBuffer)
     {
         const VulkanTexture* cubemap = device->GetTexture(inputs[0].resourceInfo.texture.textureHandle);
 
@@ -63,7 +63,7 @@ namespace MongooseVK
             const float roughness = static_cast<float>(mip) / static_cast<float>(PREFILTER_MIP_LEVELS - 1);
             for (uint32_t faceIndex = 0; faceIndex < 6; faceIndex++)
             {
-                VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandles[mip * 6 + faceIndex]);
+                const VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandles[mip * 6 + faceIndex]);
 
                 device->SetViewportAndScissor(framebuffer->extent, commandBuffer);
                 GetRenderPass()->Begin(commandBuffer, framebuffer->framebuffer, framebuffer->extent);

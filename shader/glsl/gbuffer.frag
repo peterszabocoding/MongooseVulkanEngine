@@ -32,7 +32,6 @@ layout(location = 1)            out vec4 outWorldPosition;
 // ------------------------------------------------------------------
 
 layout(push_constant) uniform Push {
-    mat4 transform;
     mat4 modelMatrix;
     uint materialIndex;
 } push;

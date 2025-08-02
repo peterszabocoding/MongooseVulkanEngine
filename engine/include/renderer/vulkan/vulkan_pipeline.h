@@ -7,7 +7,6 @@
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 
 #include "vulkan_renderpass.h"
 #include "resource/resource.h"
@@ -17,7 +16,6 @@ namespace MongooseVK
     class VulkanDevice;
 
     struct SimplePushConstantData {
-        glm::mat4 transform{1.f};
         glm::mat4 modelMatrix{1.f};
         uint32_t materialIndex = 0;
     };
@@ -25,6 +23,11 @@ namespace MongooseVK
     struct TransformPushConstantData {
         glm::mat4 projection{1.f};
         glm::mat4 view{1.f};
+    };
+
+    struct ShadowMapPushConstantData {
+        glm::mat4 projection{1.f};
+        glm::mat4 modelMatrix{1.f};
     };
 
     struct PrefilterData {

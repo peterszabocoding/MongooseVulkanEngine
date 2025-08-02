@@ -10,7 +10,7 @@ namespace MongooseVK
         ~IrradianceMapPass() override = default;
 
         virtual void InitFramebuffer() override;
-        virtual void Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer) override;
+        virtual void Render(VkCommandBuffer commandBuffer) override;
         virtual void Resize(VkExtent2D _resolution) override;
 
         void SetFaceIndex(uint8_t index);

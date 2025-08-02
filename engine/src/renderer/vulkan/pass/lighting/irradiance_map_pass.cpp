@@ -41,7 +41,7 @@ namespace MongooseVK
         }
     }
 
-    void IrradianceMapPass::Render(VkCommandBuffer commandBuffer, Camera* camera, FramebufferHandle writeBuffer)
+    void IrradianceMapPass::Render(VkCommandBuffer commandBuffer)
     {
         for (uint32_t faceIndex = 0; faceIndex < 6; faceIndex++)
         {

@@ -245,24 +245,25 @@ namespace MongooseVK
             static_cast<uint32_t>(renderResolution.height * 0.5)
         };
 
-        renderPasses.gbufferPass = CreateScope<GBufferPass>(device, scene, renderResolution);
-
-        renderPasses.lightingPass = CreateScope<LightingPass>(device, scene, renderResolution);
-        renderPasses.shadowMapPass = CreateScope<ShadowMapPass>(device, scene, VkExtent2D{SHADOW_MAP_RESOLUTION, SHADOW_MAP_RESOLUTION});
-        renderPasses.ssaoPass = CreateScope<SSAOPass>(device, SSAO_RESOLUTION);
-        renderPasses.irradianceMapPass = CreateScope<IrradianceMapPass>(device, renderResolution);
-        renderPasses.brdfLutPass = CreateScope<BrdfLUTPass>(device, VkExtent2D{512, 512});
-        renderPasses.prefilterMapPass = CreateScope<PrefilterMapPass>(device, renderResolution);
-        renderPasses.skyboxPass = CreateScope<SkyboxPass>(device, scene, renderResolution);
-        renderPasses.gridPass = CreateScope<InfiniteGridPass>(device, renderResolution);
-        renderPasses.uiPass = CreateScope<UiPass>(device, renderResolution);
+        //
+        renderPasses.gbufferPass        =    CreateScope<GBufferPass>(device, scene, renderResolution);
+        renderPasses.lightingPass       =    CreateScope<LightingPass>(device, scene, renderResolution);
+        renderPasses.shadowMapPass      =    CreateScope<ShadowMapPass>(device, scene, VkExtent2D{SHADOW_MAP_RESOLUTION, SHADOW_MAP_RESOLUTION});
+        renderPasses.ssaoPass           =    CreateScope<SSAOPass>(device, SSAO_RESOLUTION);
+        renderPasses.irradianceMapPass  =    CreateScope<IrradianceMapPass>(device, renderResolution);
+        renderPasses.brdfLutPass        =    CreateScope<BrdfLUTPass>(device, VkExtent2D{512, 512});
+        renderPasses.prefilterMapPass   =    CreateScope<PrefilterMapPass>(device, renderResolution);
+        renderPasses.skyboxPass         =    CreateScope<SkyboxPass>(device, scene, renderResolution);
+        renderPasses.gridPass           =    CreateScope<InfiniteGridPass>(device, renderResolution);
+        renderPasses.uiPass             =    CreateScope<UiPass>(device, renderResolution);
 
         InitializeRenderPasses();
 
+        // IBL and reflection calculations
         device->ImmediateSubmit([&](VkCommandBuffer commandBuffer) {
-            renderPasses.irradianceMapPass->Render(commandBuffer, nullptr, INVALID_FRAMEBUFFER_HANDLE);
-            renderPasses.brdfLutPass->Render(commandBuffer, nullptr, INVALID_FRAMEBUFFER_HANDLE);
-            renderPasses.prefilterMapPass->Render(commandBuffer, nullptr, INVALID_FRAMEBUFFER_HANDLE);
+            renderPasses.irradianceMapPass->Render(commandBuffer);
+            renderPasses.brdfLutPass->Render(commandBuffer);
+            renderPasses.prefilterMapPass->Render(commandBuffer);
         });
 
         isSceneLoaded = true;
@@ -271,15 +272,15 @@ namespace MongooseVK
     void VulkanRenderer::Draw(const float deltaTime, Camera& camera)
     {
         if (!isSceneLoaded) return;
-        device->DrawFrame(vulkanSwapChain->GetSwapChain(),
-                          [&](const VkCommandBuffer cmd, const uint32_t imgIndex) {
-                              RotateLight(deltaTime);
-                              scene.directionalLight.UpdateCascades(camera);
-                              UpdateLightsBuffer();
-                              UpdateCameraBuffer(camera);
 
-                              DrawFrame(cmd, imgIndex, camera);
-                          },
+        RotateLight(deltaTime);
+        scene.directionalLight.UpdateCascades(camera);
+
+        UpdateLightsBuffer();
+        UpdateCameraBuffer(camera);
+
+        device->DrawFrame(vulkanSwapChain->GetSwapChain(),
+                          [&](VkCommandBuffer cmd, uint32_t imgIndex) { DrawFrame(cmd, imgIndex); },
                           std::bind(&VulkanRenderer::ResizeSwapchain, this));
     }
 
@@ -339,10 +340,11 @@ namespace MongooseVK
 
     void VulkanRenderer::UpdateCameraBuffer(Camera& camera)
     {
-        CameraBuffer bufferData;
-        bufferData.cameraPosition = camera.GetTransform().m_Position;
-        bufferData.view = camera.GetView();
-        bufferData.proj = camera.GetProjection();
+        const CameraBuffer bufferData{
+            .proj = camera.GetProjection(),
+            .view = camera.GetView(),
+            .cameraPosition = camera.GetTransform().m_Position
+        };
 
         memcpy(renderPassResourceMap["camera_buffer"].resourceInfo.buffer.allocatedBuffer.GetData(), &bufferData, sizeof(CameraBuffer));
     }
@@ -363,7 +365,7 @@ namespace MongooseVK
         for (size_t i = 0; i < SHADOW_MAP_CASCADE_COUNT; i++)
         {
             bufferData.lightProjection[i] = scene.directionalLight.cascades[i].viewProjMatrix;
-            bufferData.cascadeSplits[i] = scene.directionalLight.cascades[i].splitDepth;
+            bufferData.cascadeSplits[i].x = scene.directionalLight.cascades[i].splitDepth;
         }
 
         bufferData.direction = glm::vec4(normalize(scene.directionalLight.direction), 0.0);
@@ -375,18 +377,18 @@ namespace MongooseVK
         memcpy(renderPassResourceMap["lights_buffer"].resourceInfo.buffer.allocatedBuffer.GetData(), &bufferData, sizeof(LightsBuffer));
     }
 
-    void VulkanRenderer::DrawFrame(const VkCommandBuffer commandBuffer, const uint32_t imageIndex, Camera& camera)
+    void VulkanRenderer::DrawFrame(VkCommandBuffer commandBuffer, uint32_t imageIndex)
     {
         activeImage = imageIndex;
 
         if (vulkanSwapChain->GetExtent().width != renderResolution.width || vulkanSwapChain->GetExtent().height != renderResolution.height)
             return;
 
-        renderPasses.gbufferPass->Render(commandBuffer, &camera, INVALID_FRAMEBUFFER_HANDLE);
-        renderPasses.shadowMapPass->Render(commandBuffer, &camera, INVALID_FRAMEBUFFER_HANDLE);
-        renderPasses.ssaoPass->Render(commandBuffer, &camera, INVALID_FRAMEBUFFER_HANDLE);
-        renderPasses.skyboxPass->Render(commandBuffer, &camera, INVALID_FRAMEBUFFER_HANDLE);
-        renderPasses.gridPass->Render(commandBuffer, &camera, INVALID_FRAMEBUFFER_HANDLE);
+        renderPasses.gbufferPass->Render(commandBuffer);
+        renderPasses.shadowMapPass->Render(commandBuffer);
+        renderPasses.ssaoPass->Render(commandBuffer);
+        renderPasses.skyboxPass->Render(commandBuffer);
+        renderPasses.gridPass->Render(commandBuffer);
 
         // Lighting pass
         {
@@ -396,7 +398,7 @@ namespace MongooseVK
                                                VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
                                                VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
 
-            renderPasses.lightingPass->Render(commandBuffer, &camera, INVALID_FRAMEBUFFER_HANDLE);
+            renderPasses.lightingPass->Render(commandBuffer);
 
             VulkanUtils::TransitionImageLayout(commandBuffer, depthMap->allocatedImage,
                                                VK_IMAGE_ASPECT_DEPTH_BIT,
@@ -404,7 +406,7 @@ namespace MongooseVK
                                                VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
         }
 
-        renderPasses.uiPass->Render(commandBuffer, &camera, INVALID_FRAMEBUFFER_HANDLE);
+        renderPasses.uiPass->Render(commandBuffer);
 
         // Present
         {

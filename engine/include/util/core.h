@@ -34,6 +34,8 @@ constexpr Version APPLICATION_VERSION = {0, 1, 0};
 
 #define CAST_REF(T, x) std::static_pointer_cast<T>(x)
 
+#define BIND_FN(fn) std::bind(&##fn, this, std::placeholders::_1)
+
 template<typename T>
 using Scope = std::unique_ptr<T>;
 
