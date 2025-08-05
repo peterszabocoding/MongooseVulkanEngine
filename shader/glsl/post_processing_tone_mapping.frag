@@ -5,12 +5,17 @@ layout(location = 0) out vec4 outputImage;
 
 layout(set = 0, binding = 0) uniform sampler2D imageSampler;
 
+layout(push_constant) uniform Push {
+    float exposure;
+    float gamma;
+} params;
+
 void main() {
+    vec3 hdrColor = texture(imageSampler, inTexCoord).rgb;
 
-    vec3 color = texture(imageSampler, inTexCoord).rgb;
-    color =  color / (color + vec3(1.0));
-    color = pow(color, vec3(1.0/2.2));
+    vec3 mapped = vec3(1.0) - exp(-hdrColor * params.exposure);
 
-    outputImage = vec4(color, 1.0);
+    mapped = pow(mapped, vec3(1.0 / params.gamma));
 
+    outputImage = vec4(mapped, 1.0);
 }

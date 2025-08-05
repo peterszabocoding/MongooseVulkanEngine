@@ -1,0 +1,30 @@
+#pragma once
+#include <renderer/frame_graph.h>
+#include "renderer/vulkan/vulkan_mesh.h"
+
+namespace MongooseVK
+{
+    class ToneMappingPass final : public FrameGraphRenderPass {
+    public:
+        struct ToneMappingParams {
+            float exposure = 1.0;
+            float gamma = 2.2;
+        };
+
+    public:
+        explicit ToneMappingPass(VulkanDevice* _device, VkExtent2D _resolution);
+        ~ToneMappingPass() override;
+
+        virtual void Render(VkCommandBuffer commandBuffer, Scene* scene) override;
+        virtual void Resize(VkExtent2D _resolution) override;
+
+    protected:
+        virtual void LoadPipeline() override;
+
+    public:
+        ToneMappingParams toneMappingParams{};
+
+    private:
+        Scope<VulkanMeshlet> screenRect;
+    };
+};

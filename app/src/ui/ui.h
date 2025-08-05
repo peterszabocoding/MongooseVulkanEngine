@@ -302,6 +302,11 @@ namespace VulkanDemo
                                                      150.0f);
             MongooseVK::ImGuiUtils::DrawIntControl("SSAO Kernel Size", renderer.renderPasses.ssaoPass->ssaoParams.kernelSize, 1, 64,
                                                    150.0f);
+
+            MongooseVK::ImGuiUtils::DrawFloatControl("Gamma", renderer.renderPasses.toneMappingPass->toneMappingParams.gamma, 0.001f, 10.0f, 0.01f,
+                                                     150.0f);
+            MongooseVK::ImGuiUtils::DrawFloatControl("Exposure", renderer.renderPasses.toneMappingPass->toneMappingParams.exposure, 0.01f, 10.0f, 0.01f,
+                                                     150.0f);
         }
     };
 

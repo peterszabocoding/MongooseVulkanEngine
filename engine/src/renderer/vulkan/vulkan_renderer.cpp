@@ -51,7 +51,7 @@ namespace MongooseVK
             renderPasses.skyboxPass->AddInput(renderPassResourceMap["camera_buffer"]);
 
             renderPasses.skyboxPass->AddOutput({
-                .resource = renderPassResourceMap["main_frame_color"],
+                .resource = renderPassResourceMap["hdr_image"],
                 .loadOp = RenderPassOperation::LoadOp::Clear,
                 .storeOp = RenderPassOperation::StoreOp::Store
             });
@@ -71,7 +71,7 @@ namespace MongooseVK
             renderPasses.gridPass->AddInput(renderPassResourceMap["camera_buffer"]);
 
             renderPasses.gridPass->AddOutput({
-                .resource = renderPassResourceMap["main_frame_color"],
+                .resource = renderPassResourceMap["hdr_image"],
                 .loadOp = RenderPassOperation::LoadOp::Load,
                 .storeOp = RenderPassOperation::StoreOp::Store
             });
@@ -138,7 +138,7 @@ namespace MongooseVK
             renderPasses.lightingPass->AddInput(renderPassResourceMap["brdflut_texture"]);
 
             renderPasses.lightingPass->AddOutput({
-                .resource = renderPassResourceMap["main_frame_color"],
+                .resource = renderPassResourceMap["hdr_image"],
                 .loadOp = RenderPassOperation::LoadOp::Load,
                 .storeOp = RenderPassOperation::StoreOp::Store
             });
@@ -213,6 +213,20 @@ namespace MongooseVK
             renderPasses.irradianceMapPass->Init();
         }
 
+        // Tone Mapping pass
+        {
+            renderPasses.toneMappingPass->Reset();
+
+            renderPasses.toneMappingPass->AddInput(renderPassResourceMap["hdr_image"]);
+
+            renderPasses.toneMappingPass->AddOutput({
+                .resource = renderPassResourceMap["main_frame_color"],
+                .loadOp = RenderPassOperation::LoadOp::Clear,
+                .storeOp = RenderPassOperation::StoreOp::Store
+            });
+            renderPasses.toneMappingPass->Init();
+        }
+
         // UI pass
         {
             renderPasses.uiPass->Reset();
@@ -240,10 +254,14 @@ namespace MongooseVK
         renderPasses.gbufferPass        =    CreateScope<GBufferPass>(device, renderResolution);
         renderPasses.lightingPass       =    CreateScope<LightingPass>(device, renderResolution);
         renderPasses.shadowMapPass      =    CreateScope<ShadowMapPass>(device, renderResolution);
+
         renderPasses.ssaoPass           =    CreateScope<SSAOPass>(device, renderResolution);
+        renderPasses.toneMappingPass    =    CreateScope<ToneMappingPass>(device, renderResolution);
+
         renderPasses.irradianceMapPass  =    CreateScope<IrradianceMapPass>(device, renderResolution);
         renderPasses.brdfLutPass        =    CreateScope<BrdfLUTPass>(device, renderResolution);
         renderPasses.prefilterMapPass   =    CreateScope<PrefilterMapPass>(device, renderResolution);
+
         renderPasses.skyboxPass         =    CreateScope<SkyboxPass>(device, renderResolution);
         renderPasses.gridPass           =    CreateScope<InfiniteGridPass>(device, renderResolution);
         renderPasses.uiPass             =    CreateScope<UiPass>(device, renderResolution);
@@ -320,6 +338,7 @@ namespace MongooseVK
         renderPasses.skyboxPass->Resize(renderResolution);
         renderPasses.lightingPass->Resize(renderResolution);
         renderPasses.ssaoPass->Resize(renderResolution);
+        renderPasses.toneMappingPass->Resize(renderResolution);
         renderPasses.gridPass->Resize(renderResolution);
         renderPasses.uiPass->Resize(renderResolution);
 
@@ -393,6 +412,8 @@ namespace MongooseVK
                                                VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
                                                VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
         }
+
+        renderPasses.toneMappingPass->Render(commandBuffer, &scene);
 
         renderPasses.uiPass->Render(commandBuffer, &scene);
 
@@ -514,6 +535,29 @@ namespace MongooseVK
 
             FrameGraphResource passResource = {
                 .name = "ssao_texture",
+                .type = FrameGraphResourceType::Texture,
+                .resourceInfo = resourceInfo,
+            };
+
+            renderPassResourceMap[passResource.name] = passResource;
+        }
+
+        // HDR Image
+        {
+            FrameGraphResourceInfo resourceInfo{};
+            resourceInfo.texture.textureCreateInfo = {
+                .width = renderResolution.width,
+                .height = renderResolution.height,
+                .format = ImageFormat::RGBA16_SFLOAT,
+                .imageLayout = ImageUtils::GetLayoutFromFormat(ImageFormat::RGBA16_SFLOAT),
+                .imageInitialLayout = ImageUtils::GetLayoutFromFormat(ImageFormat::RGBA16_SFLOAT),
+                .addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+            };
+
+            resourceInfo.texture.textureHandle = device->CreateTexture(resourceInfo.texture.textureCreateInfo);
+
+            FrameGraphResource passResource = {
+                .name = "hdr_image",
                 .type = FrameGraphResourceType::Texture,
                 .resourceInfo = resourceInfo,
             };

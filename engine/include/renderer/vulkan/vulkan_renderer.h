@@ -14,6 +14,7 @@
 #include "pass/lighting/irradiance_map_pass.h"
 #include "pass/lighting/prefilter_map_pass.h"
 #include "pass/post_processing/ssao_pass.h"
+#include "pass/post_processing/tone_mapping_pass.h"
 #include "renderer/Light.h"
 #include "renderer/shader_cache.h"
 
@@ -59,6 +60,7 @@ namespace MongooseVK
         Scope<IrradianceMapPass> irradianceMapPass;
         Scope<BrdfLUTPass> brdfLutPass;
         Scope<PrefilterMapPass> prefilterMapPass;
+        Scope<ToneMappingPass> toneMappingPass;
     };
 
     class VulkanRenderer {
