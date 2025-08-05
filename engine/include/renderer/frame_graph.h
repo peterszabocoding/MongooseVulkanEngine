@@ -158,8 +158,8 @@ namespace MongooseVK
         virtual void Reset();
         virtual void Resize(VkExtent2D _resolution);
 
-        virtual void PreRender(VkCommandBuffer commandBuffer) {}
-        virtual void Render(VkCommandBuffer commandBuffer) {}
+        virtual void PreRender(VkCommandBuffer commandBuffer, Scene* scene) {}
+        virtual void Render(VkCommandBuffer commandBuffer, Scene* scene) {}
         virtual void OnResolutionChanged(const uint32_t width, const uint32_t height) {}
 
         virtual VulkanRenderPass* GetRenderPass() const;
@@ -200,9 +200,9 @@ namespace MongooseVK
         FrameGraph(VulkanDevice* device);
         ~FrameGraph() = default;
 
-        void Init(Scene* _scene, VkExtent2D _resolution);
-        void PreRender(VkCommandBuffer cmd);
-        void Render(VkCommandBuffer cmd);
+        void Init(VkExtent2D _resolution);
+        void PreRender(VkCommandBuffer cmd, Scene* scene);
+        void Render(VkCommandBuffer cmd, Scene* scene);
         void Resize(VkExtent2D newResolution);
 
         void AddRenderPass(const std::string& name, FrameGraphRenderPass* frameGraphRenderPass);
@@ -215,6 +215,5 @@ namespace MongooseVK
     private:
         VulkanDevice* device;
         VkExtent2D resolution;
-        Scene* scene;
     };
 }

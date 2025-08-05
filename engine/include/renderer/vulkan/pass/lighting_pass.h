@@ -8,15 +8,12 @@ namespace MongooseVK
 {
     class LightingPass final : public FrameGraphRenderPass {
     public:
-        explicit LightingPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution);
+        explicit LightingPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution);
         ~LightingPass() override = default;
 
-        virtual void Render(VkCommandBuffer commandBuffer) override;
+        virtual void Render(VkCommandBuffer commandBuffer, Scene* scene) override;
 
     protected:
         virtual void LoadPipeline() override;
-
-    private:
-        Scene& scene;
     };
 }

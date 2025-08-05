@@ -9,10 +9,8 @@
 
 namespace MongooseVK
 {
-    ShadowMapPass::ShadowMapPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution): FrameGraphRenderPass(
-            vulkanDevice, VkExtent2D{SHADOW_MAP_RESOLUTION, SHADOW_MAP_RESOLUTION}),
-        scene(_scene)
-    {}
+    ShadowMapPass::ShadowMapPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution): FrameGraphRenderPass(
+            vulkanDevice, VkExtent2D{SHADOW_MAP_RESOLUTION, SHADOW_MAP_RESOLUTION}) {}
 
     void ShadowMapPass::Init()
     {
@@ -38,7 +36,7 @@ namespace MongooseVK
         }
     }
 
-    void ShadowMapPass::Render(VkCommandBuffer commandBuffer)
+    void ShadowMapPass::Render(VkCommandBuffer commandBuffer, Scene* scene)
     {
         for (uint32_t i = 0; i < framebufferHandles.size(); i++)
         {
@@ -56,18 +54,18 @@ namespace MongooseVK
 
             ShadowMapPushConstantData pushConstantData;
 
-            pushConstantData.projection = scene.directionalLight.cascades[i].viewProjMatrix;
+            pushConstantData.projection = scene->directionalLight.cascades[i].viewProjMatrix;
 
-            for (size_t i = 0; i < scene.meshes.size(); i++)
+            for (size_t i = 0; i < scene->meshes.size(); i++)
             {
-                pushConstantData.modelMatrix = scene.transforms[i].GetTransform();
+                pushConstantData.modelMatrix = scene->transforms[i].GetTransform();
 
                 geometryDrawParams.pushConstantParams = {
                     &pushConstantData,
                     sizeof(ShadowMapPushConstantData)
                 };
 
-                for (auto& meshlet: scene.meshes[i]->GetMeshlets())
+                for (auto& meshlet: scene->meshes[i]->GetMeshlets())
                 {
                     geometryDrawParams.meshlet = &meshlet;
                     device->DrawMeshlet(geometryDrawParams);

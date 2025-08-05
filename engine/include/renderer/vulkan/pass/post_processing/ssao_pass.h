@@ -26,7 +26,7 @@ namespace MongooseVK
         ~SSAOPass() override;
 
         virtual void CreateDescriptors() override;
-        virtual void Render(VkCommandBuffer commandBuffer) override;
+        virtual void Render(VkCommandBuffer commandBuffer, Scene* scene) override;
         virtual void Resize(VkExtent2D _resolution) override;
 
     protected:

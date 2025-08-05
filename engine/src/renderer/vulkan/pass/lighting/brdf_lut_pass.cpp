@@ -16,7 +16,7 @@ namespace MongooseVK
         FrameGraphRenderPass::Init();
     }
 
-    void BrdfLUTPass::Render(VkCommandBuffer commandBuffer)
+    void BrdfLUTPass::Render(VkCommandBuffer commandBuffer, Scene* scene)
     {
         VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandles[0]);
 

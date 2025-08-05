@@ -9,10 +9,9 @@
 
 namespace MongooseVK
 {
-    LightingPass::LightingPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution): FrameGraphRenderPass(vulkanDevice, _resolution),
-        scene(_scene) {}
+    LightingPass::LightingPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution): FrameGraphRenderPass(vulkanDevice, _resolution) {}
 
-    void LightingPass::Render(VkCommandBuffer commandBuffer)
+    void LightingPass::Render(VkCommandBuffer commandBuffer, Scene* scene)
     {
         VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandles[0]);
 
@@ -23,14 +22,14 @@ namespace MongooseVK
         drawCommandParams.commandBuffer = commandBuffer;
         drawCommandParams.pipelineParams = {pipeline->pipeline, pipeline->pipelineLayout};
 
-        for (size_t i = 0; i < scene.meshes.size(); i++)
+        for (size_t i = 0; i < scene->meshes.size(); i++)
         {
-            for (auto& meshlet: scene.meshes[i]->GetMeshlets())
+            for (auto& meshlet: scene->meshes[i]->GetMeshlets())
             {
-                VulkanMaterial* material = device->GetMaterial(scene.meshes[i]->GetMaterial(meshlet));
+                VulkanMaterial* material = device->GetMaterial(scene->meshes[i]->GetMaterial(meshlet));
 
                 SimplePushConstantData pushConstantData;
-                pushConstantData.modelMatrix = scene.transforms[i].GetTransform();
+                pushConstantData.modelMatrix = scene->transforms[i].GetTransform();
                 pushConstantData.materialIndex = material->index;
 
                 drawCommandParams.pushConstantParams = {

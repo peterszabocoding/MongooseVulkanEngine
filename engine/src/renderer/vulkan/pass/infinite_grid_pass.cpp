@@ -19,7 +19,7 @@ namespace MongooseVK
         FrameGraphRenderPass::Init();
     }
 
-    void InfiniteGridPass::Render(VkCommandBuffer commandBuffer)
+    void InfiniteGridPass::Render(VkCommandBuffer commandBuffer, Scene* scene)
     {
         VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandles[0]);
 

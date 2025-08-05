@@ -56,7 +56,7 @@ namespace MongooseVK
         }
     }
 
-    void PrefilterMapPass::Render(VkCommandBuffer commandBuffer)
+    void PrefilterMapPass::Render(VkCommandBuffer commandBuffer, Scene* scene)
     {
         const VulkanTexture* cubemap = device->GetTexture(inputs[0].resourceInfo.texture.textureHandle);
 

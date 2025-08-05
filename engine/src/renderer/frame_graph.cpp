@@ -167,25 +167,24 @@ namespace MongooseVK
 
     FrameGraph::FrameGraph(VulkanDevice* _device): device{_device} {}
 
-    void FrameGraph::Init(Scene* _scene, VkExtent2D _resolution)
+    void FrameGraph::Init(VkExtent2D _resolution)
     {
-        scene = _scene;
         resolution = _resolution;
     }
 
-    void FrameGraph::PreRender(VkCommandBuffer cmd)
+    void FrameGraph::PreRender(VkCommandBuffer cmd, Scene* scene)
     {
         for (const auto& renderPass: frameGraphRenderPasses | std::views::values)
         {
-            renderPass->PreRender(cmd);
+            renderPass->PreRender(cmd, scene);
         }
     }
 
-    void FrameGraph::Render(VkCommandBuffer cmd)
+    void FrameGraph::Render(VkCommandBuffer cmd, Scene* scene)
     {
         for (const auto& renderPass: frameGraphRenderPasses | std::views::values)
         {
-            renderPass->Render(cmd);
+            renderPass->Render(cmd, scene);
         }
     }
 

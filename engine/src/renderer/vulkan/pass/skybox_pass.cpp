@@ -10,13 +10,12 @@
 
 namespace MongooseVK
 {
-    SkyboxPass::SkyboxPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution): FrameGraphRenderPass(vulkanDevice, _resolution),
-        scene(_scene)
+    SkyboxPass::SkyboxPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution): FrameGraphRenderPass(vulkanDevice, _resolution)
     {
         cubeMesh = ResourceManager::LoadMesh(device, "resources/models/cube.obj");
     }
 
-    void SkyboxPass::Render(VkCommandBuffer commandBuffer)
+    void SkyboxPass::Render(VkCommandBuffer commandBuffer, Scene* scene)
     {
         const VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandles[0]);
 
@@ -37,7 +36,7 @@ namespace MongooseVK
         };
 
         SkyboxPushConstantData pushConstantData;
-        pushConstantData.skyboxTextureIndex = scene.skyboxTexture.handle;
+        pushConstantData.skyboxTextureIndex = scene->skyboxTexture.handle;
 
         drawCommandParams.pushConstantParams = {
             &pushConstantData,

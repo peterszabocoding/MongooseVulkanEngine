@@ -7,16 +7,15 @@ namespace MongooseVK
 {
     class SkyboxPass final : public FrameGraphRenderPass {
     public:
-        SkyboxPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution);
+        SkyboxPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution);
         ~SkyboxPass() override = default;
 
-        virtual void Render(VkCommandBuffer commandBuffer) override;
+        virtual void Render(VkCommandBuffer commandBuffer, Scene* scene) override;
 
     protected:
         virtual void LoadPipeline() override;
 
     private:
-        Scene& scene;
         Ref<VulkanMesh> cubeMesh;
     };
 }
