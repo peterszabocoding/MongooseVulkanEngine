@@ -2,6 +2,7 @@
 
 #include <random>
 #include <glm/gtc/packing.inl>
+#include <renderer/vulkan/vulkan_framebuffer.h>
 #include <renderer/vulkan/vulkan_mesh.h>
 
 #include "renderer/shader_cache.h"
@@ -10,53 +11,45 @@
 
 namespace MongooseVK
 {
-    GBufferPass::GBufferPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution): VulkanPass(vulkanDevice, _resolution),
-        scene(_scene){}
+    GBufferPass::GBufferPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution): FrameGraphRenderPass(vulkanDevice, _resolution),
+        scene(_scene) {}
 
     void GBufferPass::Init()
     {
-        VulkanPass::Init();
+        FrameGraphRenderPass::Init();
     }
 
     void GBufferPass::Render(VkCommandBuffer commandBuffer)
     {
-        VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandles[0]);
+        const VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandles[0]);
 
         device->SetViewportAndScissor(resolution, commandBuffer);
         GetRenderPass()->Begin(commandBuffer, framebuffer->framebuffer, resolution);
 
         DrawCommandParams drawCommandParams{};
         drawCommandParams.commandBuffer = commandBuffer;
-        drawCommandParams.pipelineParams =
-        {
-            pipeline->pipeline,
-            pipeline->pipelineLayout
-        };
+        drawCommandParams.pipelineParams = {pipeline->pipeline, pipeline->pipelineLayout};
 
         for (size_t i = 0; i < scene.meshes.size(); i++)
         {
             for (auto& meshlet: scene.meshes[i]->GetMeshlets())
             {
                 VulkanMaterial* material = device->GetMaterial(scene.meshes[i]->GetMaterial(meshlet));
-
-                SimplePushConstantData pushConstantData;
-                pushConstantData.modelMatrix = scene.transforms[i].GetTransform();
-                pushConstantData.materialIndex = material->index;
-
-                drawCommandParams.pushConstantParams = {
-                    &pushConstantData,
-                    sizeof(SimplePushConstantData)
-                };
-
                 if (material->params.alphaTested) continue;
 
+                SimplePushConstantData pushConstantData{
+                    .modelMatrix = scene.transforms[i].GetTransform(),
+                    .materialIndex = material->index,
+                };
+
+                drawCommandParams.meshlet = &meshlet;
+                drawCommandParams.pushConstantParams = {&pushConstantData, sizeof(SimplePushConstantData)};
                 drawCommandParams.descriptorSets = {
                     device->bindlessTextureDescriptorSet,
                     device->materialDescriptorSet,
                     passDescriptorSet
                 };
 
-                drawCommandParams.meshlet = &meshlet;
                 device->DrawMeshlet(drawCommandParams);
             }
         }
@@ -66,7 +59,7 @@ namespace MongooseVK
 
     void GBufferPass::Resize(VkExtent2D _resolution)
     {
-        VulkanPass::Resize(_resolution);
+        FrameGraphRenderPass::Resize(_resolution);
     }
 
     void GBufferPass::LoadPipeline()

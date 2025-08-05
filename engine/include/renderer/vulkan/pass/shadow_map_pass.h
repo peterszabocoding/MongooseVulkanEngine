@@ -1,11 +1,14 @@
 #pragma once
 
+#include <renderer/frame_graph.h>
+
 #include "renderer/scene.h"
-#include "vulkan_pass.h"
 
 namespace MongooseVK
 {
-    class ShadowMapPass final : public VulkanPass {
+    constexpr uint32_t SHADOW_MAP_RESOLUTION = 4096;
+
+    class ShadowMapPass final : public FrameGraphRenderPass {
     public:
         explicit ShadowMapPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution);
         ~ShadowMapPass() override = default;
@@ -13,7 +16,7 @@ namespace MongooseVK
         void SetCascadeIndex(uint32_t _cascadeIndex) { cascadeIndex = _cascadeIndex; }
 
         virtual void Init() override;
-        virtual void InitFramebuffer() override;
+        virtual void CreateFramebuffer() override;
         virtual void Render(VkCommandBuffer commandBuffer) override;
 
     protected:

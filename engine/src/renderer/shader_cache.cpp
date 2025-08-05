@@ -26,11 +26,6 @@ namespace MongooseVK
 
     void ShaderCache::Load()
     {
-        LoadShaders();
-    }
-
-    void ShaderCache::LoadShaders()
-    {
         VulkanShaderCompiler compiler;
         const auto glslFiles = FileSystem::GetFilesFromDirectory(SHADER_PATH, true);
 

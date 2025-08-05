@@ -2,9 +2,6 @@
 #include <string>
 #include <vulkan/vulkan_core.h>
 
-#include "vulkan_descriptor_set_layout.h"
-#include "util/core.h"
-
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 
@@ -18,6 +15,10 @@ namespace MongooseVK
     struct SimplePushConstantData {
         glm::mat4 modelMatrix{1.f};
         uint32_t materialIndex = 0;
+    };
+
+    struct SkyboxPushConstantData {
+      uint32_t skyboxTextureIndex = 0;
     };
 
     struct TransformPushConstantData {

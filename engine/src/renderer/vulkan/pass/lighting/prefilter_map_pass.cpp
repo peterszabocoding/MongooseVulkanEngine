@@ -1,7 +1,9 @@
 #include "renderer/vulkan/pass/lighting/prefilter_map_pass.h"
 
 #include <renderer/shader_cache.h>
+#include <renderer/vulkan/vulkan_framebuffer.h>
 #include <renderer/vulkan/vulkan_mesh.h>
+#include <renderer/vulkan/vulkan_texture.h>
 #include <resource/resource_manager.h>
 
 namespace MongooseVK
@@ -20,17 +22,17 @@ namespace MongooseVK
     };
 
     PrefilterMapPass::PrefilterMapPass(VulkanDevice* vulkanDevice, const VkExtent2D& _resolution)
-        : VulkanPass(vulkanDevice, _resolution)
+        : FrameGraphRenderPass(vulkanDevice, _resolution)
     {
         cubeMesh = ResourceManager::LoadMesh(device, "resources/models/cube.obj");
     }
 
     void PrefilterMapPass::Init()
     {
-        VulkanPass::Init();
+        FrameGraphRenderPass::Init();
     }
 
-    void PrefilterMapPass::InitFramebuffer()
+    void PrefilterMapPass::CreateFramebuffer()
     {
         const TextureHandle outputTextureHandle = outputs[0].resource.resourceInfo.texture.textureHandle;
         const VulkanTexture* outputTexture = device->GetTexture(outputTextureHandle);
@@ -103,7 +105,7 @@ namespace MongooseVK
 
     void PrefilterMapPass::Resize(VkExtent2D _resolution)
     {
-        VulkanPass::Resize(_resolution);
+        FrameGraphRenderPass::Resize(_resolution);
     }
 
     void PrefilterMapPass::SetCubemapTexture(TextureHandle _cubemapTextureHandle)

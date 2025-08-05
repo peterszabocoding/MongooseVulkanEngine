@@ -1,14 +1,14 @@
 #pragma once
-#include <renderer/vulkan/pass/vulkan_pass.h>
+#include <renderer/frame_graph.h>
 
 namespace MongooseVK
 {
-    class PrefilterMapPass final: public VulkanPass {
+    class PrefilterMapPass final: public FrameGraphRenderPass {
     public:
         PrefilterMapPass(VulkanDevice* vulkanDevice, const VkExtent2D& _resolution);
 
         virtual void Init() override;
-        virtual void InitFramebuffer() override;
+        virtual void CreateFramebuffer() override;
         virtual void Render(VkCommandBuffer commandBuffer) override;
         virtual void Resize(VkExtent2D _resolution) override;
 

@@ -1,5 +1,5 @@
 #pragma once
-#include "util/core.h"
+
 #include "vulkan/vulkan_descriptor_set_layout.h"
 #include "vulkan/vulkan_pipeline.h"
 
@@ -19,11 +19,6 @@ namespace MongooseVK
 
     public:
         static std::unordered_map<std::string, std::vector<uint32_t>> shaderCache;
-
-    private:
-        void LoadShaders();
-        void LoadPipelines();
-        void LoadRenderpasses();
 
     private:
         VulkanDevice* vulkanDevice;

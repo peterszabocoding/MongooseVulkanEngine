@@ -2,6 +2,8 @@
 
 #include <backends/imgui_impl_vulkan.h>
 #include <input/camera_controller.h>
+#include <renderer/vulkan/vulkan_image.h>
+#include <renderer/vulkan/vulkan_texture.h>
 
 #include "imgui.h"
 #include "renderer/vulkan/imgui_vulkan.h"

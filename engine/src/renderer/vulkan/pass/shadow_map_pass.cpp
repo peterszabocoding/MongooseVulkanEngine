@@ -1,22 +1,25 @@
 #include "renderer/vulkan/pass/shadow_map_pass.h"
 
+#include <renderer/vulkan/vulkan_framebuffer.h>
 #include <renderer/vulkan/vulkan_mesh.h>
+#include <renderer/vulkan/vulkan_texture.h>
 
 #include "renderer/shader_cache.h"
 #include "util/log.h"
 
 namespace MongooseVK
 {
-    ShadowMapPass::ShadowMapPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution): VulkanPass(vulkanDevice, _resolution),
+    ShadowMapPass::ShadowMapPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution): FrameGraphRenderPass(
+            vulkanDevice, VkExtent2D{SHADOW_MAP_RESOLUTION, SHADOW_MAP_RESOLUTION}),
         scene(_scene)
     {}
 
     void ShadowMapPass::Init()
     {
-        VulkanPass::Init();
+        FrameGraphRenderPass::Init();
     }
 
-    void ShadowMapPass::InitFramebuffer()
+    void ShadowMapPass::CreateFramebuffer()
     {
         const TextureHandle outputTextureHandle = outputs[0].resource.resourceInfo.texture.textureHandle;
         const VulkanTexture* outputTexture = device->GetTexture(outputTextureHandle);
@@ -33,7 +36,6 @@ namespace MongooseVK
 
             framebufferHandles.push_back(device->CreateFramebuffer(framebufferCreateInfo));
         }
-
     }
 
     void ShadowMapPass::Render(VkCommandBuffer commandBuffer)

@@ -1,11 +1,13 @@
 #pragma once
-#include "vulkan_pass.h"
+
+#include <renderer/frame_graph.h>
+
 #include "renderer/scene.h"
 
 namespace MongooseVK
 
 {
-    class GBufferPass final : public VulkanPass {
+    class GBufferPass final : public FrameGraphRenderPass {
     public:
         explicit GBufferPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution);
         ~GBufferPass() override = default;

@@ -1,18 +1,19 @@
 #include "renderer/vulkan/pass/lighting/brdf_lut_pass.h"
 
 #include <renderer/mesh.h>
+#include <renderer/vulkan/vulkan_framebuffer.h>
 #include <renderer/vulkan/vulkan_pipeline.h>
 
 namespace MongooseVK
 {
-    BrdfLUTPass::BrdfLUTPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution): VulkanPass(vulkanDevice, _resolution)
+    BrdfLUTPass::BrdfLUTPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution): FrameGraphRenderPass(vulkanDevice, VkExtent2D{512, 512})
     {
         screenRect = CreateScope<VulkanMeshlet>(device, Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
     }
 
     void BrdfLUTPass::Init()
     {
-        VulkanPass::Init();
+        FrameGraphRenderPass::Init();
     }
 
     void BrdfLUTPass::Render(VkCommandBuffer commandBuffer)
@@ -38,7 +39,7 @@ namespace MongooseVK
 
     void BrdfLUTPass::Resize(VkExtent2D _resolution)
     {
-        VulkanPass::Resize(_resolution);
+        FrameGraphRenderPass::Resize(_resolution);
     }
 
     void BrdfLUTPass::LoadPipeline()

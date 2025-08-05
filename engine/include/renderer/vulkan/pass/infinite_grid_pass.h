@@ -1,5 +1,5 @@
 #pragma once
-#include "vulkan_pass.h"
+#include <renderer/frame_graph.h>
 
 namespace MongooseVK
 {
@@ -11,7 +11,7 @@ namespace MongooseVK
         float gridCellSize = 1.0f;
     };
 
-    class InfiniteGridPass final : public VulkanPass {
+    class InfiniteGridPass final : public FrameGraphRenderPass {
     public:
         InfiniteGridPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution);
         ~InfiniteGridPass() override = default;

@@ -1,9 +1,11 @@
 #include "renderer/vulkan/vulkan_renderer.h"
 
+#include <ranges>
+#include <renderer/vulkan/vulkan_texture.h>
+#include <renderer/vulkan/vulkan_utils.h>
 #include <renderer/vulkan/pass/lighting_pass.h>
 #include <renderer/vulkan/pass/lighting/brdf_lut_pass.h>
 
-#include "renderer/vulkan/vulkan_descriptor_writer.h"
 #include "renderer/vulkan/vulkan_device.h"
 #include "renderer/vulkan/vulkan_mesh.h"
 #include "renderer/vulkan/vulkan_shader_compiler.h"
@@ -37,10 +39,6 @@ namespace MongooseVK
         shaderCache = CreateScope<ShaderCache>(device);
 
         CreateSwapchain();
-
-        presentDescriptorSetLayout = VulkanDescriptorSetLayoutBuilder(device)
-                .AddBinding({0, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
-                .Build();
     }
 
     void VulkanRenderer::InitializeRenderPasses()
@@ -239,19 +237,12 @@ namespace MongooseVK
         CreateRenderPassResources();
         CreateRenderPassBuffers();
 
-        const uint16_t SHADOW_MAP_RESOLUTION = EnumValue(scene.directionalLight.shadowMapResolution);
-        const VkExtent2D SSAO_RESOLUTION = {
-            static_cast<uint32_t>(renderResolution.width * 0.5),
-            static_cast<uint32_t>(renderResolution.height * 0.5)
-        };
-
-        //
         renderPasses.gbufferPass        =    CreateScope<GBufferPass>(device, scene, renderResolution);
         renderPasses.lightingPass       =    CreateScope<LightingPass>(device, scene, renderResolution);
-        renderPasses.shadowMapPass      =    CreateScope<ShadowMapPass>(device, scene, VkExtent2D{SHADOW_MAP_RESOLUTION, SHADOW_MAP_RESOLUTION});
-        renderPasses.ssaoPass           =    CreateScope<SSAOPass>(device, SSAO_RESOLUTION);
+        renderPasses.shadowMapPass      =    CreateScope<ShadowMapPass>(device, scene, renderResolution);
+        renderPasses.ssaoPass           =    CreateScope<SSAOPass>(device, renderResolution);
         renderPasses.irradianceMapPass  =    CreateScope<IrradianceMapPass>(device, renderResolution);
-        renderPasses.brdfLutPass        =    CreateScope<BrdfLUTPass>(device, VkExtent2D{512, 512});
+        renderPasses.brdfLutPass        =    CreateScope<BrdfLUTPass>(device, renderResolution);
         renderPasses.prefilterMapPass   =    CreateScope<PrefilterMapPass>(device, renderResolution);
         renderPasses.skyboxPass         =    CreateScope<SkyboxPass>(device, scene, renderResolution);
         renderPasses.gridPass           =    CreateScope<InfiniteGridPass>(device, renderResolution);
@@ -328,10 +319,7 @@ namespace MongooseVK
         renderPasses.gbufferPass->Resize(renderResolution);
         renderPasses.skyboxPass->Resize(renderResolution);
         renderPasses.lightingPass->Resize(renderResolution);
-        renderPasses.ssaoPass->Resize(VkExtent2D{
-            static_cast<uint32_t>(renderResolution.width * 0.5),
-            static_cast<uint32_t>(renderResolution.height * 0.5)
-        });
+        renderPasses.ssaoPass->Resize(renderResolution);
         renderPasses.gridPass->Resize(renderResolution);
         renderPasses.uiPass->Resize(renderResolution);
 
@@ -411,8 +399,8 @@ namespace MongooseVK
         // Present
         {
             VkImage swapchainImage = vulkanSwapChain->GetImages()[activeImage];
-            VulkanTexture* mainFrameTexture = device->GetTexture(
-                renderPassResourceMap["main_frame_color"].resourceInfo.texture.textureHandle);
+            VulkanTexture* mainFrameTexture = device->GetTexture(renderPassResourceMap["main_frame_color"].resourceInfo.texture.textureHandle);
+
             VulkanUtils::TransitionImageLayout(commandBuffer, mainFrameTexture->allocatedImage,
                                                VK_IMAGE_ASPECT_COLOR_BIT,
                                                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -445,7 +433,7 @@ namespace MongooseVK
     {
         // Viewspace Normal
         {
-            RenderPassResourceInfo resourceInfo{};
+            FrameGraphResourceInfo resourceInfo{};
             resourceInfo.texture.textureCreateInfo = {
                 .width = renderResolution.width,
                 .height = renderResolution.height,
@@ -457,9 +445,9 @@ namespace MongooseVK
 
             resourceInfo.texture.textureHandle = device->CreateTexture(resourceInfo.texture.textureCreateInfo);
 
-            PassResource passResource = {
+            FrameGraphResource passResource = {
                 .name = "viewspace_normal",
-                .type = ResourceType::Texture,
+                .type = FrameGraphResourceType::Texture,
                 .resourceInfo = resourceInfo,
             };
 
@@ -468,7 +456,7 @@ namespace MongooseVK
 
         // Viewspace Position
         {
-            RenderPassResourceInfo resourceInfo{};
+            FrameGraphResourceInfo resourceInfo{};
             resourceInfo.texture.textureCreateInfo = {
                 .width = renderResolution.width,
                 .height = renderResolution.height,
@@ -480,9 +468,9 @@ namespace MongooseVK
 
             resourceInfo.texture.textureHandle = device->CreateTexture(resourceInfo.texture.textureCreateInfo);
 
-            PassResource passResource = {
+            FrameGraphResource passResource = {
                 .name = "viewspace_position",
-                .type = ResourceType::Texture,
+                .type = FrameGraphResourceType::Texture,
                 .resourceInfo = resourceInfo,
             };
 
@@ -491,7 +479,7 @@ namespace MongooseVK
 
         // Depth Map
         {
-            RenderPassResourceInfo resourceInfo{};
+            FrameGraphResourceInfo resourceInfo{};
             resourceInfo.texture.textureCreateInfo = {
                 .width = renderResolution.width,
                 .height = renderResolution.height,
@@ -503,9 +491,9 @@ namespace MongooseVK
 
             resourceInfo.texture.textureHandle = device->CreateTexture(resourceInfo.texture.textureCreateInfo);
 
-            PassResource passResource = {
+            FrameGraphResource passResource = {
                 .name = "depth_map",
-                .type = ResourceType::Texture,
+                .type = FrameGraphResourceType::Texture,
                 .resourceInfo = resourceInfo,
             };
 
@@ -514,7 +502,7 @@ namespace MongooseVK
 
         // SSAO Texture
         {
-            RenderPassResourceInfo resourceInfo{};
+            FrameGraphResourceInfo resourceInfo{};
             resourceInfo.texture.textureCreateInfo = {
                 .width = static_cast<uint32_t>(renderResolution.width * 0.5),
                 .height = static_cast<uint32_t>(renderResolution.height * 0.5),
@@ -524,9 +512,9 @@ namespace MongooseVK
 
             resourceInfo.texture.textureHandle = device->CreateTexture(resourceInfo.texture.textureCreateInfo);
 
-            PassResource passResource = {
+            FrameGraphResource passResource = {
                 .name = "ssao_texture",
-                .type = ResourceType::Texture,
+                .type = FrameGraphResourceType::Texture,
                 .resourceInfo = resourceInfo,
             };
 
@@ -535,7 +523,7 @@ namespace MongooseVK
 
         // Main Frame Color
         {
-            RenderPassResourceInfo resourceInfo{};
+            FrameGraphResourceInfo resourceInfo{};
             resourceInfo.texture.textureCreateInfo = {
                 .width = renderResolution.width,
                 .height = renderResolution.height,
@@ -547,26 +535,13 @@ namespace MongooseVK
 
             resourceInfo.texture.textureHandle = device->CreateTexture(resourceInfo.texture.textureCreateInfo);
 
-            PassResource passResource = {
+            FrameGraphResource passResource = {
                 .name = "main_frame_color",
-                .type = ResourceType::Texture,
+                .type = FrameGraphResourceType::Texture,
                 .resourceInfo = resourceInfo,
             };
 
             renderPassResourceMap[passResource.name] = passResource;
-
-            VulkanTexture* mainFrameColorTexture = device->GetTexture(passResource.resourceInfo.texture.textureHandle);
-
-            const VkDescriptorImageInfo renderImageInfo = {
-                .sampler = mainFrameColorTexture->sampler,
-                .imageView = mainFrameColorTexture->imageView,
-                .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            };
-
-            auto descriptorSetLayoutHandle = device->GetDescriptorSetLayout(presentDescriptorSetLayout);
-            VulkanDescriptorWriter(*descriptorSetLayoutHandle, device->GetShaderDescriptorPool())
-                    .WriteImage(0, renderImageInfo)
-                    .BuildOrOverwrite(presentDescriptorSet);
         }
     }
 
@@ -574,7 +549,7 @@ namespace MongooseVK
     {
         // Lights Buffer
         {
-            RenderPassResourceInfo resourceInfo{};
+            FrameGraphResourceInfo resourceInfo{};
             resourceInfo.buffer.size = sizeof(LightsBuffer);
             resourceInfo.buffer.usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
             resourceInfo.buffer.memoryUsage = VMA_MEMORY_USAGE_CPU_TO_GPU;
@@ -584,9 +559,9 @@ namespace MongooseVK
                 resourceInfo.buffer.memoryUsage
             );
 
-            PassResource passResource = {
+            FrameGraphResource passResource = {
                 .name = "lights_buffer",
-                .type = ResourceType::Buffer,
+                .type = FrameGraphResourceType::Buffer,
                 .resourceInfo = resourceInfo,
             };
 
@@ -595,7 +570,7 @@ namespace MongooseVK
 
         // Camera Buffer
         {
-            RenderPassResourceInfo resourceInfo{};
+            FrameGraphResourceInfo resourceInfo{};
             resourceInfo.buffer.size = sizeof(CameraBuffer);
             resourceInfo.buffer.usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
             resourceInfo.buffer.memoryUsage = VMA_MEMORY_USAGE_CPU_TO_GPU;
@@ -605,9 +580,9 @@ namespace MongooseVK
                 resourceInfo.buffer.memoryUsage
             );
 
-            PassResource passResource = {
+            FrameGraphResource passResource = {
                 .name = "camera_buffer",
-                .type = ResourceType::Buffer,
+                .type = FrameGraphResourceType::Buffer,
                 .resourceInfo = resourceInfo,
             };
 
@@ -619,25 +594,12 @@ namespace MongooseVK
     {
         // Skybox
         {
-            Bitmap cubemapBitmap = ResourceManager::LoadHDRCubeMapBitmap(device, scene.skyboxPath);
-            const TextureCreateInfo textureCreateInfo = {
-                .width = cubemapBitmap.width,
-                .height = cubemapBitmap.height,
-                .format = ImageFormat::RGBA32_SFLOAT,
-                .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-                .arrayLayers = 6,
-                .flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
-                .isCubeMap = true,
-            };
+            FrameGraphResourceInfo resourceInfo{};
+            resourceInfo.texture.textureHandle = scene.skyboxTexture;
 
-            RenderPassResourceInfo resourceInfo{};
-            resourceInfo.texture.textureHandle = device->CreateTexture(textureCreateInfo);
-            device->UploadCubemapTextureData(resourceInfo.texture.textureHandle, &cubemapBitmap);
-
-            PassResource passResource = {
+            FrameGraphResource passResource = {
                 .name = "skybox_texture",
-                .type = ResourceType::TextureCube,
+                .type = FrameGraphResourceType::TextureCube,
                 .resourceInfo = resourceInfo,
             };
 
@@ -646,7 +608,7 @@ namespace MongooseVK
 
         // BRDF LUT
         {
-            RenderPassResourceInfo resourceInfo{};
+            FrameGraphResourceInfo resourceInfo{};
             resourceInfo.texture.textureCreateInfo = {};
             resourceInfo.texture.textureCreateInfo.width = 512;
             resourceInfo.texture.textureCreateInfo.height = 512;
@@ -655,9 +617,9 @@ namespace MongooseVK
 
             resourceInfo.texture.textureHandle = device->CreateTexture(resourceInfo.texture.textureCreateInfo);
 
-            PassResource passResource = {
+            FrameGraphResource passResource = {
                 .name = "brdflut_texture",
-                .type = ResourceType::Texture,
+                .type = FrameGraphResourceType::Texture,
                 .resourceInfo = resourceInfo,
             };
 
@@ -669,7 +631,7 @@ namespace MongooseVK
             constexpr uint32_t PREFILTER_MIP_LEVELS = 6;
             constexpr uint32_t REFLECTION_RESOLUTION = 256;
 
-            RenderPassResourceInfo resourceInfo{};
+            FrameGraphResourceInfo resourceInfo{};
             resourceInfo.texture.textureCreateInfo.width = REFLECTION_RESOLUTION;
             resourceInfo.texture.textureCreateInfo.height = REFLECTION_RESOLUTION;
             resourceInfo.texture.textureCreateInfo.format = ImageFormat::RGBA16_SFLOAT;
@@ -682,10 +644,10 @@ namespace MongooseVK
 
             resourceInfo.texture.textureHandle = device->CreateTexture(resourceInfo.texture.textureCreateInfo);
 
-            PassResource passResource;
+            FrameGraphResource passResource;
             passResource = {
                 .name = "prefilter_map_texture",
-                .type = ResourceType::TextureCube,
+                .type = FrameGraphResourceType::TextureCube,
                 .resourceInfo = resourceInfo,
             };
 
@@ -694,7 +656,7 @@ namespace MongooseVK
 
         // Irradiance Map
         {
-            RenderPassResourceInfo resourceInfo{};
+            FrameGraphResourceInfo resourceInfo{};
             resourceInfo.texture.textureCreateInfo = {};
             resourceInfo.texture.textureCreateInfo.width = 32;
             resourceInfo.texture.textureCreateInfo.height = 32;
@@ -707,9 +669,9 @@ namespace MongooseVK
 
             resourceInfo.texture.textureHandle = device->CreateTexture(resourceInfo.texture.textureCreateInfo);
 
-            PassResource passResource = {
+            FrameGraphResource passResource = {
                 .name = "irradiance_map_texture",
-                .type = ResourceType::TextureCube,
+                .type = FrameGraphResourceType::TextureCube,
                 .resourceInfo = resourceInfo,
             };
 
@@ -720,7 +682,7 @@ namespace MongooseVK
         {
             const uint16_t SHADOW_MAP_RESOLUTION = EnumValue(scene.directionalLight.shadowMapResolution);
 
-            RenderPassResourceInfo resourceInfo{};
+            FrameGraphResourceInfo resourceInfo{};
             resourceInfo.texture.textureCreateInfo = {
                 .width = SHADOW_MAP_RESOLUTION,
                 .height = SHADOW_MAP_RESOLUTION,
@@ -735,9 +697,9 @@ namespace MongooseVK
 
             resourceInfo.texture.textureHandle = device->CreateTexture(resourceInfo.texture.textureCreateInfo);
 
-            PassResource passResource = {
+            FrameGraphResource passResource = {
                 .name = "directional_shadow_map",
-                .type = ResourceType::Texture,
+                .type = FrameGraphResourceType::Texture,
                 .resourceInfo = resourceInfo,
             };
 

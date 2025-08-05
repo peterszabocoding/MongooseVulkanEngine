@@ -1,15 +1,14 @@
 #pragma once
-
-#include "renderer/vulkan/pass/vulkan_pass.h"
+#include <renderer/frame_graph.h>
 
 namespace MongooseVK
 {
-    class IrradianceMapPass final : public VulkanPass {
+    class IrradianceMapPass final : public FrameGraphRenderPass {
     public:
         explicit IrradianceMapPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution);
         ~IrradianceMapPass() override = default;
 
-        virtual void InitFramebuffer() override;
+        virtual void CreateFramebuffer() override;
         virtual void Render(VkCommandBuffer commandBuffer) override;
         virtual void Resize(VkExtent2D _resolution) override;
 

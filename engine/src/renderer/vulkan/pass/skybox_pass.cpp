@@ -1,5 +1,6 @@
 #include "renderer/vulkan/pass/skybox_pass.h"
 
+#include <renderer/vulkan/vulkan_framebuffer.h>
 #include <renderer/vulkan/vulkan_mesh.h>
 
 #include "renderer/shader_cache.h"
@@ -9,7 +10,7 @@
 
 namespace MongooseVK
 {
-    SkyboxPass::SkyboxPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution): VulkanPass(vulkanDevice, _resolution),
+    SkyboxPass::SkyboxPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution): FrameGraphRenderPass(vulkanDevice, _resolution),
         scene(_scene)
     {
         cubeMesh = ResourceManager::LoadMesh(device, "resources/models/cube.obj");
@@ -22,20 +23,28 @@ namespace MongooseVK
         device->SetViewportAndScissor(framebuffer->extent, commandBuffer);
         GetRenderPass()->Begin(commandBuffer, framebuffer->framebuffer, framebuffer->extent);
 
-        DrawCommandParams skyboxDrawParams{};
-        skyboxDrawParams.commandBuffer = commandBuffer;
-        skyboxDrawParams.meshlet = &cubeMesh->GetMeshlets()[0];
-        skyboxDrawParams.pipelineParams = {
+        DrawCommandParams drawCommandParams{};
+        drawCommandParams.commandBuffer = commandBuffer;
+        drawCommandParams.meshlet = &cubeMesh->GetMeshlets()[0];
+        drawCommandParams.pipelineParams = {
             pipeline->pipeline,
             pipeline->pipelineLayout
         };
-        skyboxDrawParams.descriptorSets = {
+        drawCommandParams.descriptorSets = {
             device->bindlessTextureDescriptorSet,
             device->materialDescriptorSet,
             passDescriptorSet
         };
 
-        device->DrawMeshlet(skyboxDrawParams);
+        SkyboxPushConstantData pushConstantData;
+        pushConstantData.skyboxTextureIndex = scene.skyboxTexture.handle;
+
+        drawCommandParams.pushConstantParams = {
+            &pushConstantData,
+            sizeof(SkyboxPushConstantData)
+        };
+
+        device->DrawMeshlet(drawCommandParams);
 
         GetRenderPass()->End(commandBuffer);
     }
@@ -54,6 +63,10 @@ namespace MongooseVK
             device->materialsDescriptorSetLayoutHandle,
             passDescriptorSetLayoutHandle
         };
+
+        pipelineConfig.pushConstantData.shaderStageBits = VK_SHADER_STAGE_FRAGMENT_BIT;
+        pipelineConfig.pushConstantData.offset = 0;
+        pipelineConfig.pushConstantData.size = sizeof(SkyboxPushConstantData);
 
         pipelineHandle = VulkanPipelineBuilder().Build(device, pipelineConfig);
         pipeline = device->GetPipeline(pipelineHandle);

@@ -1,7 +1,9 @@
 #include "renderer/vulkan/pass/lighting/irradiance_map_pass.h"
 
 #include <renderer/shader_cache.h>
+#include <renderer/vulkan/vulkan_framebuffer.h>
 #include <renderer/vulkan/vulkan_mesh.h>
+#include <renderer/vulkan/vulkan_texture.h>
 #include <resource/resource_manager.h>
 
 namespace MongooseVK
@@ -16,12 +18,12 @@ namespace MongooseVK
         lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f))
     };
 
-    IrradianceMapPass::IrradianceMapPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution): VulkanPass(vulkanDevice, _resolution)
+    IrradianceMapPass::IrradianceMapPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution): FrameGraphRenderPass(vulkanDevice, _resolution)
     {
         cubeMesh = ResourceManager::LoadMesh(device, "resources/models/cube.obj");
     }
 
-    void IrradianceMapPass::InitFramebuffer()
+    void IrradianceMapPass::CreateFramebuffer()
     {
         TextureHandle outputHandle = outputs[0].resource.resourceInfo.texture.textureHandle;
         VulkanTexture* outputTexture = device->GetTexture(outputHandle);
@@ -79,7 +81,7 @@ namespace MongooseVK
 
     void IrradianceMapPass::Resize(VkExtent2D _resolution)
     {
-        VulkanPass::Resize(_resolution);
+        FrameGraphRenderPass::Resize(_resolution);
     }
 
     void IrradianceMapPass::LoadPipeline()

@@ -1,10 +1,11 @@
 #include "renderer\vulkan\pass\ui_pass.h"
 
 #include <backends/imgui_impl_vulkan.h>
+#include <renderer/vulkan/vulkan_framebuffer.h>
 
 namespace MongooseVK
 {
-    UiPass::UiPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution): VulkanPass(vulkanDevice, _resolution)
+    UiPass::UiPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution): FrameGraphRenderPass(vulkanDevice, _resolution)
     {}
 
     void UiPass::Render(VkCommandBuffer commandBuffer)

@@ -190,6 +190,21 @@ namespace MongooseVK
         scene.scenePath = scenePath;
         scene.skyboxPath = skyboxPath;
 
+        Bitmap cubemapBitmap = LoadHDRCubeMapBitmap(device, scene.skyboxPath);
+        const TextureCreateInfo textureCreateInfo = {
+            .width = cubemapBitmap.width,
+            .height = cubemapBitmap.height,
+            .format = ImageFormat::RGBA32_SFLOAT,
+            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            .addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+            .arrayLayers = 6,
+            .flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
+            .isCubeMap = true,
+        };
+
+        scene.skyboxTexture = device->CreateTexture(textureCreateInfo);
+        device->UploadCubemapTextureData(scene.skyboxTexture, &cubemapBitmap);
+
         return scene;
     }
 }

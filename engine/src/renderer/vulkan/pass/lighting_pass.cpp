@@ -1,5 +1,6 @@
 #include "renderer/vulkan/pass/lighting_pass.h"
 
+#include <renderer/vulkan/vulkan_framebuffer.h>
 #include <renderer/vulkan/vulkan_mesh.h>
 
 #include "renderer/shader_cache.h"
@@ -8,8 +9,8 @@
 
 namespace MongooseVK
 {
-    LightingPass::LightingPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution): VulkanPass(vulkanDevice, _resolution),
-        scene(_scene){}
+    LightingPass::LightingPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution): FrameGraphRenderPass(vulkanDevice, _resolution),
+        scene(_scene) {}
 
     void LightingPass::Render(VkCommandBuffer commandBuffer)
     {
@@ -20,11 +21,7 @@ namespace MongooseVK
 
         DrawCommandParams drawCommandParams{};
         drawCommandParams.commandBuffer = commandBuffer;
-        drawCommandParams.pipelineParams =
-        {
-            pipeline->pipeline,
-            pipeline->pipelineLayout
-        };
+        drawCommandParams.pipelineParams = {pipeline->pipeline, pipeline->pipelineLayout};
 
         for (size_t i = 0; i < scene.meshes.size(); i++)
         {
@@ -41,13 +38,13 @@ namespace MongooseVK
                     sizeof(SimplePushConstantData)
                 };
 
+                drawCommandParams.meshlet = &meshlet;
                 drawCommandParams.descriptorSets = {
                     device->bindlessTextureDescriptorSet,
                     device->materialDescriptorSet,
                     passDescriptorSet
                 };
 
-                drawCommandParams.meshlet = &meshlet;
                 device->DrawMeshlet(drawCommandParams);
             }
         }

@@ -1,11 +1,12 @@
 #pragma once
 
+#include <renderer/frame_graph.h>
+
 #include "renderer/scene.h"
-#include "vulkan_pass.h"
 
 namespace MongooseVK
 {
-    class LightingPass final : public VulkanPass {
+    class LightingPass final : public FrameGraphRenderPass {
     public:
         explicit LightingPass(VulkanDevice* vulkanDevice, Scene& _scene, VkExtent2D _resolution);
         ~LightingPass() override = default;

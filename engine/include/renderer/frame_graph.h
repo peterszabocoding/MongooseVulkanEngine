@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstdint>
-#include <vector>
 #include <vulkan/vulkan_core.h>
 #include "scene.h"
 #include "vulkan/vulkan_renderpass.h"
@@ -9,6 +8,8 @@
 
 namespace MongooseVK
 {
+    class FrameGraphRenderPass;
+    /*
     typedef uint32_t FrameGraphHandle;
 
     struct FrameGraphResourceHandle {
@@ -109,5 +110,111 @@ namespace MongooseVK
 
         bool enabled = true;
         int32_t refCount = 0;
+    };
+
+    */
+
+    enum class FrameGraphResourceType: int8_t {
+        Invalid = -1,
+        Texture = 0,
+        TextureCube,
+        Buffer,
+    };
+
+    struct FrameGraphResourceInfo {
+        union {
+            struct {
+                uint64_t size;
+                VkBufferUsageFlags usageFlags;
+                VmaMemoryUsage memoryUsage;
+                AllocatedBuffer allocatedBuffer;
+            } buffer;
+
+            struct {
+                TextureHandle textureHandle;
+                TextureCreateInfo textureCreateInfo;
+            } texture;
+        };
+    };
+
+    struct FrameGraphResource {
+        std::string name;
+        FrameGraphResourceType type;
+        FrameGraphResourceInfo resourceInfo{};
+    };
+
+    struct FrameGraphNodeOutput {
+        FrameGraphResource resource;
+        RenderPassOperation::LoadOp loadOp;
+        RenderPassOperation::StoreOp storeOp;
+    };
+
+    class FrameGraphRenderPass {
+    public:
+        FrameGraphRenderPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution): device(vulkanDevice), resolution(_resolution) {}
+        virtual ~FrameGraphRenderPass() { FrameGraphRenderPass::Reset(); }
+
+        virtual void Init();
+        virtual void Reset();
+        virtual void Resize(VkExtent2D _resolution);
+
+        virtual void PreRender(VkCommandBuffer commandBuffer) {}
+        virtual void Render(VkCommandBuffer commandBuffer) {}
+        virtual void OnResolutionChanged(const uint32_t width, const uint32_t height) {}
+
+        virtual VulkanRenderPass* GetRenderPass() const;
+        virtual RenderPassHandle GetRenderPassHandle() const;
+
+        void AddOutput(const FrameGraphNodeOutput& output);
+        void AddInput(const FrameGraphResource& input);
+
+    protected:
+        virtual void LoadPipeline() = 0;
+
+        virtual void CreateRenderPass();
+        virtual void CreateDescriptors();
+        virtual void CreateFramebuffer();
+
+    protected:
+        VulkanDevice* device;
+        VkExtent2D resolution;
+
+        PipelineCreate pipelineConfig{};
+        VulkanPipeline* pipeline = nullptr;
+        PipelineHandle pipelineHandle = INVALID_PIPELINE_HANDLE;
+
+        VulkanRenderPass::RenderPassConfig renderpassConfig{};
+        RenderPassHandle renderPassHandle = INVALID_RENDER_PASS_HANDLE;
+
+        std::vector<FramebufferHandle> framebufferHandles;
+
+        DescriptorSetLayoutHandle passDescriptorSetLayoutHandle = INVALID_DESCRIPTOR_SET_LAYOUT_HANDLE;
+        VkDescriptorSet passDescriptorSet = VK_NULL_HANDLE;
+
+        std::vector<FrameGraphResource> inputs;
+        std::vector<FrameGraphNodeOutput> outputs;
+    };
+
+    class FrameGraph {
+    public:
+        FrameGraph(VulkanDevice* device);
+        ~FrameGraph() = default;
+
+        void Init(Scene* _scene, VkExtent2D _resolution);
+        void PreRender(VkCommandBuffer cmd);
+        void Render(VkCommandBuffer cmd);
+        void Resize(VkExtent2D newResolution);
+
+        void AddRenderPass(const std::string& name, FrameGraphRenderPass* frameGraphRenderPass);
+        void AddResource(FrameGraphResource* frameGraphResouce);
+
+    public:
+        std::unordered_map<std::string, FrameGraphRenderPass*> frameGraphRenderPasses;
+        std::unordered_map<std::string, FrameGraphResource*> frameGraphResources;
+
+    private:
+        VulkanDevice* device;
+        VkExtent2D resolution;
+        Scene* scene;
     };
 }

@@ -1,11 +1,11 @@
 #pragma once
-#include "renderer/vulkan/pass/vulkan_pass.h"
+#include <renderer/frame_graph.h>
 
 namespace MongooseVK
 {
     class VulkanBuffer;
 
-    class SSAOPass final : public VulkanPass {
+    class SSAOPass final : public FrameGraphRenderPass {
     public:
         struct SSAOBuffer {
             glm::vec4 samples[64];
@@ -25,7 +25,7 @@ namespace MongooseVK
         explicit SSAOPass(VulkanDevice* _device, VkExtent2D _resolution);
         ~SSAOPass() override;
 
-        virtual void InitDescriptors() override;
+        virtual void CreateDescriptors() override;
         virtual void Render(VkCommandBuffer commandBuffer) override;
         virtual void Resize(VkExtent2D _resolution) override;
 

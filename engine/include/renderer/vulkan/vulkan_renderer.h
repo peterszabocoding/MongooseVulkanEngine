@@ -61,10 +61,6 @@ namespace MongooseVK
         Scope<PrefilterMapPass> prefilterMapPass;
     };
 
-    struct FrameGraphNodes {
-        FrameGraphNode gbufferPass;
-    };
-
     class VulkanRenderer {
     public:
         VulkanRenderer() = default;
@@ -107,7 +103,9 @@ namespace MongooseVK
 
         Framebuffers framebuffers;
         RenderPasses renderPasses;
-        std::unordered_map<std::string, PassResource> renderPassResourceMap;
+        std::unordered_map<std::string, FrameGraphResource> renderPassResourceMap;
+
+        Scope<FrameGraph> frameGraph;
 
     private:
         VulkanDevice* device;
@@ -118,9 +116,6 @@ namespace MongooseVK
 
         Scope<ShaderCache> shaderCache;
         Scope<VulkanSwapchain> vulkanSwapChain;
-
-        VkDescriptorSet presentDescriptorSet = VK_NULL_HANDLE;
-        DescriptorSetLayoutHandle presentDescriptorSetLayout;
 
         float lightSpinningAngle = 0.0f;
     };

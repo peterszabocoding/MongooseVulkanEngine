@@ -1,6 +1,7 @@
 #include "renderer/vulkan/pass/post_processing/ssao_pass.h"
 
 #include <random>
+#include <renderer/vulkan/vulkan_framebuffer.h>
 
 #include "util/log.h"
 #include "renderer/shader_cache.h"
@@ -10,9 +11,14 @@
 
 namespace MongooseVK
 {
-    SSAOPass::SSAOPass(VulkanDevice* _device, VkExtent2D _resolution): VulkanPass(_device, _resolution)
+    SSAOPass::SSAOPass(VulkanDevice* _device, VkExtent2D _resolution): FrameGraphRenderPass(_device, VkExtent2D{0, 0})
     {
         screenRect = CreateScope<VulkanMeshlet>(device, Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
+
+        resolution = {
+            static_cast<uint32_t>(_resolution.width * 0.5),
+            static_cast<uint32_t>(_resolution.height * 0.5)
+        };
 
         GenerateKernel();
         GenerateNoiseData();
@@ -23,14 +29,14 @@ namespace MongooseVK
         vkFreeDescriptorSets(device->GetDevice(), device->GetShaderDescriptorPool().GetDescriptorPool(), 1, &ssaoDescriptorSet);
     }
 
-    void SSAOPass::InitDescriptors()
+    void SSAOPass::CreateDescriptors()
     {
         ssaoDescriptorSetLayout = VulkanDescriptorSetLayoutBuilder(device)
-                .AddBinding({0, DescriptorSetBindingType::UniformBuffer, {ShaderStage::FragmentShader}})
-                .AddBinding({1, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
-                .Build();
+                                  .AddBinding({0, DescriptorSetBindingType::UniformBuffer, {ShaderStage::FragmentShader}})
+                                  .AddBinding({1, DescriptorSetBindingType::TextureSampler, {ShaderStage::FragmentShader}})
+                                  .Build();
         InitDescriptorSet();
-        VulkanPass::InitDescriptors();
+        FrameGraphRenderPass::CreateDescriptors();
     }
 
 
@@ -69,7 +75,10 @@ namespace MongooseVK
 
     void SSAOPass::Resize(VkExtent2D _resolution)
     {
-        VulkanPass::Resize(_resolution);
+        FrameGraphRenderPass::Resize(VkExtent2D{
+            static_cast<uint32_t>(_resolution.width * 0.5),
+            static_cast<uint32_t>(_resolution.height * 0.5)
+        });
     }
 
     void SSAOPass::LoadPipeline()

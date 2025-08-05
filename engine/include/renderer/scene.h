@@ -29,6 +29,8 @@ namespace MongooseVK
         std::vector<Ref<VulkanMesh>> meshes;
         std::vector<MaterialHandle> materials;
 
+        TextureHandle skyboxTexture;
+
         // Lights
         DirectionalLight directionalLight;
     };

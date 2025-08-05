@@ -1,5 +1,7 @@
 #include "renderer/vulkan/pass/infinite_grid_pass.h"
 
+#include <renderer/vulkan/vulkan_framebuffer.h>
+
 #include "util/log.h"
 #include "renderer/shader_cache.h"
 #include "renderer/vulkan/vulkan_pipeline.h"
@@ -7,14 +9,14 @@
 
 namespace MongooseVK
 {
-    InfiniteGridPass::InfiniteGridPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution): VulkanPass(vulkanDevice, _resolution)
+    InfiniteGridPass::InfiniteGridPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution): FrameGraphRenderPass(vulkanDevice, _resolution)
     {
         screenRect = CreateScope<VulkanMeshlet>(device, Primitives::GRID_VERTICES, Primitives::GRID_INDICES);
     }
 
     void InfiniteGridPass::Init()
     {
-        VulkanPass::Init();
+        FrameGraphRenderPass::Init();
     }
 
     void InfiniteGridPass::Render(VkCommandBuffer commandBuffer)
