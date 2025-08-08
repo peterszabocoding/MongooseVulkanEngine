@@ -18,7 +18,7 @@ namespace MongooseVK
 
     void BrdfLUTPass::Render(VkCommandBuffer commandBuffer, Scene* scene)
     {
-        VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandles[0]);
+        const VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandles[0]);
 
         device->SetViewportAndScissor(framebuffer->extent, commandBuffer);
         GetRenderPass()->Begin(commandBuffer, framebuffer->framebuffer, framebuffer->extent);
@@ -26,11 +26,7 @@ namespace MongooseVK
         DrawCommandParams drawCommandParams{};
         drawCommandParams.commandBuffer = commandBuffer;
         drawCommandParams.meshlet = screenRect.get();
-        drawCommandParams.pipelineParams =
-        {
-            pipeline->pipeline,
-            pipeline->pipelineLayout
-        };
+        drawCommandParams.pipelineHandle = pipelineHandle;
 
         device->DrawMeshlet(drawCommandParams);
 
@@ -42,16 +38,15 @@ namespace MongooseVK
         FrameGraphRenderPass::Resize(_resolution);
     }
 
-    void BrdfLUTPass::LoadPipeline()
+    void BrdfLUTPass::LoadPipeline(PipelineCreateInfo& pipelineCreate)
     {
-        pipelineConfig.vertexShaderPath = "brdf.vert";
-        pipelineConfig.fragmentShaderPath = "brdf.frag";
+        pipelineCreate.name = "BrdfLUTPass";
+        pipelineCreate.vertexShaderPath = "brdf.vert";
+        pipelineCreate.fragmentShaderPath = "brdf.frag";
 
-        pipelineConfig.cullMode = PipelineCullMode::Front;
-        pipelineConfig.enableDepthTest = false;
-        pipelineConfig.renderPass = GetRenderPass()->Get();
+        pipelineCreate.cullMode = PipelineCullMode::Front;
+        pipelineCreate.enableDepthTest = false;
 
-        pipelineHandle = VulkanPipelineBuilder().Build(device, pipelineConfig);
-        pipeline = device->GetPipeline(pipelineHandle);
+        LOG_TRACE(pipelineCreate.name);
     }
 }

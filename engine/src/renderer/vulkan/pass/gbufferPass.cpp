@@ -27,7 +27,7 @@ namespace MongooseVK
 
         DrawCommandParams drawCommandParams{};
         drawCommandParams.commandBuffer = commandBuffer;
-        drawCommandParams.pipelineParams = {pipeline->pipeline, pipeline->pipelineLayout};
+        drawCommandParams.pipelineHandle = pipelineHandle;
 
         for (size_t i = 0; i < scene->meshes.size(); i++)
         {
@@ -61,28 +61,23 @@ namespace MongooseVK
         FrameGraphRenderPass::Resize(_resolution);
     }
 
-    void GBufferPass::LoadPipeline()
+    void GBufferPass::LoadPipeline(PipelineCreateInfo& pipelineCreate)
     {
-        LOG_TRACE("Building gbuffer pipeline");
-        constexpr PipelinePushConstantData pushConstantData = {
-            .shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-            .offset = 0,
-            .size = sizeof(SimplePushConstantData),
-        };
+        pipelineCreate.name = "GBufferPass";
+        pipelineCreate.vertexShaderPath = "gbuffer.vert";
+        pipelineCreate.fragmentShaderPath = "gbuffer.frag";
 
-        pipelineConfig.vertexShaderPath = "gbuffer.vert";
-        pipelineConfig.fragmentShaderPath = "gbuffer.frag";
-
-        pipelineConfig.descriptorSetLayouts = {
+        pipelineCreate.descriptorSetLayouts = {
             device->bindlessTexturesDescriptorSetLayoutHandle,
             device->materialsDescriptorSetLayoutHandle,
             passDescriptorSetLayoutHandle
         };
 
-        pipelineConfig.renderPass = GetRenderPass()->Get();
-        pipelineConfig.pushConstantData = pushConstantData;
+        pipelineCreate.pushConstantData = {
+            .shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+            .size = sizeof(SimplePushConstantData),
+        };
 
-        pipelineHandle = VulkanPipelineBuilder().Build(device, pipelineConfig);
-        pipeline = device->GetPipeline(pipelineHandle);
+        LOG_TRACE(pipelineCreate.name);
     }
 }

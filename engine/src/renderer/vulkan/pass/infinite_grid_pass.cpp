@@ -21,51 +21,43 @@ namespace MongooseVK
 
     void InfiniteGridPass::Render(VkCommandBuffer commandBuffer, Scene* scene)
     {
-        VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandles[0]);
+        const VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandles[0]);
 
         device->SetViewportAndScissor(framebuffer->extent, commandBuffer);
         GetRenderPass()->Begin(commandBuffer, framebuffer->framebuffer, framebuffer->extent);
 
-        DrawCommandParams screenRectDrawParams{};
-        screenRectDrawParams.commandBuffer = commandBuffer;
-        screenRectDrawParams.meshlet = screenRect.get();
-        screenRectDrawParams.pushConstantParams.data = &gridParams;
-        screenRectDrawParams.pushConstantParams.size = sizeof(GridParams);
+        DrawCommandParams drawCommandParams{};
+        drawCommandParams.commandBuffer = commandBuffer;
+        drawCommandParams.meshlet = screenRect.get();
+        drawCommandParams.pushConstantParams.data = &gridParams;
+        drawCommandParams.pushConstantParams.size = sizeof(GridParams);
 
-        screenRectDrawParams.pipelineParams = {
-            pipeline->pipeline,
-            pipeline->pipelineLayout
-        };
-
-        screenRectDrawParams.descriptorSets = {
+        drawCommandParams.pipelineHandle = pipelineHandle;
+        drawCommandParams.descriptorSets = {
             device->bindlessTextureDescriptorSet,
             device->materialDescriptorSet,
             passDescriptorSet
         };
 
-        device->DrawMeshlet(screenRectDrawParams);
+        device->DrawMeshlet(drawCommandParams);
         GetRenderPass()->End(commandBuffer);
     }
 
-    void InfiniteGridPass::LoadPipeline()
+    void InfiniteGridPass::LoadPipeline(PipelineCreateInfo& pipelineCreate)
     {
-        LOG_TRACE("Building grid pipeline");
-
-        pipelineConfig.vertexShaderPath = "infinite_grid.vert";
-        pipelineConfig.fragmentShaderPath = "infinite_grid.frag";
-        pipelineConfig.cullMode = PipelineCullMode::None;
-        pipelineConfig.disableBlending = false;
-        pipelineConfig.depthWriteEnable = false;
-        pipelineConfig.renderPass = GetRenderPass()->Get();
-        pipelineConfig.pushConstantData.shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-        pipelineConfig.pushConstantData.size = sizeof(GridParams);
-        pipelineConfig.descriptorSetLayouts = {
+        pipelineCreate.name = "InfiniteGridPass";
+        pipelineCreate.vertexShaderPath = "infinite_grid.vert";
+        pipelineCreate.fragmentShaderPath = "infinite_grid.frag";
+        pipelineCreate.cullMode = PipelineCullMode::None;
+        pipelineCreate.disableBlending = false;
+        pipelineCreate.depthWriteEnable = false;
+        pipelineCreate.pushConstantData.shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+        pipelineCreate.pushConstantData.size = sizeof(GridParams);
+        pipelineCreate.descriptorSetLayouts = {
             device->bindlessTexturesDescriptorSetLayoutHandle,
             device->materialsDescriptorSetLayoutHandle,
             passDescriptorSetLayoutHandle
         };
-
-        pipelineHandle = VulkanPipelineBuilder().Build(device, pipelineConfig);
-        pipeline = device->GetPipeline(pipelineHandle);
+        LOG_TRACE(pipelineCreate.name);
     }
 }

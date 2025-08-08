@@ -27,6 +27,7 @@ namespace VulkanDemo
 
             ImGui::Text(deviceProperties.deviceName);
             ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+            ImGui::Text("%d draw calls", device->GetDrawCallCount(), io.Framerate);
         }
 
     private:

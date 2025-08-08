@@ -18,5 +18,5 @@ namespace MongooseVK
         GetRenderPass()->End(commandBuffer);
     }
 
-    void UiPass::LoadPipeline() {}
+    void UiPass::LoadPipeline(PipelineCreateInfo& pipelineCreate) {}
 }

@@ -47,10 +47,7 @@ namespace MongooseVK
 
             DrawCommandParams geometryDrawParams{};
             geometryDrawParams.commandBuffer = commandBuffer;
-            geometryDrawParams.pipelineParams = {
-                pipeline->pipeline,
-                pipeline->pipelineLayout
-            };
+            geometryDrawParams.pipelineHandle = pipelineHandle;
 
             ShadowMapPushConstantData pushConstantData;
 
@@ -76,26 +73,20 @@ namespace MongooseVK
         }
     }
 
-    void ShadowMapPass::LoadPipeline()
+    void ShadowMapPass::LoadPipeline(PipelineCreateInfo& pipelineCreate)
     {
-        LOG_TRACE("Building directional shadow map pipeline");
-        pipelineConfig.vertexShaderPath = "depth_only.vert";
-        pipelineConfig.fragmentShaderPath = "empty.frag";
+        pipelineCreate.name = "ShadowMapPass";
+        pipelineCreate.vertexShaderPath = "depth_only.vert";
+        pipelineCreate.fragmentShaderPath = "empty.frag";
 
-        pipelineConfig.cullMode = PipelineCullMode::Front;
-        pipelineConfig.polygonMode = PipelinePolygonMode::Fill;
-        pipelineConfig.frontFace = PipelineFrontFace::Counter_clockwise;
+        pipelineCreate.cullMode = PipelineCullMode::Front;
 
-        pipelineConfig.disableBlending = true;
-        pipelineConfig.enableDepthTest = true;
+        pipelineCreate.disableBlending = true;
+        pipelineCreate.enableDepthTest = true;
 
-        pipelineConfig.renderPass = GetRenderPass()->Get();
+        pipelineCreate.pushConstantData.shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+        pipelineCreate.pushConstantData.size = sizeof(ShadowMapPushConstantData);
 
-        pipelineConfig.pushConstantData.shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-        pipelineConfig.pushConstantData.offset = 0;
-        pipelineConfig.pushConstantData.size = sizeof(ShadowMapPushConstantData);
-
-        pipelineHandle = VulkanPipelineBuilder().Build(device, pipelineConfig);
-        pipeline = device->GetPipeline(pipelineHandle);
+        LOG_TRACE(pipelineCreate.name);
     }
 }

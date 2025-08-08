@@ -12,16 +12,14 @@ namespace MongooseVK
         CreateRenderPass();
         CreateDescriptors();
         CreateFramebuffer();
-        LoadPipeline();
+        CreatePipeline();
     }
 
     void FrameGraphRenderPass::Reset()
     {
         // Pipeline
         device->DestroyPipeline(pipelineHandle);
-        pipeline = nullptr;
         pipelineHandle = INVALID_PIPELINE_HANDLE;
-        pipelineConfig = {};
 
         // Framebuffer
         for (const auto handle: framebufferHandles)
@@ -32,7 +30,6 @@ namespace MongooseVK
         // Render pass
         device->DestroyRenderPass(renderPassHandle);
         renderPassHandle = INVALID_RENDER_PASS_HANDLE;
-        renderpassConfig = {};
 
         // Descriptors
         device->DestroyDescriptorSetLayout(passDescriptorSetLayoutHandle);
@@ -45,7 +42,7 @@ namespace MongooseVK
         outputs.clear();
     }
 
-    void FrameGraphRenderPass::Resize(VkExtent2D _resolution)
+    void FrameGraphRenderPass::Resize(const VkExtent2D _resolution)
     {
         resolution = _resolution;
     }
@@ -53,11 +50,6 @@ namespace MongooseVK
     VulkanRenderPass* FrameGraphRenderPass::GetRenderPass() const
     {
         return device->renderPassPool.Get(renderPassHandle.handle);
-    }
-
-    RenderPassHandle FrameGraphRenderPass::GetRenderPassHandle() const
-    {
-        return renderPassHandle;
     }
 
     void FrameGraphRenderPass::AddOutput(const FrameGraphNodeOutput& output)
@@ -72,11 +64,13 @@ namespace MongooseVK
 
     void FrameGraphRenderPass::CreateRenderPass()
     {
+        VulkanRenderPass::RenderPassConfig renderpassConfig{};
+
         for (const auto& output: outputs)
         {
             if (output.resource.type == FrameGraphResourceType::Buffer) continue;
 
-            ImageFormat format = output.resource.resourceInfo.texture.textureCreateInfo.format;
+            const ImageFormat format = output.resource.resourceInfo.texture.textureCreateInfo.format;
             if (!IsDepthFormat(format))
             {
                 renderpassConfig.AddColorAttachment({
@@ -86,18 +80,39 @@ namespace MongooseVK
                     .initialLayout = output.resource.resourceInfo.texture.textureCreateInfo.imageInitialLayout,
                     .finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 });
-                pipelineConfig.colorAttachments.push_back(format);
             } else
             {
                 renderpassConfig.AddDepthAttachment({
                     .depthFormat = format,
                     .loadOp = output.loadOp,
                 });
-                pipelineConfig.depthAttachment = format;
             }
         }
 
         renderPassHandle = device->CreateRenderPass(renderpassConfig);
+    }
+
+    void FrameGraphRenderPass::CreatePipeline()
+    {
+        PipelineCreateInfo pipelineCreate{};
+
+        LoadPipeline(pipelineCreate);
+
+        if (pipelineCreate.name == "" || pipelineCreate.vertexShaderPath == "" || pipelineCreate.fragmentShaderPath == "") return;
+
+        for (const auto& output: outputs)
+        {
+            if (output.resource.type == FrameGraphResourceType::Buffer) continue;
+
+            ImageFormat format = output.resource.resourceInfo.texture.textureCreateInfo.format;
+            if (!IsDepthFormat(format))
+                pipelineCreate.colorAttachments.push_back(format);
+            else
+                pipelineCreate.depthAttachment = format;
+        }
+
+        pipelineCreate.renderPass = GetRenderPass()->Get();
+        pipelineHandle = VulkanPipelineBuilder().Build(device, pipelineCreate);
     }
 
     void FrameGraphRenderPass::CreateDescriptors()
@@ -167,12 +182,12 @@ namespace MongooseVK
 
     FrameGraph::FrameGraph(VulkanDevice* _device): device{_device} {}
 
-    void FrameGraph::Init(VkExtent2D _resolution)
+    void FrameGraph::Init(const VkExtent2D _resolution)
     {
         resolution = _resolution;
     }
 
-    void FrameGraph::PreRender(VkCommandBuffer cmd, Scene* scene)
+    void FrameGraph::PreRender(const VkCommandBuffer cmd, Scene* scene)
     {
         for (const auto& renderPass: frameGraphRenderPasses | std::views::values)
         {
@@ -180,7 +195,7 @@ namespace MongooseVK
         }
     }
 
-    void FrameGraph::Render(VkCommandBuffer cmd, Scene* scene)
+    void FrameGraph::Render(const VkCommandBuffer cmd, Scene* scene)
     {
         for (const auto& renderPass: frameGraphRenderPasses | std::views::values)
         {
@@ -188,7 +203,7 @@ namespace MongooseVK
         }
     }
 
-    void FrameGraph::Resize(VkExtent2D newResolution)
+    void FrameGraph::Resize(const VkExtent2D newResolution)
     {
         resolution = newResolution;
 

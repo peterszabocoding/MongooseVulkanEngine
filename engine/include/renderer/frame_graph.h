@@ -9,16 +9,8 @@
 namespace MongooseVK
 {
     class FrameGraphRenderPass;
+
     /*
-    typedef uint32_t FrameGraphHandle;
-
-    struct FrameGraphResourceHandle {
-        FrameGraphHandle index;
-    };
-
-    struct FrameGraphNodeHandle {
-        FrameGraphHandle index;
-    };
 
     enum FrameGraphResourceType {
         Invalid = -1,
@@ -95,24 +87,17 @@ namespace MongooseVK
         virtual void OnResize(VulkanDevice* device, uint32_t newWidth, uint32_t newHeight) {}
     };
 
-    struct FrameGraphNode {
-        const char* name = nullptr;
+    */
 
-        RenderPassHandle renderPass;
-        FramebufferHandle framebuffer;
+    typedef uint32_t FrameGraphHandle;
 
-        FrameGraphRenderPass* graphRenderPass;
-
-        std::vector<FrameGraphResourceHandle> inputs;
-        std::vector<FrameGraphResourceHandle> outputs;
-
-        std::vector<FrameGraphNodeHandle> edges;
-
-        bool enabled = true;
-        int32_t refCount = 0;
+    struct FrameGraphResourceHandle {
+        FrameGraphHandle index;
     };
 
-    */
+    struct FrameGraphNodeHandle {
+        FrameGraphHandle index;
+    };
 
     enum class FrameGraphResourceType: int8_t {
         Invalid = -1,
@@ -149,6 +134,20 @@ namespace MongooseVK
         RenderPassOperation::StoreOp storeOp;
     };
 
+    struct FrameGraphNode {
+        const char* name = nullptr;
+
+        FrameGraphRenderPass* graphRenderPass;
+
+        std::vector<FrameGraphResourceHandle> inputs;
+        std::vector<FrameGraphResourceHandle> outputs;
+
+        std::vector<FrameGraphNodeHandle> edges;
+
+        bool enabled = true;
+        int32_t refCount = 0;
+    };
+
     class FrameGraphRenderPass {
     public:
         FrameGraphRenderPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution): device(vulkanDevice), resolution(_resolution) {}
@@ -162,15 +161,15 @@ namespace MongooseVK
         virtual void Render(VkCommandBuffer commandBuffer, Scene* scene) {}
         virtual void OnResolutionChanged(const uint32_t width, const uint32_t height) {}
 
-        virtual VulkanRenderPass* GetRenderPass() const;
-        virtual RenderPassHandle GetRenderPassHandle() const;
+        VulkanRenderPass* GetRenderPass() const;
 
         void AddOutput(const FrameGraphNodeOutput& output);
         void AddInput(const FrameGraphResource& input);
 
     protected:
-        virtual void LoadPipeline() = 0;
+        virtual void LoadPipeline(PipelineCreateInfo& pipelineCreate) = 0;
 
+        void CreatePipeline();
         virtual void CreateRenderPass();
         virtual void CreateDescriptors();
         virtual void CreateFramebuffer();
@@ -179,11 +178,7 @@ namespace MongooseVK
         VulkanDevice* device;
         VkExtent2D resolution;
 
-        PipelineCreate pipelineConfig{};
-        VulkanPipeline* pipeline = nullptr;
         PipelineHandle pipelineHandle = INVALID_PIPELINE_HANDLE;
-
-        VulkanRenderPass::RenderPassConfig renderpassConfig{};
         RenderPassHandle renderPassHandle = INVALID_RENDER_PASS_HANDLE;
 
         std::vector<FramebufferHandle> framebufferHandles;

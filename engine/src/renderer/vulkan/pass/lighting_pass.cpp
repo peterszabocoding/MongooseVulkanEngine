@@ -20,7 +20,7 @@ namespace MongooseVK
 
         DrawCommandParams drawCommandParams{};
         drawCommandParams.commandBuffer = commandBuffer;
-        drawCommandParams.pipelineParams = {pipeline->pipeline, pipeline->pipelineLayout};
+        drawCommandParams.pipelineHandle = pipelineHandle;
 
         for (size_t i = 0; i < scene->meshes.size(); i++)
         {
@@ -51,29 +51,23 @@ namespace MongooseVK
         GetRenderPass()->End(commandBuffer);
     }
 
-    void LightingPass::LoadPipeline()
+    void LightingPass::LoadPipeline(PipelineCreateInfo& pipelineCreate)
     {
-        LOG_TRACE("Building lighting pipeline");
-        pipelineConfig.vertexShaderPath = "base-pass.vert";
-        pipelineConfig.fragmentShaderPath = "lighting-pass.frag";
+        pipelineCreate.name = "LightingPass";
+        pipelineCreate.vertexShaderPath = "base-pass.vert";
+        pipelineCreate.fragmentShaderPath = "lighting-pass.frag";
 
-        pipelineConfig.cullMode = PipelineCullMode::Back;
-
-        pipelineConfig.descriptorSetLayouts = {
+        pipelineCreate.descriptorSetLayouts = {
             device->bindlessTexturesDescriptorSetLayoutHandle,
             device->materialsDescriptorSetLayoutHandle,
             passDescriptorSetLayoutHandle
         };
 
-        pipelineConfig.disableBlending = false;
+        pipelineCreate.disableBlending = false;
 
-        pipelineConfig.renderPass = GetRenderPass()->Get();
+        pipelineCreate.pushConstantData.shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+        pipelineCreate.pushConstantData.size = sizeof(SimplePushConstantData);
 
-        pipelineConfig.pushConstantData.shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-        pipelineConfig.pushConstantData.offset = 0;
-        pipelineConfig.pushConstantData.size = sizeof(SimplePushConstantData);
-
-        pipelineHandle = VulkanPipelineBuilder().Build(device, pipelineConfig);
-        pipeline = device->GetPipeline(pipelineHandle);
+        LOG_TRACE(pipelineCreate.name);
     }
 }

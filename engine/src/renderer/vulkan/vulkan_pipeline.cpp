@@ -224,7 +224,7 @@ namespace MongooseVK
         return pipelineHandle;
     }
 
-    PipelineHandle VulkanPipelineBuilder::Build(VulkanDevice* vulkanDevice, PipelineCreate& config)
+    PipelineHandle VulkanPipelineBuilder::Build(VulkanDevice* vulkanDevice, PipelineCreateInfo& config)
     {
         // SPR-V Shader source
         vertexShaderPath = config.vertexShaderPath;

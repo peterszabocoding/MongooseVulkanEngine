@@ -20,7 +20,7 @@ namespace MongooseVK
         virtual void Render(VkCommandBuffer commandBuffer, Scene* scene) override;
 
     protected:
-        virtual void LoadPipeline() override;
+        virtual void LoadPipeline(PipelineCreateInfo& pipelineCreate) override;
 
     private:
         uint32_t cascadeIndex = 0;

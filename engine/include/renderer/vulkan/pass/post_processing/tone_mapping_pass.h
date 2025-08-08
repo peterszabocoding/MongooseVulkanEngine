@@ -19,7 +19,7 @@ namespace MongooseVK
         virtual void Resize(VkExtent2D _resolution) override;
 
     protected:
-        virtual void LoadPipeline() override;
+        virtual void LoadPipeline(PipelineCreateInfo& pipelineCreate) override;
 
     public:
         ToneMappingParams toneMappingParams{};

@@ -48,7 +48,7 @@ namespace MongooseVK
                 FramebufferCreateInfo createInfo = {};
                 createInfo.attachments.push_back({.imageView = outputTexture->GetMipmapImageView(mip, faceIndex)});
                 createInfo.resolution = extent;
-                createInfo.renderPassHandle = GetRenderPassHandle();
+                createInfo.renderPassHandle = renderPassHandle;
 
                 FramebufferHandle framebufferHandle = device->CreateFramebuffer(createInfo);
                 framebufferHandles.push_back(framebufferHandle);
@@ -72,17 +72,9 @@ namespace MongooseVK
 
                 DrawCommandParams drawCommandParams{};
                 drawCommandParams.commandBuffer = commandBuffer;
-
-                drawCommandParams.pipelineParams = {
-                    pipeline->pipeline,
-                    pipeline->pipelineLayout
-                };
-
+                drawCommandParams.pipelineHandle = pipelineHandle;
                 drawCommandParams.meshlet = &cubeMesh->GetMeshlets()[0];
-
-                drawCommandParams.descriptorSets = {
-                    passDescriptorSet
-                };
+                drawCommandParams.descriptorSets = {passDescriptorSet};
 
                 PrefilterData pushConstantData;
                 pushConstantData.projection = m_CaptureProjection;
@@ -118,21 +110,20 @@ namespace MongooseVK
         targetTexture = _targetTexture;
     }
 
-    void PrefilterMapPass::LoadPipeline()
+    void PrefilterMapPass::LoadPipeline(PipelineCreateInfo& pipelineCreate)
     {
-        pipelineConfig.vertexShaderPath = "cubemap.vert";
-        pipelineConfig.fragmentShaderPath = "prefilter.frag";
+        pipelineCreate.name = "PrefilterMapPass";
+        pipelineCreate.vertexShaderPath = "cubemap.vert";
+        pipelineCreate.fragmentShaderPath = "prefilter.frag";
 
-        pipelineConfig.descriptorSetLayouts = {
+        pipelineCreate.descriptorSetLayouts = {
             passDescriptorSetLayoutHandle,
         };
 
-        pipelineConfig.enableDepthTest = false;
-        pipelineConfig.pushConstantData = {VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PrefilterData)};
-        pipelineConfig.renderPass = GetRenderPass()->Get();
+        pipelineCreate.enableDepthTest = false;
+        pipelineCreate.pushConstantData = {VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PrefilterData)};
 
-        pipelineHandle = VulkanPipelineBuilder().Build(device, pipelineConfig);
-        pipeline = device->GetPipeline(pipelineHandle);
+        LOG_TRACE(pipelineCreate.name);
     }
 
     void PrefilterMapPass::SetRoughness(float _roughness)

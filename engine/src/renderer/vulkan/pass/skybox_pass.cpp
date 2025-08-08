@@ -25,10 +25,7 @@ namespace MongooseVK
         DrawCommandParams drawCommandParams{};
         drawCommandParams.commandBuffer = commandBuffer;
         drawCommandParams.meshlet = &cubeMesh->GetMeshlets()[0];
-        drawCommandParams.pipelineParams = {
-            pipeline->pipeline,
-            pipeline->pipelineLayout
-        };
+        drawCommandParams.pipelineHandle = pipelineHandle;
         drawCommandParams.descriptorSets = {
             device->bindlessTextureDescriptorSet,
             device->materialDescriptorSet,
@@ -48,26 +45,23 @@ namespace MongooseVK
         GetRenderPass()->End(commandBuffer);
     }
 
-    void SkyboxPass::LoadPipeline()
+    void SkyboxPass::LoadPipeline(PipelineCreateInfo& pipelineCreate)
     {
-        LOG_TRACE("Building skybox pipeline");
-        pipelineConfig.vertexShaderPath = "skybox.vert";
-        pipelineConfig.fragmentShaderPath = "skybox.frag";
+        pipelineCreate.name = "SkyboxPass";
+        pipelineCreate.vertexShaderPath = "skybox.vert";
+        pipelineCreate.fragmentShaderPath = "skybox.frag";
 
-        pipelineConfig.cullMode = PipelineCullMode::Front;
-        pipelineConfig.enableDepthTest = false;
-        pipelineConfig.renderPass = GetRenderPass()->Get();
-        pipelineConfig.descriptorSetLayouts = {
+        pipelineCreate.cullMode = PipelineCullMode::Front;
+        pipelineCreate.enableDepthTest = false;
+        pipelineCreate.descriptorSetLayouts = {
             device->bindlessTexturesDescriptorSetLayoutHandle,
             device->materialsDescriptorSetLayoutHandle,
             passDescriptorSetLayoutHandle
         };
 
-        pipelineConfig.pushConstantData.shaderStageBits = VK_SHADER_STAGE_FRAGMENT_BIT;
-        pipelineConfig.pushConstantData.offset = 0;
-        pipelineConfig.pushConstantData.size = sizeof(SkyboxPushConstantData);
+        pipelineCreate.pushConstantData.shaderStageBits = VK_SHADER_STAGE_FRAGMENT_BIT;
+        pipelineCreate.pushConstantData.size = sizeof(SkyboxPushConstantData);
 
-        pipelineHandle = VulkanPipelineBuilder().Build(device, pipelineConfig);
-        pipeline = device->GetPipeline(pipelineHandle);
+        LOG_TRACE(pipelineCreate.name);
     }
 }

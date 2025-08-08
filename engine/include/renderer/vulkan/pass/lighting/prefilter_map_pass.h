@@ -17,7 +17,7 @@ namespace MongooseVK
         void SetTargetTexture(TextureHandle _targetTexture);
 
     protected:
-        virtual void LoadPipeline() override;
+        virtual void LoadPipeline(PipelineCreateInfo& pipelineCreate) override;
 
     private:
         Ref<VulkanMesh> cubeMesh;

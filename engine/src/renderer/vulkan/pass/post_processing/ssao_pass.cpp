@@ -52,12 +52,7 @@ namespace MongooseVK
         DrawCommandParams drawParams{};
         drawParams.commandBuffer = commandBuffer;
         drawParams.meshlet = screenRect.get();
-
-        drawParams.pipelineParams = {
-            pipeline->pipeline,
-            pipeline->pipelineLayout
-        };
-
+        drawParams.pipelineHandle = pipelineHandle;
         drawParams.descriptorSets = {
             passDescriptorSet,
             ssaoDescriptorSet,
@@ -81,32 +76,25 @@ namespace MongooseVK
         });
     }
 
-    void SSAOPass::LoadPipeline()
+    void SSAOPass::LoadPipeline(PipelineCreateInfo& pipelineCreate)
     {
-        LOG_TRACE("Building SSAO pipeline");
-        pipelineConfig.vertexShaderPath = "quad.vert";
-        pipelineConfig.fragmentShaderPath = "post_processing_ssao.frag";
+        pipelineCreate.name = "SSAOPass";
+        pipelineCreate.vertexShaderPath = "quad.vert";
+        pipelineCreate.fragmentShaderPath = "post_processing_ssao.frag";
 
-        pipelineConfig.cullMode = PipelineCullMode::Front;
-        pipelineConfig.polygonMode = PipelinePolygonMode::Fill;
-        pipelineConfig.frontFace = PipelineFrontFace::Counter_clockwise;
+        pipelineCreate.cullMode = PipelineCullMode::Front;
 
-        pipelineConfig.descriptorSetLayouts = {
+        pipelineCreate.descriptorSetLayouts = {
             passDescriptorSetLayoutHandle,
             ssaoDescriptorSetLayout,
         };
 
-        pipelineConfig.disableBlending = true;
-        pipelineConfig.enableDepthTest = false;
+        pipelineCreate.enableDepthTest = false;
 
-        pipelineConfig.renderPass = GetRenderPass()->renderPass;
+        pipelineCreate.pushConstantData.shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+        pipelineCreate.pushConstantData.size = sizeof(SSAOParams);
 
-        pipelineConfig.pushConstantData.shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-        pipelineConfig.pushConstantData.offset = 0;
-        pipelineConfig.pushConstantData.size = sizeof(SSAOParams);
-
-        pipelineHandle = VulkanPipelineBuilder().Build(device, pipelineConfig);
-        pipeline = device->GetPipeline(pipelineHandle);
+        LOG_TRACE(pipelineCreate.name);
     }
 
     void SSAOPass::InitDescriptorSet()

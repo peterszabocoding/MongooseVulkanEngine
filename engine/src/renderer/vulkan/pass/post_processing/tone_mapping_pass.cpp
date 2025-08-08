@@ -25,10 +25,7 @@ namespace MongooseVK
         drawParams.commandBuffer = commandBuffer;
         drawParams.meshlet = screenRect.get();
 
-        drawParams.pipelineParams = {
-            pipeline->pipeline,
-            pipeline->pipelineLayout
-        };
+        drawParams.pipelineHandle = pipelineHandle;
 
         drawParams.descriptorSets = {
             passDescriptorSet,
@@ -48,29 +45,24 @@ namespace MongooseVK
         FrameGraphRenderPass::Resize(_resolution);
     }
 
-    void ToneMappingPass::LoadPipeline()
+    void ToneMappingPass::LoadPipeline(PipelineCreateInfo& pipelineCreate)
     {
-        LOG_TRACE("Building tone mapping pipeline");
-        pipelineConfig.vertexShaderPath = "quad.vert";
-        pipelineConfig.fragmentShaderPath = "post_processing_tone_mapping.frag";
+        pipelineCreate.name = "ToneMappingPass";
+        pipelineCreate.vertexShaderPath = "quad.vert";
+        pipelineCreate.fragmentShaderPath = "post_processing_tone_mapping.frag";
 
-        pipelineConfig.cullMode = PipelineCullMode::Front;
-        pipelineConfig.enableDepthTest = false;
-        pipelineConfig.renderPass = GetRenderPass()->Get();
+        pipelineCreate.cullMode = PipelineCullMode::Front;
+        pipelineCreate.enableDepthTest = false;
 
-        pipelineConfig.descriptorSetLayouts = {
+        pipelineCreate.descriptorSetLayouts = {
             device->bindlessTexturesDescriptorSetLayoutHandle,
             device->materialsDescriptorSetLayoutHandle,
             passDescriptorSetLayoutHandle
         };
 
+        pipelineCreate.pushConstantData.shaderStageBits = VK_SHADER_STAGE_FRAGMENT_BIT;
+        pipelineCreate.pushConstantData.size = sizeof(ToneMappingParams);
 
-        pipelineConfig.pushConstantData.shaderStageBits = VK_SHADER_STAGE_FRAGMENT_BIT;
-        pipelineConfig.pushConstantData.offset = 0;
-        pipelineConfig.pushConstantData.size = sizeof(ToneMappingParams);
-
-
-        pipelineHandle = VulkanPipelineBuilder().Build(device, pipelineConfig);
-        pipeline = device->GetPipeline(pipelineHandle);
+        LOG_TRACE(pipelineCreate.name);
     }
 }

@@ -83,7 +83,7 @@ namespace MongooseVK
         uint32_t size = 0;
     };
 
-    struct PipelineCreate {
+    struct PipelineCreateInfo {
         std::string name;
         std::string vertexShaderPath;
         std::string fragmentShaderPath;
@@ -121,7 +121,7 @@ namespace MongooseVK
         VulkanPipelineBuilder();
         ~VulkanPipelineBuilder() = default;
 
-        PipelineHandle Build(VulkanDevice* vulkanDevice, PipelineCreate& config);
+        PipelineHandle Build(VulkanDevice* vulkanDevice, PipelineCreateInfo& config);
 
     private:
         PipelineHandle Build(VulkanDevice* vulkanDevice);

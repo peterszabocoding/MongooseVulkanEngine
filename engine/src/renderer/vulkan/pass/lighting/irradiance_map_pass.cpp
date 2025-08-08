@@ -18,7 +18,8 @@ namespace MongooseVK
         lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f))
     };
 
-    IrradianceMapPass::IrradianceMapPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution): FrameGraphRenderPass(vulkanDevice, _resolution)
+    IrradianceMapPass::IrradianceMapPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution): FrameGraphRenderPass(
+        vulkanDevice, _resolution)
     {
         cubeMesh = ResourceManager::LoadMesh(device, "resources/models/cube.obj");
     }
@@ -36,7 +37,7 @@ namespace MongooseVK
             FramebufferCreateInfo createInfo{};
 
             createInfo.attachments.push_back({outputTexture->GetMipmapImageView(0, i)});
-            createInfo.renderPassHandle = GetRenderPassHandle();
+            createInfo.renderPassHandle = renderPassHandle;
             createInfo.resolution = {32, 32};
 
             framebufferHandles.push_back(device->CreateFramebuffer(createInfo));
@@ -55,14 +56,8 @@ namespace MongooseVK
             DrawCommandParams drawCommandParams{};
             drawCommandParams.commandBuffer = commandBuffer;
             drawCommandParams.meshlet = &cubeMesh->GetMeshlets()[0];
-            drawCommandParams.descriptorSets = {
-                passDescriptorSet
-            };
-
-            drawCommandParams.pipelineParams = {
-                pipeline->pipeline,
-                pipeline->pipelineLayout
-            };
+            drawCommandParams.pipelineHandle = pipelineHandle;
+            drawCommandParams.descriptorSets = {passDescriptorSet};
 
             TransformPushConstantData pushConstantData;
             pushConstantData.projection = m_CaptureProjection;
@@ -84,30 +79,22 @@ namespace MongooseVK
         FrameGraphRenderPass::Resize(_resolution);
     }
 
-    void IrradianceMapPass::LoadPipeline()
+    void IrradianceMapPass::LoadPipeline(PipelineCreateInfo& pipelineCreate)
     {
-        pipelineConfig.vertexShaderPath = "cubemap.vert";
-        pipelineConfig.fragmentShaderPath = "irradiance_convolution.frag";
+        pipelineCreate.name = "IrradianceMapPass";
+        pipelineCreate.vertexShaderPath = "cubemap.vert";
+        pipelineCreate.fragmentShaderPath = "irradiance_convolution.frag";
 
-        pipelineConfig.cullMode = PipelineCullMode::Back;
-        pipelineConfig.polygonMode = PipelinePolygonMode::Fill;
-        pipelineConfig.frontFace = PipelineFrontFace::Counter_clockwise;
-
-        pipelineConfig.descriptorSetLayouts = {
+        pipelineCreate.descriptorSetLayouts = {
             passDescriptorSetLayoutHandle
         };
 
-        pipelineConfig.disableBlending = true;
-        pipelineConfig.enableDepthTest = false;
+        pipelineCreate.enableDepthTest = false;
 
-        pipelineConfig.renderPass = GetRenderPass()->Get();
+        pipelineCreate.pushConstantData.shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+        pipelineCreate.pushConstantData.size = sizeof(TransformPushConstantData);
 
-        pipelineConfig.pushConstantData.shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-        pipelineConfig.pushConstantData.offset = 0;
-        pipelineConfig.pushConstantData.size = sizeof(TransformPushConstantData);
-
-        pipelineHandle = VulkanPipelineBuilder().Build(device, pipelineConfig);
-        pipeline = device->GetPipeline(pipelineHandle);
+        LOG_TRACE(pipelineCreate.name);
     }
 
     void IrradianceMapPass::SetFaceIndex(uint8_t _faceIndex)

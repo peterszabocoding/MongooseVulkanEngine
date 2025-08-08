@@ -30,7 +30,7 @@ namespace MongooseVK
     struct SimplePushConstantData;
     struct AllocatedBuffer;
 
-    constexpr int MAX_FRAMES_IN_FLIGHT = 1;
+    constexpr int MAX_FRAMES_IN_FLIGHT = 2;
     constexpr int DESCRIPTOR_SET_LAYOUT_POOL_SIZE = 10000;
     constexpr uint32_t MAX_BINDLESS_RESOURCES = 100;
     constexpr uint32_t MAX_OBJECTS = 10000;
@@ -52,12 +52,10 @@ namespace MongooseVK
     struct DrawCommandParams {
         VkCommandBuffer commandBuffer;
         VulkanMeshlet* meshlet;
-        DrawPipelineParams pipelineParams;
+        PipelineHandle pipelineHandle;
         DrawPushConstantParams pushConstantParams;
         std::vector<VkDescriptorSet> descriptorSets{};
     };
-
-
 
     struct TextureCreateInfo {
         uint32_t width;
@@ -122,7 +120,7 @@ namespace MongooseVK
         static VulkanDevice* Create(GLFWwindow* glfwWindow);
         static VulkanDevice* Get() { return s_Instance; }
 
-        void DrawMeshlet(const DrawCommandParams& params) const;
+        void DrawMeshlet(const DrawCommandParams& params);
 
         void DrawFrame(VkSwapchainKHR swapchain, DrawFrameFunction draw, OutOfDateErrorCallback errorCallback);
 
@@ -152,6 +150,8 @@ namespace MongooseVK
         [[nodiscard]] inline VkDevice CreateLogicalDevice();
         [[nodiscard]] inline VkQueue GetDeviceQueue() const;
         [[nodiscard]] inline VkQueue GetDevicePresentQueue() const;
+
+        uint32_t GetDrawCallCount() const;
 
         // Buffer management
         AllocatedBuffer CreateBuffer(uint64_t size, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage = VMA_MEMORY_USAGE_AUTO);
@@ -228,6 +228,9 @@ namespace MongooseVK
 
     private:
         static VulkanDevice* s_Instance;
+
+        uint32_t drawCallCounter = 0;
+        uint32_t prevDrawCallCount = 0;
 
         int viewportWidth{}, viewportHeight{};
         bool getReadyToResize = false;

@@ -62,34 +62,31 @@ namespace MongooseVK
         return new VulkanDevice(glfwWindow);
     }
 
-    void VulkanDevice::DrawMeshlet(const DrawCommandParams& params) const
+    void VulkanDevice::DrawMeshlet(const DrawCommandParams& params)
     {
+        VulkanPipeline* pipeline = GetPipeline(params.pipelineHandle);
+
         if (params.pushConstantParams.data)
         {
             vkCmdPushConstants(params.commandBuffer,
-                               params.pipelineParams.pipelineLayout,
+                               pipeline->pipelineLayout,
                                params.pushConstantParams.shaderStageFlags,
                                0,
                                params.pushConstantParams.size,
                                params.pushConstantParams.data);
         }
 
-        vkCmdBindPipeline(params.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, params.pipelineParams.pipeline);
+        vkCmdBindPipeline(params.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->pipeline);
 
         if (!params.descriptorSets.empty())
         {
-            vkCmdBindDescriptorSets(params.commandBuffer,
-                                    VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                    params.pipelineParams.pipelineLayout,
-                                    0,
-                                    params.descriptorSets.size(),
-                                    params.descriptorSets.data(),
-                                    0,
-                                    nullptr);
+            vkCmdBindDescriptorSets(params.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->pipelineLayout,
+                                    0, params.descriptorSets.size(), params.descriptorSets.data(), 0, nullptr);
         }
 
         params.meshlet->Bind(params.commandBuffer);
         vkCmdDrawIndexed(params.commandBuffer, params.meshlet->GetIndexCount(), 1, 0, 0, 0);
+        drawCallCounter++;
     }
 
     void VulkanDevice::DrawFrame(VkSwapchainKHR swapchain, DrawFrameFunction draw, OutOfDateErrorCallback errorCallback)
@@ -132,6 +129,9 @@ namespace MongooseVK
             throw std::runtime_error("Failed to present swap chain image." + ' | ' + result);
 
         currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+
+        prevDrawCallCount = drawCallCounter;
+        drawCallCounter = 0;
     }
 
 
@@ -166,7 +166,7 @@ namespace MongooseVK
         {
             device_extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
             //validation_layer_list.push_back("VK_LAYER_LUNARG_crash_diagnostic");
-            validation_layer_list.push_back("VK_LAYER_KHRONOS_validation");
+            //validation_layer_list.push_back("VK_LAYER_KHRONOS_validation");
             //validation_layer_list.push_back("VK_LAYER_LUNARG_api_dump");
         }
 
@@ -306,17 +306,17 @@ namespace MongooseVK
                                    : createInfo.mipLevels;
 
         texture->allocatedImage = ImageBuilder(this)
-                .SetFormat(createInfo.format)
-                .SetResolution(createInfo.width, createInfo.height)
-                .SetTiling(VK_IMAGE_TILING_OPTIMAL)
-                .AddUsage(VK_IMAGE_USAGE_TRANSFER_DST_BIT)
-                .AddUsage(VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
-                .AddUsage(ImageUtils::GetUsageFromFormat(createInfo.format))
-                .SetInitialLayout(createInfo.imageInitialLayout)
-                .SetMipLevels(createInfo.mipLevels)
-                .SetArrayLayers(createInfo.arrayLayers)
-                .SetFlags(createInfo.flags)
-                .Build();
+                                  .SetFormat(createInfo.format)
+                                  .SetResolution(createInfo.width, createInfo.height)
+                                  .SetTiling(VK_IMAGE_TILING_OPTIMAL)
+                                  .AddUsage(VK_IMAGE_USAGE_TRANSFER_DST_BIT)
+                                  .AddUsage(VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
+                                  .AddUsage(ImageUtils::GetUsageFromFormat(createInfo.format))
+                                  .SetInitialLayout(createInfo.imageInitialLayout)
+                                  .SetMipLevels(createInfo.mipLevels)
+                                  .SetArrayLayers(createInfo.arrayLayers)
+                                  .SetFlags(createInfo.flags)
+                                  .Build();
 
 
         VkImageViewType imageViewType = createInfo.isCubeMap
@@ -325,26 +325,26 @@ namespace MongooseVK
                                                   ? VK_IMAGE_VIEW_TYPE_2D_ARRAY
                                                   : VK_IMAGE_VIEW_TYPE_2D;
         texture->imageView = ImageViewBuilder(this)
-                .SetFormat(createInfo.format)
-                .SetImage(texture->allocatedImage.image)
-                .SetViewType(imageViewType)
-                .SetAspectFlags(ImageUtils::GetAspectFlagFromFormat(createInfo.format))
-                .SetMipLevels(createInfo.mipLevels)
-                .SetBaseArrayLayer(0)
-                .SetLayerCount(createInfo.arrayLayers)
-                .Build();
+                             .SetFormat(createInfo.format)
+                             .SetImage(texture->allocatedImage.image)
+                             .SetViewType(imageViewType)
+                             .SetAspectFlags(ImageUtils::GetAspectFlagFromFormat(createInfo.format))
+                             .SetMipLevels(createInfo.mipLevels)
+                             .SetBaseArrayLayer(0)
+                             .SetLayerCount(createInfo.arrayLayers)
+                             .Build();
 
         for (size_t i = 0; i < createInfo.arrayLayers; i++)
         {
             texture->arrayImageViews[i] = ImageViewBuilder(this)
-                    .SetFormat(createInfo.format)
-                    .SetImage(texture->allocatedImage.image)
-                    .SetViewType(VK_IMAGE_VIEW_TYPE_2D)
-                    .SetAspectFlags(ImageUtils::GetAspectFlagFromFormat(createInfo.format))
-                    .SetMipLevels(createInfo.mipLevels)
-                    .SetLayerCount(1)
-                    .SetBaseArrayLayer(i)
-                    .Build();
+                                          .SetFormat(createInfo.format)
+                                          .SetImage(texture->allocatedImage.image)
+                                          .SetViewType(VK_IMAGE_VIEW_TYPE_2D)
+                                          .SetAspectFlags(ImageUtils::GetAspectFlagFromFormat(createInfo.format))
+                                          .SetMipLevels(createInfo.mipLevels)
+                                          .SetLayerCount(1)
+                                          .SetBaseArrayLayer(i)
+                                          .Build();
         }
 
         for (size_t miplevel = 0; miplevel < createInfo.mipLevels; miplevel++)
@@ -352,25 +352,25 @@ namespace MongooseVK
             for (size_t faceindex = 0; faceindex < 6; faceindex++)
             {
                 texture->mipmapImageViews[miplevel][faceindex] = ImageViewBuilder(this)
-                        .SetFormat(createInfo.format)
-                        .SetImage(texture->allocatedImage.image)
-                        .SetViewType(VK_IMAGE_VIEW_TYPE_2D)
-                        .SetAspectFlags(ImageUtils::GetAspectFlagFromFormat(createInfo.format))
-                        .SetLayerCount(1)
-                        .SetBaseArrayLayer(faceindex)
-                        .SetBaseMipLevel(miplevel)
-                        .Build();
+                                                                 .SetFormat(createInfo.format)
+                                                                 .SetImage(texture->allocatedImage.image)
+                                                                 .SetViewType(VK_IMAGE_VIEW_TYPE_2D)
+                                                                 .SetAspectFlags(ImageUtils::GetAspectFlagFromFormat(createInfo.format))
+                                                                 .SetLayerCount(1)
+                                                                 .SetBaseArrayLayer(faceindex)
+                                                                 .SetBaseMipLevel(miplevel)
+                                                                 .Build();
             }
         }
 
         texture->sampler = ImageSamplerBuilder(this)
-                .SetFilter(createInfo.filter, createInfo.filter)
-                .SetFormat(createInfo.format)
-                .SetMipLevels(createInfo.mipLevels)
-                .SetAddressMode(createInfo.addressMode)
-                .SetBorderColor(createInfo.borderColor)
-                .SetCompareOp(createInfo.compareEnabled, createInfo.compareOp)
-                .Build();
+                           .SetFilter(createInfo.filter, createInfo.filter)
+                           .SetFormat(createInfo.format)
+                           .SetMipLevels(createInfo.mipLevels)
+                           .SetAddressMode(createInfo.addressMode)
+                           .SetBorderColor(createInfo.borderColor)
+                           .SetCompareOp(createInfo.compareEnabled, createInfo.compareOp)
+                           .Build();
 
         texture->createInfo = createInfo;
 
@@ -877,6 +877,11 @@ namespace MongooseVK
         return presentQueue;
     }
 
+    uint32_t VulkanDevice::GetDrawCallCount() const
+    {
+        return prevDrawCallCount;
+    }
+
 
     VkInstance VulkanDevice::CreateVkInstance(const std::vector<const char*>& deviceExtensions,
                                               const std::vector<const char*>& validationLayers)
@@ -987,40 +992,48 @@ namespace MongooseVK
     void VulkanDevice::CreateDescriptorPool()
     {
         globalUniformPool = VulkanDescriptorPool::Builder(this)
-                .SetMaxSets(MAX_FRAMES_IN_FLIGHT)
-                .AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, MAX_FRAMES_IN_FLIGHT)
-                .SetPoolFlags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT | VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT)
-                .Build();
+                            .SetMaxSets(MAX_FRAMES_IN_FLIGHT)
+                            .AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, MAX_FRAMES_IN_FLIGHT)
+                            .SetPoolFlags(
+                                VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT | VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT)
+                            .Build();
 
         shaderDescriptorPool = VulkanDescriptorPool::Builder(this)
-                .SetMaxSets(100)
-                .AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 100)
-                .AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100)
-                .AddPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 100)
-                .SetPoolFlags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT | VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT)
-                .Build();
+                               .SetMaxSets(100)
+                               .AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 100)
+                               .AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100)
+                               .AddPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 100)
+                               .SetPoolFlags(
+                                   VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT | VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT)
+                               .Build();
 
         imguiDescriptorPool = VulkanDescriptorPool::Builder(this)
-                .SetMaxSets(100)
-                .AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100)
-                .SetPoolFlags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT)
-                .Build();
+                              .SetMaxSets(100)
+                              .AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100)
+                              .SetPoolFlags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT)
+                              .Build();
 
         bindlessDescriptorPool = VulkanDescriptorPool::Builder(this)
-                .SetMaxSets(2 * MAX_BINDLESS_RESOURCES)
-                .AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, MAX_BINDLESS_RESOURCES)
-                .AddPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, MAX_BINDLESS_RESOURCES)
-                .SetPoolFlags(VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT)
-                .Build();
+                                 .SetMaxSets(2 * MAX_BINDLESS_RESOURCES)
+                                 .AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, MAX_BINDLESS_RESOURCES)
+                                 .AddPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, MAX_BINDLESS_RESOURCES)
+                                 .SetPoolFlags(VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT)
+                                 .Build();
 
         // Bindless Textures
         {
             bindlessTexturesDescriptorSetLayoutHandle = VulkanDescriptorSetLayoutBuilder(this)
-                    .AddBinding({0, DescriptorSetBindingType::TextureSampler, {ShaderStage::VertexShader, ShaderStage::FragmentShader}},
-                                MAX_BINDLESS_RESOURCES)
-                    .AddBinding({1, DescriptorSetBindingType::StorageImage, {ShaderStage::VertexShader, ShaderStage::FragmentShader}},
-                                MAX_BINDLESS_RESOURCES)
-                    .Build();
+                                                        .AddBinding({
+                                                                        0, DescriptorSetBindingType::TextureSampler,
+                                                                        {ShaderStage::VertexShader, ShaderStage::FragmentShader}
+                                                                    },
+                                                                    MAX_BINDLESS_RESOURCES)
+                                                        .AddBinding({
+                                                                        1, DescriptorSetBindingType::StorageImage,
+                                                                        {ShaderStage::VertexShader, ShaderStage::FragmentShader}
+                                                                    },
+                                                                    MAX_BINDLESS_RESOURCES)
+                                                        .Build();
 
             auto descriptorSetLayout = GetDescriptorSetLayout(bindlessTexturesDescriptorSetLayoutHandle);
             VulkanDescriptorWriter(*descriptorSetLayout, *bindlessDescriptorPool)
@@ -1034,8 +1047,8 @@ namespace MongooseVK
             materialBuffer = CreateBuffer(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 
             materialsDescriptorSetLayoutHandle = VulkanDescriptorSetLayoutBuilder(this)
-                    .AddBinding({0, DescriptorSetBindingType::StorageBuffer, {ShaderStage::FragmentShader}})
-                    .Build();
+                                                 .AddBinding({0, DescriptorSetBindingType::StorageBuffer, {ShaderStage::FragmentShader}})
+                                                 .Build();
 
             VkDescriptorBufferInfo bufferInfo{};
             bufferInfo.buffer = materialBuffer.buffer;

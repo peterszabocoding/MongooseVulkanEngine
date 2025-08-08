@@ -15,7 +15,7 @@ namespace MongooseVK
         void SetFaceIndex(uint8_t index);
 
     protected:
-        virtual void LoadPipeline() override;
+        virtual void LoadPipeline(PipelineCreateInfo& pipelineCreate) override;
 
     private:
         uint8_t faceIndex = 0;
