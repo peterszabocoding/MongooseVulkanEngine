@@ -1,19 +1,21 @@
 #version 450
 
 #extension GL_ARB_shading_language_include : require
+#extension GL_EXT_nonuniform_qualifier : require
 
 #include <common.glslh>
 
 layout(location = 0) in vec3 WorldPos;
 layout(location = 0) out vec4 FragColor;
 
-layout(set = 0, binding = 0) uniform samplerCube environmentMap;
+layout(set = 0, binding = 0) uniform samplerCube textures[];
 
 layout(push_constant) uniform Push {
     mat4 projection;
     mat4 view;
     float roughness;
     int resolution;
+    int cubemapHandle;
 } push;
 
 // ----------------------------------------------------------------------------
@@ -73,6 +75,8 @@ vec3 ImportanceSampleGGX(vec2 Xi, vec3 N, float roughness)
 // ----------------------------------------------------------------------------
 void main()
 {
+    if(push.cubemapHandle == INVALID_TEXTURE_INDEX) return;
+
     vec3 N = normalize(WorldPos);
 
     // make the simplifying assumption that V equals R equals the normal
@@ -104,7 +108,7 @@ void main()
 
             float mipLevel = push.roughness == 0.0 ? 0.0 : 0.5 * log2(saSample / saTexel);
 
-            vec3 envColor = textureLod(environmentMap, L, mipLevel).rgb;
+            vec3 envColor = textureLod(textures[push.cubemapHandle], L, mipLevel).rgb;
 
             prefilteredColor += envColor * NdotL;
             totalWeight      += NdotL;

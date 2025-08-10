@@ -1,16 +1,25 @@
 #version 450
 
 #extension GL_ARB_shading_language_include : require
+#extension GL_EXT_nonuniform_qualifier : require
 
 #include <common.glslh>
 
 layout(location = 0) in vec3 WorldPos;
 layout(location = 0) out vec4 FragColor;
 
-layout(set = 0, binding = 0) uniform samplerCube environmentMap;
+layout(push_constant) uniform Push {
+    mat4 projection;
+    mat4 view;
+    int cubemapHandle;
+} push;
+
+layout(set = 0, binding = 0) uniform samplerCube textures[];
 
 void main()
 {
+    if(push.cubemapHandle == INVALID_TEXTURE_INDEX) return;
+
     // The world vector acts as the normal of a tangent surface
     // from the origin, aligned to WorldPos. Given this normal, calculate all
     // incoming radiance of the environment. The result of this radiance
@@ -36,7 +45,7 @@ void main()
             // tangent space to world
             vec3 sampleVec = tangentSample.x * right + tangentSample.y * up + tangentSample.z * N;
 
-            irradiance += texture(environmentMap, sampleVec).rgb * cos(theta) * sin(theta);
+            irradiance += texture(textures[push.cubemapHandle], sampleVec).rgb * cos(theta) * sin(theta);
             nrSamples++;
         }
     }

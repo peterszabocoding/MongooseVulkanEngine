@@ -49,7 +49,6 @@ namespace MongooseVK
         {
             renderPasses.skyboxPass->Reset();
 
-            renderPasses.skyboxPass->AddInput(renderPassResourceMap["skybox_texture"]);
             renderPasses.skyboxPass->AddInput(renderPassResourceMap["camera_buffer"]);
 
             renderPasses.skyboxPass->AddOutput({
@@ -189,13 +188,13 @@ namespace MongooseVK
         {
             renderPasses.prefilterMapPass->Reset();
 
-            renderPasses.prefilterMapPass->AddInput(renderPassResourceMap["skybox_texture"]);
-
             renderPasses.prefilterMapPass->AddOutput({
                 .resource = renderPassResourceMap["prefilter_map_texture"],
                 .loadOp = RenderPassOperation::LoadOp::Clear,
                 .storeOp = RenderPassOperation::StoreOp::Store
             });
+
+            renderPasses.prefilterMapPass->SetCubemapTexture(scene.skyboxTexture);
 
             renderPasses.prefilterMapPass->Init();
         }
@@ -204,13 +203,13 @@ namespace MongooseVK
         {
             renderPasses.irradianceMapPass->Reset();
 
-            renderPasses.irradianceMapPass->AddInput(renderPassResourceMap["skybox_texture"]);
-
             renderPasses.irradianceMapPass->AddOutput({
                 .resource = renderPassResourceMap["irradiance_map_texture"],
                 .loadOp = RenderPassOperation::LoadOp::Clear,
                 .storeOp = RenderPassOperation::StoreOp::Store
             });
+
+            renderPasses.irradianceMapPass->SetCubemapTexture(scene.skyboxTexture);
 
             renderPasses.irradianceMapPass->Init();
         }
@@ -249,9 +248,8 @@ namespace MongooseVK
         scene = ResourceManager::LoadScene(device, gltfPath, hdrPath);
         scene.directionalLight.direction = normalize(glm::vec3(0.0f, -2.0f, -1.0f));
 
-        CreateRenderPassTextures();
-        CreateFrameGraphResources();
-        CreateRenderPassBuffers();
+        CreateFrameGraphInputs();
+        CreateFrameGraphOutputs();
 
         renderPasses.gbufferPass = CreateScope<GBufferPass>(device, renderResolution);
         renderPasses.lightingPass = CreateScope<LightingPass>(device, renderResolution);
@@ -334,7 +332,7 @@ namespace MongooseVK
         IdleWait();
 
         CreateSwapchain();
-        CreateFrameGraphResources();
+        CreateFrameGraphOutputs();
 
         renderPasses.gbufferPass->Resize(renderResolution);
         renderPasses.skyboxPass->Resize(renderResolution);
@@ -453,7 +451,7 @@ namespace MongooseVK
         }
     }
 
-    void VulkanRenderer::CreateFrameGraphResources()
+    void VulkanRenderer::CreateFrameGraphOutputs()
     {
         // Viewspace Normal
         {
@@ -469,7 +467,7 @@ namespace MongooseVK
                 .addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
             };
 
-            CreateTextureResource(outputCreation.name, outputCreation.type, outputCreation.resourceInfo);
+            frameGraphOutputCreations[outputCreation.name] = outputCreation;
         }
 
         // Viewspace Position
@@ -486,7 +484,7 @@ namespace MongooseVK
                 .addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
             };
 
-            CreateTextureResource(outputCreation.name, outputCreation.type, outputCreation.resourceInfo);
+            frameGraphOutputCreations[outputCreation.name] = outputCreation;
         }
 
         // Depth Map
@@ -503,7 +501,7 @@ namespace MongooseVK
                 .addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
             };
 
-            CreateTextureResource(outputCreation.name, outputCreation.type, outputCreation.resourceInfo);
+            frameGraphOutputCreations[outputCreation.name] = outputCreation;
         }
 
         // SSAO Texture
@@ -518,7 +516,7 @@ namespace MongooseVK
                 .imageLayout = ImageUtils::GetLayoutFromFormat(ImageFormat::R8_UNORM),
             };
 
-            CreateTextureResource(outputCreation.name, outputCreation.type, outputCreation.resourceInfo);
+            frameGraphOutputCreations[outputCreation.name] = outputCreation;
         }
 
         // HDR Image
@@ -535,7 +533,7 @@ namespace MongooseVK
                 .addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
             };
 
-            CreateTextureResource(outputCreation.name, outputCreation.type, outputCreation.resourceInfo);
+            frameGraphOutputCreations[outputCreation.name] = outputCreation;
         }
 
         // Main Frame Color
@@ -552,11 +550,14 @@ namespace MongooseVK
                 .addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
             };
 
-            CreateTextureResource(outputCreation.name, outputCreation.type, outputCreation.resourceInfo);
+            frameGraphOutputCreations[outputCreation.name] = outputCreation;
         }
+
+        for (auto& [name, type, resourceInfo]: frameGraphOutputCreations | std::views::values)
+            CreateFrameGraphResource(name, type, resourceInfo);
     }
 
-    void VulkanRenderer::CreateRenderPassBuffers()
+    void VulkanRenderer::CreateFrameGraphInputs()
     {
         // Lights Buffer
         {
@@ -567,7 +568,7 @@ namespace MongooseVK
             inputCreation.resourceInfo.buffer.usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
             inputCreation.resourceInfo.buffer.memoryUsage = VMA_MEMORY_USAGE_CPU_TO_GPU;
 
-            CreateBufferResource(inputCreation.name, inputCreation.type, inputCreation.resourceInfo);
+            frameGraphInputCreations[inputCreation.name] = inputCreation;
         }
 
         // Camera Buffer
@@ -579,24 +580,7 @@ namespace MongooseVK
             inputCreation.resourceInfo.buffer.usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
             inputCreation.resourceInfo.buffer.memoryUsage = VMA_MEMORY_USAGE_CPU_TO_GPU;
 
-            CreateBufferResource(inputCreation.name, inputCreation.type, inputCreation.resourceInfo);
-        }
-    }
-
-    void VulkanRenderer::CreateRenderPassTextures()
-    {
-        // Skybox
-        {
-            FrameGraphResourceCreateInfo resourceInfo{};
-            resourceInfo.texture.textureHandle = scene.skyboxTexture;
-
-            FrameGraphResource* graphResource = frameGraphResources.Obtain();
-            graphResource->name = "skybox_texture";
-            graphResource->type = FrameGraphResourceType::TextureCube;
-            graphResource->resourceInfo = resourceInfo;
-
-            frameGraphResourceHandles[graphResource->name] = {graphResource->index};
-            renderPassResourceMap[graphResource->name] = *graphResource;
+            frameGraphInputCreations[inputCreation.name] = inputCreation;
         }
 
         // BRDF LUT
@@ -610,7 +594,7 @@ namespace MongooseVK
             inputCreation.resourceInfo.texture.textureCreateInfo.format = ImageFormat::RGBA16_SFLOAT;
             inputCreation.resourceInfo.texture.textureCreateInfo.imageLayout = ImageUtils::GetLayoutFromFormat(ImageFormat::RGBA16_SFLOAT);
 
-            CreateTextureResource(inputCreation.name, inputCreation.type, inputCreation.resourceInfo);
+            frameGraphInputCreations[inputCreation.name] = inputCreation;
         }
 
         // Prefilter Map
@@ -628,7 +612,7 @@ namespace MongooseVK
             inputCreation.resourceInfo.texture.textureCreateInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
             inputCreation.resourceInfo.texture.textureCreateInfo.isCubeMap = true;
 
-            CreateTextureResource(inputCreation.name, inputCreation.type, inputCreation.resourceInfo);
+            frameGraphInputCreations[inputCreation.name] = inputCreation;
         }
 
         // Irradiance Map
@@ -646,7 +630,7 @@ namespace MongooseVK
             inputCreation.resourceInfo.texture.textureCreateInfo.isCubeMap = true;
             inputCreation.resourceInfo.texture.textureCreateInfo.arrayLayers = 6;
 
-            CreateTextureResource(inputCreation.name, inputCreation.type, inputCreation.resourceInfo);
+            frameGraphInputCreations[inputCreation.name] = inputCreation;
         }
 
         // Directional Shadow Map
@@ -667,54 +651,49 @@ namespace MongooseVK
             inputCreation.resourceInfo.texture.textureCreateInfo.compareEnabled = true;
             inputCreation.resourceInfo.texture.textureCreateInfo.compareOp = VK_COMPARE_OP_LESS;
 
-            CreateTextureResource(inputCreation.name, inputCreation.type, inputCreation.resourceInfo);
+            frameGraphInputCreations[inputCreation.name] = inputCreation;
+        }
+
+        for (auto& [name, type, resourceInfo]: frameGraphInputCreations | std::views::values)
+        {
+            CreateFrameGraphResource(name, type, resourceInfo);
         }
     }
 
-    void VulkanRenderer::CreateTextureResource(const char* resourceName, FrameGraphResourceType type,
-                                               FrameGraphResourceCreateInfo& createInfo)
+    void VulkanRenderer::CreateFrameGraphResource(const char* resourceName, FrameGraphResourceType type,
+                                                  FrameGraphResourceCreateInfo& createInfo)
     {
         if (frameGraphResourceHandles.contains(resourceName))
         {
             FrameGraphResource* resource = frameGraphResources.Get(frameGraphResourceHandles[resourceName].index);
-            device->DestroyTexture(resource->resourceInfo.texture.textureHandle);
+
+            if (type == FrameGraphResourceType::Texture || type == FrameGraphResourceType::TextureCube)
+                device->DestroyTexture(resource->resourceInfo.texture.textureHandle);
+
+            if (type == FrameGraphResourceType::Buffer)
+                device->DestroyBuffer(resource->resourceInfo.buffer.allocatedBuffer);
 
             frameGraphResourceHandles.erase(resourceName);
             frameGraphResources.Release(resource);
         }
 
-        createInfo.texture.textureHandle = device->CreateTexture(createInfo.texture.textureCreateInfo);
+        if (type == FrameGraphResourceType::Texture || type == FrameGraphResourceType::TextureCube)
+        {
+            createInfo.texture.textureHandle = device->CreateTexture(createInfo.texture.textureCreateInfo);
+        }
+
+        if (type == FrameGraphResourceType::Buffer)
+        {
+            createInfo.buffer.allocatedBuffer = device->CreateBuffer(
+                createInfo.buffer.size,
+                createInfo.buffer.usageFlags,
+                createInfo.buffer.memoryUsage
+            );
+        }
 
         FrameGraphResource* graphResource = frameGraphResources.Obtain();
         graphResource->name = resourceName;
         graphResource->type = type;
-        graphResource->resourceInfo = createInfo;
-
-        frameGraphResourceHandles[graphResource->name] = {graphResource->index};
-        renderPassResourceMap[graphResource->name] = *graphResource;
-    }
-
-    void VulkanRenderer::CreateBufferResource(const char* resourceName, FrameGraphResourceType type,
-                                              FrameGraphResourceCreateInfo& createInfo)
-    {
-        if (frameGraphResourceHandles.contains(resourceName))
-        {
-            FrameGraphResource* resource = frameGraphResources.Get(frameGraphResourceHandles[resourceName].index);
-            device->DestroyBuffer(resource->resourceInfo.buffer.allocatedBuffer);
-
-            frameGraphResourceHandles.erase(resourceName);
-            frameGraphResources.Release(resource);
-        }
-
-        createInfo.buffer.allocatedBuffer = device->CreateBuffer(
-            createInfo.buffer.size,
-            createInfo.buffer.usageFlags,
-            createInfo.buffer.memoryUsage
-        );
-
-        FrameGraphResource* graphResource = frameGraphResources.Obtain();
-        graphResource->name = resourceName;
-        graphResource->type = FrameGraphResourceType::Buffer;
         graphResource->resourceInfo = createInfo;
 
         frameGraphResourceHandles[graphResource->name] = {graphResource->index};

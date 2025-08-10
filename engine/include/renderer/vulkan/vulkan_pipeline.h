@@ -18,12 +18,18 @@ namespace MongooseVK
     };
 
     struct SkyboxPushConstantData {
-      uint32_t skyboxTextureIndex = 0;
+        uint32_t skyboxTextureIndex = 0;
     };
 
     struct TransformPushConstantData {
         glm::mat4 projection{1.f};
         glm::mat4 view{1.f};
+    };
+
+    struct IrradiancePushConstantData {
+        glm::mat4 projection{1.f};
+        glm::mat4 view{1.f};
+        uint32_t cubemapTexture = INVALID_RESOURCE_HANDLE;;
     };
 
     struct ShadowMapPushConstantData {
@@ -36,6 +42,7 @@ namespace MongooseVK
         glm::mat4 view{1.f};
         float roughness = 1.0f;
         uint32_t resolution = 512;
+        uint32_t cubemapTexture = INVALID_RESOURCE_HANDLE;
     };
 
     struct UniformBufferObject {
@@ -105,7 +112,7 @@ namespace MongooseVK
         bool disableBlending = true;
     };
 
-    struct VulkanPipeline: PoolObject {
+    struct VulkanPipeline : PoolObject {
         VkShaderModule vertexShaderModule = VK_NULL_HANDLE;
         VkShaderModule fragmentShaderModule = VK_NULL_HANDLE;
 

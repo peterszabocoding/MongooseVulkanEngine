@@ -13,6 +13,7 @@ namespace MongooseVK
         virtual void Resize(VkExtent2D _resolution) override;
 
         void SetFaceIndex(uint8_t index);
+        void SetCubemapTexture(TextureHandle cubemapTexture);
 
     protected:
         virtual void LoadPipeline(PipelineCreateInfo& pipelineCreate) override;
@@ -20,5 +21,6 @@ namespace MongooseVK
     private:
         uint8_t faceIndex = 0;
         Ref<VulkanMesh> cubeMesh;
+        TextureHandle cubemapTexture = INVALID_TEXTURE_HANDLE;
     };
 }

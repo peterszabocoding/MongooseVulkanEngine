@@ -190,7 +190,7 @@ namespace MongooseVK
 
     void FrameGraph::PreRender(const VkCommandBuffer cmd, Scene* scene)
     {
-        for (const auto& renderPass: frameGraphRenderPasses | std::views::values)
+        for (const auto& renderPass: renderPasses | std::views::values)
         {
             renderPass->PreRender(cmd, scene);
         }
@@ -198,7 +198,7 @@ namespace MongooseVK
 
     void FrameGraph::Render(const VkCommandBuffer cmd, Scene* scene)
     {
-        for (const auto& renderPass: frameGraphRenderPasses | std::views::values)
+        for (const auto& renderPass: renderPasses | std::views::values)
         {
             renderPass->Render(cmd, scene);
         }
@@ -208,7 +208,7 @@ namespace MongooseVK
     {
         resolution = newResolution;
 
-        for (const auto& renderPass: frameGraphRenderPasses | std::views::values)
+        for (const auto& renderPass: renderPasses | std::views::values)
         {
             renderPass->Resize(resolution);
         }
@@ -221,12 +221,36 @@ namespace MongooseVK
         node->enabled = nodeCreation.enabled;
 
         for (auto& [name, type, resourceInfo]: nodeCreation.inputs)
-            node->inputs.push_back(CreateResource(name, type, resourceInfo));
+        {
+            // First check if input with this name was created already
+            FrameGraphResourceHandle handle;
+            if (resourceHandles.contains(name))
+            {
+                handle = resourceHandles[name];
+            } else
+            {
+                handle = CreateResource(name, type, resourceInfo);
+                resourceHandles[name] = handle;
+            }
+            node->inputs.push_back(handle);
+        }
 
         for (auto& [name, type, resourceInfo]: nodeCreation.outputs)
-            node->outputs.push_back(CreateResource(name, type, resourceInfo));
+        {
+            // First check if output with this name was created already
+            FrameGraphResourceHandle handle;
+            if (resourceHandles.contains(name))
+            {
+                handle = resourceHandles[name];
+            } else
+            {
+                handle = CreateResource(name, type, resourceInfo);
+                resourceHandles[name] = handle;
+            }
+            node->outputs.push_back(handle);
+        }
 
-        frameGraphNodes[nodeCreation.name] = node;
+        nodes[nodeCreation.name] = node;
 
         return node;
     }
@@ -244,7 +268,7 @@ namespace MongooseVK
     {
         createInfo.texture.textureHandle = device->CreateTexture(createInfo.texture.textureCreateInfo);
 
-        FrameGraphResource* graphResource = frameGraphResources.Obtain();
+        FrameGraphResource* graphResource = resourcePool.Obtain();
         graphResource->name = resourceName;
         graphResource->type = FrameGraphResourceType::Texture;
         graphResource->resourceInfo = createInfo;
@@ -260,7 +284,7 @@ namespace MongooseVK
             createInfo.buffer.memoryUsage
         );
 
-        FrameGraphResource* graphResource = frameGraphResources.Obtain();
+        FrameGraphResource* graphResource = resourcePool.Obtain();
         graphResource->name = resourceName;
         graphResource->type = FrameGraphResourceType::Buffer;
         graphResource->resourceInfo = createInfo;
@@ -270,7 +294,7 @@ namespace MongooseVK
 
     void FrameGraph::DestroyResources()
     {
-        frameGraphResources.ForEach([&](const FrameGraphResource* frameGraphResource) {
+        resourcePool.ForEach([&](const FrameGraphResource* frameGraphResource) {
             if (frameGraphResource->type == FrameGraphResourceType::Texture)
                 device->DestroyTexture(frameGraphResource->resourceInfo.texture.textureHandle);
 
@@ -278,6 +302,6 @@ namespace MongooseVK
                 device->DestroyBuffer(frameGraphResource->resourceInfo.buffer.allocatedBuffer);
         });
 
-        frameGraphResources.FreeAllResources();
+        resourcePool.FreeAllResources();
     }
 }

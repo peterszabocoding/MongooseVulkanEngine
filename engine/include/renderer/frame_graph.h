@@ -125,13 +125,13 @@ namespace MongooseVK
     struct FrameGraphResourceInputCreation {
         const char* name;
         FrameGraphResourceType type;
-        FrameGraphResourceCreateInfo resourceInfo;
+        FrameGraphResourceCreateInfo resourceInfo{};
     };
 
     struct FrameGraphResourceOutputCreation {
         const char* name;
         FrameGraphResourceType type;
-        FrameGraphResourceCreateInfo resourceInfo;
+        FrameGraphResourceCreateInfo resourceInfo{};
     };
 
     struct FrameGraphResource: PoolObject{
@@ -231,13 +231,15 @@ namespace MongooseVK
         void DestroyResources();
 
     public:
-        std::unordered_map<std::string, FrameGraphRenderPass*> frameGraphRenderPasses;
-        std::unordered_map<std::string, FrameGraphNode*> frameGraphNodes;
+        std::unordered_map<std::string, FrameGraphRenderPass*> renderPasses;
+        std::unordered_map<std::string, FrameGraphNode*> nodes;
+        std::unordered_map<std::string, FrameGraphResourceHandle> resourceHandles;
 
     private:
         VulkanDevice* device;
         VkExtent2D resolution;
 
-        ObjectResourcePool<FrameGraphResource> frameGraphResources;
+        ObjectResourcePool<FrameGraphResource> resourcePool;
+
     };
 }

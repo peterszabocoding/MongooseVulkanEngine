@@ -58,7 +58,7 @@ namespace MongooseVK
 
     void PrefilterMapPass::Render(VkCommandBuffer commandBuffer, Scene* scene)
     {
-        const VulkanTexture* cubemap = device->GetTexture(inputs[0].resourceInfo.texture.textureHandle);
+        const VulkanTexture* cubemap = device->GetTexture(cubemapTextureHandle);
 
         for (unsigned int mip = 0; mip < PREFILTER_MIP_LEVELS; ++mip)
         {
@@ -74,13 +74,17 @@ namespace MongooseVK
                 drawCommandParams.commandBuffer = commandBuffer;
                 drawCommandParams.pipelineHandle = pipelineHandle;
                 drawCommandParams.meshlet = &cubeMesh->GetMeshlets()[0];
-                drawCommandParams.descriptorSets = {passDescriptorSet};
+                drawCommandParams.descriptorSets = {
+                    device->bindlessTextureDescriptorSet,
+                    passDescriptorSet
+                };
 
                 PrefilterData pushConstantData;
                 pushConstantData.projection = m_CaptureProjection;
                 pushConstantData.view = m_CaptureViews[faceIndex];
                 pushConstantData.roughness = roughness;
                 pushConstantData.resolution = cubemap->createInfo.width;
+                pushConstantData.cubemapTexture = cubemapTextureHandle.handle;
 
                 drawCommandParams.pushConstantParams = {
                     &pushConstantData,
@@ -117,6 +121,7 @@ namespace MongooseVK
         pipelineCreate.fragmentShaderPath = "prefilter.frag";
 
         pipelineCreate.descriptorSetLayouts = {
+            device->bindlessTexturesDescriptorSetLayoutHandle,
             passDescriptorSetLayoutHandle,
         };
 

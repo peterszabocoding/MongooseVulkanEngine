@@ -57,15 +57,19 @@ namespace MongooseVK
             drawCommandParams.commandBuffer = commandBuffer;
             drawCommandParams.meshlet = &cubeMesh->GetMeshlets()[0];
             drawCommandParams.pipelineHandle = pipelineHandle;
-            drawCommandParams.descriptorSets = {passDescriptorSet};
+            drawCommandParams.descriptorSets = {
+                device->bindlessTextureDescriptorSet,
+                passDescriptorSet
+            };
 
-            TransformPushConstantData pushConstantData;
+            IrradiancePushConstantData pushConstantData;
             pushConstantData.projection = m_CaptureProjection;
             pushConstantData.view = m_CaptureViews[faceIndex];
+            pushConstantData.cubemapTexture = cubemapTexture.handle;
 
             drawCommandParams.pushConstantParams = {
                 &pushConstantData,
-                sizeof(TransformPushConstantData)
+                sizeof(IrradiancePushConstantData)
             };
 
             device->DrawMeshlet(drawCommandParams);
@@ -86,17 +90,23 @@ namespace MongooseVK
         pipelineCreate.fragmentShaderPath = "irradiance_convolution.frag";
 
         pipelineCreate.descriptorSetLayouts = {
+            device->bindlessTexturesDescriptorSetLayoutHandle,
             passDescriptorSetLayoutHandle
         };
 
         pipelineCreate.enableDepthTest = false;
 
         pipelineCreate.pushConstantData.shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-        pipelineCreate.pushConstantData.size = sizeof(TransformPushConstantData);
+        pipelineCreate.pushConstantData.size = sizeof(IrradiancePushConstantData);
     }
 
     void IrradianceMapPass::SetFaceIndex(uint8_t _faceIndex)
     {
         faceIndex = _faceIndex;
+    }
+
+    void IrradianceMapPass::SetCubemapTexture(TextureHandle _cubemapTexture)
+    {
+        cubemapTexture = _cubemapTexture;
     }
 }
