@@ -100,6 +100,7 @@ namespace MongooseVK
 
         if (pipelineCreate.name == "" || pipelineCreate.vertexShaderPath == "" || pipelineCreate.fragmentShaderPath == "") return;
 
+        LOG_TRACE(pipelineCreate.name);
         for (const auto& output: outputs)
         {
             if (output.resource.type == FrameGraphResourceType::Buffer) continue;
@@ -213,13 +214,70 @@ namespace MongooseVK
         }
     }
 
-    void FrameGraph::AddRenderPass(const std::string& name, FrameGraphRenderPass* frameGraphRenderPass)
+    FrameGraphNode* FrameGraph::CreateNode(FrameGraphNodeCreation nodeCreation)
     {
-        frameGraphRenderPasses[name] = frameGraphRenderPass;
+        FrameGraphNode* node = new FrameGraphNode();
+        node->name = nodeCreation.name;
+        node->enabled = nodeCreation.enabled;
+
+        for (auto& [name, type, resourceInfo]: nodeCreation.inputs)
+            node->inputs.push_back(CreateResource(name, type, resourceInfo));
+
+        for (auto& [name, type, resourceInfo]: nodeCreation.outputs)
+            node->outputs.push_back(CreateResource(name, type, resourceInfo));
+
+        frameGraphNodes[nodeCreation.name] = node;
+
+        return node;
     }
 
-    void FrameGraph::AddResource(FrameGraphResource* frameGraphResouce)
+    FrameGraphResourceHandle FrameGraph::CreateResource(const char* resourceName, FrameGraphResourceType type,
+                                                        FrameGraphResourceCreateInfo& createInfo)
     {
-        frameGraphResources[frameGraphResouce->name] = frameGraphResouce;
+        if (type == FrameGraphResourceType::Texture) return CreateTextureResource(resourceName, createInfo);
+        if (type == FrameGraphResourceType::Buffer) return CreateTextureResource(resourceName, createInfo);
+
+        return {INVALID_RESOURCE_HANDLE};
+    }
+
+    FrameGraphResourceHandle FrameGraph::CreateTextureResource(const char* resourceName, FrameGraphResourceCreateInfo& createInfo)
+    {
+        createInfo.texture.textureHandle = device->CreateTexture(createInfo.texture.textureCreateInfo);
+
+        FrameGraphResource* graphResource = frameGraphResources.Obtain();
+        graphResource->name = resourceName;
+        graphResource->type = FrameGraphResourceType::Texture;
+        graphResource->resourceInfo = createInfo;
+
+        return {graphResource->index};
+    }
+
+    FrameGraphResourceHandle FrameGraph::CreateBufferResource(const char* resourceName, FrameGraphResourceCreateInfo& createInfo)
+    {
+        createInfo.buffer.allocatedBuffer = device->CreateBuffer(
+            createInfo.buffer.size,
+            createInfo.buffer.usageFlags,
+            createInfo.buffer.memoryUsage
+        );
+
+        FrameGraphResource* graphResource = frameGraphResources.Obtain();
+        graphResource->name = resourceName;
+        graphResource->type = FrameGraphResourceType::Buffer;
+        graphResource->resourceInfo = createInfo;
+
+        return {graphResource->index};
+    }
+
+    void FrameGraph::DestroyResources()
+    {
+        frameGraphResources.ForEach([&](const FrameGraphResource* frameGraphResource) {
+            if (frameGraphResource->type == FrameGraphResourceType::Texture)
+                device->DestroyTexture(frameGraphResource->resourceInfo.texture.textureHandle);
+
+            if (frameGraphResource->type == FrameGraphResourceType::Buffer)
+                device->DestroyBuffer(frameGraphResource->resourceInfo.buffer.allocatedBuffer);
+        });
+
+        frameGraphResources.FreeAllResources();
     }
 }

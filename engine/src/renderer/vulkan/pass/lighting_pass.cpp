@@ -67,7 +67,5 @@ namespace MongooseVK
 
         pipelineCreate.pushConstantData.shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
         pipelineCreate.pushConstantData.size = sizeof(SimplePushConstantData);
-
-        LOG_TRACE(pipelineCreate.name);
     }
 }

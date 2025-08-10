@@ -46,7 +46,5 @@ namespace MongooseVK
 
         pipelineCreate.cullMode = PipelineCullMode::Front;
         pipelineCreate.enableDepthTest = false;
-
-        LOG_TRACE(pipelineCreate.name);
     }
 }

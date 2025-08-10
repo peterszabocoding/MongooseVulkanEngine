@@ -92,9 +92,11 @@ namespace MongooseVK
 
         void UpdateLightsBuffer();
 
-        void CreateRenderPassResources();
+        void CreateFrameGraphResources();
         void CreateRenderPassBuffers();
         void CreateRenderPassTextures();
+        void CreateTextureResource(const char* resourceName, FrameGraphResourceType type, FrameGraphResourceCreateInfo& createInfo);
+        void CreateBufferResource(const char* resourceName, FrameGraphResourceType type, FrameGraphResourceCreateInfo& createInfo);
 
         void PrecomputeIBL();
 
@@ -105,6 +107,9 @@ namespace MongooseVK
 
         Framebuffers framebuffers;
         RenderPasses renderPasses;
+
+        ObjectResourcePool<FrameGraphResource> frameGraphResources;
+        std::unordered_map<std::string, FrameGraphResourceHandle> frameGraphResourceHandles;
         std::unordered_map<std::string, FrameGraphResource> renderPassResourceMap;
 
         Scope<FrameGraph> frameGraph;

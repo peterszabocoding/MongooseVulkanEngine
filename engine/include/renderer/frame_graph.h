@@ -106,7 +106,7 @@ namespace MongooseVK
         Buffer,
     };
 
-    struct FrameGraphResourceInfo {
+    struct FrameGraphResourceCreateInfo {
         union {
             struct {
                 uint64_t size;
@@ -122,16 +122,36 @@ namespace MongooseVK
         };
     };
 
-    struct FrameGraphResource {
-        std::string name;
+    struct FrameGraphResourceInputCreation {
+        const char* name;
         FrameGraphResourceType type;
-        FrameGraphResourceInfo resourceInfo{};
+        FrameGraphResourceCreateInfo resourceInfo;
+    };
+
+    struct FrameGraphResourceOutputCreation {
+        const char* name;
+        FrameGraphResourceType type;
+        FrameGraphResourceCreateInfo resourceInfo;
+    };
+
+    struct FrameGraphResource: PoolObject{
+        const char* name;
+        FrameGraphResourceType type;
+        FrameGraphResourceCreateInfo resourceInfo{};
     };
 
     struct FrameGraphNodeOutput {
         FrameGraphResource resource;
         RenderPassOperation::LoadOp loadOp;
         RenderPassOperation::StoreOp storeOp;
+    };
+
+    struct FrameGraphNodeCreation {
+        const char* name;
+        std::vector<FrameGraphResourceInputCreation> inputs{};
+        std::vector<FrameGraphResourceOutputCreation> outputs{};
+
+        bool enabled = true;
     };
 
     struct FrameGraphNode {
@@ -200,15 +220,24 @@ namespace MongooseVK
         void Render(VkCommandBuffer cmd, Scene* scene);
         void Resize(VkExtent2D newResolution);
 
-        void AddRenderPass(const std::string& name, FrameGraphRenderPass* frameGraphRenderPass);
-        void AddResource(FrameGraphResource* frameGraphResouce);
+    private:
+        FrameGraphNode* CreateNode(FrameGraphNodeCreation nodeCreation);
+        FrameGraphResourceHandle CreateResource(const char* resourceName, FrameGraphResourceType type,
+                                                FrameGraphResourceCreateInfo& createInfo);
+
+        FrameGraphResourceHandle CreateTextureResource(const char* resourceName, FrameGraphResourceCreateInfo& createInfo);
+        FrameGraphResourceHandle CreateBufferResource(const char* resourceName, FrameGraphResourceCreateInfo& createInfo);
+
+        void DestroyResources();
 
     public:
         std::unordered_map<std::string, FrameGraphRenderPass*> frameGraphRenderPasses;
-        std::unordered_map<std::string, FrameGraphResource*> frameGraphResources;
+        std::unordered_map<std::string, FrameGraphNode*> frameGraphNodes;
 
     private:
         VulkanDevice* device;
         VkExtent2D resolution;
+
+        ObjectResourcePool<FrameGraphResource> frameGraphResources;
     };
 }

@@ -61,7 +61,5 @@ namespace MongooseVK
 
         pipelineCreate.pushConstantData.shaderStageBits = VK_SHADER_STAGE_FRAGMENT_BIT;
         pipelineCreate.pushConstantData.size = sizeof(SkyboxPushConstantData);
-
-        LOG_TRACE(pipelineCreate.name);
     }
 }

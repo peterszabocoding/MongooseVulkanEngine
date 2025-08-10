@@ -93,8 +93,6 @@ namespace MongooseVK
 
         pipelineCreate.pushConstantData.shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
         pipelineCreate.pushConstantData.size = sizeof(TransformPushConstantData);
-
-        LOG_TRACE(pipelineCreate.name);
     }
 
     void IrradianceMapPass::SetFaceIndex(uint8_t _faceIndex)

@@ -44,6 +44,8 @@ namespace MongooseVK
 
         T* Get(uint32_t index);
         const T* Get(uint32_t index) const;
+
+        void ForEach(std::function<void(T*)> function);
     };
 
     template<typename T>
@@ -96,5 +98,11 @@ namespace MongooseVK
     const T* ObjectResourcePool<T>::Get(uint32_t index) const
     {
         return static_cast<const T*>(AccessResource(index));
+    }
+
+    template<typename T>
+    void ObjectResourcePool<T>::ForEach(std::function<void(T*)> function)
+    {
+        for (uint32_t i = 0; i < usedIndices; i++) function(Get(i));
     }
 }

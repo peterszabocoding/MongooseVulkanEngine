@@ -58,6 +58,5 @@ namespace MongooseVK
             device->materialsDescriptorSetLayoutHandle,
             passDescriptorSetLayoutHandle
         };
-        LOG_TRACE(pipelineCreate.name);
     }
 }

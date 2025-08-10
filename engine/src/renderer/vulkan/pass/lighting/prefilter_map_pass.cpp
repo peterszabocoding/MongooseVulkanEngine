@@ -122,8 +122,6 @@ namespace MongooseVK
 
         pipelineCreate.enableDepthTest = false;
         pipelineCreate.pushConstantData = {VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PrefilterData)};
-
-        LOG_TRACE(pipelineCreate.name);
     }
 
     void PrefilterMapPass::SetRoughness(float _roughness)
