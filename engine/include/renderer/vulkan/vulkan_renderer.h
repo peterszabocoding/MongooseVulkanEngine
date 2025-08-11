@@ -49,20 +49,6 @@ namespace MongooseVK
         std::string hdrPath;
     };
 
-    struct RenderPasses {
-        Scope<GBufferPass> gbufferPass;
-        Scope<SkyboxPass> skyboxPass;
-        Scope<LightingPass> lightingPass;
-        Scope<ShadowMapPass> shadowMapPass;
-        Scope<UiPass> uiPass;
-        Scope<SSAOPass> ssaoPass;
-        Scope<InfiniteGridPass> gridPass;
-        Scope<IrradianceMapPass> irradianceMapPass;
-        Scope<BrdfLUTPass> brdfLutPass;
-        Scope<PrefilterMapPass> prefilterMapPass;
-        Scope<ToneMappingPass> toneMappingPass;
-    };
-
     class VulkanRenderer {
     public:
         VulkanRenderer() = default;
@@ -85,12 +71,13 @@ namespace MongooseVK
         void CreateSwapchain();
 
         void ResizeSwapchain();
-        void DrawFrame(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+        void DrawFrame(const VkCommandBuffer& commandBuffer, uint32_t imageIndex);
 
         void UpdateCameraBuffer(Camera& camera);
         void RotateLight(float deltaTime);
 
         void UpdateLightsBuffer();
+        void PresentFrame(const VkCommandBuffer& commandBuffer, uint32_t imageIndex);
 
         void CreateFrameGraphOutputs();
         void CreateFrameGraphInputs();
@@ -98,20 +85,26 @@ namespace MongooseVK
 
         void PrecomputeIBL();
 
+        template<typename T>
+        void AddRenderPass(const char* name)
+        {
+            frameGraphRenderPasses[name] = new T(device, renderResolution);
+        }
+
     public:
         VkExtent2D viewportResolution;
         VkExtent2D renderResolution;
         float resolutionScale = 1.0f;
 
         Framebuffers framebuffers;
-        RenderPasses renderPasses;
 
         ObjectResourcePool<FrameGraphResource> frameGraphResources;
         std::unordered_map<std::string, FrameGraphResourceHandle> frameGraphResourceHandles;
         std::unordered_map<std::string, FrameGraphResource> renderPassResourceMap;
+        std::unordered_map<std::string, FrameGraphRenderPass*> frameGraphRenderPasses;
 
-        std::unordered_map<std::string, FrameGraphResourceOutputCreation> frameGraphOutputCreations;
-        std::unordered_map<std::string, FrameGraphResourceInputCreation> frameGraphInputCreations;
+        std::unordered_map<std::string, FrameGraphResourceCreate> frameGraphOutputCreations;
+        std::unordered_map<std::string, FrameGraphResourceCreate> frameGraphInputCreations;
 
         Scope<FrameGraph> frameGraph;
 

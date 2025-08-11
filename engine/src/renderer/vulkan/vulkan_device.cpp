@@ -312,7 +312,7 @@ namespace MongooseVK
                                   .AddUsage(VK_IMAGE_USAGE_TRANSFER_DST_BIT)
                                   .AddUsage(VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
                                   .AddUsage(ImageUtils::GetUsageFromFormat(createInfo.format))
-                                  .SetInitialLayout(createInfo.imageInitialLayout)
+                                  .SetInitialLayout(ImageUtils::GetLayoutFromFormat(createInfo.format))
                                   .SetMipLevels(createInfo.mipLevels)
                                   .SetArrayLayers(createInfo.arrayLayers)
                                   .SetFlags(createInfo.flags)
@@ -377,13 +377,13 @@ namespace MongooseVK
         if (createInfo.data && createInfo.size > 0)
         {
             UploadTextureData(textureHandle, createInfo.data, createInfo.size);
-        } else if (createInfo.imageLayout != VK_IMAGE_LAYOUT_UNDEFINED)
+        } else if (ImageUtils::GetLayoutFromFormat(createInfo.format) != VK_IMAGE_LAYOUT_UNDEFINED)
         {
             ImmediateSubmit([&](const VkCommandBuffer cmd) {
                 VulkanUtils::TransitionImageLayout(cmd, texture->allocatedImage,
                                                    ImageUtils::GetAspectFlagFromFormat(createInfo.format),
                                                    VK_IMAGE_LAYOUT_UNDEFINED,
-                                                   createInfo.imageLayout,
+                                                   ImageUtils::GetLayoutFromFormat(createInfo.format),
                                                    texture->createInfo.mipLevels);
             });
         }

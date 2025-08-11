@@ -77,7 +77,7 @@ namespace MongooseVK
                     .imageFormat = format,
                     .loadOp = output.loadOp,
                     .storeOp = output.storeOp,
-                    .initialLayout = output.resource.resourceInfo.texture.textureCreateInfo.imageInitialLayout,
+                    .initialLayout = ImageUtils::GetLayoutFromFormat(format),
                     .finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 });
             } else
@@ -181,7 +181,10 @@ namespace MongooseVK
         framebufferHandles.push_back(device->CreateFramebuffer(framebufferCreateInfo));
     }
 
-    FrameGraph::FrameGraph(VulkanDevice* _device): device{_device} {}
+    FrameGraph::FrameGraph(VulkanDevice* _device): device{_device}
+    {
+        resourcePool.Init(128);
+    }
 
     void FrameGraph::Init(const VkExtent2D _resolution)
     {
@@ -235,17 +238,17 @@ namespace MongooseVK
             node->inputs.push_back(handle);
         }
 
-        for (auto& [name, type, resourceInfo]: nodeCreation.outputs)
+        for (auto& [resourceCreate, loadOp, storeOp]: nodeCreation.outputs)
         {
             // First check if output with this name was created already
             FrameGraphResourceHandle handle;
-            if (resourceHandles.contains(name))
+            if (resourceHandles.contains(resourceCreate.name))
             {
-                handle = resourceHandles[name];
+                handle = resourceHandles[resourceCreate.name];
             } else
             {
-                handle = CreateResource(name, type, resourceInfo);
-                resourceHandles[name] = handle;
+                handle = CreateResource(resourceCreate.name, resourceCreate.type, resourceCreate.resourceInfo);
+                resourceHandles[resourceCreate.name] = handle;
             }
             node->outputs.push_back(handle);
         }
@@ -259,7 +262,7 @@ namespace MongooseVK
                                                         FrameGraphResourceCreateInfo& createInfo)
     {
         if (type == FrameGraphResourceType::Texture) return CreateTextureResource(resourceName, createInfo);
-        if (type == FrameGraphResourceType::Buffer) return CreateTextureResource(resourceName, createInfo);
+        if (type == FrameGraphResourceType::Buffer) return CreateBufferResource(resourceName, createInfo);
 
         return {INVALID_RESOURCE_HANDLE};
     }

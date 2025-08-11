@@ -195,7 +195,6 @@ namespace MongooseVK
             .width = cubemapBitmap.width,
             .height = cubemapBitmap.height,
             .format = ImageFormat::RGBA32_SFLOAT,
-            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
             .addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
             .arrayLayers = 6,
             .flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,

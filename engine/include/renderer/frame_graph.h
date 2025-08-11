@@ -122,13 +122,7 @@ namespace MongooseVK
         };
     };
 
-    struct FrameGraphResourceInputCreation {
-        const char* name;
-        FrameGraphResourceType type;
-        FrameGraphResourceCreateInfo resourceInfo{};
-    };
-
-    struct FrameGraphResourceOutputCreation {
+    struct FrameGraphResourceCreate {
         const char* name;
         FrameGraphResourceType type;
         FrameGraphResourceCreateInfo resourceInfo{};
@@ -138,6 +132,26 @@ namespace MongooseVK
         const char* name;
         FrameGraphResourceType type;
         FrameGraphResourceCreateInfo resourceInfo{};
+
+        FrameGraphNodeHandle producer;
+    };
+
+    struct FrameGraphNodeInputCreate {
+        const char* name;
+        FrameGraphResourceType type;
+        FrameGraphResourceCreateInfo resourceInfo{};
+    };
+
+    struct FrameGraphNodeInput {
+        const char* name;
+        FrameGraphResourceType type;
+        FrameGraphResourceCreateInfo resourceInfo{};
+    };
+
+    struct FrameGraphNodeOutputCreate {
+        FrameGraphResourceCreate resourceCreate;
+        RenderPassOperation::LoadOp loadOp;
+        RenderPassOperation::StoreOp storeOp;
     };
 
     struct FrameGraphNodeOutput {
@@ -148,8 +162,8 @@ namespace MongooseVK
 
     struct FrameGraphNodeCreation {
         const char* name;
-        std::vector<FrameGraphResourceInputCreation> inputs{};
-        std::vector<FrameGraphResourceOutputCreation> outputs{};
+        std::vector<FrameGraphNodeInputCreate> inputs{};
+        std::vector<FrameGraphNodeOutputCreate> outputs{};
 
         bool enabled = true;
     };
@@ -219,9 +233,9 @@ namespace MongooseVK
         void PreRender(VkCommandBuffer cmd, Scene* scene);
         void Render(VkCommandBuffer cmd, Scene* scene);
         void Resize(VkExtent2D newResolution);
+        FrameGraphNode* CreateNode(FrameGraphNodeCreation nodeCreation);
 
     private:
-        FrameGraphNode* CreateNode(FrameGraphNodeCreation nodeCreation);
         FrameGraphResourceHandle CreateResource(const char* resourceName, FrameGraphResourceType type,
                                                 FrameGraphResourceCreateInfo& createInfo);
 

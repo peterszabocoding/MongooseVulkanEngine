@@ -38,6 +38,7 @@ namespace MongooseVK
 
         shaderCache = CreateScope<ShaderCache>(device);
 
+        frameGraph = CreateScope<FrameGraph>(device);
         frameGraphResources.Init(128);
 
         CreateSwapchain();
@@ -47,196 +48,196 @@ namespace MongooseVK
     {
         // Skybox pass
         {
-            renderPasses.skyboxPass->Reset();
+            frameGraphRenderPasses["SkyboxPass"]->Reset();
 
-            renderPasses.skyboxPass->AddInput(renderPassResourceMap["camera_buffer"]);
+            frameGraphRenderPasses["SkyboxPass"]->AddInput(renderPassResourceMap["camera_buffer"]);
 
-            renderPasses.skyboxPass->AddOutput({
+            frameGraphRenderPasses["SkyboxPass"]->AddOutput({
                 .resource = renderPassResourceMap["hdr_image"],
                 .loadOp = RenderPassOperation::LoadOp::Clear,
                 .storeOp = RenderPassOperation::StoreOp::Store
             });
-            renderPasses.skyboxPass->AddOutput({
+            frameGraphRenderPasses["SkyboxPass"]->AddOutput({
                 .resource = renderPassResourceMap["depth_map"],
                 .loadOp = RenderPassOperation::LoadOp::Clear,
                 .storeOp = RenderPassOperation::StoreOp::Store
             });
 
-            renderPasses.skyboxPass->Init();
+            frameGraphRenderPasses["SkyboxPass"]->Init();
         }
 
         // Grid pass
         {
-            renderPasses.gridPass->Reset();
+            frameGraphRenderPasses["InfiniteGridPass"]->Reset();
 
-            renderPasses.gridPass->AddInput(renderPassResourceMap["camera_buffer"]);
+            frameGraphRenderPasses["InfiniteGridPass"]->AddInput(renderPassResourceMap["camera_buffer"]);
 
-            renderPasses.gridPass->AddOutput({
+            frameGraphRenderPasses["InfiniteGridPass"]->AddOutput({
                 .resource = renderPassResourceMap["hdr_image"],
                 .loadOp = RenderPassOperation::LoadOp::Load,
                 .storeOp = RenderPassOperation::StoreOp::Store
             });
 
-            renderPasses.gridPass->AddOutput({
+            frameGraphRenderPasses["InfiniteGridPass"]->AddOutput({
                 .resource = renderPassResourceMap["depth_map"],
                 .loadOp = RenderPassOperation::LoadOp::Load,
                 .storeOp = RenderPassOperation::StoreOp::Store
             });
 
-            renderPasses.gridPass->Init();
+            frameGraphRenderPasses["InfiniteGridPass"]->Init();
         }
 
         // BRDF LUT pass
         {
-            renderPasses.brdfLutPass->Reset();
+            frameGraphRenderPasses["BrdfLUTPass"]->Reset();
 
-            renderPasses.brdfLutPass->AddOutput({
+            frameGraphRenderPasses["BrdfLUTPass"]->AddOutput({
                 .resource = renderPassResourceMap["brdflut_texture"],
                 .loadOp = RenderPassOperation::LoadOp::Clear,
                 .storeOp = RenderPassOperation::StoreOp::Store
             });
 
-            renderPasses.brdfLutPass->Init();
+            frameGraphRenderPasses["BrdfLUTPass"]->Init();
         }
 
         // GBuffer pass
         {
-            renderPasses.gbufferPass->Reset();
+            frameGraphRenderPasses["GBufferPass"]->Reset();
 
-            renderPasses.gbufferPass->AddInput(renderPassResourceMap["camera_buffer"]);
+            frameGraphRenderPasses["GBufferPass"]->AddInput(renderPassResourceMap["camera_buffer"]);
 
-            renderPasses.gbufferPass->AddOutput({
+            frameGraphRenderPasses["GBufferPass"]->AddOutput({
                 .resource = renderPassResourceMap["viewspace_normal"],
                 .loadOp = RenderPassOperation::LoadOp::Clear,
                 .storeOp = RenderPassOperation::StoreOp::Store
             });
 
-            renderPasses.gbufferPass->AddOutput({
+            frameGraphRenderPasses["GBufferPass"]->AddOutput({
                 .resource = renderPassResourceMap["viewspace_position"],
                 .loadOp = RenderPassOperation::LoadOp::Clear,
                 .storeOp = RenderPassOperation::StoreOp::Store
             });
 
-            renderPasses.gbufferPass->AddOutput({
+            frameGraphRenderPasses["GBufferPass"]->AddOutput({
                 .resource = renderPassResourceMap["depth_map"],
                 .loadOp = RenderPassOperation::LoadOp::Clear,
                 .storeOp = RenderPassOperation::StoreOp::Store
             });
 
-            renderPasses.gbufferPass->Init();
+            frameGraphRenderPasses["GBufferPass"]->Init();
         }
 
         // Lighting pass
         {
-            renderPasses.lightingPass->Reset();
+            frameGraphRenderPasses["LightingPass"]->Reset();
 
-            renderPasses.lightingPass->AddInput(renderPassResourceMap["camera_buffer"]);
-            renderPasses.lightingPass->AddInput(renderPassResourceMap["lights_buffer"]);
-            renderPasses.lightingPass->AddInput(renderPassResourceMap["directional_shadow_map"]);
-            renderPasses.lightingPass->AddInput(renderPassResourceMap["irradiance_map_texture"]);
-            renderPasses.lightingPass->AddInput(renderPassResourceMap["ssao_texture"]);
-            renderPasses.lightingPass->AddInput(renderPassResourceMap["prefilter_map_texture"]);
-            renderPasses.lightingPass->AddInput(renderPassResourceMap["brdflut_texture"]);
+            frameGraphRenderPasses["LightingPass"]->AddInput(renderPassResourceMap["camera_buffer"]);
+            frameGraphRenderPasses["LightingPass"]->AddInput(renderPassResourceMap["lights_buffer"]);
+            frameGraphRenderPasses["LightingPass"]->AddInput(renderPassResourceMap["directional_shadow_map"]);
+            frameGraphRenderPasses["LightingPass"]->AddInput(renderPassResourceMap["irradiance_map_texture"]);
+            frameGraphRenderPasses["LightingPass"]->AddInput(renderPassResourceMap["ssao_texture"]);
+            frameGraphRenderPasses["LightingPass"]->AddInput(renderPassResourceMap["prefilter_map_texture"]);
+            frameGraphRenderPasses["LightingPass"]->AddInput(renderPassResourceMap["brdflut_texture"]);
 
-            renderPasses.lightingPass->AddOutput({
+            frameGraphRenderPasses["LightingPass"]->AddOutput({
                 .resource = renderPassResourceMap["hdr_image"],
                 .loadOp = RenderPassOperation::LoadOp::Load,
                 .storeOp = RenderPassOperation::StoreOp::Store
             });
 
-            renderPasses.lightingPass->AddOutput({
+            frameGraphRenderPasses["LightingPass"]->AddOutput({
                 .resource = renderPassResourceMap["depth_map"],
                 .loadOp = RenderPassOperation::LoadOp::Load,
                 .storeOp = RenderPassOperation::StoreOp::Store
             });
 
-            renderPasses.lightingPass->Init();
+            frameGraphRenderPasses["LightingPass"]->Init();
         }
 
         // SSAO pass
         {
-            renderPasses.ssaoPass->Reset();
+            frameGraphRenderPasses["SSAOPass"]->Reset();
 
-            renderPasses.ssaoPass->AddInput(renderPassResourceMap["viewspace_normal"]);
-            renderPasses.ssaoPass->AddInput(renderPassResourceMap["viewspace_position"]);
-            renderPasses.ssaoPass->AddInput(renderPassResourceMap["depth_map"]);
-            renderPasses.ssaoPass->AddInput(renderPassResourceMap["camera_buffer"]);
+            frameGraphRenderPasses["SSAOPass"]->AddInput(renderPassResourceMap["viewspace_normal"]);
+            frameGraphRenderPasses["SSAOPass"]->AddInput(renderPassResourceMap["viewspace_position"]);
+            frameGraphRenderPasses["SSAOPass"]->AddInput(renderPassResourceMap["depth_map"]);
+            frameGraphRenderPasses["SSAOPass"]->AddInput(renderPassResourceMap["camera_buffer"]);
 
-            renderPasses.ssaoPass->AddOutput({
+            frameGraphRenderPasses["SSAOPass"]->AddOutput({
                 .resource = renderPassResourceMap["ssao_texture"],
                 .loadOp = RenderPassOperation::LoadOp::Clear,
                 .storeOp = RenderPassOperation::StoreOp::Store
             });
 
-            renderPasses.ssaoPass->Init();
+            frameGraphRenderPasses["SSAOPass"]->Init();
         }
 
         // Shadow map pass
         {
-            renderPasses.shadowMapPass->Reset();
+            frameGraphRenderPasses["ShadowMapPass"]->Reset();
 
-            renderPasses.shadowMapPass->AddOutput({
+            frameGraphRenderPasses["ShadowMapPass"]->AddOutput({
                 .resource = renderPassResourceMap["directional_shadow_map"],
                 .loadOp = RenderPassOperation::LoadOp::Clear,
                 .storeOp = RenderPassOperation::StoreOp::Store
             });
 
-            renderPasses.shadowMapPass->Init();
+            frameGraphRenderPasses["ShadowMapPass"]->Init();
         }
 
         // Prefilter map pass
         {
-            renderPasses.prefilterMapPass->Reset();
+            frameGraphRenderPasses["PrefilterMapPass"]->Reset();
 
-            renderPasses.prefilterMapPass->AddOutput({
+            frameGraphRenderPasses["PrefilterMapPass"]->AddOutput({
                 .resource = renderPassResourceMap["prefilter_map_texture"],
                 .loadOp = RenderPassOperation::LoadOp::Clear,
                 .storeOp = RenderPassOperation::StoreOp::Store
             });
 
-            renderPasses.prefilterMapPass->SetCubemapTexture(scene.skyboxTexture);
+            static_cast<PrefilterMapPass*>(frameGraphRenderPasses["PrefilterMapPass"])->SetCubemapTexture(scene.skyboxTexture);
 
-            renderPasses.prefilterMapPass->Init();
+            frameGraphRenderPasses["PrefilterMapPass"]->Init();
         }
 
         // Irradiance map pass
         {
-            renderPasses.irradianceMapPass->Reset();
+            frameGraphRenderPasses["IrradianceMapPass"]->Reset();
 
-            renderPasses.irradianceMapPass->AddOutput({
+            frameGraphRenderPasses["IrradianceMapPass"]->AddOutput({
                 .resource = renderPassResourceMap["irradiance_map_texture"],
                 .loadOp = RenderPassOperation::LoadOp::Clear,
                 .storeOp = RenderPassOperation::StoreOp::Store
             });
 
-            renderPasses.irradianceMapPass->SetCubemapTexture(scene.skyboxTexture);
+            static_cast<IrradianceMapPass*>(frameGraphRenderPasses["IrradianceMapPass"])->SetCubemapTexture(scene.skyboxTexture);
 
-            renderPasses.irradianceMapPass->Init();
+            frameGraphRenderPasses["IrradianceMapPass"]->Init();
         }
 
         // Tone Mapping pass
         {
-            renderPasses.toneMappingPass->Reset();
+            frameGraphRenderPasses["ToneMappingPass"]->Reset();
 
-            renderPasses.toneMappingPass->AddInput(renderPassResourceMap["hdr_image"]);
+            frameGraphRenderPasses["ToneMappingPass"]->AddInput(renderPassResourceMap["hdr_image"]);
 
-            renderPasses.toneMappingPass->AddOutput({
+            frameGraphRenderPasses["ToneMappingPass"]->AddOutput({
                 .resource = renderPassResourceMap["main_frame_color"],
                 .loadOp = RenderPassOperation::LoadOp::Clear,
                 .storeOp = RenderPassOperation::StoreOp::Store
             });
-            renderPasses.toneMappingPass->Init();
+            frameGraphRenderPasses["ToneMappingPass"]->Init();
         }
 
         // UI pass
         {
-            renderPasses.uiPass->Reset();
-            renderPasses.uiPass->AddOutput({
+            frameGraphRenderPasses["UiPass"]->Reset();
+            frameGraphRenderPasses["UiPass"]->AddOutput({
                 .resource = renderPassResourceMap["main_frame_color"],
                 .loadOp = RenderPassOperation::LoadOp::Load,
                 .storeOp = RenderPassOperation::StoreOp::Store
             });
-            renderPasses.uiPass->Init();
+            frameGraphRenderPasses["UiPass"]->Init();
         }
     }
 
@@ -251,28 +252,27 @@ namespace MongooseVK
         CreateFrameGraphInputs();
         CreateFrameGraphOutputs();
 
-        renderPasses.gbufferPass = CreateScope<GBufferPass>(device, renderResolution);
-        renderPasses.lightingPass = CreateScope<LightingPass>(device, renderResolution);
-        renderPasses.shadowMapPass = CreateScope<ShadowMapPass>(device, renderResolution);
+        AddRenderPass<IrradianceMapPass>("IrradianceMapPass");
+        AddRenderPass<BrdfLUTPass>("BrdfLUTPass");
+        AddRenderPass<PrefilterMapPass>("PrefilterMapPass");
 
-        renderPasses.ssaoPass = CreateScope<SSAOPass>(device, renderResolution);
-        renderPasses.toneMappingPass = CreateScope<ToneMappingPass>(device, renderResolution);
+        AddRenderPass<GBufferPass>("GBufferPass");
+        AddRenderPass<LightingPass>("LightingPass");
+        AddRenderPass<ShadowMapPass>("ShadowMapPass");
+        AddRenderPass<SSAOPass>("SSAOPass");
+        AddRenderPass<ToneMappingPass>("ToneMappingPass");
+        AddRenderPass<SkyboxPass>("SkyboxPass");
+        AddRenderPass<InfiniteGridPass>("InfiniteGridPass");
+        AddRenderPass<UiPass>("UiPass");
 
-        renderPasses.irradianceMapPass = CreateScope<IrradianceMapPass>(device, renderResolution);
-        renderPasses.brdfLutPass = CreateScope<BrdfLUTPass>(device, renderResolution);
-        renderPasses.prefilterMapPass = CreateScope<PrefilterMapPass>(device, renderResolution);
-
-        renderPasses.skyboxPass = CreateScope<SkyboxPass>(device, renderResolution);
-        renderPasses.gridPass = CreateScope<InfiniteGridPass>(device, renderResolution);
-        renderPasses.uiPass = CreateScope<UiPass>(device, renderResolution);
-
+        //InitFrameGraph();
         InitializeRenderPasses();
 
         // IBL and reflection calculations
         device->ImmediateSubmit([&](VkCommandBuffer commandBuffer) {
-            renderPasses.irradianceMapPass->Render(commandBuffer, &scene);
-            renderPasses.brdfLutPass->Render(commandBuffer, &scene);
-            renderPasses.prefilterMapPass->Render(commandBuffer, &scene);
+            frameGraphRenderPasses["IrradianceMapPass"]->Render(commandBuffer, &scene);
+            frameGraphRenderPasses["BrdfLUTPass"]->Render(commandBuffer, &scene);
+            frameGraphRenderPasses["PrefilterMapPass"]->Render(commandBuffer, &scene);
         });
 
         isSceneLoaded = true;
@@ -289,7 +289,9 @@ namespace MongooseVK
         UpdateCameraBuffer(camera);
 
         device->DrawFrame(vulkanSwapChain->GetSwapChain(),
-                          [&](VkCommandBuffer cmd, uint32_t imgIndex) { DrawFrame(cmd, imgIndex); },
+                          [&](const VkCommandBuffer cmd, const uint32_t imgIndex) {
+                              DrawFrame(cmd, imgIndex);
+                          },
                           std::bind(&VulkanRenderer::ResizeSwapchain, this));
     }
 
@@ -334,13 +336,8 @@ namespace MongooseVK
         CreateSwapchain();
         CreateFrameGraphOutputs();
 
-        renderPasses.gbufferPass->Resize(renderResolution);
-        renderPasses.skyboxPass->Resize(renderResolution);
-        renderPasses.lightingPass->Resize(renderResolution);
-        renderPasses.ssaoPass->Resize(renderResolution);
-        renderPasses.toneMappingPass->Resize(renderResolution);
-        renderPasses.gridPass->Resize(renderResolution);
-        renderPasses.uiPass->Resize(renderResolution);
+        for (const auto& renderPass: frameGraphRenderPasses | std::views::values)
+            renderPass->Resize(renderResolution);
 
         InitializeRenderPasses();
     }
@@ -384,86 +381,80 @@ namespace MongooseVK
         memcpy(renderPassResourceMap["lights_buffer"].resourceInfo.buffer.allocatedBuffer.GetData(), &bufferData, sizeof(LightsBuffer));
     }
 
-    void VulkanRenderer::DrawFrame(VkCommandBuffer commandBuffer, uint32_t imageIndex)
+    void VulkanRenderer::PresentFrame(const VkCommandBuffer& commandBuffer, uint32_t imageIndex)
     {
-        activeImage = imageIndex;
+        VkImage swapchainImage = vulkanSwapChain->GetImages()[imageIndex];
+        VulkanTexture* mainFrameTexture = device->GetTexture(
+            renderPassResourceMap["main_frame_color"].resourceInfo.texture.textureHandle);
 
+        VulkanUtils::TransitionImageLayout(commandBuffer, mainFrameTexture->allocatedImage,
+                                           VK_IMAGE_ASPECT_COLOR_BIT,
+                                           VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                           VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+
+        VulkanUtils::TransitionImageLayout(commandBuffer, swapchainImage,
+                                           VK_IMAGE_ASPECT_COLOR_BIT,
+                                           VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+        VulkanUtils::CopyParams copyParams{};
+        copyParams.regionWidth = renderResolution.width;
+        copyParams.regionHeight = renderResolution.height;
+
+        CopyImage(commandBuffer, mainFrameTexture->allocatedImage, swapchainImage, copyParams);
+
+        VulkanUtils::TransitionImageLayout(commandBuffer, swapchainImage,
+                                           VK_IMAGE_ASPECT_COLOR_BIT,
+                                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                           VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+
+        VulkanUtils::TransitionImageLayout(commandBuffer, mainFrameTexture->allocatedImage,
+                                           VK_IMAGE_ASPECT_COLOR_BIT,
+                                           VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                           VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    }
+
+    void VulkanRenderer::DrawFrame(const VkCommandBuffer& commandBuffer, uint32_t imageIndex)
+    {
         if (vulkanSwapChain->GetExtent().width != renderResolution.width || vulkanSwapChain->GetExtent().height != renderResolution.height)
             return;
 
-        renderPasses.gbufferPass->Render(commandBuffer, &scene);
-        renderPasses.shadowMapPass->Render(commandBuffer, &scene);
-        renderPasses.ssaoPass->Render(commandBuffer, &scene);
-        renderPasses.skyboxPass->Render(commandBuffer, &scene);
-        renderPasses.gridPass->Render(commandBuffer, &scene);
+        frameGraphRenderPasses["GBufferPass"]->Render(commandBuffer, &scene);
+        frameGraphRenderPasses["ShadowMapPass"]->Render(commandBuffer, &scene);
+        frameGraphRenderPasses["SSAOPass"]->Render(commandBuffer, &scene);
+        frameGraphRenderPasses["SkyboxPass"]->Render(commandBuffer, &scene);
+        frameGraphRenderPasses["InfiniteGridPass"]->Render(commandBuffer, &scene);
 
-        // Lighting pass
-        {
-            VulkanTexture* depthMap = device->GetTexture(renderPassResourceMap["depth_map"].resourceInfo.texture.textureHandle);
-            VulkanUtils::TransitionImageLayout(commandBuffer, depthMap->allocatedImage,
-                                               VK_IMAGE_ASPECT_DEPTH_BIT,
-                                               VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-                                               VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
+        VulkanTexture* depthMap = device->GetTexture(renderPassResourceMap["depth_map"].resourceInfo.texture.textureHandle);
+        VulkanUtils::TransitionImageLayout(commandBuffer, depthMap->allocatedImage,
+                                           VK_IMAGE_ASPECT_DEPTH_BIT,
+                                           VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                                           VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
 
-            renderPasses.lightingPass->Render(commandBuffer, &scene);
+        frameGraphRenderPasses["LightingPass"]->Render(commandBuffer, &scene);
 
-            VulkanUtils::TransitionImageLayout(commandBuffer, depthMap->allocatedImage,
-                                               VK_IMAGE_ASPECT_DEPTH_BIT,
-                                               VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
-                                               VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-        }
+        VulkanUtils::TransitionImageLayout(commandBuffer, depthMap->allocatedImage,
+                                           VK_IMAGE_ASPECT_DEPTH_BIT,
+                                           VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
+                                           VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
-        renderPasses.toneMappingPass->Render(commandBuffer, &scene);
+        frameGraphRenderPasses["ToneMappingPass"]->Render(commandBuffer, &scene);
+        frameGraphRenderPasses["UiPass"]->Render(commandBuffer, &scene);
 
-        renderPasses.uiPass->Render(commandBuffer, &scene);
-
-        // Present
-        {
-            VkImage swapchainImage = vulkanSwapChain->GetImages()[activeImage];
-            VulkanTexture* mainFrameTexture = device->GetTexture(
-                renderPassResourceMap["main_frame_color"].resourceInfo.texture.textureHandle);
-
-            VulkanUtils::TransitionImageLayout(commandBuffer, mainFrameTexture->allocatedImage,
-                                               VK_IMAGE_ASPECT_COLOR_BIT,
-                                               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-
-            VulkanUtils::TransitionImageLayout(commandBuffer, swapchainImage,
-                                               VK_IMAGE_ASPECT_COLOR_BIT,
-                                               VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-                                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
-            VulkanUtils::CopyParams copyParams{};
-            copyParams.regionWidth = renderResolution.width;
-            copyParams.regionHeight = renderResolution.height;
-
-            CopyImage(commandBuffer, mainFrameTexture->allocatedImage, swapchainImage, copyParams);
-
-            VulkanUtils::TransitionImageLayout(commandBuffer, swapchainImage,
-                                               VK_IMAGE_ASPECT_COLOR_BIT,
-                                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                               VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-
-            VulkanUtils::TransitionImageLayout(commandBuffer, mainFrameTexture->allocatedImage,
-                                               VK_IMAGE_ASPECT_COLOR_BIT,
-                                               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                                               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-        }
+        PresentFrame(commandBuffer, imageIndex);
     }
 
     void VulkanRenderer::CreateFrameGraphOutputs()
     {
         // Viewspace Normal
         {
-            FrameGraphResourceOutputCreation outputCreation{};
+            FrameGraphResourceCreate outputCreation{};
             outputCreation.name = "viewspace_normal";
             outputCreation.type = FrameGraphResourceType::Texture;
             outputCreation.resourceInfo.texture.textureCreateInfo = {
                 .width = renderResolution.width,
                 .height = renderResolution.height,
                 .format = ImageFormat::RGBA32_SFLOAT,
-                .imageLayout = ImageUtils::GetLayoutFromFormat(ImageFormat::RGBA32_SFLOAT),
-                .imageInitialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                 .addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
             };
 
@@ -472,15 +463,13 @@ namespace MongooseVK
 
         // Viewspace Position
         {
-            FrameGraphResourceOutputCreation outputCreation{};
+            FrameGraphResourceCreate outputCreation{};
             outputCreation.name = "viewspace_position";
             outputCreation.type = FrameGraphResourceType::Texture;
             outputCreation.resourceInfo.texture.textureCreateInfo = {
                 .width = renderResolution.width,
                 .height = renderResolution.height,
                 .format = ImageFormat::RGBA32_SFLOAT,
-                .imageLayout = ImageUtils::GetLayoutFromFormat(ImageFormat::RGBA32_SFLOAT),
-                .imageInitialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                 .addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
             };
 
@@ -489,15 +478,13 @@ namespace MongooseVK
 
         // Depth Map
         {
-            FrameGraphResourceOutputCreation outputCreation{};
+            FrameGraphResourceCreate outputCreation{};
             outputCreation.name = "depth_map";
             outputCreation.type = FrameGraphResourceType::Texture;
             outputCreation.resourceInfo.texture.textureCreateInfo = {
                 .width = renderResolution.width,
                 .height = renderResolution.height,
                 .format = ImageFormat::DEPTH24_STENCIL8,
-                .imageLayout = ImageUtils::GetLayoutFromFormat(ImageFormat::DEPTH24_STENCIL8),
-                .imageInitialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
                 .addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
             };
 
@@ -506,14 +493,13 @@ namespace MongooseVK
 
         // SSAO Texture
         {
-            FrameGraphResourceOutputCreation outputCreation{};
+            FrameGraphResourceCreate outputCreation{};
             outputCreation.name = "ssao_texture";
             outputCreation.type = FrameGraphResourceType::Texture;
             outputCreation.resourceInfo.texture.textureCreateInfo = {
                 .width = static_cast<uint32_t>(renderResolution.width * 0.5),
                 .height = static_cast<uint32_t>(renderResolution.height * 0.5),
                 .format = ImageFormat::R8_UNORM,
-                .imageLayout = ImageUtils::GetLayoutFromFormat(ImageFormat::R8_UNORM),
             };
 
             frameGraphOutputCreations[outputCreation.name] = outputCreation;
@@ -521,15 +507,13 @@ namespace MongooseVK
 
         // HDR Image
         {
-            FrameGraphResourceOutputCreation outputCreation{};
+            FrameGraphResourceCreate outputCreation{};
             outputCreation.name = "hdr_image";
             outputCreation.type = FrameGraphResourceType::Texture;
             outputCreation.resourceInfo.texture.textureCreateInfo = {
                 .width = renderResolution.width,
                 .height = renderResolution.height,
                 .format = ImageFormat::RGBA16_SFLOAT,
-                .imageLayout = ImageUtils::GetLayoutFromFormat(ImageFormat::RGBA16_SFLOAT),
-                .imageInitialLayout = ImageUtils::GetLayoutFromFormat(ImageFormat::RGBA16_SFLOAT),
                 .addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
             };
 
@@ -538,15 +522,13 @@ namespace MongooseVK
 
         // Main Frame Color
         {
-            FrameGraphResourceOutputCreation outputCreation{};
+            FrameGraphResourceCreate outputCreation{};
             outputCreation.name = "main_frame_color";
             outputCreation.type = FrameGraphResourceType::Texture;
             outputCreation.resourceInfo.texture.textureCreateInfo = {
                 .width = renderResolution.width,
                 .height = renderResolution.height,
                 .format = ImageFormat::RGBA8_UNORM,
-                .imageLayout = ImageUtils::GetLayoutFromFormat(ImageFormat::RGBA8_UNORM),
-                .imageInitialLayout = ImageUtils::GetLayoutFromFormat(ImageFormat::RGBA8_UNORM),
                 .addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
             };
 
@@ -561,7 +543,7 @@ namespace MongooseVK
     {
         // Lights Buffer
         {
-            FrameGraphResourceInputCreation inputCreation{};
+            FrameGraphResourceCreate inputCreation{};
             inputCreation.name = "lights_buffer";
             inputCreation.type = FrameGraphResourceType::Buffer;
             inputCreation.resourceInfo.buffer.size = sizeof(LightsBuffer);
@@ -573,7 +555,7 @@ namespace MongooseVK
 
         // Camera Buffer
         {
-            FrameGraphResourceInputCreation inputCreation{};
+            FrameGraphResourceCreate inputCreation{};
             inputCreation.name = "camera_buffer";
             inputCreation.type = FrameGraphResourceType::Buffer;
             inputCreation.resourceInfo.buffer.size = sizeof(CameraBuffer);
@@ -585,27 +567,25 @@ namespace MongooseVK
 
         // BRDF LUT
         {
-            FrameGraphResourceInputCreation inputCreation{};
+            FrameGraphResourceCreate inputCreation{};
             inputCreation.name = "brdflut_texture";
             inputCreation.type = FrameGraphResourceType::Texture;
             inputCreation.resourceInfo.texture.textureCreateInfo = {};
             inputCreation.resourceInfo.texture.textureCreateInfo.width = 512;
             inputCreation.resourceInfo.texture.textureCreateInfo.height = 512;
             inputCreation.resourceInfo.texture.textureCreateInfo.format = ImageFormat::RGBA16_SFLOAT;
-            inputCreation.resourceInfo.texture.textureCreateInfo.imageLayout = ImageUtils::GetLayoutFromFormat(ImageFormat::RGBA16_SFLOAT);
 
             frameGraphInputCreations[inputCreation.name] = inputCreation;
         }
 
         // Prefilter Map
         {
-            FrameGraphResourceInputCreation inputCreation{};
+            FrameGraphResourceCreate inputCreation{};
             inputCreation.name = "prefilter_map_texture";
             inputCreation.type = FrameGraphResourceType::TextureCube;
             inputCreation.resourceInfo.texture.textureCreateInfo.width = 256;
             inputCreation.resourceInfo.texture.textureCreateInfo.height = 256;
             inputCreation.resourceInfo.texture.textureCreateInfo.format = ImageFormat::RGBA16_SFLOAT;
-            inputCreation.resourceInfo.texture.textureCreateInfo.imageLayout = ImageUtils::GetLayoutFromFormat(ImageFormat::RGBA16_SFLOAT);
             inputCreation.resourceInfo.texture.textureCreateInfo.addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
             inputCreation.resourceInfo.texture.textureCreateInfo.mipLevels = 6;
             inputCreation.resourceInfo.texture.textureCreateInfo.arrayLayers = 6;
@@ -617,14 +597,13 @@ namespace MongooseVK
 
         // Irradiance Map
         {
-            FrameGraphResourceInputCreation inputCreation{};
+            FrameGraphResourceCreate inputCreation{};
             inputCreation.name = "irradiance_map_texture";
             inputCreation.type = FrameGraphResourceType::TextureCube;
             inputCreation.resourceInfo.texture.textureCreateInfo = {};
             inputCreation.resourceInfo.texture.textureCreateInfo.width = 32;
             inputCreation.resourceInfo.texture.textureCreateInfo.height = 32;
             inputCreation.resourceInfo.texture.textureCreateInfo.format = ImageFormat::RGBA16_SFLOAT;
-            inputCreation.resourceInfo.texture.textureCreateInfo.imageLayout = ImageUtils::GetLayoutFromFormat(ImageFormat::RGBA16_SFLOAT);
             inputCreation.resourceInfo.texture.textureCreateInfo.addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
             inputCreation.resourceInfo.texture.textureCreateInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
             inputCreation.resourceInfo.texture.textureCreateInfo.isCubeMap = true;
@@ -637,14 +616,13 @@ namespace MongooseVK
         {
             const uint16_t SHADOW_MAP_RESOLUTION = EnumValue(scene.directionalLight.shadowMapResolution);
 
-            FrameGraphResourceInputCreation inputCreation{};
+            FrameGraphResourceCreate inputCreation{};
             inputCreation.name = "directional_shadow_map";
             inputCreation.type = FrameGraphResourceType::Texture;
             inputCreation.resourceInfo.texture.textureCreateInfo = {};
             inputCreation.resourceInfo.texture.textureCreateInfo.width = SHADOW_MAP_RESOLUTION;
             inputCreation.resourceInfo.texture.textureCreateInfo.height = SHADOW_MAP_RESOLUTION;
             inputCreation.resourceInfo.texture.textureCreateInfo.format = ImageFormat::DEPTH32;
-            inputCreation.resourceInfo.texture.textureCreateInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
             inputCreation.resourceInfo.texture.textureCreateInfo.addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
             inputCreation.resourceInfo.texture.textureCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
             inputCreation.resourceInfo.texture.textureCreateInfo.arrayLayers = SHADOW_MAP_CASCADE_COUNT;

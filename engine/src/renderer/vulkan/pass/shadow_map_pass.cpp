@@ -10,7 +10,7 @@
 namespace MongooseVK
 {
     ShadowMapPass::ShadowMapPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution): FrameGraphRenderPass(
-            vulkanDevice, VkExtent2D{SHADOW_MAP_RESOLUTION, SHADOW_MAP_RESOLUTION}) {}
+        vulkanDevice, VkExtent2D{SHADOW_MAP_RESOLUTION, SHADOW_MAP_RESOLUTION}) {}
 
     void ShadowMapPass::Init()
     {
@@ -72,6 +72,8 @@ namespace MongooseVK
             GetRenderPass()->End(commandBuffer);
         }
     }
+
+    void ShadowMapPass::Resize(VkExtent2D _resolution) {}
 
     void ShadowMapPass::LoadPipeline(PipelineCreateInfo& pipelineCreate)
     {

@@ -80,8 +80,8 @@ namespace VulkanDemo
         {
             sampler = MongooseVK::ImageSamplerBuilder(renderer.GetVulkanDevice()).Build();
             depthSampler = MongooseVK::ImageSamplerBuilder(renderer.GetVulkanDevice())
-                    .SetFormat(MongooseVK::ImageFormat::DEPTH24_STENCIL8)
-                    .Build();
+                           .SetFormat(MongooseVK::ImageFormat::DEPTH24_STENCIL8)
+                           .Build();
         }
 
         ~GBufferViewer() override
@@ -135,7 +135,8 @@ namespace VulkanDemo
 
             // SSAO
             {
-                auto ssao = MongooseVK::VulkanDevice::Get()->GetTexture(renderer.renderPassResourceMap["ssao_texture"].resourceInfo.texture.textureHandle);
+                auto ssao = MongooseVK::VulkanDevice::Get()->GetTexture(
+                    renderer.renderPassResourceMap["ssao_texture"].resourceInfo.texture.textureHandle);
 
                 debugTextures.push_back(ImGui_ImplVulkan_AddTexture(sampler,
                                                                     ssao->imageView,
@@ -295,18 +296,21 @@ namespace VulkanDemo
 
         virtual void Draw() override
         {
-            MongooseVK::ImGuiUtils::DrawFloatControl("SSAO Strength", renderer.renderPasses.ssaoPass->ssaoParams.strength, 0.01f, 10.0f,
+            const auto ssaoPass = static_cast<MongooseVK::SSAOPass*>(renderer.frameGraphRenderPasses["SSAOPass"]);
+            const auto toneMappingPass = static_cast<MongooseVK::ToneMappingPass*>(renderer.frameGraphRenderPasses["ToneMappingPass"]);
+
+            MongooseVK::ImGuiUtils::DrawFloatControl("SSAO Strength", ssaoPass->ssaoParams.strength, 0.01f, 10.0f,
                                                      0.01f, 150.0f);
-            MongooseVK::ImGuiUtils::DrawFloatControl("SSAO Radius", renderer.renderPasses.ssaoPass->ssaoParams.radius, 0.01f, 1.0f, 0.01f,
+            MongooseVK::ImGuiUtils::DrawFloatControl("SSAO Radius", ssaoPass->ssaoParams.radius, 0.01f, 1.0f, 0.01f,
                                                      150.0f);
-            MongooseVK::ImGuiUtils::DrawFloatControl("SSAO Bias", renderer.renderPasses.ssaoPass->ssaoParams.bias, 0.001f, 1.0f, 0.001f,
+            MongooseVK::ImGuiUtils::DrawFloatControl("SSAO Bias", ssaoPass->ssaoParams.bias, 0.001f, 1.0f, 0.001f,
                                                      150.0f);
-            MongooseVK::ImGuiUtils::DrawIntControl("SSAO Kernel Size", renderer.renderPasses.ssaoPass->ssaoParams.kernelSize, 1, 64,
+            MongooseVK::ImGuiUtils::DrawIntControl("SSAO Kernel Size", ssaoPass->ssaoParams.kernelSize, 1, 64,
                                                    150.0f);
 
-            MongooseVK::ImGuiUtils::DrawFloatControl("Gamma", renderer.renderPasses.toneMappingPass->toneMappingParams.gamma, 0.001f, 10.0f, 0.01f,
+            MongooseVK::ImGuiUtils::DrawFloatControl("Gamma", toneMappingPass->toneMappingParams.gamma, 0.001f, 10.0f, 0.01f,
                                                      150.0f);
-            MongooseVK::ImGuiUtils::DrawFloatControl("Exposure", renderer.renderPasses.toneMappingPass->toneMappingParams.exposure, 0.01f, 10.0f, 0.01f,
+            MongooseVK::ImGuiUtils::DrawFloatControl("Exposure", toneMappingPass->toneMappingParams.exposure, 0.01f, 10.0f, 0.01f,
                                                      150.0f);
         }
     };
@@ -323,12 +327,12 @@ namespace VulkanDemo
 
         virtual void Draw() override
         {
-            MongooseVK::ImGuiUtils::DrawFloatControl("Grid size", renderer.renderPasses.gridPass->gridParams.gridSize, 0.1f, 1000.0f, 0.1f,
-                                                     150.0f);
-            MongooseVK::ImGuiUtils::DrawFloatControl("Cell size", renderer.renderPasses.gridPass->gridParams.gridCellSize, 0.01f, 10.0f,
-                                                     0.01f, 150.0f);
-            MongooseVK::ImGuiUtils::DrawRGBColorPicker("Primary color", renderer.renderPasses.gridPass->gridParams.gridColorThick, 150.0f);
-            MongooseVK::ImGuiUtils::DrawRGBColorPicker("Secondary color", renderer.renderPasses.gridPass->gridParams.gridColorThin, 150.0f);
+            const auto gridPass = static_cast<MongooseVK::InfiniteGridPass*>(renderer.frameGraphRenderPasses["InfiniteGridPass"]);
+
+            MongooseVK::ImGuiUtils::DrawFloatControl("Grid size", gridPass->gridParams.gridSize, 0.1f, 1000.0f, 0.1f, 150.0f);
+            MongooseVK::ImGuiUtils::DrawFloatControl("Cell size", gridPass->gridParams.gridCellSize, 0.01f, 10.0f, 0.01f, 150.0f);
+            MongooseVK::ImGuiUtils::DrawRGBColorPicker("Primary color", gridPass->gridParams.gridColorThick, 150.0f);
+            MongooseVK::ImGuiUtils::DrawRGBColorPicker("Secondary color", gridPass->gridParams.gridColorThin, 150.0f);
         }
     };
 }
