@@ -1,10 +1,19 @@
 #include "renderer/vulkan/vulkan_renderer.h"
 
 #include <ranges>
+#include <renderer/graph/frame_graph_renderpass.h>
 #include <renderer/vulkan/vulkan_texture.h>
 #include <renderer/vulkan/vulkan_utils.h>
+#include <renderer/vulkan/pass/gbufferPass.h>
+#include <renderer/vulkan/pass/infinite_grid_pass.h>
 #include <renderer/vulkan/pass/lighting_pass.h>
+#include <renderer/vulkan/pass/shadow_map_pass.h>
+#include <renderer/vulkan/pass/skybox_pass.h>
+#include <renderer/vulkan/pass/ui_pass.h>
 #include <renderer/vulkan/pass/lighting/brdf_lut_pass.h>
+#include <renderer/vulkan/pass/lighting/irradiance_map_pass.h>
+#include <renderer/vulkan/pass/lighting/prefilter_map_pass.h>
+#include <renderer/vulkan/pass/post_processing/ssao_pass.h>
 
 #include "renderer/vulkan/vulkan_device.h"
 #include "renderer/vulkan/vulkan_mesh.h"
@@ -39,6 +48,8 @@ namespace MongooseVK
         shaderCache = CreateScope<ShaderCache>(device);
 
         frameGraph = CreateScope<FrameGraph>(device);
+        frameGraph->SetResolution(renderResolution);
+
         frameGraphResources.Init(128);
 
         CreateSwapchain();
@@ -265,8 +276,18 @@ namespace MongooseVK
         AddRenderPass<InfiniteGridPass>("InfiniteGridPass");
         AddRenderPass<UiPass>("UiPass");
 
-        //InitFrameGraph();
+        frameGraph->AddRenderPass<GBufferPass>("GBufferPass");
+        frameGraph->AddRenderPass<ShadowMapPass>("ShadowMapPass");
+        frameGraph->AddRenderPass<SkyboxPass>("SkyboxPass");
+        frameGraph->AddRenderPass<SSAOPass>("SSAOPass");
+        frameGraph->AddRenderPass<LightingPass>("LightingPass");
+        frameGraph->AddRenderPass<InfiniteGridPass>("InfiniteGridPass");
+        frameGraph->AddRenderPass<ToneMappingPass>("ToneMappingPass");
+        frameGraph->AddRenderPass<UiPass>("UiPass");
+
         InitializeRenderPasses();
+
+        frameGraph->Compile();
 
         // IBL and reflection calculations
         device->ImmediateSubmit([&](VkCommandBuffer commandBuffer) {
@@ -423,7 +444,7 @@ namespace MongooseVK
         frameGraphRenderPasses["ShadowMapPass"]->Render(commandBuffer, &scene);
         frameGraphRenderPasses["SSAOPass"]->Render(commandBuffer, &scene);
         frameGraphRenderPasses["SkyboxPass"]->Render(commandBuffer, &scene);
-        frameGraphRenderPasses["InfiniteGridPass"]->Render(commandBuffer, &scene);
+
 
         VulkanTexture* depthMap = device->GetTexture(renderPassResourceMap["depth_map"].resourceInfo.texture.textureHandle);
         VulkanUtils::TransitionImageLayout(commandBuffer, depthMap->allocatedImage,
@@ -437,6 +458,8 @@ namespace MongooseVK
                                            VK_IMAGE_ASPECT_DEPTH_BIT,
                                            VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
                                            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+
+        frameGraphRenderPasses["InfiniteGridPass"]->Render(commandBuffer, &scene);
 
         frameGraphRenderPasses["ToneMappingPass"]->Render(commandBuffer, &scene);
         frameGraphRenderPasses["UiPass"]->Render(commandBuffer, &scene);
@@ -551,6 +574,8 @@ namespace MongooseVK
             inputCreation.resourceInfo.buffer.memoryUsage = VMA_MEMORY_USAGE_CPU_TO_GPU;
 
             frameGraphInputCreations[inputCreation.name] = inputCreation;
+
+            frameGraph->CreateResource(inputCreation);
         }
 
         // Camera Buffer
@@ -563,6 +588,8 @@ namespace MongooseVK
             inputCreation.resourceInfo.buffer.memoryUsage = VMA_MEMORY_USAGE_CPU_TO_GPU;
 
             frameGraphInputCreations[inputCreation.name] = inputCreation;
+
+            frameGraph->CreateResource(inputCreation);
         }
 
         // BRDF LUT
@@ -576,6 +603,8 @@ namespace MongooseVK
             inputCreation.resourceInfo.texture.textureCreateInfo.format = ImageFormat::RGBA16_SFLOAT;
 
             frameGraphInputCreations[inputCreation.name] = inputCreation;
+
+            frameGraph->CreateResource(inputCreation);
         }
 
         // Prefilter Map
@@ -593,6 +622,8 @@ namespace MongooseVK
             inputCreation.resourceInfo.texture.textureCreateInfo.isCubeMap = true;
 
             frameGraphInputCreations[inputCreation.name] = inputCreation;
+
+            frameGraph->CreateResource(inputCreation);
         }
 
         // Irradiance Map
@@ -610,6 +641,8 @@ namespace MongooseVK
             inputCreation.resourceInfo.texture.textureCreateInfo.arrayLayers = 6;
 
             frameGraphInputCreations[inputCreation.name] = inputCreation;
+
+            frameGraph->CreateResource(inputCreation);
         }
 
         // Directional Shadow Map
@@ -638,35 +671,41 @@ namespace MongooseVK
         }
     }
 
+    void VulkanRenderer::DestroyResource(const char* resourceName)
+    {
+        FrameGraphResource* resource = frameGraphResources.Get(frameGraphResourceHandles[resourceName].index);
+
+        if (resource->type == FrameGraphResourceType::Texture || resource->type == FrameGraphResourceType::TextureCube)
+            device->DestroyTexture(resource->resourceInfo.texture.textureHandle);
+
+        if (resource->type == FrameGraphResourceType::Buffer)
+            device->DestroyBuffer(resource->resourceInfo.buffer.allocatedBuffer);
+
+        frameGraphResourceHandles.erase(resourceName);
+        frameGraphResources.Release(resource);
+    }
+
     void VulkanRenderer::CreateFrameGraphResource(const char* resourceName, FrameGraphResourceType type,
                                                   FrameGraphResourceCreateInfo& createInfo)
     {
         if (frameGraphResourceHandles.contains(resourceName))
+            DestroyResource(resourceName);
+
+        switch (type)
         {
-            FrameGraphResource* resource = frameGraphResources.Get(frameGraphResourceHandles[resourceName].index);
-
-            if (type == FrameGraphResourceType::Texture || type == FrameGraphResourceType::TextureCube)
-                device->DestroyTexture(resource->resourceInfo.texture.textureHandle);
-
-            if (type == FrameGraphResourceType::Buffer)
-                device->DestroyBuffer(resource->resourceInfo.buffer.allocatedBuffer);
-
-            frameGraphResourceHandles.erase(resourceName);
-            frameGraphResources.Release(resource);
-        }
-
-        if (type == FrameGraphResourceType::Texture || type == FrameGraphResourceType::TextureCube)
-        {
-            createInfo.texture.textureHandle = device->CreateTexture(createInfo.texture.textureCreateInfo);
-        }
-
-        if (type == FrameGraphResourceType::Buffer)
-        {
-            createInfo.buffer.allocatedBuffer = device->CreateBuffer(
-                createInfo.buffer.size,
-                createInfo.buffer.usageFlags,
-                createInfo.buffer.memoryUsage
-            );
+            case FrameGraphResourceType::Texture:
+                createInfo.texture.textureHandle = device->CreateTexture(createInfo.texture.textureCreateInfo);
+                break;
+            case FrameGraphResourceType::TextureCube:
+                createInfo.texture.textureHandle = device->CreateTexture(createInfo.texture.textureCreateInfo);
+                break;
+            case FrameGraphResourceType::Buffer:
+                createInfo.buffer.allocatedBuffer = device->CreateBuffer(createInfo.buffer.size,
+                                                                         createInfo.buffer.usageFlags,
+                                                                         createInfo.buffer.memoryUsage);
+                break;
+            default:
+                ASSERT(false, "Unknown frame graph resource type");
         }
 
         FrameGraphResource* graphResource = frameGraphResources.Obtain();

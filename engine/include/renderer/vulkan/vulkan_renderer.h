@@ -1,19 +1,9 @@
 #pragma once
 
-#include <renderer/frame_graph.h>
+#include <renderer/graph/frame_graph.h>
 
 #include "renderer/scene.h"
 #include "vulkan_swapchain.h"
-#include "pass/gbufferPass.h"
-#include "pass/infinite_grid_pass.h"
-#include "pass/lighting_pass.h"
-#include "pass/shadow_map_pass.h"
-#include "pass/skybox_pass.h"
-#include "pass/ui_pass.h"
-#include "pass/lighting/brdf_lut_pass.h"
-#include "pass/lighting/irradiance_map_pass.h"
-#include "pass/lighting/prefilter_map_pass.h"
-#include "pass/post_processing/ssao_pass.h"
 #include "pass/post_processing/tone_mapping_pass.h"
 #include "renderer/Light.h"
 #include "renderer/shader_cache.h"
@@ -81,6 +71,7 @@ namespace MongooseVK
 
         void CreateFrameGraphOutputs();
         void CreateFrameGraphInputs();
+        void DestroyResource(const char* resourceName);
         void CreateFrameGraphResource(const char* resourceName, FrameGraphResourceType type, FrameGraphResourceCreateInfo& createInfo);
 
         void PrecomputeIBL();

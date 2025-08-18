@@ -29,6 +29,24 @@ namespace MongooseVK
         vkFreeDescriptorSets(device->GetDevice(), device->GetShaderDescriptorPool().GetDescriptorPool(), 1, &ssaoDescriptorSet);
     }
 
+    void SSAOPass::Setup(FrameGraph* frameGraph)
+    {
+        FrameGraphResourceCreate resourceCreate{};
+        resourceCreate.name = "ssao_texture";
+        resourceCreate.type = FrameGraphResourceType::Texture;
+        resourceCreate.resourceInfo.texture.textureCreateInfo = {
+            .width = resolution.width,
+            .height = resolution.height,
+            .format = ImageFormat::R8_UNORM,
+        };
+
+        frameGraph->CreateResource(resourceCreate);
+
+        frameGraph->ReadResource("viewspace_normal");
+        frameGraph->ReadResource("viewspace_position");
+        frameGraph->ReadResource("depth_map");
+    }
+
     void SSAOPass::CreateDescriptors()
     {
         ssaoDescriptorSetLayout = VulkanDescriptorSetLayoutBuilder(device)

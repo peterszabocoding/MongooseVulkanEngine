@@ -1,6 +1,7 @@
 #pragma once
 
-#include <renderer/frame_graph.h>
+#include <renderer/graph/frame_graph.h>
+#include <renderer/graph/frame_graph_renderpass.h>
 
 #include "renderer/scene.h"
 
@@ -15,6 +16,7 @@ namespace MongooseVK
 
         void SetCascadeIndex(uint32_t _cascadeIndex) { cascadeIndex = _cascadeIndex; }
 
+        virtual void Setup(FrameGraph* frameGraph) override;
         virtual void Init() override;
         virtual void CreateFramebuffer() override;
         virtual void Render(VkCommandBuffer commandBuffer, Scene* scene) override;

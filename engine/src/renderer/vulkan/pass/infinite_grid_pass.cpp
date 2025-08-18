@@ -14,6 +14,12 @@ namespace MongooseVK
         screenRect = CreateScope<VulkanMeshlet>(device, Primitives::GRID_VERTICES, Primitives::GRID_INDICES);
     }
 
+    void InfiniteGridPass::Setup(FrameGraph* frameGraph)
+    {
+        frameGraph->WriteResource("hdr_image", RenderPassOperation::LoadOp::Load, RenderPassOperation::StoreOp::Store);
+        frameGraph->WriteResource("depth_map", RenderPassOperation::LoadOp::Load, RenderPassOperation::StoreOp::Store);
+    }
+
     void InfiniteGridPass::Init()
     {
         FrameGraphRenderPass::Init();

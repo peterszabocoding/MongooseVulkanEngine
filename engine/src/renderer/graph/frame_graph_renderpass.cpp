@@ -1,8 +1,7 @@
-#include "renderer\frame_graph.h"
+#include "renderer/graph/frame_graph_renderpass.h"
 
-#include <ranges>
 #include <renderer/vulkan/vulkan_descriptor_writer.h>
-#include <renderer/vulkan/vulkan_renderer.h>
+#include <renderer/vulkan/vulkan_image.h>
 #include <renderer/vulkan/vulkan_texture.h>
 
 namespace MongooseVK
@@ -52,7 +51,7 @@ namespace MongooseVK
         return device->renderPassPool.Get(renderPassHandle.handle);
     }
 
-    void FrameGraphRenderPass::AddOutput(const FrameGraphNodeOutput& output)
+    void FrameGraphRenderPass::AddOutput(const FrameGraphRenderPassOutput& output)
     {
         outputs.push_back(output);
     }
@@ -179,132 +178,5 @@ namespace MongooseVK
         }
 
         framebufferHandles.push_back(device->CreateFramebuffer(framebufferCreateInfo));
-    }
-
-    FrameGraph::FrameGraph(VulkanDevice* _device): device{_device}
-    {
-        resourcePool.Init(128);
-    }
-
-    void FrameGraph::Init(const VkExtent2D _resolution)
-    {
-        resolution = _resolution;
-    }
-
-    void FrameGraph::PreRender(const VkCommandBuffer cmd, Scene* scene)
-    {
-        for (const auto& renderPass: renderPasses | std::views::values)
-        {
-            renderPass->PreRender(cmd, scene);
-        }
-    }
-
-    void FrameGraph::Render(const VkCommandBuffer cmd, Scene* scene)
-    {
-        for (const auto& renderPass: renderPasses | std::views::values)
-        {
-            renderPass->Render(cmd, scene);
-        }
-    }
-
-    void FrameGraph::Resize(const VkExtent2D newResolution)
-    {
-        resolution = newResolution;
-
-        for (const auto& renderPass: renderPasses | std::views::values)
-        {
-            renderPass->Resize(resolution);
-        }
-    }
-
-    FrameGraphNode* FrameGraph::CreateNode(FrameGraphNodeCreation nodeCreation)
-    {
-        FrameGraphNode* node = new FrameGraphNode();
-        node->name = nodeCreation.name;
-        node->enabled = nodeCreation.enabled;
-
-        for (auto& [name, type, resourceInfo]: nodeCreation.inputs)
-        {
-            // First check if input with this name was created already
-            FrameGraphResourceHandle handle;
-            if (resourceHandles.contains(name))
-            {
-                handle = resourceHandles[name];
-            } else
-            {
-                handle = CreateResource(name, type, resourceInfo);
-                resourceHandles[name] = handle;
-            }
-            node->inputs.push_back(handle);
-        }
-
-        for (auto& [resourceCreate, loadOp, storeOp]: nodeCreation.outputs)
-        {
-            // First check if output with this name was created already
-            FrameGraphResourceHandle handle;
-            if (resourceHandles.contains(resourceCreate.name))
-            {
-                handle = resourceHandles[resourceCreate.name];
-            } else
-            {
-                handle = CreateResource(resourceCreate.name, resourceCreate.type, resourceCreate.resourceInfo);
-                resourceHandles[resourceCreate.name] = handle;
-            }
-            node->outputs.push_back(handle);
-        }
-
-        nodes[nodeCreation.name] = node;
-
-        return node;
-    }
-
-    FrameGraphResourceHandle FrameGraph::CreateResource(const char* resourceName, FrameGraphResourceType type,
-                                                        FrameGraphResourceCreateInfo& createInfo)
-    {
-        if (type == FrameGraphResourceType::Texture) return CreateTextureResource(resourceName, createInfo);
-        if (type == FrameGraphResourceType::Buffer) return CreateBufferResource(resourceName, createInfo);
-
-        return {INVALID_RESOURCE_HANDLE};
-    }
-
-    FrameGraphResourceHandle FrameGraph::CreateTextureResource(const char* resourceName, FrameGraphResourceCreateInfo& createInfo)
-    {
-        createInfo.texture.textureHandle = device->CreateTexture(createInfo.texture.textureCreateInfo);
-
-        FrameGraphResource* graphResource = resourcePool.Obtain();
-        graphResource->name = resourceName;
-        graphResource->type = FrameGraphResourceType::Texture;
-        graphResource->resourceInfo = createInfo;
-
-        return {graphResource->index};
-    }
-
-    FrameGraphResourceHandle FrameGraph::CreateBufferResource(const char* resourceName, FrameGraphResourceCreateInfo& createInfo)
-    {
-        createInfo.buffer.allocatedBuffer = device->CreateBuffer(
-            createInfo.buffer.size,
-            createInfo.buffer.usageFlags,
-            createInfo.buffer.memoryUsage
-        );
-
-        FrameGraphResource* graphResource = resourcePool.Obtain();
-        graphResource->name = resourceName;
-        graphResource->type = FrameGraphResourceType::Buffer;
-        graphResource->resourceInfo = createInfo;
-
-        return {graphResource->index};
-    }
-
-    void FrameGraph::DestroyResources()
-    {
-        resourcePool.ForEach([&](const FrameGraphResource* frameGraphResource) {
-            if (frameGraphResource->type == FrameGraphResourceType::Texture)
-                device->DestroyTexture(frameGraphResource->resourceInfo.texture.textureHandle);
-
-            if (frameGraphResource->type == FrameGraphResourceType::Buffer)
-                device->DestroyBuffer(frameGraphResource->resourceInfo.buffer.allocatedBuffer);
-        });
-
-        resourcePool.FreeAllResources();
     }
 }

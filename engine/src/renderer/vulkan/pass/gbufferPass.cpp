@@ -7,11 +7,58 @@
 
 #include "renderer/shader_cache.h"
 #include "renderer/vulkan/vulkan_pipeline.h"
-#include "util/log.h"
 
 namespace MongooseVK
 {
     GBufferPass::GBufferPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution): FrameGraphRenderPass(vulkanDevice, _resolution) {}
+
+    void GBufferPass::Setup(FrameGraph* frameGraph)
+    {
+        // Viewspace Normal
+        {
+            FrameGraphResourceCreate outputCreation{};
+            outputCreation.name = "viewspace_normal";
+            outputCreation.type = FrameGraphResourceType::Texture;
+            outputCreation.resourceInfo.texture.textureCreateInfo = {
+                .width = resolution.width,
+                .height = resolution.height,
+                .format = ImageFormat::RGBA32_SFLOAT,
+                .addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+            };
+
+            frameGraph->CreateResource(outputCreation);
+        }
+
+        // Viewspace Position
+        {
+            FrameGraphResourceCreate outputCreation{};
+            outputCreation.name = "viewspace_position";
+            outputCreation.type = FrameGraphResourceType::Texture;
+            outputCreation.resourceInfo.texture.textureCreateInfo = {
+                .width = resolution.width,
+                .height = resolution.height,
+                .format = ImageFormat::RGBA32_SFLOAT,
+                .addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+            };
+
+            frameGraph->CreateResource(outputCreation);
+        }
+
+        // Depth Map
+        {
+            FrameGraphResourceCreate outputCreation{};
+            outputCreation.name = "depth_map";
+            outputCreation.type = FrameGraphResourceType::Texture;
+            outputCreation.resourceInfo.texture.textureCreateInfo = {
+                .width = resolution.width,
+                .height = resolution.height,
+                .format = ImageFormat::DEPTH24_STENCIL8,
+                .addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+            };
+
+            frameGraph->CreateResource(outputCreation);
+        }
+    }
 
     void GBufferPass::Init()
     {

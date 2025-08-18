@@ -12,6 +12,24 @@ namespace MongooseVK
     ShadowMapPass::ShadowMapPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution): FrameGraphRenderPass(
         vulkanDevice, VkExtent2D{SHADOW_MAP_RESOLUTION, SHADOW_MAP_RESOLUTION}) {}
 
+    void ShadowMapPass::Setup(FrameGraph* frameGraph)
+    {
+        FrameGraphResourceCreate resourceCreate{};
+        resourceCreate.name = "directional_shadow_map";
+        resourceCreate.type = FrameGraphResourceType::Texture;
+        resourceCreate.resourceInfo.texture.textureCreateInfo = {};
+        resourceCreate.resourceInfo.texture.textureCreateInfo.width = resolution.width;
+        resourceCreate.resourceInfo.texture.textureCreateInfo.height = resolution.height;
+        resourceCreate.resourceInfo.texture.textureCreateInfo.format = ImageFormat::DEPTH32;
+        resourceCreate.resourceInfo.texture.textureCreateInfo.addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        resourceCreate.resourceInfo.texture.textureCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+        resourceCreate.resourceInfo.texture.textureCreateInfo.arrayLayers = SHADOW_MAP_CASCADE_COUNT;
+        resourceCreate.resourceInfo.texture.textureCreateInfo.compareEnabled = true;
+        resourceCreate.resourceInfo.texture.textureCreateInfo.compareOp = VK_COMPARE_OP_LESS;
+
+        frameGraph->CreateResource(resourceCreate);
+    }
+
     void ShadowMapPass::Init()
     {
         FrameGraphRenderPass::Init();

@@ -4,6 +4,8 @@
 #include <input/camera_controller.h>
 #include <renderer/vulkan/vulkan_image.h>
 #include <renderer/vulkan/vulkan_texture.h>
+#include <renderer/vulkan/pass/infinite_grid_pass.h>
+#include <renderer/vulkan/pass/post_processing/ssao_pass.h>
 
 #include "imgui.h"
 #include "renderer/vulkan/imgui_vulkan.h"
@@ -329,6 +331,7 @@ namespace VulkanDemo
         {
             const auto gridPass = static_cast<MongooseVK::InfiniteGridPass*>(renderer.frameGraphRenderPasses["InfiniteGridPass"]);
 
+            MongooseVK::ImGuiUtils::DrawVec3Control("Grid origin", gridPass->gridParams.origin, false, 0.0f, 150.0f);
             MongooseVK::ImGuiUtils::DrawFloatControl("Grid size", gridPass->gridParams.gridSize, 0.1f, 1000.0f, 0.1f, 150.0f);
             MongooseVK::ImGuiUtils::DrawFloatControl("Cell size", gridPass->gridParams.gridCellSize, 0.01f, 10.0f, 0.01f, 150.0f);
             MongooseVK::ImGuiUtils::DrawRGBColorPicker("Primary color", gridPass->gridParams.gridColorThick, 150.0f);

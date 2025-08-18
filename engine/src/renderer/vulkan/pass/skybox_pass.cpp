@@ -15,6 +15,23 @@ namespace MongooseVK
         cubeMesh = ResourceManager::LoadMesh(device, "resources/models/cube.obj");
     }
 
+    void SkyboxPass::Setup(FrameGraph* frameGraph)
+    {
+        FrameGraphResourceCreate outputCreation{};
+        outputCreation.name = "hdr_image";
+        outputCreation.type = FrameGraphResourceType::Texture;
+        outputCreation.resourceInfo.texture.textureCreateInfo = {
+            .width = resolution.width,
+            .height = resolution.height,
+            .format = ImageFormat::RGBA16_SFLOAT,
+            .addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+        };
+
+        frameGraph->CreateResource(outputCreation);
+
+        frameGraph->WriteResource("depth_map", RenderPassOperation::LoadOp::Load, RenderPassOperation::StoreOp::Store);
+    }
+
     void SkyboxPass::Render(VkCommandBuffer commandBuffer, Scene* scene)
     {
         const VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandles[0]);

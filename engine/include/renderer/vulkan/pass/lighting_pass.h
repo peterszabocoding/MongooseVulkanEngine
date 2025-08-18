@@ -1,6 +1,7 @@
 #pragma once
 
-#include <renderer/frame_graph.h>
+#include <renderer/graph/frame_graph.h>
+#include <renderer/graph/frame_graph_renderpass.h>
 
 #include "renderer/scene.h"
 
@@ -11,6 +12,7 @@ namespace MongooseVK
         explicit LightingPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution);
         ~LightingPass() override = default;
 
+        virtual void Setup(FrameGraph* frameGraph) override;
         virtual void Render(VkCommandBuffer commandBuffer, Scene* scene) override;
 
     protected:

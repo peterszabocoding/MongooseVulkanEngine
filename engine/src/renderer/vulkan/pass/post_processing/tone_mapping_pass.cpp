@@ -12,6 +12,22 @@ namespace MongooseVK
 
     ToneMappingPass::~ToneMappingPass() {}
 
+    void ToneMappingPass::Setup(FrameGraph* frameGraph)
+    {
+        FrameGraphResourceCreate resourceCreate{};
+        resourceCreate.name = "main_frame_color";
+        resourceCreate.type = FrameGraphResourceType::Texture;
+        resourceCreate.resourceInfo.texture.textureCreateInfo = {
+            .width = resolution.width,
+            .height = resolution.height,
+            .format = ImageFormat::RGBA8_UNORM,
+            .addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+        };
+
+        frameGraph->CreateResource(resourceCreate);
+        frameGraph->WriteResource("hdr_image", RenderPassOperation::LoadOp::Load, RenderPassOperation::StoreOp::Store);
+    }
+
     void ToneMappingPass::Render(VkCommandBuffer commandBuffer, Scene* scene)
     {
         VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandles[0]);

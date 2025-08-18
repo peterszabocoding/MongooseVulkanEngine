@@ -1,5 +1,6 @@
 #pragma once
-#include <renderer/frame_graph.h>
+#include <renderer/graph/frame_graph.h>
+#include <renderer/graph/frame_graph_renderpass.h>
 #include <renderer/vulkan/vulkan_mesh.h>
 
 namespace MongooseVK

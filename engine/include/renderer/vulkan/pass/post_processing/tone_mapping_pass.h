@@ -1,5 +1,7 @@
 #pragma once
-#include <renderer/frame_graph.h>
+#include <renderer/graph/frame_graph.h>
+#include <renderer/graph/frame_graph_renderpass.h>
+
 #include "renderer/vulkan/vulkan_mesh.h"
 
 namespace MongooseVK
@@ -15,6 +17,7 @@ namespace MongooseVK
         explicit ToneMappingPass(VulkanDevice* _device, VkExtent2D _resolution);
         ~ToneMappingPass() override;
 
+        virtual void Setup(FrameGraph* frameGraph) override;
         virtual void Render(VkCommandBuffer commandBuffer, Scene* scene) override;
         virtual void Resize(VkExtent2D _resolution) override;
 

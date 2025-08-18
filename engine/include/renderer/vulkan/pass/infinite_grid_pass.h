@@ -1,5 +1,6 @@
 #pragma once
-#include <renderer/frame_graph.h>
+#include <renderer/graph/frame_graph.h>
+#include <renderer/graph/frame_graph_renderpass.h>
 
 namespace MongooseVK
 {
@@ -16,6 +17,7 @@ namespace MongooseVK
         InfiniteGridPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution);
         ~InfiniteGridPass() override = default;
 
+        virtual void Setup(FrameGraph* frameGraph) override;
         virtual void Init() override;
         virtual void Render(VkCommandBuffer commandBuffer, Scene* scene) override;
 

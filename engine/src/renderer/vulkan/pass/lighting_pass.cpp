@@ -11,6 +11,17 @@ namespace MongooseVK
 {
     LightingPass::LightingPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution): FrameGraphRenderPass(vulkanDevice, _resolution) {}
 
+    void LightingPass::Setup(FrameGraph* frameGraph)
+    {
+        frameGraph->WriteResource("hdr_image", RenderPassOperation::LoadOp::Load, RenderPassOperation::StoreOp::Store);
+        frameGraph->WriteResource("depth_map", RenderPassOperation::LoadOp::Load, RenderPassOperation::StoreOp::Store);
+
+        frameGraph->ReadResource("directional_shadow_map");
+        frameGraph->ReadResource("ssao_texture");
+        frameGraph->ReadResource("prefilter_map_texture");
+        frameGraph->ReadResource("brdflut_texture");
+    }
+
     void LightingPass::Render(VkCommandBuffer commandBuffer, Scene* scene)
     {
         VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandles[0]);

@@ -8,6 +8,11 @@ namespace MongooseVK
     UiPass::UiPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution): FrameGraphRenderPass(vulkanDevice, _resolution)
     {}
 
+    void UiPass::Setup(FrameGraph* frameGraph)
+    {
+        frameGraph->WriteResource("main_frame_color", RenderPassOperation::LoadOp::Load, RenderPassOperation::StoreOp::Store);
+    }
+
     void UiPass::Render(VkCommandBuffer commandBuffer, Scene* scene)
     {
         const VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandles[0]);

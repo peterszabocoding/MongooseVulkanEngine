@@ -1,5 +1,6 @@
 #pragma once
-#include <renderer/frame_graph.h>
+#include <renderer/graph/frame_graph.h>
+#include <renderer/graph/frame_graph_renderpass.h>
 
 namespace MongooseVK
 {
@@ -25,6 +26,7 @@ namespace MongooseVK
         explicit SSAOPass(VulkanDevice* _device, VkExtent2D _resolution);
         ~SSAOPass() override;
 
+        virtual void Setup(FrameGraph* frameGraph) override;
         virtual void CreateDescriptors() override;
         virtual void Render(VkCommandBuffer commandBuffer, Scene* scene) override;
         virtual void Resize(VkExtent2D _resolution) override;
