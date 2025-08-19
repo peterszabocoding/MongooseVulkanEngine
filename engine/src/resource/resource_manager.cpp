@@ -6,8 +6,8 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader/tiny_obj_loader.h>
 
-#define TINYGLTF_IMPLEMENTATION
-#include <tiny_gltf/tiny_gltf.h>
+#include <stb_image.h>
+#include <stb_image_write.h>
 
 #include <stdexcept>
 #include <filesystem>
@@ -17,16 +17,28 @@
 #include "renderer/bitmap.h"
 #include "renderer/vulkan/vulkan_mesh.h"
 #include "renderer/vulkan/vulkan_device.h"
-#include "renderer/vulkan/vulkan_pipeline.h"
 #include "renderer/vulkan/vulkan_texture.h"
 #include "util/log.h"
 
 namespace MongooseVK
 {
+    static std::mutex textureMtx;
+    static std::mutex imageResourceMtx;
+
     ImageResource ResourceManager::LoadImageResource(const std::string& imagePath)
     {
+        LOG_INFO("LoadImageResource: " + imagePath);
+
         int width, height, channels;
-        unsigned char* pixels = stbi_load(imagePath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+
+        unsigned char* pixels;
+
+        // stbi_load isn't completely thread safe
+        {
+            std::lock_guard lock(imageResourceMtx);
+            pixels = stbi_load(imagePath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+        }
+
         const uint64_t size = width * height * 4;
 
         if (!pixels)
@@ -83,48 +95,14 @@ namespace MongooseVK
             return ObjLoader::LoadMesh(device, meshPath);
 
         if (filePath.extension() == ".gltf")
-            return GLTFLoader::LoadMesh(device, meshPath);
+            return GLTFLoader().LoadMesh(device, meshPath);
 
 
         LOG_ERROR("Failed to load mesh from file: " + filePath.string());
         abort();
     }
 
-    Ref<VulkanMesh> ResourceManager::LoadMeshFromObj(VulkanDevice* device, const std::string& meshPath)
-    {
-        return ObjLoader::LoadMesh(device, meshPath);
-    }
-
-    Ref<VulkanMesh> ResourceManager::LoadMeshFromglTF(VulkanDevice* device, const std::string& meshPath)
-    {
-        return GLTFLoader::LoadMesh(device, meshPath);
-    }
-
-    Ref<VulkanTexture> ResourceManager::LoadTexture(VulkanDevice* device, const std::string& textureImagePath)
-    {
-        LOG_INFO("Load Texture: " + textureImagePath);
-        ImageResource imageResource = LoadImageResource(textureImagePath);
-
-        const uint32_t mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(imageResource.width, imageResource.height)))) + 1;
-        Ref<VulkanTexture> texture = VulkanTextureBuilder()
-                .SetData(imageResource.data, imageResource.size)
-                .SetResolution(imageResource.width, imageResource.height)
-                .SetFormat(imageResource.format)
-                .SetFilter(VK_FILTER_LINEAR, VK_FILTER_LINEAR)
-                .SetTiling(VK_IMAGE_TILING_OPTIMAL)
-                .AddUsage(VK_IMAGE_USAGE_TRANSFER_DST_BIT)
-                .AddUsage(VK_IMAGE_USAGE_SAMPLED_BIT)
-                .AddAspectFlag(VK_IMAGE_ASPECT_COLOR_BIT)
-                .SetImageResource(imageResource)
-                .SetMipLevels(mipLevels)
-                .Build(device);
-
-        ReleaseImage(imageResource);
-
-        return texture;
-    }
-
-    TextureHandle ResourceManager::LoadTexture2(VulkanDevice* device, const std::string& textureImagePath)
+    void ResourceManager::LoadTexture(VulkanDevice* device, const std::string& textureImagePath, std::vector<TextureHandle>* textureHandles)
     {
         LOG_INFO("Load Texture: " + textureImagePath);
         const ImageResource imageResource = LoadImageResource(textureImagePath);
@@ -138,7 +116,11 @@ namespace MongooseVK
         });
         ReleaseImage(imageResource);
 
-        return textureHandle;
+        // Put handles in a shared std::vector
+        {
+            std::lock_guard lock(textureMtx);
+            textureHandles->push_back(textureHandle);
+        }
     }
 
     Bitmap ResourceManager::LoadHDRCubeMapBitmap(VulkanDevice* device, const std::string& hdrPath)
@@ -186,7 +168,7 @@ namespace MongooseVK
 
     Scene ResourceManager::LoadScene(VulkanDevice* device, const std::string& scenePath, const std::string& skyboxPath)
     {
-        Scene scene = GLTFLoader::LoadScene(device, scenePath);
+        Scene scene = GLTFLoader().LoadScene(device, scenePath);
         scene.scenePath = scenePath;
         scene.skyboxPath = skyboxPath;
 

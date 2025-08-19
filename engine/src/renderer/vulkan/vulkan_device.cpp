@@ -295,8 +295,10 @@ namespace MongooseVK
         vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
     }
 
+    static std::mutex resourceMutex;
     TextureHandle VulkanDevice::CreateTexture(const TextureCreateInfo& _createInfo)
     {
+        std::lock_guard<std::mutex> lock(resourceMutex);
         VulkanTexture* texture = texturePool.Obtain();
         TextureHandle textureHandle = {texture->index};
         TextureCreateInfo createInfo = _createInfo;
