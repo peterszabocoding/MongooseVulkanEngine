@@ -282,14 +282,13 @@ namespace MongooseVK
     {
         if (!isSceneLoaded) return;
 
-        RotateLight(deltaTime);
-        scene.directionalLight.UpdateCascades(camera);
-
-        UpdateLightsBuffer();
-        UpdateCameraBuffer(camera);
-
         device->DrawFrame(vulkanSwapChain->GetSwapChain(),
                           [&](const VkCommandBuffer cmd, const uint32_t imgIndex) {
+                              //RotateLight(deltaTime);
+                              scene.directionalLight.UpdateCascades(camera);
+                              UpdateLightsBuffer();
+                              UpdateCameraBuffer(camera);
+
                               DrawFrame(cmd, imgIndex);
                           },
                           std::bind(&VulkanRenderer::ResizeSwapchain, this));
