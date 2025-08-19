@@ -2,9 +2,9 @@
 
 #include <filesystem>
 #include <glm/gtc/type_ptr.hpp>
-#include <tiny_gltf/tiny_gltf.h>
 
-#include <math/math.h>
+#define TINYGLTF_IMPLEMENTATION
+#include <tiny_gltf/tiny_gltf.h>
 
 #include "renderer/vulkan/vulkan_device.h"
 #include "renderer/transform.h"
@@ -14,10 +14,11 @@
 #include "renderer/vulkan/vulkan_renderer.h"
 #include "resource/resource_manager.h"
 #include "util/log.h"
+#include "util/timer.h"
 
 namespace MongooseVK
 {
-    namespace ImageUtils
+    namespace Utils
     {
         struct VertexAttribute {
             const char* name;
@@ -190,63 +191,57 @@ namespace MongooseVK
                 LoadPrimitive(primitive, model, vulkanMesh);
             }
         }
+    }
 
-        static std::vector<Ref<VulkanTexture>> LoadTextures(tinygltf::Model& model, VulkanDevice* device,
-                                                            const std::filesystem::path& parentPath)
-        {
-            std::vector<Ref<VulkanTexture>> textures;
-            for (tinygltf::Texture& tex: model.textures)
-            {
-                tinygltf::Image image = model.images[tex.source];
-                std::string imagePath = parentPath.string() + "/" + image.uri;
-                textures.push_back(ResourceManager::LoadTexture(device, imagePath));
-            }
-            return textures;
-        }
 
-        static std::vector<TextureHandle> LoadTextures2(tinygltf::Model& model, VulkanDevice* device,
+    std::vector<TextureHandle> GLTFLoader::LoadTextures(tinygltf::Model& model, VulkanDevice* device,
                                                         const std::filesystem::path& parentPath)
+    {
+        Timer functionTimer("LoadTextures");
+
+        std::vector<TextureHandle> textures;
+        for (const tinygltf::Texture& tex: model.textures)
         {
-            std::vector<TextureHandle> textures;
-            for (tinygltf::Texture& tex: model.textures)
-            {
-                tinygltf::Image image = model.images[tex.source];
-                std::string imagePath = parentPath.string() + "/" + image.uri;
-                textures.push_back(ResourceManager::LoadTexture2(device, imagePath));
-            }
-            return textures;
+            tinygltf::Image image = model.images[tex.source];
+            std::string imagePath = parentPath.string() + "/" + image.uri;
+
+            textureFutures.push_back(std::async(std::launch::async, ResourceManager::LoadTexture, device, imagePath, &textures));
         }
 
-        static std::vector<MaterialHandle> LoadMaterials(const tinygltf::Model& model, VulkanDevice* device,
-                                                         const std::vector<Ref<VulkanTexture>>& textures,
-                                                         const std::vector<TextureHandle>& textureHandles)
+        for (auto& future: textureFutures)
+            future.get();
+
+        return textures;
+    }
+
+    std::vector<MaterialHandle> GLTFLoader::LoadMaterials(const tinygltf::Model& model, VulkanDevice* device,
+                                                          const std::vector<TextureHandle>& textureHandles)
+    {
+        std::vector<MaterialHandle> materials;
+        for (const tinygltf::Material& material: model.materials)
         {
-            std::vector<MaterialHandle> materials;
-            for (const tinygltf::Material& material: model.materials)
-            {
-                MaterialCreateInfo materialCreateInfo{};
-                materialCreateInfo.baseColor = glm::make_vec4(material.pbrMetallicRoughness.baseColorFactor.data());
-                materialCreateInfo.metallic = material.pbrMetallicRoughness.metallicFactor;
-                materialCreateInfo.roughness = material.pbrMetallicRoughness.roughnessFactor;
-                materialCreateInfo.isAlphaTested = material.alphaMode != "OPAQUE";
+            MaterialCreateInfo materialCreateInfo{};
+            materialCreateInfo.baseColor = glm::make_vec4(material.pbrMetallicRoughness.baseColorFactor.data());
+            materialCreateInfo.metallic = material.pbrMetallicRoughness.metallicFactor;
+            materialCreateInfo.roughness = material.pbrMetallicRoughness.roughnessFactor;
+            materialCreateInfo.isAlphaTested = material.alphaMode != "OPAQUE";
 
-                materialCreateInfo.baseColorTextureHandle = material.pbrMetallicRoughness.baseColorTexture.index >= 0
-                                                                ? textureHandles[material.pbrMetallicRoughness.baseColorTexture.index]
-                                                                : INVALID_TEXTURE_HANDLE;
+            materialCreateInfo.baseColorTextureHandle = material.pbrMetallicRoughness.baseColorTexture.index >= 0
+                                                            ? textureHandles[material.pbrMetallicRoughness.baseColorTexture.index]
+                                                            : INVALID_TEXTURE_HANDLE;
 
-                materialCreateInfo.metallicRoughnessTextureHandle = material.pbrMetallicRoughness.metallicRoughnessTexture.index >= 0
-                                                                        ? textureHandles[material.pbrMetallicRoughness.
-                                                                            metallicRoughnessTexture.index]
-                                                                        : INVALID_TEXTURE_HANDLE;
+            materialCreateInfo.metallicRoughnessTextureHandle = material.pbrMetallicRoughness.metallicRoughnessTexture.index >= 0
+                                                                    ? textureHandles[material.pbrMetallicRoughness.
+                                                                        metallicRoughnessTexture.index]
+                                                                    : INVALID_TEXTURE_HANDLE;
 
-                materialCreateInfo.normalMapTextureHandle = material.normalTexture.index >= 0
-                                                ? textureHandles[material.normalTexture.index]
-                                                : INVALID_TEXTURE_HANDLE;
+            materialCreateInfo.normalMapTextureHandle = material.normalTexture.index >= 0
+                                                            ? textureHandles[material.normalTexture.index]
+                                                            : INVALID_TEXTURE_HANDLE;
 
-                materials.push_back(device->CreateMaterial(materialCreateInfo));
-            }
-            return materials;
+            materials.push_back(device->CreateMaterial(materialCreateInfo));
         }
+        return materials;
     }
 
     Ref<VulkanMesh> GLTFLoader::LoadMesh(VulkanDevice* device, const std::string& meshPath)
@@ -274,12 +269,10 @@ namespace MongooseVK
         const tinygltf::Node node = model.nodes[scene.nodes[0]];
 
         auto mesh = CreateRef<VulkanMesh>(device);
-        ImageUtils::LoadGLTFNode(node, model, mesh);
+        Utils::LoadGLTFNode(node, model, mesh);
 
-        const std::vector<Ref<VulkanTexture>> textures = ImageUtils::LoadTextures(model, device, gltfFilePath.parent_path());
-        const std::vector<TextureHandle> textureHandles = ImageUtils::LoadTextures2(model, device, gltfFilePath.parent_path());
-
-        const std::vector<MaterialHandle> materials = ImageUtils::LoadMaterials(model, device, textures, textureHandles);
+        const std::vector<TextureHandle> textureHandles = LoadTextures(model, device, gltfFilePath.parent_path());
+        const std::vector<MaterialHandle> materials = LoadMaterials(model, device, textureHandles);
 
         mesh->SetMaterials(materials);
 
@@ -307,10 +300,9 @@ namespace MongooseVK
             abort();
         }
 
-        const std::vector<Ref<VulkanTexture>> textures = ImageUtils::LoadTextures(model, device, gltfFilePath.parent_path());
-        const std::vector<TextureHandle> textureHandles = ImageUtils::LoadTextures2(model, device, gltfFilePath.parent_path());
+        const std::vector<TextureHandle> textureHandles = LoadTextures(model, device, gltfFilePath.parent_path());
+        const std::vector<MaterialHandle> materials = LoadMaterials(model, device, textureHandles);
 
-        const std::vector<MaterialHandle> materials = ImageUtils::LoadMaterials(model, device, textures, textureHandles);
         std::vector<Ref<VulkanMesh>> meshes;
         std::vector<Transform> transforms;
 
@@ -337,7 +329,7 @@ namespace MongooseVK
             }
 
             auto mesh = CreateRef<VulkanMesh>(device);
-            ImageUtils::LoadGLTFNode(node, model, mesh);
+            Utils::LoadGLTFNode(node, model, mesh);
 
             mesh->SetMaterials(materials);
 

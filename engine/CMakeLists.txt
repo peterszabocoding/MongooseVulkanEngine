@@ -86,7 +86,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # /we #### - treat warning as error
     add_compile_options("/W4")      # Enable level-4 warnings
     add_compile_options("/we 4265") # Class has virtual functions, but its non-trivial destructor is not virtual
-    add_compile_options("/we 5204") # Class has virtual functions, but its trivial destructor is not virtual
+    add_compile_options("/wd 5204") # Class has virtual functions, but its trivial destructor is not virtual
     add_compile_options("/wd 4100") # unreferenced formal parameter
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     add_compile_options(-Wnon-virtual-dtor) # Class has virtual functions, but its destructor is not virtual
