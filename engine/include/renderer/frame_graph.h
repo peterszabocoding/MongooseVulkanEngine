@@ -5,6 +5,7 @@
 #include "scene.h"
 #include "vulkan/vulkan_renderpass.h"
 #include "vulkan/vulkan_device.h"
+#include "vulkan/vulkan_mesh.h"
 
 namespace MongooseVK
 {
@@ -191,8 +192,8 @@ namespace MongooseVK
         virtual void Reset();
         virtual void Resize(VkExtent2D _resolution);
 
-        virtual void PreRender(VkCommandBuffer commandBuffer, Scene* scene) {}
-        virtual void Render(VkCommandBuffer commandBuffer, Scene* scene) {}
+        virtual void PreRender(VkCommandBuffer commandBuffer, SceneGraph* scene) {}
+        virtual void Render(VkCommandBuffer commandBuffer, SceneGraph* scene) {}
         virtual void OnResolutionChanged(const uint32_t width, const uint32_t height) {}
 
         VulkanRenderPass* GetRenderPass() const;
@@ -230,8 +231,8 @@ namespace MongooseVK
         ~FrameGraph() = default;
 
         void Init(VkExtent2D _resolution);
-        void PreRender(VkCommandBuffer cmd, Scene* scene);
-        void Render(VkCommandBuffer cmd, Scene* scene);
+        void PreRender(VkCommandBuffer cmd, SceneGraph* scene);
+        void Render(VkCommandBuffer cmd, SceneGraph* scene);
         void Resize(VkExtent2D newResolution);
         FrameGraphNode* CreateNode(FrameGraphNodeCreation nodeCreation);
 

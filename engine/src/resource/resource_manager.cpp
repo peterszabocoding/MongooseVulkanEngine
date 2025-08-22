@@ -166,13 +166,11 @@ namespace MongooseVK
         delete out;
     }
 
-    Scene ResourceManager::LoadScene(VulkanDevice* device, const std::string& scenePath, const std::string& skyboxPath)
+    SceneGraph* ResourceManager::LoadSceneGraph(VulkanDevice* device, const std::string& scenePath, const std::string& skyboxPath)
     {
-        Scene scene = GLTFLoader().LoadScene(device, scenePath);
-        scene.scenePath = scenePath;
-        scene.skyboxPath = skyboxPath;
+        SceneGraph* sceneGraph = GLTFLoader().LoadSceneGraph(device, scenePath);
 
-        Bitmap cubemapBitmap = LoadHDRCubeMapBitmap(device, scene.skyboxPath);
+        Bitmap cubemapBitmap = LoadHDRCubeMapBitmap(device, skyboxPath);
         const TextureCreateInfo textureCreateInfo = {
             .width = cubemapBitmap.width,
             .height = cubemapBitmap.height,
@@ -183,9 +181,9 @@ namespace MongooseVK
             .isCubeMap = true,
         };
 
-        scene.skyboxTexture = device->CreateTexture(textureCreateInfo);
-        device->UploadCubemapTextureData(scene.skyboxTexture, &cubemapBitmap);
+        sceneGraph->skyboxTexture = device->CreateTexture(textureCreateInfo);
+        device->UploadCubemapTextureData(sceneGraph->skyboxTexture, &cubemapBitmap);
 
-        return scene;
+        return sceneGraph;
     }
 }

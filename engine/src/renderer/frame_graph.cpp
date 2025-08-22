@@ -191,7 +191,7 @@ namespace MongooseVK
         resolution = _resolution;
     }
 
-    void FrameGraph::PreRender(const VkCommandBuffer cmd, Scene* scene)
+    void FrameGraph::PreRender(const VkCommandBuffer cmd, SceneGraph* scene)
     {
         for (const auto& renderPass: renderPasses | std::views::values)
         {
@@ -199,7 +199,7 @@ namespace MongooseVK
         }
     }
 
-    void FrameGraph::Render(const VkCommandBuffer cmd, Scene* scene)
+    void FrameGraph::Render(const VkCommandBuffer cmd, SceneGraph* scene)
     {
         for (const auto& renderPass: renderPasses | std::views::values)
         {

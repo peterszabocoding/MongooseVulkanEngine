@@ -27,6 +27,12 @@ namespace MongooseVK
             int byteStride = -1;
         };
 
+        struct glTFPrimitive {
+            std::vector<Vertex> vertices;
+            std::vector<uint32_t> indices;
+            int materialIndex = -1;
+        };
+
         static std::pair<const float*, int> ReadVertexValue(const tinygltf::Primitive& primitive, const tinygltf::Model& model,
                                                             const char* value, int type)
         {
@@ -60,7 +66,7 @@ namespace MongooseVK
             return primitive.attributes.find(attributeName) != primitive.attributes.end();
         }
 
-        static void LoadPrimitive(const tinygltf::Primitive& primitive, const tinygltf::Model& model, const Ref<VulkanMesh>& mesh)
+        static glTFPrimitive LoadPrimitive(const tinygltf::Primitive& primitive, const tinygltf::Model& model)
         {
             std::array<VertexAttribute, 5> vAttributes{};
             vAttributes[0].name = "POSITION";
@@ -174,49 +180,55 @@ namespace MongooseVK
                     }
                     default:
                         LOG_ERROR("Index component type ", accessor.componentType, " not supported!");
-                        return;
+                        ASSERT(false, "Error loading mesh primitive");
+                        return {};
                 }
             }
 
-            mesh->AddMeshlet(vertices, indices, primitive.material);
+            glTFPrimitive result{};
+            result.vertices = vertices;
+            result.indices = indices;
+            result.materialIndex = primitive.material;
+
+            return result;
         }
 
-        static void LoadGLTFNode(const tinygltf::Node& node, const tinygltf::Model& model, const Ref<VulkanMesh>& vulkanMesh)
+        static void LoadGLTFNode(const tinygltf::Node& node,
+                                 const tinygltf::Model& model,
+                                 const Ref<VulkanMesh>& vulkanMesh,
+                                 const std::vector<MaterialHandle>& materials)
         {
             if (node.mesh <= -1) return;
 
-            const tinygltf::Mesh mesh = model.meshes[node.mesh];
-            for (auto& primitive: mesh.primitives)
+            for (auto& primitive: model.meshes[node.mesh].primitives)
             {
-                LoadPrimitive(primitive, model, vulkanMesh);
+                glTFPrimitive meshPrimitive = LoadPrimitive(primitive, model);
+                vulkanMesh->AddMeshlet(meshPrimitive.vertices, meshPrimitive.indices, materials[meshPrimitive.materialIndex]);
             }
         }
     }
 
 
-    std::vector<TextureHandle> GLTFLoader::LoadTextures(tinygltf::Model& model, VulkanDevice* device,
+    std::vector<TextureHandle> GLTFLoader::LoadTextures(VulkanDevice* device, const tinygltf::Model& model,
                                                         const std::filesystem::path& parentPath)
     {
-        Timer functionTimer("LoadTextures");
-
         std::vector<TextureHandle> textures;
         for (const tinygltf::Texture& tex: model.textures)
         {
             tinygltf::Image image = model.images[tex.source];
             std::string imagePath = parentPath.string() + "/" + image.uri;
 
-            textureFutures.push_back(std::async(std::launch::async, ResourceManager::LoadTexture, device, imagePath, &textures));
+            ResourceManager::LoadTexture( device, imagePath, &textures);
         }
-
-        for (auto& future: textureFutures)
-            future.get();
 
         return textures;
     }
 
-    std::vector<MaterialHandle> GLTFLoader::LoadMaterials(const tinygltf::Model& model, VulkanDevice* device,
-                                                          const std::vector<TextureHandle>& textureHandles)
+    std::vector<MaterialHandle> GLTFLoader::LoadMaterials(VulkanDevice* device, const tinygltf::Model& model,
+                                                          const std::filesystem::path& parentPath)
     {
+        const std::vector<TextureHandle>& textureHandles = LoadTextures(device, model, parentPath);
+
         std::vector<MaterialHandle> materials;
         for (const tinygltf::Material& material: model.materials)
         {
@@ -268,25 +280,105 @@ namespace MongooseVK
         const tinygltf::Scene& scene = model.scenes[model.defaultScene > -1 ? model.defaultScene : 0];
         const tinygltf::Node node = model.nodes[scene.nodes[0]];
 
+        const std::vector<MaterialHandle> materials = LoadMaterials(device, model, gltfFilePath.parent_path());
+
         auto mesh = CreateRef<VulkanMesh>(device);
-        Utils::LoadGLTFNode(node, model, mesh);
-
-        const std::vector<TextureHandle> textureHandles = LoadTextures(model, device, gltfFilePath.parent_path());
-        const std::vector<MaterialHandle> materials = LoadMaterials(model, device, textureHandles);
-
-        mesh->SetMaterials(materials);
+        Utils::LoadGLTFNode(node, model, mesh, materials);
 
         return mesh;
     }
 
-    Scene GLTFLoader::LoadScene(VulkanDevice* device, const std::string& scenePath)
+    static void AddNode(VulkanDevice* device,
+                        SceneGraph& scene,
+                        const SceneNodeHandle parent,
+                        const tinygltf::Model& model,
+                        const tinygltf::Node& glTFNode,
+                        const int level)
+    {
+        const int currentNodeIndex = scene.nodes.size();
+        // Setup node
+        {
+            scene.nodes.push_back({.parent = parent});
+            scene.nodes[currentNodeIndex].handle = currentNodeIndex;
+            scene.nodes[currentNodeIndex].level = level;
+
+            scene.names.push_back(glTFNode.name);
+
+            if (parent != INVALID_SCENE_NODE_HANDLE)
+            {
+                const int64_t firstChildIndex = scene.nodes[parent].firstChild;
+
+                if (firstChildIndex == INVALID_SCENE_NODE_HANDLE)
+                {
+                    scene.nodes[parent].firstChild = currentNodeIndex;
+                    scene.nodes[currentNodeIndex].lastSibling = currentNodeIndex;
+                } else
+                {
+                    int64_t lastSiblingIndex = scene.nodes[firstChildIndex].lastSibling;
+                    if (lastSiblingIndex == INVALID_SCENE_NODE_HANDLE)
+                    {
+                        for (lastSiblingIndex = firstChildIndex;
+                             scene.nodes[lastSiblingIndex].nextSibling != INVALID_SCENE_NODE_HANDLE;
+                             lastSiblingIndex = scene.nodes[lastSiblingIndex].nextSibling
+                        );
+                    }
+                    scene.nodes[lastSiblingIndex].nextSibling = currentNodeIndex;
+                    scene.nodes[firstChildIndex].lastSibling = currentNodeIndex;
+                }
+            }
+        }
+
+        // Load transforms
+        {
+            Transform transform;
+            // Generate local node matrix
+            if (glTFNode.translation.size() == 3)
+            {
+                transform.m_Position = glm::make_vec3(glTFNode.translation.data());
+            }
+            if (glTFNode.rotation.size() == 4)
+            {
+                glm::quat quaternion = glm::make_quat(glTFNode.rotation.data());
+                transform.m_Rotation = eulerAngles(quaternion) * 180.f / static_cast<float>(M_PI);
+            }
+            if (glTFNode.scale.size() == 3)
+            {
+                transform.m_Scale = glm::make_vec3(glTFNode.scale.data());
+            }
+
+            scene.transforms.push_back(transform);
+        }
+
+        // Load mesh
+        {
+            const auto mesh = new VulkanMesh(device);
+            if (glTFNode.mesh > -1) {
+                scene.meshes.push_back(mesh);
+                for (auto& primitive: model.meshes[glTFNode.mesh].primitives)
+                {
+                    Utils::glTFPrimitive meshPrimitive = Utils::LoadPrimitive(primitive, model);
+                    mesh->AddMeshlet(meshPrimitive.vertices, meshPrimitive.indices, scene.materials[meshPrimitive.materialIndex]);
+                }
+
+            }
+        }
+
+        // Load child nodes
+        {
+            for (const auto& childNode: glTFNode.children)
+            {
+                AddNode(device, scene, currentNodeIndex, model, model.nodes[childNode], level + 1);
+            }
+        }
+    }
+
+    SceneGraph* GLTFLoader::LoadSceneGraph(VulkanDevice* device, const std::string& scenePath)
     {
         tinygltf::Model model;
         tinygltf::TinyGLTF loader;
-        std::string err;
-        std::string warn;
+        std::string err, warn;
 
-        std::filesystem::path gltfFilePath(scenePath);
+        const std::filesystem::path gltfFilePath(scenePath);
         const bool ret = loader.LoadASCIIFromFile(&model, &err, &warn, scenePath);
 
         if (!warn.empty())
@@ -300,50 +392,14 @@ namespace MongooseVK
             abort();
         }
 
-        const std::vector<TextureHandle> textureHandles = LoadTextures(model, device, gltfFilePath.parent_path());
-        const std::vector<MaterialHandle> materials = LoadMaterials(model, device, textureHandles);
-
-        std::vector<Ref<VulkanMesh>> meshes;
-        std::vector<Transform> transforms;
-
         const tinygltf::Scene& gltfScene = model.scenes[model.defaultScene > -1 ? model.defaultScene : 0];
 
-        for (auto nodeIndex: gltfScene.nodes)
-        {
-            const tinygltf::Node node = model.nodes[nodeIndex];
+        const auto sceneGraph = new SceneGraph();
+        sceneGraph->materials = LoadMaterials(device, model, gltfFilePath.parent_path());
 
-            Transform transform;
-            // Generate local node matrix
-            if (node.translation.size() == 3)
-            {
-                transform.m_Position = glm::make_vec3(node.translation.data());
-            }
-            if (node.rotation.size() == 4)
-            {
-                glm::quat quaternion = glm::make_quat(node.rotation.data());
-                transform.m_Rotation = eulerAngles(quaternion) * 180.f / static_cast<float>(M_PI);
-            }
-            if (node.scale.size() == 3)
-            {
-                transform.m_Scale = glm::make_vec3(node.scale.data());
-            }
+        for (auto& node: gltfScene.nodes)
+            AddNode(device, *sceneGraph, 0, model, model.nodes[node], 1);
 
-            auto mesh = CreateRef<VulkanMesh>(device);
-            Utils::LoadGLTFNode(node, model, mesh);
-
-            mesh->SetMaterials(materials);
-
-            meshes.push_back(mesh);
-            transforms.push_back(transform);
-        }
-
-        Scene scene;
-        scene.filePath = scenePath;
-        scene.name = gltfScene.name;
-        scene.materials = materials;
-        scene.meshes = meshes;
-        scene.transforms = transforms;
-
-        return scene;
+        return sceneGraph;
     }
 }

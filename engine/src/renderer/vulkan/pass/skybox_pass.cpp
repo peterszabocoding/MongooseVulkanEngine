@@ -15,7 +15,7 @@ namespace MongooseVK
         cubeMesh = ResourceManager::LoadMesh(device, "resources/models/cube.obj");
     }
 
-    void SkyboxPass::Render(VkCommandBuffer commandBuffer, Scene* scene)
+    void SkyboxPass::Render(VkCommandBuffer commandBuffer, SceneGraph* scene)
     {
         const VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandles[0]);
 

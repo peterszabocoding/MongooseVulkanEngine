@@ -8,7 +8,7 @@ namespace MongooseVK
         explicit UiPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution);
         ~UiPass() override = default;
 
-        virtual void Render(VkCommandBuffer commandBuffer, Scene* scene) override;
+        virtual void Render(VkCommandBuffer commandBuffer, SceneGraph* scene) override;
 
     protected:
         virtual void LoadPipeline(PipelineCreateInfo& pipelineCreate) override;

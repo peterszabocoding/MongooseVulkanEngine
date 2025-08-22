@@ -8,7 +8,7 @@ namespace MongooseVK
     UiPass::UiPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution): FrameGraphRenderPass(vulkanDevice, _resolution)
     {}
 
-    void UiPass::Render(VkCommandBuffer commandBuffer, Scene* scene)
+    void UiPass::Render(VkCommandBuffer commandBuffer, SceneGraph* scene)
     {
         const VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandles[0]);
         device->SetViewportAndScissor(framebuffer->extent, commandBuffer);

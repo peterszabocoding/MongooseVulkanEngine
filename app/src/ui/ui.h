@@ -335,4 +335,68 @@ namespace VulkanDemo
             MongooseVK::ImGuiUtils::DrawRGBColorPicker("Secondary color", gridPass->gridParams.gridColorThin, 150.0f);
         }
     };
+
+    class SceneGraphWindow final : MongooseVK::ImGuiWindow {
+    public:
+        explicit SceneGraphWindow(MongooseVK::VulkanRenderer& _renderer): ImGuiWindow(_renderer), light(renderer.GetLight()) {}
+
+        ~SceneGraphWindow() override = default;
+
+        virtual const char* GetTitle() override
+        {
+            return "Scene";
+        }
+
+        virtual void Draw() override
+        {
+            MongooseVK::SceneGraph* sceneGraph = renderer.GetSceneGraph();
+            if (ImGui::BeginTable("##scene", 1, ImGuiTableFlags_RowBg))
+            {
+                DrawTreeNode(sceneGraph, sceneGraph->nodes[0]);
+                ImGui::EndTable();
+            }
+        }
+
+        void DrawTreeNode(MongooseVK::SceneGraph* sceneGraph, MongooseVK::SceneNode node)
+        {
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+
+            const char* nodeName = sceneGraph->names[node.handle].c_str();
+
+            ImGui::PushID(nodeName);
+
+            ImGuiTreeNodeFlags tree_flags = ImGuiTreeNodeFlags_None;
+
+            if (node.firstChild > -1)
+            {
+                tree_flags |= ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;
+            } else
+            {
+                tree_flags |= ImGuiTreeNodeFlags_Leaf;
+            }
+
+            const bool node_open = ImGui::TreeNodeEx(nodeName, tree_flags, "%s", nodeName);
+
+            if (node_open)
+            {
+                if (node.firstChild> -1)
+                {
+                    DrawTreeNode(sceneGraph, sceneGraph->nodes[node.firstChild]);
+                }
+
+                ImGui::TreePop();
+            }
+
+            if (node.nextSibling > -1)
+            {
+                DrawTreeNode(sceneGraph, sceneGraph->nodes[node.nextSibling]);
+            }
+
+            ImGui::PopID();
+        }
+
+    private:
+        MongooseVK::DirectionalLight* light;
+    };
 }

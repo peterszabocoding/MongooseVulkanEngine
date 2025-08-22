@@ -7,12 +7,13 @@ namespace MongooseVK
 {
     ToneMappingPass::ToneMappingPass(VulkanDevice* _device, VkExtent2D _resolution): FrameGraphRenderPass(_device, _resolution)
     {
-        screenRect = CreateScope<VulkanMeshlet>(device, Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
+        screenRect = CreateScope<VulkanMesh>(device);
+        screenRect->AddMeshlet(Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
     }
 
     ToneMappingPass::~ToneMappingPass() {}
 
-    void ToneMappingPass::Render(VkCommandBuffer commandBuffer, Scene* scene)
+    void ToneMappingPass::Render(VkCommandBuffer commandBuffer, SceneGraph* scene)
     {
         VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandles[0]);
 
@@ -23,7 +24,7 @@ namespace MongooseVK
 
         DrawCommandParams drawParams{};
         drawParams.commandBuffer = commandBuffer;
-        drawParams.meshlet = screenRect.get();
+        drawParams.meshlet = &screenRect->GetMeshlets()[0];
 
         drawParams.pipelineHandle = pipelineHandle;
 

@@ -28,6 +28,6 @@ namespace MongooseVK
         static Bitmap LoadHDRCubeMapBitmap(VulkanDevice* device, const std::string& hdrPath);
         static void LoadAndSaveHDR(const std::string& hdrPath);
 
-        static Scene LoadScene(VulkanDevice* device, const std::string& scenePath, const std::string& skyboxPath);
+        static SceneGraph* LoadSceneGraph(VulkanDevice* device, const std::string& scenePath, const std::string& skyboxPath);
     };
 }

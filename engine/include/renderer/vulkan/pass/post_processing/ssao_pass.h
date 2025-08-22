@@ -26,7 +26,7 @@ namespace MongooseVK
         ~SSAOPass() override;
 
         virtual void CreateDescriptors() override;
-        virtual void Render(VkCommandBuffer commandBuffer, Scene* scene) override;
+        virtual void Render(VkCommandBuffer commandBuffer, SceneGraph* scene) override;
         virtual void Resize(VkExtent2D _resolution) override;
 
     protected:
@@ -50,6 +50,6 @@ namespace MongooseVK
         TextureHandle ssaoNoiseTextureHandle;
 
         Ref<VulkanBuffer> ssaoBuffer;
-        Scope<VulkanMeshlet> screenRect;
+        Scope<VulkanMesh> screenRect;
     };
 }

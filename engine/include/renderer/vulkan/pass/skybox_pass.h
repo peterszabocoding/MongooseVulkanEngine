@@ -10,7 +10,7 @@ namespace MongooseVK
         SkyboxPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution);
         ~SkyboxPass() override = default;
 
-        virtual void Render(VkCommandBuffer commandBuffer, Scene* scene) override;
+        virtual void Render(VkCommandBuffer commandBuffer, SceneGraph* scene) override;
 
     protected:
         virtual void LoadPipeline(PipelineCreateInfo& pipelineCreate) override;

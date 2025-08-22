@@ -1,9 +1,7 @@
 #include "renderer/vulkan/pass/infinite_grid_pass.h"
-
 #include <renderer/vulkan/vulkan_framebuffer.h>
 
 #include "util/log.h"
-#include "renderer/shader_cache.h"
 #include "renderer/vulkan/vulkan_pipeline.h"
 #include "renderer/vulkan/vulkan_mesh.h"
 
@@ -11,7 +9,8 @@ namespace MongooseVK
 {
     InfiniteGridPass::InfiniteGridPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution): FrameGraphRenderPass(vulkanDevice, _resolution)
     {
-        screenRect = CreateScope<VulkanMeshlet>(device, Primitives::GRID_VERTICES, Primitives::GRID_INDICES);
+        screenRect = CreateScope<VulkanMesh>(device);
+        screenRect->AddMeshlet(Primitives::GRID_VERTICES, Primitives::GRID_INDICES);
     }
 
     void InfiniteGridPass::Init()
@@ -19,7 +18,7 @@ namespace MongooseVK
         FrameGraphRenderPass::Init();
     }
 
-    void InfiniteGridPass::Render(VkCommandBuffer commandBuffer, Scene* scene)
+    void InfiniteGridPass::Render(VkCommandBuffer commandBuffer, SceneGraph* scene)
     {
         const VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandles[0]);
 
@@ -28,7 +27,7 @@ namespace MongooseVK
 
         DrawCommandParams drawCommandParams{};
         drawCommandParams.commandBuffer = commandBuffer;
-        drawCommandParams.meshlet = screenRect.get();
+        drawCommandParams.meshlet = &screenRect->GetMeshlets()[0];
         drawCommandParams.pushConstantParams.data = &gridParams;
         drawCommandParams.pushConstantParams.size = sizeof(GridParams);
 

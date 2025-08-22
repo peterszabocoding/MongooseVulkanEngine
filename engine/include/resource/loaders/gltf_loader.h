@@ -20,17 +20,16 @@ namespace MongooseVK
         ~GLTFLoader() = default;
 
         Ref<VulkanMesh> LoadMesh(VulkanDevice* device, const std::string& meshPath);
-        Scene LoadScene(VulkanDevice* device, const std::string& scenePath);
 
-        std::vector<TextureHandle> LoadTextures(tinygltf::Model& model,
-                                                VulkanDevice* device,
-                                                const std::filesystem::path& parentPath);
-
-        std::vector<MaterialHandle> LoadMaterials(const tinygltf::Model& model,
-                                                  VulkanDevice* device,
-                                                  const std::vector<TextureHandle>& textureHandles);
+        SceneGraph* LoadSceneGraph(VulkanDevice* device, const std::string& scenePath);
 
     private:
-        std::vector<std::future<void>> textureFutures;
+        std::vector<TextureHandle> LoadTextures(VulkanDevice* device,
+                                                const tinygltf::Model& model,
+                                                const std::filesystem::path& parentPath);
+
+        std::vector<MaterialHandle> LoadMaterials(VulkanDevice* device,
+                                                  const tinygltf::Model& model, const std::filesystem::path& parentPath);
+
     };
 }

@@ -5,6 +5,7 @@ namespace VulkanDemo
 {
     struct Scenes {
         std::string SPONZA = "resources/sponza/Sponza.gltf";
+        std::string SPONZA2 = "resources/sponza2/sponza2.gltf";
         std::string CANNON = "resources/cannon/cannon.gltf";
         std::string CHESS_GAME = "resources/chess/ABeautifulGame.gltf";
         std::string DAMAGED_HELMET = "resources/DamagedHelmet/DamagedHelmet.gltf";
@@ -26,12 +27,13 @@ namespace VulkanDemo
         cameraController = new MongooseVK::CameraController(camera);
 
         LOG_TRACE("Loading scene...");
-        renderer.LoadScene(scenes.DAMAGED_HELMET, environments.NEWPORT_LOFT);
+        renderer.LoadScene(scenes.SPONZA2, environments.CASTLE);
 
         LOG_TRACE("Init ImGui");
         imGuiVulkan.Init(glfwWindow, &renderer);
 
         imGuiVulkan.AddWindow(reinterpret_cast<MongooseVK::ImGuiWindow*>(new PerformanceWindow(renderer)));
+        imGuiVulkan.AddWindow(reinterpret_cast<MongooseVK::ImGuiWindow*>(new SceneGraphWindow(renderer)));
         imGuiVulkan.AddWindow(reinterpret_cast<MongooseVK::ImGuiWindow*>(new CameraSettingsWindow(renderer, &camera, *cameraController)));
         imGuiVulkan.AddWindow(reinterpret_cast<MongooseVK::ImGuiWindow*>(new GridSettingsWindow(renderer)));
         imGuiVulkan.AddWindow(reinterpret_cast<MongooseVK::ImGuiWindow*>(new LightSettingsWindow(renderer)));

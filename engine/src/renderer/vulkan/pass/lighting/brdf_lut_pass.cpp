@@ -8,7 +8,8 @@ namespace MongooseVK
 {
     BrdfLUTPass::BrdfLUTPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution): FrameGraphRenderPass(vulkanDevice, VkExtent2D{512, 512})
     {
-        screenRect = CreateScope<VulkanMeshlet>(device, Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
+        screenRect = CreateScope<VulkanMesh>(device);
+        screenRect->AddMeshlet(Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
     }
 
     void BrdfLUTPass::Init()
@@ -16,7 +17,7 @@ namespace MongooseVK
         FrameGraphRenderPass::Init();
     }
 
-    void BrdfLUTPass::Render(VkCommandBuffer commandBuffer, Scene* scene)
+    void BrdfLUTPass::Render(VkCommandBuffer commandBuffer, SceneGraph* scene)
     {
         const VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandles[0]);
 
@@ -25,7 +26,7 @@ namespace MongooseVK
 
         DrawCommandParams drawCommandParams{};
         drawCommandParams.commandBuffer = commandBuffer;
-        drawCommandParams.meshlet = screenRect.get();
+        drawCommandParams.meshlet = &screenRect->GetMeshlets()[0];
         drawCommandParams.pipelineHandle = pipelineHandle;
 
         device->DrawMeshlet(drawCommandParams);

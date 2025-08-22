@@ -18,7 +18,7 @@ namespace MongooseVK
         FrameGraphRenderPass::Init();
     }
 
-    void GBufferPass::Render(VkCommandBuffer commandBuffer, Scene* scene)
+    void GBufferPass::Render(VkCommandBuffer commandBuffer, SceneGraph* scene)
     {
         const VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandles[0]);
 
@@ -31,13 +31,17 @@ namespace MongooseVK
 
         for (size_t i = 0; i < scene->meshes.size(); i++)
         {
+            if (!scene->meshes[i]) continue;
+
             for (auto& meshlet: scene->meshes[i]->GetMeshlets())
             {
-                VulkanMaterial* material = device->GetMaterial(scene->meshes[i]->GetMaterial(meshlet));
+                VulkanMaterial* material = device->GetMaterial(meshlet.material);
+
+
                 if (material->params.alphaTested) continue;
 
                 SimplePushConstantData pushConstantData{
-                    .modelMatrix = scene->transforms[i].GetTransform(),
+                    .modelMatrix = scene->GetTransform(i).GetTransform(),
                     .materialIndex = material->index,
                 };
 

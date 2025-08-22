@@ -85,7 +85,7 @@ namespace MongooseVK
         }
 
         params.meshlet->Bind(params.commandBuffer);
-        vkCmdDrawIndexed(params.commandBuffer, params.meshlet->GetIndexCount(), 1, 0, 0, 0);
+        vkCmdDrawIndexed(params.commandBuffer, params.meshlet->indices.size(), 1, 0, 0, 0);
         drawCallCounter++;
     }
 
@@ -1113,7 +1113,7 @@ namespace MongooseVK
         return allocatedBuffer;
     }
 
-    void VulkanDevice::DestroyBuffer(AllocatedBuffer buffer)
+    void VulkanDevice::DestroyBuffer(const AllocatedBuffer& buffer)
     {
         frameDeletionQueue.Push([=] {
             vmaDestroyBuffer(vmaAllocator, buffer.buffer, buffer.allocation);
