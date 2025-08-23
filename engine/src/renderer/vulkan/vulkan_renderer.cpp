@@ -5,6 +5,8 @@
 #include <renderer/vulkan/vulkan_utils.h>
 #include <renderer/vulkan/pass/lighting_pass.h>
 #include <renderer/vulkan/pass/lighting/brdf_lut_pass.h>
+#include <util/thread_pool.h>
+#include <util/timer.h>
 
 #include "renderer/vulkan/vulkan_device.h"
 #include "renderer/vulkan/vulkan_mesh.h"
@@ -85,19 +87,6 @@ namespace MongooseVK
             });
 
             frameGraphRenderPasses["InfiniteGridPass"]->Init();
-        }
-
-        // BRDF LUT pass
-        {
-            frameGraphRenderPasses["BrdfLUTPass"]->Reset();
-
-            frameGraphRenderPasses["BrdfLUTPass"]->AddOutput({
-                .resource = renderPassResourceMap["brdflut_texture"],
-                .loadOp = RenderPassOperation::LoadOp::Clear,
-                .storeOp = RenderPassOperation::StoreOp::Store
-            });
-
-            frameGraphRenderPasses["BrdfLUTPass"]->Init();
         }
 
         // GBuffer pass
@@ -185,6 +174,46 @@ namespace MongooseVK
             frameGraphRenderPasses["ShadowMapPass"]->Init();
         }
 
+        // Tone Mapping pass
+        {
+            frameGraphRenderPasses["ToneMappingPass"]->Reset();
+
+            frameGraphRenderPasses["ToneMappingPass"]->AddInput(renderPassResourceMap["hdr_image"]);
+
+            frameGraphRenderPasses["ToneMappingPass"]->AddOutput({
+                .resource = renderPassResourceMap["main_frame_color"],
+                .loadOp = RenderPassOperation::LoadOp::Clear,
+                .storeOp = RenderPassOperation::StoreOp::Store
+            });
+            frameGraphRenderPasses["ToneMappingPass"]->Init();
+        }
+
+        // UI pass
+        {
+            frameGraphRenderPasses["UiPass"]->Reset();
+            frameGraphRenderPasses["UiPass"]->AddOutput({
+                .resource = renderPassResourceMap["main_frame_color"],
+                .loadOp = RenderPassOperation::LoadOp::Load,
+                .storeOp = RenderPassOperation::StoreOp::Store
+            });
+            frameGraphRenderPasses["UiPass"]->Init();
+        }
+    }
+
+    void VulkanRenderer::InitializeIBLPasses() {
+        // BRDF LUT pass
+        {
+            frameGraphRenderPasses["BrdfLUTPass"]->Reset();
+
+            frameGraphRenderPasses["BrdfLUTPass"]->AddOutput({
+                .resource = renderPassResourceMap["brdflut_texture"],
+                .loadOp = RenderPassOperation::LoadOp::Clear,
+                .storeOp = RenderPassOperation::StoreOp::Store
+            });
+
+            frameGraphRenderPasses["BrdfLUTPass"]->Init();
+        }
+
         // Prefilter map pass
         {
             frameGraphRenderPasses["PrefilterMapPass"]->Reset();
@@ -214,31 +243,6 @@ namespace MongooseVK
 
             frameGraphRenderPasses["IrradianceMapPass"]->Init();
         }
-
-        // Tone Mapping pass
-        {
-            frameGraphRenderPasses["ToneMappingPass"]->Reset();
-
-            frameGraphRenderPasses["ToneMappingPass"]->AddInput(renderPassResourceMap["hdr_image"]);
-
-            frameGraphRenderPasses["ToneMappingPass"]->AddOutput({
-                .resource = renderPassResourceMap["main_frame_color"],
-                .loadOp = RenderPassOperation::LoadOp::Clear,
-                .storeOp = RenderPassOperation::StoreOp::Store
-            });
-            frameGraphRenderPasses["ToneMappingPass"]->Init();
-        }
-
-        // UI pass
-        {
-            frameGraphRenderPasses["UiPass"]->Reset();
-            frameGraphRenderPasses["UiPass"]->AddOutput({
-                .resource = renderPassResourceMap["main_frame_color"],
-                .loadOp = RenderPassOperation::LoadOp::Load,
-                .storeOp = RenderPassOperation::StoreOp::Store
-            });
-            frameGraphRenderPasses["UiPass"]->Init();
-        }
     }
 
     void VulkanRenderer::LoadScene(const std::string& gltfPath, const std::string& hdrPath)
@@ -246,7 +250,6 @@ namespace MongooseVK
         isSceneLoaded = false;
 
         LOG_TRACE("Load scene");
-        //scene = ResourceManager::LoadScene(device, gltfPath, hdrPath);
         sceneGraph = ResourceManager::LoadSceneGraph(device, gltfPath, hdrPath);
         sceneGraph->directionalLight.direction = normalize(glm::vec3(0.0f, -2.0f, -1.0f));
 
@@ -269,11 +272,22 @@ namespace MongooseVK
         //InitFrameGraph();
         InitializeRenderPasses();
 
+        InitializeIBLPasses();
+
         // IBL and reflection calculations
         device->ImmediateSubmit([&](VkCommandBuffer commandBuffer) {
             frameGraphRenderPasses["IrradianceMapPass"]->Render(commandBuffer, sceneGraph);
             frameGraphRenderPasses["BrdfLUTPass"]->Render(commandBuffer, sceneGraph);
             frameGraphRenderPasses["PrefilterMapPass"]->Render(commandBuffer, sceneGraph);
+
+            delete frameGraphRenderPasses.find("IrradianceMapPass")->second;
+            frameGraphRenderPasses.erase("IrradianceMapPass");
+
+            delete frameGraphRenderPasses.find("BrdfLUTPass")->second;
+            frameGraphRenderPasses.erase("BrdfLUTPass");
+
+            delete frameGraphRenderPasses.find("PrefilterMapPass")->second;
+            frameGraphRenderPasses.erase("PrefilterMapPass");
         });
 
         isSceneLoaded = true;
@@ -423,7 +437,6 @@ namespace MongooseVK
         frameGraphRenderPasses["ShadowMapPass"]->Render(commandBuffer, sceneGraph);
         frameGraphRenderPasses["SSAOPass"]->Render(commandBuffer, sceneGraph);
         frameGraphRenderPasses["SkyboxPass"]->Render(commandBuffer, sceneGraph);
-        frameGraphRenderPasses["InfiniteGridPass"]->Render(commandBuffer, sceneGraph);
 
         VulkanTexture* depthMap = device->GetTexture(renderPassResourceMap["depth_map"].resourceInfo.texture.textureHandle);
         VulkanUtils::TransitionImageLayout(commandBuffer, depthMap->allocatedImage,
@@ -432,6 +445,7 @@ namespace MongooseVK
                                            VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
 
         frameGraphRenderPasses["LightingPass"]->Render(commandBuffer, sceneGraph);
+        frameGraphRenderPasses["InfiniteGridPass"]->Render(commandBuffer, sceneGraph);
 
         VulkanUtils::TransitionImageLayout(commandBuffer, depthMap->allocatedImage,
                                            VK_IMAGE_ASPECT_DEPTH_BIT,

@@ -13,10 +13,10 @@ namespace MongooseVK
 
         struct SSAOParams {
             glm::vec2 resolution;
-            int kernelSize = 24;
-            float radius = 0.25f;
-            float bias = 0.025f;
-            float strength = 2.0f;
+            int kernelSize = 45;
+            float radius = 0.15f;
+            float bias = 0.005f;
+            float strength = 1.0f;
         };
 
         struct BlurParams {};

@@ -56,6 +56,7 @@ namespace MongooseVK
 
         void Init(uint32_t width, uint32_t height);
         void InitializeRenderPasses();
+        void InitializeIBLPasses();
 
         void LoadScene(const std::string& gltfPath, const std::string& hdrPath);
 

@@ -11,14 +11,16 @@
 
 namespace MongooseVK
 {
+    constexpr float RESOLUTION_SCALE = 0.5f;
+
     SSAOPass::SSAOPass(VulkanDevice* _device, VkExtent2D _resolution): FrameGraphRenderPass(_device, VkExtent2D{0, 0})
     {
         screenRect = CreateScope<VulkanMesh>(device);
         screenRect->AddMeshlet(Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
 
         resolution = {
-            static_cast<uint32_t>(_resolution.width * 0.5),
-            static_cast<uint32_t>(_resolution.height * 0.5)
+            static_cast<uint32_t>(_resolution.width * RESOLUTION_SCALE),
+            static_cast<uint32_t>(_resolution.height * RESOLUTION_SCALE)
         };
 
         GenerateKernel();
@@ -72,8 +74,8 @@ namespace MongooseVK
     void SSAOPass::Resize(VkExtent2D _resolution)
     {
         FrameGraphRenderPass::Resize(VkExtent2D{
-            static_cast<uint32_t>(_resolution.width * 0.5),
-            static_cast<uint32_t>(_resolution.height * 0.5)
+            static_cast<uint32_t>(_resolution.width * RESOLUTION_SCALE),
+            static_cast<uint32_t>(_resolution.height * RESOLUTION_SCALE)
         });
     }
 

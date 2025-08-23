@@ -688,6 +688,7 @@ namespace MongooseVK
     FramebufferHandle VulkanDevice::CreateFramebuffer(FramebufferCreateInfo info)
     {
         VulkanFramebuffer* framebuffer = framebufferPool.Obtain();
+        LOG_INFO("Framebuffer created, count {0}", framebufferPool.GetUsedIndices());
 
         std::vector<VkImageView> imageViews;
 
@@ -730,7 +731,7 @@ namespace MongooseVK
     {
         if (framebufferHandle == INVALID_FRAMEBUFFER_HANDLE) return;
         frameDeletionQueue.Push([=] {
-            LOG_INFO("Destroy framebuffer");
+            LOG_INFO("Framebuffer destroyed, count {0}", framebufferPool.GetUsedIndices());
             VulkanFramebuffer* framebuffer = framebufferPool.Get(framebufferHandle.handle);
 
             vkDestroyFramebuffer(GetDevice(), framebuffer->framebuffer, nullptr);
