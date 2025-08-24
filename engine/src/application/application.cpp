@@ -1,5 +1,6 @@
 #include "application/application.h"
 #include "util/log.h"
+#include "util/thread_pool.h"
 
 namespace MongooseVK
 {
@@ -32,6 +33,8 @@ namespace MongooseVK
 
         window = CreateWindow(params);
         window->SetOnWindowCloseCallback([&] { isRunning = false; });
+
+        ThreadPool::Create();
 
         isRunning = true;
     }

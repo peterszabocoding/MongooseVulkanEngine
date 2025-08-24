@@ -122,18 +122,21 @@ vec3 CalcDirectionalLightRadiance(vec3 direction, vec4 shadowMapCoord, int casca
 
 void main() {
     vec3 baseColor;
+    float alpha;
+
     MaterialParamsObject material = materials.params[push.materialIndex];
+
+    baseColor = material.baseColor.rgb;
+    alpha = material.baseColor.a;
 
     if (material.baseColorTextureIndex < INVALID_TEXTURE_INDEX)
     {
         vec4 baseColorSampled = texture(textures[material.baseColorTextureIndex], fragTexCoord);
-        if (baseColorSampled.a < 0.5) discard;
-
         baseColor = pow(baseColorSampled.rgb, vec3(2.2));
-    } else {
-        if (material.baseColor.a < 0.5) discard;
-        baseColor = material.baseColor.rgb;
+        alpha = baseColorSampled.a;
     }
+
+    if (alpha < 0.5) discard;
 
     int cascadeIndex = 0;
     for (int i = 0; i < SHADOW_MAP_CASCADE_COUNT - 1; ++i) {

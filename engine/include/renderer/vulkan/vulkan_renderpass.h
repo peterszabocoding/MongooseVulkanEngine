@@ -8,7 +8,7 @@
 
 namespace MongooseVK
 {
-    class VulkanFramebuffer;
+    struct VulkanFramebuffer;
     class VulkanDevice;
 
     namespace RenderPassOperation

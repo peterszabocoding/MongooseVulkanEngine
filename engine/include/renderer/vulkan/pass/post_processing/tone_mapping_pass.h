@@ -18,7 +18,7 @@ namespace MongooseVK
         ~ToneMappingPass() override;
 
         virtual void Setup(FrameGraph* frameGraph) override;
-        virtual void Render(VkCommandBuffer commandBuffer, Scene* scene) override;
+        virtual void Render(VkCommandBuffer commandBuffer, SceneGraph* scene) override;
         virtual void Resize(VkExtent2D _resolution) override;
 
     protected:
@@ -28,6 +28,6 @@ namespace MongooseVK
         ToneMappingParams toneMappingParams{};
 
     private:
-        Scope<VulkanMeshlet> screenRect;
+        Scope<VulkanMesh> screenRect;
     };
 };

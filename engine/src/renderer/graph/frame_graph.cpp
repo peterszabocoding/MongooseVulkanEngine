@@ -44,7 +44,7 @@ namespace MongooseVK
         }
     }
 
-    void FrameGraph::PreRender(const VkCommandBuffer cmd, Scene* scene)
+    void FrameGraph::PreRender(const VkCommandBuffer cmd, SceneGraph* scene)
     {
         for (const auto& node: nodes)
         {
@@ -52,7 +52,7 @@ namespace MongooseVK
         }
     }
 
-    void FrameGraph::Render(const VkCommandBuffer cmd, Scene* scene)
+    void FrameGraph::Render(const VkCommandBuffer cmd, SceneGraph* scene)
     {
         for (const auto& node: nodes)
         {

@@ -13,7 +13,7 @@ namespace MongooseVK
         ~LightingPass() override = default;
 
         virtual void Setup(FrameGraph* frameGraph) override;
-        virtual void Render(VkCommandBuffer commandBuffer, Scene* scene) override;
+        virtual void Render(VkCommandBuffer commandBuffer, SceneGraph* scene) override;
 
     protected:
         virtual void LoadPipeline(PipelineCreateInfo& pipelineCreate) override;

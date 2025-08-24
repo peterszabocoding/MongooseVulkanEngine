@@ -98,19 +98,6 @@ namespace MongooseVK
             frameGraphRenderPasses["InfiniteGridPass"]->Init();
         }
 
-        // BRDF LUT pass
-        {
-            frameGraphRenderPasses["BrdfLUTPass"]->Reset();
-
-            frameGraphRenderPasses["BrdfLUTPass"]->AddOutput({
-                .resource = renderPassResourceMap["brdflut_texture"],
-                .loadOp = RenderPassOperation::LoadOp::Clear,
-                .storeOp = RenderPassOperation::StoreOp::Store
-            });
-
-            frameGraphRenderPasses["BrdfLUTPass"]->Init();
-        }
-
         // GBuffer pass
         {
             frameGraphRenderPasses["GBufferPass"]->Reset();
@@ -196,36 +183,6 @@ namespace MongooseVK
             frameGraphRenderPasses["ShadowMapPass"]->Init();
         }
 
-        // Prefilter map pass
-        {
-            frameGraphRenderPasses["PrefilterMapPass"]->Reset();
-
-            frameGraphRenderPasses["PrefilterMapPass"]->AddOutput({
-                .resource = renderPassResourceMap["prefilter_map_texture"],
-                .loadOp = RenderPassOperation::LoadOp::Clear,
-                .storeOp = RenderPassOperation::StoreOp::Store
-            });
-
-            static_cast<PrefilterMapPass*>(frameGraphRenderPasses["PrefilterMapPass"])->SetCubemapTexture(scene.skyboxTexture);
-
-            frameGraphRenderPasses["PrefilterMapPass"]->Init();
-        }
-
-        // Irradiance map pass
-        {
-            frameGraphRenderPasses["IrradianceMapPass"]->Reset();
-
-            frameGraphRenderPasses["IrradianceMapPass"]->AddOutput({
-                .resource = renderPassResourceMap["irradiance_map_texture"],
-                .loadOp = RenderPassOperation::LoadOp::Clear,
-                .storeOp = RenderPassOperation::StoreOp::Store
-            });
-
-            static_cast<IrradianceMapPass*>(frameGraphRenderPasses["IrradianceMapPass"])->SetCubemapTexture(scene.skyboxTexture);
-
-            frameGraphRenderPasses["IrradianceMapPass"]->Init();
-        }
-
         // Tone Mapping pass
         {
             frameGraphRenderPasses["ToneMappingPass"]->Reset();
@@ -252,13 +209,59 @@ namespace MongooseVK
         }
     }
 
+    void VulkanRenderer::InitializeIBLPasses()
+    {
+        // BRDF LUT pass
+        {
+            frameGraphRenderPasses["BrdfLUTPass"]->Reset();
+
+            frameGraphRenderPasses["BrdfLUTPass"]->AddOutput({
+                .resource = renderPassResourceMap["brdflut_texture"],
+                .loadOp = RenderPassOperation::LoadOp::Clear,
+                .storeOp = RenderPassOperation::StoreOp::Store
+            });
+
+            frameGraphRenderPasses["BrdfLUTPass"]->Init();
+        }
+
+        // Prefilter map pass
+        {
+            frameGraphRenderPasses["PrefilterMapPass"]->Reset();
+
+            frameGraphRenderPasses["PrefilterMapPass"]->AddOutput({
+                .resource = renderPassResourceMap["prefilter_map_texture"],
+                .loadOp = RenderPassOperation::LoadOp::Clear,
+                .storeOp = RenderPassOperation::StoreOp::Store
+            });
+
+            static_cast<PrefilterMapPass*>(frameGraphRenderPasses["PrefilterMapPass"])->SetCubemapTexture(sceneGraph->skyboxTexture);
+
+            frameGraphRenderPasses["PrefilterMapPass"]->Init();
+        }
+
+        // Irradiance map pass
+        {
+            frameGraphRenderPasses["IrradianceMapPass"]->Reset();
+
+            frameGraphRenderPasses["IrradianceMapPass"]->AddOutput({
+                .resource = renderPassResourceMap["irradiance_map_texture"],
+                .loadOp = RenderPassOperation::LoadOp::Clear,
+                .storeOp = RenderPassOperation::StoreOp::Store
+            });
+
+            static_cast<IrradianceMapPass*>(frameGraphRenderPasses["IrradianceMapPass"])->SetCubemapTexture(sceneGraph->skyboxTexture);
+
+            frameGraphRenderPasses["IrradianceMapPass"]->Init();
+        }
+    }
+
     void VulkanRenderer::LoadScene(const std::string& gltfPath, const std::string& hdrPath)
     {
         isSceneLoaded = false;
 
         LOG_TRACE("Load scene");
-        scene = ResourceManager::LoadScene(device, gltfPath, hdrPath);
-        scene.directionalLight.direction = normalize(glm::vec3(0.0f, -2.0f, -1.0f));
+        sceneGraph = ResourceManager::LoadSceneGraph(device, gltfPath, hdrPath);
+        sceneGraph->directionalLight.direction = normalize(glm::vec3(0.0f, -2.0f, -1.0f));
 
         CreateFrameGraphInputs();
         CreateFrameGraphOutputs();
@@ -286,14 +289,25 @@ namespace MongooseVK
         frameGraph->AddRenderPass<UiPass>("UiPass");
 
         InitializeRenderPasses();
+        InitializeIBLPasses();
 
         frameGraph->Compile();
 
+
         // IBL and reflection calculations
         device->ImmediateSubmit([&](VkCommandBuffer commandBuffer) {
-            frameGraphRenderPasses["IrradianceMapPass"]->Render(commandBuffer, &scene);
-            frameGraphRenderPasses["BrdfLUTPass"]->Render(commandBuffer, &scene);
-            frameGraphRenderPasses["PrefilterMapPass"]->Render(commandBuffer, &scene);
+            frameGraphRenderPasses["IrradianceMapPass"]->Render(commandBuffer, sceneGraph);
+            frameGraphRenderPasses["BrdfLUTPass"]->Render(commandBuffer, sceneGraph);
+            frameGraphRenderPasses["PrefilterMapPass"]->Render(commandBuffer, sceneGraph);
+
+            delete frameGraphRenderPasses.find("IrradianceMapPass")->second;
+            frameGraphRenderPasses.erase("IrradianceMapPass");
+
+            delete frameGraphRenderPasses.find("BrdfLUTPass")->second;
+            frameGraphRenderPasses.erase("BrdfLUTPass");
+
+            delete frameGraphRenderPasses.find("PrefilterMapPass")->second;
+            frameGraphRenderPasses.erase("PrefilterMapPass");
         });
 
         isSceneLoaded = true;
@@ -303,14 +317,13 @@ namespace MongooseVK
     {
         if (!isSceneLoaded) return;
 
-        RotateLight(deltaTime);
-        scene.directionalLight.UpdateCascades(camera);
-
-        UpdateLightsBuffer();
-        UpdateCameraBuffer(camera);
-
         device->DrawFrame(vulkanSwapChain->GetSwapChain(),
                           [&](const VkCommandBuffer cmd, const uint32_t imgIndex) {
+                              //RotateLight(deltaTime);
+                              sceneGraph->directionalLight.UpdateCascades(camera);
+                              UpdateLightsBuffer();
+                              UpdateCameraBuffer(camera);
+
                               DrawFrame(cmd, imgIndex);
                           },
                           std::bind(&VulkanRenderer::ResizeSwapchain, this));
@@ -380,7 +393,7 @@ namespace MongooseVK
         lightTransform.m_Rotation = glm::vec3(45.0f, 0.0f, 0.0f);
 
         const glm::mat4 rot_mat = rotate(glm::mat4(1.0f), glm::radians(22.5f * deltaTime), glm::vec3(0.0, 1.0, 0.0));
-        scene.directionalLight.direction = normalize(glm::vec3(glm::vec4(scene.directionalLight.direction, 1.0f) * rot_mat));
+        sceneGraph->directionalLight.direction = normalize(glm::vec3(glm::vec4(sceneGraph->directionalLight.direction, 1.0f) * rot_mat));
     }
 
     void VulkanRenderer::UpdateLightsBuffer()
@@ -389,15 +402,15 @@ namespace MongooseVK
 
         for (size_t i = 0; i < SHADOW_MAP_CASCADE_COUNT; i++)
         {
-            bufferData.lightProjection[i] = scene.directionalLight.cascades[i].viewProjMatrix;
-            bufferData.cascadeSplits[i].x = scene.directionalLight.cascades[i].splitDepth;
+            bufferData.lightProjection[i] = sceneGraph->directionalLight.cascades[i].viewProjMatrix;
+            bufferData.cascadeSplits[i].x = sceneGraph->directionalLight.cascades[i].splitDepth;
         }
 
-        bufferData.direction = glm::vec4(normalize(scene.directionalLight.direction), 0.0);
-        bufferData.color = glm::vec4(scene.directionalLight.color, 1.0f);
-        bufferData.intensity = scene.directionalLight.intensity;
-        bufferData.ambientIntensity = scene.directionalLight.ambientIntensity;
-        bufferData.bias = scene.directionalLight.bias;
+        bufferData.direction = glm::vec4(normalize(sceneGraph->directionalLight.direction), 0.0);
+        bufferData.color = glm::vec4(sceneGraph->directionalLight.color, 1.0f);
+        bufferData.intensity = sceneGraph->directionalLight.intensity;
+        bufferData.ambientIntensity = sceneGraph->directionalLight.ambientIntensity;
+        bufferData.bias = sceneGraph->directionalLight.bias;
 
         memcpy(renderPassResourceMap["lights_buffer"].resourceInfo.buffer.allocatedBuffer.GetData(), &bufferData, sizeof(LightsBuffer));
     }
@@ -440,11 +453,10 @@ namespace MongooseVK
         if (vulkanSwapChain->GetExtent().width != renderResolution.width || vulkanSwapChain->GetExtent().height != renderResolution.height)
             return;
 
-        frameGraphRenderPasses["GBufferPass"]->Render(commandBuffer, &scene);
-        frameGraphRenderPasses["ShadowMapPass"]->Render(commandBuffer, &scene);
-        frameGraphRenderPasses["SSAOPass"]->Render(commandBuffer, &scene);
-        frameGraphRenderPasses["SkyboxPass"]->Render(commandBuffer, &scene);
-
+        frameGraphRenderPasses["GBufferPass"]->Render(commandBuffer, sceneGraph);
+        frameGraphRenderPasses["ShadowMapPass"]->Render(commandBuffer, sceneGraph);
+        frameGraphRenderPasses["SSAOPass"]->Render(commandBuffer, sceneGraph);
+        frameGraphRenderPasses["SkyboxPass"]->Render(commandBuffer, sceneGraph);
 
         VulkanTexture* depthMap = device->GetTexture(renderPassResourceMap["depth_map"].resourceInfo.texture.textureHandle);
         VulkanUtils::TransitionImageLayout(commandBuffer, depthMap->allocatedImage,
@@ -452,17 +464,16 @@ namespace MongooseVK
                                            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
                                            VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
 
-        frameGraphRenderPasses["LightingPass"]->Render(commandBuffer, &scene);
+        frameGraphRenderPasses["LightingPass"]->Render(commandBuffer, sceneGraph);
+        frameGraphRenderPasses["InfiniteGridPass"]->Render(commandBuffer, sceneGraph);
 
         VulkanUtils::TransitionImageLayout(commandBuffer, depthMap->allocatedImage,
                                            VK_IMAGE_ASPECT_DEPTH_BIT,
                                            VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
                                            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
-        frameGraphRenderPasses["InfiniteGridPass"]->Render(commandBuffer, &scene);
-
-        frameGraphRenderPasses["ToneMappingPass"]->Render(commandBuffer, &scene);
-        frameGraphRenderPasses["UiPass"]->Render(commandBuffer, &scene);
+        frameGraphRenderPasses["ToneMappingPass"]->Render(commandBuffer, sceneGraph);
+        frameGraphRenderPasses["UiPass"]->Render(commandBuffer, sceneGraph);
 
         PresentFrame(commandBuffer, imageIndex);
     }
@@ -647,7 +658,7 @@ namespace MongooseVK
 
         // Directional Shadow Map
         {
-            const uint16_t SHADOW_MAP_RESOLUTION = EnumValue(scene.directionalLight.shadowMapResolution);
+            const uint16_t SHADOW_MAP_RESOLUTION = EnumValue(sceneGraph->directionalLight.shadowMapResolution);
 
             FrameGraphResourceCreate inputCreation{};
             inputCreation.name = "directional_shadow_map";

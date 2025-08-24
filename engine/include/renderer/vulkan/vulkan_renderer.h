@@ -46,6 +46,7 @@ namespace MongooseVK
 
         void Init(uint32_t width, uint32_t height);
         void InitializeRenderPasses();
+        void InitializeIBLPasses();
 
         void LoadScene(const std::string& gltfPath, const std::string& hdrPath);
 
@@ -55,7 +56,9 @@ namespace MongooseVK
 
         VulkanDevice* GetVulkanDevice() const { return device; }
 
-        DirectionalLight* GetLight() { return &scene.directionalLight; }
+        DirectionalLight* GetLight() { return &sceneGraph->directionalLight; }
+
+        SceneGraph* GetSceneGraph() { return sceneGraph; }
 
     private:
         void CreateSwapchain();
@@ -103,7 +106,7 @@ namespace MongooseVK
         VulkanDevice* device;
         uint32_t activeImage = 0;
 
-        Scene scene;
+        SceneGraph* sceneGraph;
         bool isSceneLoaded = false;
 
         Scope<ShaderCache> shaderCache;

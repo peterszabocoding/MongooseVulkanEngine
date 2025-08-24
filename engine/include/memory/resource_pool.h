@@ -23,6 +23,8 @@ namespace MongooseVK
         void* AccessResource(uint32_t handle);
         const void* AccessResource(uint32_t handle) const;
 
+        uint32_t GetUsedIndices() const { return usedIndices; };
+
     protected:
         uint32_t poolSize = 0;
         uint32_t resourceSize = 0;

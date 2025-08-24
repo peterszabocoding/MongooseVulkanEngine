@@ -5,7 +5,7 @@
 namespace MongooseVK
 {
     class ImageViewBuilder;
-    class VulkanFramebuffer;
+    struct VulkanFramebuffer;
 
     class VulkanSwapchain {
     public:

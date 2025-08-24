@@ -14,10 +14,10 @@ namespace MongooseVK
 
         struct SSAOParams {
             glm::vec2 resolution;
-            int kernelSize = 24;
-            float radius = 0.25f;
-            float bias = 0.025f;
-            float strength = 2.0f;
+            int kernelSize = 45;
+            float radius = 0.15f;
+            float bias = 0.005f;
+            float strength = 1.0f;
         };
 
         struct BlurParams {};
@@ -28,7 +28,7 @@ namespace MongooseVK
 
         virtual void Setup(FrameGraph* frameGraph) override;
         virtual void CreateDescriptors() override;
-        virtual void Render(VkCommandBuffer commandBuffer, Scene* scene) override;
+        virtual void Render(VkCommandBuffer commandBuffer, SceneGraph* scene) override;
         virtual void Resize(VkExtent2D _resolution) override;
 
     protected:
@@ -52,6 +52,6 @@ namespace MongooseVK
         TextureHandle ssaoNoiseTextureHandle;
 
         Ref<VulkanBuffer> ssaoBuffer;
-        Scope<VulkanMeshlet> screenRect;
+        Scope<VulkanMesh> screenRect;
     };
 }

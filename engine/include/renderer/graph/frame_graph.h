@@ -93,8 +93,8 @@ namespace MongooseVK
 
         void SetResolution(VkExtent2D _resolution);
         void Compile();
-        void PreRender(VkCommandBuffer cmd, Scene* scene);
-        void Render(VkCommandBuffer cmd, Scene* scene);
+        void PreRender(VkCommandBuffer cmd, SceneGraph* scene);
+        void Render(VkCommandBuffer cmd, SceneGraph* scene);
         void Resize(VkExtent2D newResolution);
 
         template<typename T>

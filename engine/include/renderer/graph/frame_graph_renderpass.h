@@ -16,8 +16,8 @@ namespace MongooseVK {
         virtual void Reset();
         virtual void Resize(VkExtent2D _resolution);
 
-        virtual void PreRender(VkCommandBuffer commandBuffer, Scene* scene) {}
-        virtual void Render(VkCommandBuffer commandBuffer, Scene* scene) {}
+        virtual void PreRender(VkCommandBuffer commandBuffer, SceneGraph* scene) {}
+        virtual void Render(VkCommandBuffer commandBuffer, SceneGraph* scene) {}
         virtual void OnResolutionChanged(const uint32_t width, const uint32_t height) {}
 
         VulkanRenderPass* GetRenderPass() const;

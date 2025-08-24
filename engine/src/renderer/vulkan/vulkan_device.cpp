@@ -85,7 +85,7 @@ namespace MongooseVK
         }
 
         params.meshlet->Bind(params.commandBuffer);
-        vkCmdDrawIndexed(params.commandBuffer, params.meshlet->GetIndexCount(), 1, 0, 0, 0);
+        vkCmdDrawIndexed(params.commandBuffer, params.meshlet->indices.size(), 1, 0, 0, 0);
         drawCallCounter++;
     }
 
@@ -295,8 +295,10 @@ namespace MongooseVK
         vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
     }
 
+    static std::mutex resourceMutex;
     TextureHandle VulkanDevice::CreateTexture(const TextureCreateInfo& _createInfo)
     {
+        std::lock_guard<std::mutex> lock(resourceMutex);
         VulkanTexture* texture = texturePool.Obtain();
         TextureHandle textureHandle = {texture->index};
         TextureCreateInfo createInfo = _createInfo;
@@ -686,6 +688,7 @@ namespace MongooseVK
     FramebufferHandle VulkanDevice::CreateFramebuffer(FramebufferCreateInfo info)
     {
         VulkanFramebuffer* framebuffer = framebufferPool.Obtain();
+        LOG_INFO("Framebuffer created, count {0}", framebufferPool.GetUsedIndices());
 
         std::vector<VkImageView> imageViews;
 
@@ -728,7 +731,7 @@ namespace MongooseVK
     {
         if (framebufferHandle == INVALID_FRAMEBUFFER_HANDLE) return;
         frameDeletionQueue.Push([=] {
-            LOG_INFO("Destroy framebuffer");
+            LOG_INFO("Framebuffer destroyed, count {0}", framebufferPool.GetUsedIndices());
             VulkanFramebuffer* framebuffer = framebufferPool.Get(framebufferHandle.handle);
 
             vkDestroyFramebuffer(GetDevice(), framebuffer->framebuffer, nullptr);
@@ -1111,7 +1114,7 @@ namespace MongooseVK
         return allocatedBuffer;
     }
 
-    void VulkanDevice::DestroyBuffer(AllocatedBuffer buffer)
+    void VulkanDevice::DestroyBuffer(const AllocatedBuffer& buffer)
     {
         frameDeletionQueue.Push([=] {
             vmaDestroyBuffer(vmaAllocator, buffer.buffer, buffer.allocation);

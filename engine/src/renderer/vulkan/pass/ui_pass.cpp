@@ -13,7 +13,7 @@ namespace MongooseVK
         frameGraph->WriteResource("main_frame_color", RenderPassOperation::LoadOp::Load, RenderPassOperation::StoreOp::Store);
     }
 
-    void UiPass::Render(VkCommandBuffer commandBuffer, Scene* scene)
+    void UiPass::Render(VkCommandBuffer commandBuffer, SceneGraph* scene)
     {
         const VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandles[0]);
         device->SetViewportAndScissor(framebuffer->extent, commandBuffer);

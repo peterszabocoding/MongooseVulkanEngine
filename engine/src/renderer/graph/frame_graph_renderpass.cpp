@@ -17,25 +17,40 @@ namespace MongooseVK
     void FrameGraphRenderPass::Reset()
     {
         // Pipeline
-        device->DestroyPipeline(pipelineHandle);
-        pipelineHandle = INVALID_PIPELINE_HANDLE;
+        if (pipelineHandle != INVALID_PIPELINE_HANDLE)
+        {
+            device->DestroyPipeline(pipelineHandle);
+            pipelineHandle = INVALID_PIPELINE_HANDLE;
+        }
 
         // Framebuffer
-        for (const auto handle: framebufferHandles)
-            device->DestroyFramebuffer(handle);
+        if (framebufferHandles.size() > 0)
+        {
+            for (const auto handle: framebufferHandles)
+                device->DestroyFramebuffer(handle);
 
-        framebufferHandles.clear();
+            framebufferHandles.clear();
+        }
 
         // Render pass
-        device->DestroyRenderPass(renderPassHandle);
-        renderPassHandle = INVALID_RENDER_PASS_HANDLE;
+        if (renderPassHandle != INVALID_RENDER_PASS_HANDLE)
+        {
+            device->DestroyRenderPass(renderPassHandle);
+            renderPassHandle = INVALID_RENDER_PASS_HANDLE;
+        }
 
         // Descriptors
-        device->DestroyDescriptorSetLayout(passDescriptorSetLayoutHandle);
-        passDescriptorSetLayoutHandle = INVALID_DESCRIPTOR_SET_LAYOUT_HANDLE;
+        if (passDescriptorSetLayoutHandle != INVALID_DESCRIPTOR_SET_LAYOUT_HANDLE)
+        {
+            device->DestroyDescriptorSetLayout(passDescriptorSetLayoutHandle);
+            passDescriptorSetLayoutHandle = INVALID_DESCRIPTOR_SET_LAYOUT_HANDLE;
+        }
 
-        vkFreeDescriptorSets(device->GetDevice(), device->GetShaderDescriptorPool().GetDescriptorPool(), 1, &passDescriptorSet);
-        passDescriptorSet = VK_NULL_HANDLE;
+        if (passDescriptorSet != VK_NULL_HANDLE)
+        {
+            vkFreeDescriptorSets(device->GetDevice(), device->GetShaderDescriptorPool().GetDescriptorPool(), 1, &passDescriptorSet);
+            passDescriptorSet = VK_NULL_HANDLE;
+        }
 
         inputs.clear();
         outputs.clear();
@@ -44,6 +59,13 @@ namespace MongooseVK
     void FrameGraphRenderPass::Resize(const VkExtent2D _resolution)
     {
         resolution = _resolution;
+
+        for (const auto handle: framebufferHandles)
+            device->DestroyFramebuffer(handle);
+
+        framebufferHandles.clear();
+
+        CreateFramebuffer();
     }
 
     VulkanRenderPass* FrameGraphRenderPass::GetRenderPass() const

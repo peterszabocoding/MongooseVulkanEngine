@@ -11,13 +11,16 @@
 
 namespace MongooseVK
 {
+    constexpr float RESOLUTION_SCALE = 0.5f;
+
     SSAOPass::SSAOPass(VulkanDevice* _device, VkExtent2D _resolution): FrameGraphRenderPass(_device, VkExtent2D{0, 0})
     {
-        screenRect = CreateScope<VulkanMeshlet>(device, Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
+        screenRect = CreateScope<VulkanMesh>(device);
+        screenRect->AddMeshlet(Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
 
         resolution = {
-            static_cast<uint32_t>(_resolution.width * 0.5),
-            static_cast<uint32_t>(_resolution.height * 0.5)
+            static_cast<uint32_t>(_resolution.width * RESOLUTION_SCALE),
+            static_cast<uint32_t>(_resolution.height * RESOLUTION_SCALE)
         };
 
         GenerateKernel();
@@ -58,7 +61,7 @@ namespace MongooseVK
     }
 
 
-    void SSAOPass::Render(VkCommandBuffer commandBuffer, Scene* scene)
+    void SSAOPass::Render(VkCommandBuffer commandBuffer, SceneGraph* scene)
     {
         VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandles[0]);
 
@@ -69,7 +72,7 @@ namespace MongooseVK
 
         DrawCommandParams drawParams{};
         drawParams.commandBuffer = commandBuffer;
-        drawParams.meshlet = screenRect.get();
+        drawParams.meshlet = &screenRect->GetMeshlets()[0];
         drawParams.pipelineHandle = pipelineHandle;
         drawParams.descriptorSets = {
             passDescriptorSet,
@@ -89,8 +92,8 @@ namespace MongooseVK
     void SSAOPass::Resize(VkExtent2D _resolution)
     {
         FrameGraphRenderPass::Resize(VkExtent2D{
-            static_cast<uint32_t>(_resolution.width * 0.5),
-            static_cast<uint32_t>(_resolution.height * 0.5)
+            static_cast<uint32_t>(_resolution.width * RESOLUTION_SCALE),
+            static_cast<uint32_t>(_resolution.height * RESOLUTION_SCALE)
         });
     }
 

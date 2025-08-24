@@ -153,8 +153,9 @@ namespace MongooseVK
 
         // Buffer management
         AllocatedBuffer CreateBuffer(uint64_t size, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage = VMA_MEMORY_USAGE_AUTO);
+
         void CopyBuffer(const AllocatedBuffer& src, const AllocatedBuffer& dst);
-        void DestroyBuffer(AllocatedBuffer buffer);
+        void DestroyBuffer(const AllocatedBuffer& buffer);
 
         // Texture management
         TextureHandle CreateTexture(const TextureCreateInfo& createInfo);

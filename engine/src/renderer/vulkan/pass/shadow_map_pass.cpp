@@ -54,7 +54,7 @@ namespace MongooseVK
         }
     }
 
-    void ShadowMapPass::Render(VkCommandBuffer commandBuffer, Scene* scene)
+    void ShadowMapPass::Render(VkCommandBuffer commandBuffer, SceneGraph* scene)
     {
         for (uint32_t i = 0; i < framebufferHandles.size(); i++)
         {
@@ -73,7 +73,9 @@ namespace MongooseVK
 
             for (size_t i = 0; i < scene->meshes.size(); i++)
             {
-                pushConstantData.modelMatrix = scene->transforms[i].GetTransform();
+                if (!scene->meshes[i]) continue;
+
+                pushConstantData.modelMatrix = scene->GetTransform(i).GetTransform();
 
                 geometryDrawParams.pushConstantParams = {
                     &pushConstantData,
