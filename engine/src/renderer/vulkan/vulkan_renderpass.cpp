@@ -3,7 +3,6 @@
 
 #include <array>
 
-#include "renderer/vulkan/vulkan_framebuffer.h"
 #include "renderer/vulkan/vulkan_utils.h"
 
 namespace MongooseVK

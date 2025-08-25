@@ -21,8 +21,8 @@ namespace MongooseVK
         lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f))
     };
 
-    PrefilterMapPass::PrefilterMapPass(VulkanDevice* vulkanDevice, const VkExtent2D& _resolution)
-        : FrameGraphRenderPass(vulkanDevice, _resolution)
+    PrefilterMapPass::PrefilterMapPass(VulkanDevice* vulkanDevice)
+        : FrameGraphRenderPass(vulkanDevice, {REFLECTION_RESOLUTION, REFLECTION_RESOLUTION})
     {
         cubeMesh = ResourceManager::LoadMesh(device, "resources/models/cube.obj");
     }
@@ -34,7 +34,7 @@ namespace MongooseVK
 
     void PrefilterMapPass::CreateFramebuffer()
     {
-        const TextureHandle outputTextureHandle = outputs[0].resource.resourceInfo.texture.textureHandle;
+        const TextureHandle outputTextureHandle = outputs[0].resource->textureHandle;
         const VulkanTexture* outputTexture = device->GetTexture(outputTextureHandle);
 
         for (unsigned int mip = 0; mip < PREFILTER_MIP_LEVELS; ++mip)
@@ -83,7 +83,7 @@ namespace MongooseVK
                 pushConstantData.projection = m_CaptureProjection;
                 pushConstantData.view = m_CaptureViews[faceIndex];
                 pushConstantData.roughness = roughness;
-                pushConstantData.resolution = cubemap->createInfo.width;
+                pushConstantData.resolution = cubemap->createInfo.resolution.width;
                 pushConstantData.cubemapTexture = cubemapTextureHandle.handle;
 
                 drawCommandParams.pushConstantParams = {

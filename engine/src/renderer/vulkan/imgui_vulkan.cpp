@@ -207,7 +207,7 @@ namespace MongooseVK
         init_info.QueueFamily = vulkanDevice->GetQueueFamilyIndex();
         init_info.Queue = vulkanDevice->GetPresentQueue();
         init_info.DescriptorPool = vulkanDevice->GetGuiDescriptorPool();
-        init_info.RenderPass = renderer->frameGraphRenderPasses["UiPass"]->GetRenderPass()->Get();
+        init_info.RenderPass = renderer->frameGraph->renderPasses["UiPass"]->GetRenderPass()->Get();
         init_info.MinImageCount = 2;
         init_info.ImageCount = 2;
         init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;

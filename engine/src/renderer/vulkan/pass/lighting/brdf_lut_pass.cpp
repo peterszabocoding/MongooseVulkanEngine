@@ -6,7 +6,7 @@
 
 namespace MongooseVK
 {
-    BrdfLUTPass::BrdfLUTPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution): FrameGraphRenderPass(vulkanDevice, VkExtent2D{512, 512})
+    BrdfLUTPass::BrdfLUTPass(VulkanDevice* vulkanDevice): FrameGraphRenderPass(vulkanDevice, VkExtent2D{512, 512})
     {
         screenRect = CreateScope<VulkanMesh>(device);
         screenRect->AddMeshlet(Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);

@@ -72,7 +72,7 @@ layout(std430, set = 2, binding = 1) uniform Lights {
 
 layout(set = 2, binding = 2)    uniform sampler2DArray shadowMap;
 
-// Irradiance uniformsí
+// Irradiance uniforms
 layout(set = 2, binding = 3)    uniform samplerCube irradianceMap;
 
 // Post Processing

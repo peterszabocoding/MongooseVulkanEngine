@@ -296,20 +296,22 @@ namespace MongooseVK
     }
 
     static std::mutex resourceMutex;
+
     TextureHandle VulkanDevice::CreateTexture(const TextureCreateInfo& _createInfo)
     {
-        std::lock_guard<std::mutex> lock(resourceMutex);
+        std::lock_guard lock(resourceMutex);
         VulkanTexture* texture = texturePool.Obtain();
         TextureHandle textureHandle = {texture->index};
         TextureCreateInfo createInfo = _createInfo;
 
         createInfo.mipLevels = createInfo.generateMipMaps
-                                   ? static_cast<uint32_t>(std::floor(std::log2(std::max(createInfo.width, createInfo.height)))) + 1
+                                   ? static_cast<uint32_t>(std::floor(
+                                       std::log2(std::max(createInfo.resolution.width, createInfo.resolution.height)))) + 1
                                    : createInfo.mipLevels;
 
         texture->allocatedImage = ImageBuilder(this)
                                   .SetFormat(createInfo.format)
-                                  .SetResolution(createInfo.width, createInfo.height)
+                                  .SetResolution(createInfo.resolution.width, createInfo.resolution.height)
                                   .SetTiling(VK_IMAGE_TILING_OPTIMAL)
                                   .AddUsage(VK_IMAGE_USAGE_TRANSFER_DST_BIT)
                                   .AddUsage(VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
@@ -419,8 +421,8 @@ namespace MongooseVK
                                                texture->createInfo.mipLevels);
 
             VulkanUtils::CopyBufferToImage(cmd, texture->allocatedImage.image,
-                                           texture->createInfo.width,
-                                           texture->createInfo.height,
+                                           texture->createInfo.resolution.width,
+                                           texture->createInfo.resolution.height,
                                            stagingBuffer.buffer);
 
             if (texture->createInfo.mipLevels > 1)
@@ -429,8 +431,8 @@ namespace MongooseVK
                                              GetPhysicalDevice(),
                                              texture->allocatedImage,
                                              VulkanUtils::ConvertImageFormat(texture->createInfo.format),
-                                             texture->createInfo.width,
-                                             texture->createInfo.height,
+                                             texture->createInfo.resolution.width,
+                                             texture->createInfo.resolution.height,
                                              texture->createInfo.mipLevels);
             } else
             {
@@ -465,7 +467,7 @@ namespace MongooseVK
             bufferCopyRegion.imageSubresource.mipLevel = 0;
             bufferCopyRegion.imageSubresource.baseArrayLayer = face;
             bufferCopyRegion.imageSubresource.layerCount = 1;
-            bufferCopyRegion.imageExtent = {info.width, info.height, 1};
+            bufferCopyRegion.imageExtent = {info.resolution.width, info.resolution.height, 1};
             bufferCopyRegion.bufferOffset = offset;
             bufferCopyRegions.push_back(bufferCopyRegion);
         }
@@ -488,8 +490,8 @@ namespace MongooseVK
                                                 GetPhysicalDevice(),
                                                 texture->allocatedImage,
                                                 VulkanUtils::ConvertImageFormat(info.format),
-                                                info.width,
-                                                info.height,
+                                                info.resolution.width,
+                                                info.resolution.height,
                                                 info.mipLevels);
         });
 
@@ -688,8 +690,6 @@ namespace MongooseVK
     FramebufferHandle VulkanDevice::CreateFramebuffer(FramebufferCreateInfo info)
     {
         VulkanFramebuffer* framebuffer = framebufferPool.Obtain();
-        LOG_INFO("Framebuffer created, count {0}", framebufferPool.GetUsedIndices());
-
         std::vector<VkImageView> imageViews;
 
         for (auto& attachment: info.attachments)
@@ -731,7 +731,6 @@ namespace MongooseVK
     {
         if (framebufferHandle == INVALID_FRAMEBUFFER_HANDLE) return;
         frameDeletionQueue.Push([=] {
-            LOG_INFO("Framebuffer destroyed, count {0}", framebufferPool.GetUsedIndices());
             VulkanFramebuffer* framebuffer = framebufferPool.Get(framebufferHandle.handle);
 
             vkDestroyFramebuffer(GetDevice(), framebuffer->framebuffer, nullptr);

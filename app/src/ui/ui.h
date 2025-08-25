@@ -4,6 +4,9 @@
 #include <input/camera_controller.h>
 #include <renderer/vulkan/vulkan_image.h>
 #include <renderer/vulkan/vulkan_texture.h>
+#include <renderer/vulkan/pass/infinite_grid_pass.h>
+#include <renderer/vulkan/pass/post_processing/ssao_pass.h>
+#include <renderer/vulkan/pass/post_processing/tone_mapping_pass.h>
 
 #include "imgui.h"
 #include "renderer/vulkan/imgui_vulkan.h"
@@ -105,7 +108,7 @@ namespace VulkanDemo
             // Viewspace Normal
             {
                 auto viewspaceNormal = MongooseVK::VulkanDevice::Get()->GetTexture(
-                    renderer.renderPassResourceMap["viewspace_normal"].resourceInfo.texture.textureHandle);
+                    renderer.frameGraph->renderPassResourceMap["viewspace_normal"]->textureHandle);
 
                 debugTextures.push_back(ImGui_ImplVulkan_AddTexture(sampler,
                                                                     viewspaceNormal->imageView,
@@ -115,7 +118,7 @@ namespace VulkanDemo
             // Viewspace Position
             {
                 auto viewspacePosition = MongooseVK::VulkanDevice::Get()->GetTexture(
-                    renderer.renderPassResourceMap["viewspace_position"].resourceInfo.texture.textureHandle);
+                    renderer.frameGraph->renderPassResourceMap["viewspace_position"]->textureHandle);
 
                 debugTextures.push_back(ImGui_ImplVulkan_AddTexture(sampler,
                                                                     viewspacePosition->imageView,
@@ -126,7 +129,7 @@ namespace VulkanDemo
             // Depth map
             {
                 auto depthMap = MongooseVK::VulkanDevice::Get()->GetTexture(
-                    renderer.renderPassResourceMap["depth_map"].resourceInfo.texture.textureHandle);
+                    renderer.frameGraph->renderPassResourceMap["depth_map"]->textureHandle);
 
                 debugTextures.push_back(ImGui_ImplVulkan_AddTexture(depthSampler,
                                                                     depthMap->imageView,
@@ -136,7 +139,7 @@ namespace VulkanDemo
             // SSAO
             {
                 auto ssao = MongooseVK::VulkanDevice::Get()->GetTexture(
-                    renderer.renderPassResourceMap["ssao_texture"].resourceInfo.texture.textureHandle);
+                    renderer.frameGraph->renderPassResourceMap["ssao_texture"]->textureHandle);
 
                 debugTextures.push_back(ImGui_ImplVulkan_AddTexture(sampler,
                                                                     ssao->imageView,
@@ -218,7 +221,7 @@ namespace VulkanDemo
             }
 
             MongooseVK::VulkanTexture* shadowMap = MongooseVK::VulkanDevice::Get()->GetTexture(
-                renderer.renderPassResourceMap["directional_shadow_map"].resourceInfo.texture.textureHandle);
+                renderer.frameGraph->renderPassResourceMap["directional_shadow_map"]->textureHandle);
             if (shadowMap->GetImage())
             {
                 for (size_t i = 0; i < MongooseVK::SHADOW_MAP_CASCADE_COUNT; i++)
@@ -296,8 +299,8 @@ namespace VulkanDemo
 
         virtual void Draw() override
         {
-            const auto ssaoPass = static_cast<MongooseVK::SSAOPass*>(renderer.frameGraphRenderPasses["SSAOPass"]);
-            const auto toneMappingPass = static_cast<MongooseVK::ToneMappingPass*>(renderer.frameGraphRenderPasses["ToneMappingPass"]);
+            const auto ssaoPass = static_cast<MongooseVK::SSAOPass*>(renderer.frameGraph->renderPasses["SSAOPass"]);
+            const auto toneMappingPass = static_cast<MongooseVK::ToneMappingPass*>(renderer.frameGraph->renderPasses["ToneMappingPass"]);
 
             MongooseVK::ImGuiUtils::DrawFloatControl("SSAO Strength", ssaoPass->ssaoParams.strength, 0.01f, 10.0f,
                                                      0.01f, 150.0f);
@@ -327,7 +330,7 @@ namespace VulkanDemo
 
         virtual void Draw() override
         {
-            const auto gridPass = static_cast<MongooseVK::InfiniteGridPass*>(renderer.frameGraphRenderPasses["InfiniteGridPass"]);
+            const auto gridPass = static_cast<MongooseVK::InfiniteGridPass*>(renderer.frameGraph->renderPasses["InfiniteGridPass"]);
 
             MongooseVK::ImGuiUtils::DrawFloatControl("Grid size", gridPass->gridParams.gridSize, 0.1f, 1000.0f, 0.1f, 150.0f);
             MongooseVK::ImGuiUtils::DrawFloatControl("Cell size", gridPass->gridParams.gridCellSize, 0.01f, 10.0f, 0.01f, 150.0f);

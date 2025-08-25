@@ -1,20 +1,13 @@
 #pragma once
 
-#include <renderer/frame_graph.h>
+#include <map>
+#include <renderer/frame_graph/frame_graph.h>
 
 #include "renderer/scene.h"
 #include "vulkan_swapchain.h"
-#include "pass/gbufferPass.h"
-#include "pass/infinite_grid_pass.h"
-#include "pass/lighting_pass.h"
-#include "pass/shadow_map_pass.h"
-#include "pass/skybox_pass.h"
-#include "pass/ui_pass.h"
 #include "pass/lighting/brdf_lut_pass.h"
 #include "pass/lighting/irradiance_map_pass.h"
 #include "pass/lighting/prefilter_map_pass.h"
-#include "pass/post_processing/ssao_pass.h"
-#include "pass/post_processing/tone_mapping_pass.h"
 #include "renderer/Light.h"
 #include "renderer/shader_cache.h"
 
@@ -55,8 +48,7 @@ namespace MongooseVK
         ~VulkanRenderer();
 
         void Init(uint32_t width, uint32_t height);
-        void InitializeRenderPasses();
-        void InitializeIBLPasses();
+        void CalculateIBL();
 
         void LoadScene(const std::string& gltfPath, const std::string& hdrPath);
 
@@ -80,19 +72,15 @@ namespace MongooseVK
         void RotateLight(float deltaTime);
 
         void UpdateLightsBuffer();
-        void PresentFrame(const VkCommandBuffer& commandBuffer, uint32_t imageIndex);
+        void PresentFrame(const VkCommandBuffer& commandBuffer, uint32_t imageIndex, TextureHandle textureToPresent);
 
-        void CreateFrameGraphOutputs();
-        void CreateFrameGraphInputs();
-        void CreateFrameGraphResource(const char* resourceName, FrameGraphResourceType type, FrameGraphResourceCreateInfo& createInfo);
+        void CreateExternalResources();
+
+        FrameGraph::FrameGraphResource* CreateFrameGraphTextureResource(const char* resourceName, TextureCreateInfo& createInfo);
+        FrameGraph::FrameGraphResource*
+        CreateFrameGraphBufferResource(const char* resourceName, FrameGraph::FrameGraphBufferCreateInfo& createInfo);
 
         void PrecomputeIBL();
-
-        template<typename T>
-        void AddRenderPass(const char* name)
-        {
-            frameGraphRenderPasses[name] = new T(device, renderResolution);
-        }
 
     public:
         VkExtent2D viewportResolution;
@@ -101,15 +89,13 @@ namespace MongooseVK
 
         Framebuffers framebuffers;
 
-        ObjectResourcePool<FrameGraphResource> frameGraphResources;
-        std::unordered_map<std::string, FrameGraphResourceHandle> frameGraphResourceHandles;
-        std::unordered_map<std::string, FrameGraphResource> renderPassResourceMap;
-        std::unordered_map<std::string, FrameGraphRenderPass*> frameGraphRenderPasses;
+        Scope<FrameGraph::FrameGraph> frameGraph;
 
-        std::unordered_map<std::string, FrameGraphResourceCreate> frameGraphOutputCreations;
-        std::unordered_map<std::string, FrameGraphResourceCreate> frameGraphInputCreations;
-
-        Scope<FrameGraph> frameGraph;
+        FrameGraph::FrameGraphResource* irradianceMap;
+        FrameGraph::FrameGraphResource* prefilteredMap;
+        FrameGraph::FrameGraphResource* brdfLUT;
+        FrameGraph::FrameGraphResource* cameraBuffer;
+        FrameGraph::FrameGraphResource* lightBuffer;
 
     private:
         VulkanDevice* device;
@@ -122,5 +108,9 @@ namespace MongooseVK
         Scope<VulkanSwapchain> vulkanSwapChain;
 
         float lightSpinningAngle = 0.0f;
+
+        PrefilterMapPass* prefilterPass;
+        IrradianceMapPass* irradiancePass;
+        BrdfLUTPass* brdfLutPass;
     };
 }

@@ -1,9 +1,9 @@
 #pragma once
-#include <renderer/frame_graph.h>
+#include "renderer/frame_graph/frame_graph_renderpass.h"
 
 namespace MongooseVK
 {
-    class UiPass final : public FrameGraphRenderPass {
+    class UiPass final : public FrameGraph::FrameGraphRenderPass {
     public:
         explicit UiPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution);
         ~UiPass() override = default;

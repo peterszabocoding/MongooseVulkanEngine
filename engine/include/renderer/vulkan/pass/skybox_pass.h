@@ -1,11 +1,11 @@
 #pragma once
-#include <renderer/frame_graph.h>
+#include "renderer/frame_graph/frame_graph_renderpass.h"
 
 #include "renderer/scene.h"
 
 namespace MongooseVK
 {
-    class SkyboxPass final : public FrameGraphRenderPass {
+    class SkyboxPass final : public FrameGraph::FrameGraphRenderPass {
     public:
         SkyboxPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution);
         ~SkyboxPass() override = default;

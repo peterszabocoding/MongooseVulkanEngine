@@ -19,7 +19,7 @@ namespace MongooseVK
 
     void ShadowMapPass::CreateFramebuffer()
     {
-        const TextureHandle outputTextureHandle = outputs[0].resource.resourceInfo.texture.textureHandle;
+        const TextureHandle outputTextureHandle = outputs[0].resource->textureHandle;
         const VulkanTexture* outputTexture = device->GetTexture(outputTextureHandle);
 
         for (uint32_t i = 0; i < outputTexture->createInfo.arrayLayers; i++)
@@ -61,7 +61,8 @@ namespace MongooseVK
 
                 geometryDrawParams.pushConstantParams = {
                     &pushConstantData,
-                    sizeof(ShadowMapPushConstantData)
+                    sizeof(ShadowMapPushConstantData),
+                    VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT
                 };
 
                 for (auto& meshlet: scene->meshes[i]->GetMeshlets())

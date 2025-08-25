@@ -3,8 +3,15 @@
 #include <ranges>
 #include <renderer/vulkan/vulkan_texture.h>
 #include <renderer/vulkan/vulkan_utils.h>
+#include <renderer/vulkan/pass/gbufferPass.h>
+#include <renderer/vulkan/pass/infinite_grid_pass.h>
 #include <renderer/vulkan/pass/lighting_pass.h>
+#include <renderer/vulkan/pass/shadow_map_pass.h>
+#include <renderer/vulkan/pass/skybox_pass.h>
+#include <renderer/vulkan/pass/ui_pass.h>
 #include <renderer/vulkan/pass/lighting/brdf_lut_pass.h>
+#include <renderer/vulkan/pass/post_processing/ssao_pass.h>
+#include <renderer/vulkan/pass/post_processing/tone_mapping_pass.h>
 #include <util/thread_pool.h>
 #include <util/timer.h>
 
@@ -23,8 +30,19 @@ namespace MongooseVK
 {
     VulkanRenderer::~VulkanRenderer()
     {
-        device->DestroyBuffer(renderPassResourceMap["camera_buffer"].resourceInfo.buffer.allocatedBuffer);
-        device->DestroyBuffer(renderPassResourceMap["lights_buffer"].resourceInfo.buffer.allocatedBuffer);
+        device->DestroyBuffer(cameraBuffer->allocatedBuffer);
+        device->DestroyBuffer(lightBuffer->allocatedBuffer);
+
+        device->DestroyTexture(brdfLUT->textureHandle);
+        device->DestroyTexture(prefilteredMap->textureHandle);
+        device->DestroyTexture(irradianceMap->textureHandle);
+
+        delete brdfLUT;
+        delete prefilteredMap;
+        delete irradianceMap;
+
+        delete cameraBuffer;
+        delete lightBuffer;
     }
 
     void VulkanRenderer::Init(const uint32_t width, const uint32_t height)
@@ -39,210 +57,65 @@ namespace MongooseVK
         renderResolution.height = resolutionScale * viewportResolution.height;
 
         shaderCache = CreateScope<ShaderCache>(device);
-
-        frameGraph = CreateScope<FrameGraph>(device);
-        frameGraphResources.Init(128);
+        frameGraph = CreateScope<FrameGraph::FrameGraph>(device);
 
         CreateSwapchain();
     }
 
-    void VulkanRenderer::InitializeRenderPasses()
+    void VulkanRenderer::CalculateIBL()
     {
-        // Skybox pass
+        irradiancePass = new IrradianceMapPass(device);
+        brdfLutPass = new BrdfLUTPass(device);
+        prefilterPass = new PrefilterMapPass(device);
+
+        // Init passes
         {
-            frameGraphRenderPasses["SkyboxPass"]->Reset();
+            // BRDF LUT pass
+            {
+                brdfLutPass->Reset();
+                brdfLutPass->AddOutput({
+                    .resource = brdfLUT,
+                    .loadOp = RenderPassOperation::LoadOp::Clear,
+                    .storeOp = RenderPassOperation::StoreOp::Store
+                });
+                brdfLutPass->Init();
+            }
 
-            frameGraphRenderPasses["SkyboxPass"]->AddInput(renderPassResourceMap["camera_buffer"]);
+            // Prefilter map pass
+            {
+                prefilterPass->Reset();
+                prefilterPass->AddOutput({
+                    .resource = prefilteredMap,
+                    .loadOp = RenderPassOperation::LoadOp::Clear,
+                    .storeOp = RenderPassOperation::StoreOp::Store
+                });
+                prefilterPass->SetCubemapTexture(sceneGraph->skyboxTexture);
+                prefilterPass->Init();
+            }
 
-            frameGraphRenderPasses["SkyboxPass"]->AddOutput({
-                .resource = renderPassResourceMap["hdr_image"],
-                .loadOp = RenderPassOperation::LoadOp::Clear,
-                .storeOp = RenderPassOperation::StoreOp::Store
-            });
-            frameGraphRenderPasses["SkyboxPass"]->AddOutput({
-                .resource = renderPassResourceMap["depth_map"],
-                .loadOp = RenderPassOperation::LoadOp::Clear,
-                .storeOp = RenderPassOperation::StoreOp::Store
-            });
-
-            frameGraphRenderPasses["SkyboxPass"]->Init();
+            // Irradiance map pass
+            {
+                irradiancePass->Reset();
+                irradiancePass->AddOutput({
+                    .resource = irradianceMap,
+                    .loadOp = RenderPassOperation::LoadOp::Clear,
+                    .storeOp = RenderPassOperation::StoreOp::Store
+                });
+                irradiancePass->SetCubemapTexture(sceneGraph->skyboxTexture);
+                irradiancePass->Init();
+            }
         }
 
-        // Grid pass
-        {
-            frameGraphRenderPasses["InfiniteGridPass"]->Reset();
+        // IBL and reflection calculations
+        device->ImmediateSubmit([&](const VkCommandBuffer commandBuffer) {
+            irradiancePass->Render(commandBuffer, sceneGraph);
+            brdfLutPass->Render(commandBuffer, sceneGraph);
+            prefilterPass->Render(commandBuffer, sceneGraph);
 
-            frameGraphRenderPasses["InfiniteGridPass"]->AddInput(renderPassResourceMap["camera_buffer"]);
-
-            frameGraphRenderPasses["InfiniteGridPass"]->AddOutput({
-                .resource = renderPassResourceMap["hdr_image"],
-                .loadOp = RenderPassOperation::LoadOp::Load,
-                .storeOp = RenderPassOperation::StoreOp::Store
-            });
-
-            frameGraphRenderPasses["InfiniteGridPass"]->AddOutput({
-                .resource = renderPassResourceMap["depth_map"],
-                .loadOp = RenderPassOperation::LoadOp::Load,
-                .storeOp = RenderPassOperation::StoreOp::Store
-            });
-
-            frameGraphRenderPasses["InfiniteGridPass"]->Init();
-        }
-
-        // GBuffer pass
-        {
-            frameGraphRenderPasses["GBufferPass"]->Reset();
-
-            frameGraphRenderPasses["GBufferPass"]->AddInput(renderPassResourceMap["camera_buffer"]);
-
-            frameGraphRenderPasses["GBufferPass"]->AddOutput({
-                .resource = renderPassResourceMap["viewspace_normal"],
-                .loadOp = RenderPassOperation::LoadOp::Clear,
-                .storeOp = RenderPassOperation::StoreOp::Store
-            });
-
-            frameGraphRenderPasses["GBufferPass"]->AddOutput({
-                .resource = renderPassResourceMap["viewspace_position"],
-                .loadOp = RenderPassOperation::LoadOp::Clear,
-                .storeOp = RenderPassOperation::StoreOp::Store
-            });
-
-            frameGraphRenderPasses["GBufferPass"]->AddOutput({
-                .resource = renderPassResourceMap["depth_map"],
-                .loadOp = RenderPassOperation::LoadOp::Clear,
-                .storeOp = RenderPassOperation::StoreOp::Store
-            });
-
-            frameGraphRenderPasses["GBufferPass"]->Init();
-        }
-
-        // Lighting pass
-        {
-            frameGraphRenderPasses["LightingPass"]->Reset();
-
-            frameGraphRenderPasses["LightingPass"]->AddInput(renderPassResourceMap["camera_buffer"]);
-            frameGraphRenderPasses["LightingPass"]->AddInput(renderPassResourceMap["lights_buffer"]);
-            frameGraphRenderPasses["LightingPass"]->AddInput(renderPassResourceMap["directional_shadow_map"]);
-            frameGraphRenderPasses["LightingPass"]->AddInput(renderPassResourceMap["irradiance_map_texture"]);
-            frameGraphRenderPasses["LightingPass"]->AddInput(renderPassResourceMap["ssao_texture"]);
-            frameGraphRenderPasses["LightingPass"]->AddInput(renderPassResourceMap["prefilter_map_texture"]);
-            frameGraphRenderPasses["LightingPass"]->AddInput(renderPassResourceMap["brdflut_texture"]);
-
-            frameGraphRenderPasses["LightingPass"]->AddOutput({
-                .resource = renderPassResourceMap["hdr_image"],
-                .loadOp = RenderPassOperation::LoadOp::Load,
-                .storeOp = RenderPassOperation::StoreOp::Store
-            });
-
-            frameGraphRenderPasses["LightingPass"]->AddOutput({
-                .resource = renderPassResourceMap["depth_map"],
-                .loadOp = RenderPassOperation::LoadOp::Load,
-                .storeOp = RenderPassOperation::StoreOp::Store
-            });
-
-            frameGraphRenderPasses["LightingPass"]->Init();
-        }
-
-        // SSAO pass
-        {
-            frameGraphRenderPasses["SSAOPass"]->Reset();
-
-            frameGraphRenderPasses["SSAOPass"]->AddInput(renderPassResourceMap["viewspace_normal"]);
-            frameGraphRenderPasses["SSAOPass"]->AddInput(renderPassResourceMap["viewspace_position"]);
-            frameGraphRenderPasses["SSAOPass"]->AddInput(renderPassResourceMap["depth_map"]);
-            frameGraphRenderPasses["SSAOPass"]->AddInput(renderPassResourceMap["camera_buffer"]);
-
-            frameGraphRenderPasses["SSAOPass"]->AddOutput({
-                .resource = renderPassResourceMap["ssao_texture"],
-                .loadOp = RenderPassOperation::LoadOp::Clear,
-                .storeOp = RenderPassOperation::StoreOp::Store
-            });
-
-            frameGraphRenderPasses["SSAOPass"]->Init();
-        }
-
-        // Shadow map pass
-        {
-            frameGraphRenderPasses["ShadowMapPass"]->Reset();
-
-            frameGraphRenderPasses["ShadowMapPass"]->AddOutput({
-                .resource = renderPassResourceMap["directional_shadow_map"],
-                .loadOp = RenderPassOperation::LoadOp::Clear,
-                .storeOp = RenderPassOperation::StoreOp::Store
-            });
-
-            frameGraphRenderPasses["ShadowMapPass"]->Init();
-        }
-
-        // Tone Mapping pass
-        {
-            frameGraphRenderPasses["ToneMappingPass"]->Reset();
-
-            frameGraphRenderPasses["ToneMappingPass"]->AddInput(renderPassResourceMap["hdr_image"]);
-
-            frameGraphRenderPasses["ToneMappingPass"]->AddOutput({
-                .resource = renderPassResourceMap["main_frame_color"],
-                .loadOp = RenderPassOperation::LoadOp::Clear,
-                .storeOp = RenderPassOperation::StoreOp::Store
-            });
-            frameGraphRenderPasses["ToneMappingPass"]->Init();
-        }
-
-        // UI pass
-        {
-            frameGraphRenderPasses["UiPass"]->Reset();
-            frameGraphRenderPasses["UiPass"]->AddOutput({
-                .resource = renderPassResourceMap["main_frame_color"],
-                .loadOp = RenderPassOperation::LoadOp::Load,
-                .storeOp = RenderPassOperation::StoreOp::Store
-            });
-            frameGraphRenderPasses["UiPass"]->Init();
-        }
-    }
-
-    void VulkanRenderer::InitializeIBLPasses() {
-        // BRDF LUT pass
-        {
-            frameGraphRenderPasses["BrdfLUTPass"]->Reset();
-
-            frameGraphRenderPasses["BrdfLUTPass"]->AddOutput({
-                .resource = renderPassResourceMap["brdflut_texture"],
-                .loadOp = RenderPassOperation::LoadOp::Clear,
-                .storeOp = RenderPassOperation::StoreOp::Store
-            });
-
-            frameGraphRenderPasses["BrdfLUTPass"]->Init();
-        }
-
-        // Prefilter map pass
-        {
-            frameGraphRenderPasses["PrefilterMapPass"]->Reset();
-
-            frameGraphRenderPasses["PrefilterMapPass"]->AddOutput({
-                .resource = renderPassResourceMap["prefilter_map_texture"],
-                .loadOp = RenderPassOperation::LoadOp::Clear,
-                .storeOp = RenderPassOperation::StoreOp::Store
-            });
-
-            static_cast<PrefilterMapPass*>(frameGraphRenderPasses["PrefilterMapPass"])->SetCubemapTexture(sceneGraph->skyboxTexture);
-
-            frameGraphRenderPasses["PrefilterMapPass"]->Init();
-        }
-
-        // Irradiance map pass
-        {
-            frameGraphRenderPasses["IrradianceMapPass"]->Reset();
-
-            frameGraphRenderPasses["IrradianceMapPass"]->AddOutput({
-                .resource = renderPassResourceMap["irradiance_map_texture"],
-                .loadOp = RenderPassOperation::LoadOp::Clear,
-                .storeOp = RenderPassOperation::StoreOp::Store
-            });
-
-            static_cast<IrradianceMapPass*>(frameGraphRenderPasses["IrradianceMapPass"])->SetCubemapTexture(sceneGraph->skyboxTexture);
-
-            frameGraphRenderPasses["IrradianceMapPass"]->Init();
-        }
+            delete irradiancePass;
+            delete brdfLutPass;
+            delete prefilterPass;
+        });
     }
 
     void VulkanRenderer::LoadScene(const std::string& gltfPath, const std::string& hdrPath)
@@ -253,42 +126,10 @@ namespace MongooseVK
         sceneGraph = ResourceManager::LoadSceneGraph(device, gltfPath, hdrPath);
         sceneGraph->directionalLight.direction = normalize(glm::vec3(0.0f, -2.0f, -1.0f));
 
-        CreateFrameGraphInputs();
-        CreateFrameGraphOutputs();
+        CreateExternalResources();
+        CalculateIBL();
 
-        AddRenderPass<IrradianceMapPass>("IrradianceMapPass");
-        AddRenderPass<BrdfLUTPass>("BrdfLUTPass");
-        AddRenderPass<PrefilterMapPass>("PrefilterMapPass");
-
-        AddRenderPass<GBufferPass>("GBufferPass");
-        AddRenderPass<LightingPass>("LightingPass");
-        AddRenderPass<ShadowMapPass>("ShadowMapPass");
-        AddRenderPass<SSAOPass>("SSAOPass");
-        AddRenderPass<ToneMappingPass>("ToneMappingPass");
-        AddRenderPass<SkyboxPass>("SkyboxPass");
-        AddRenderPass<InfiniteGridPass>("InfiniteGridPass");
-        AddRenderPass<UiPass>("UiPass");
-
-        //InitFrameGraph();
-        InitializeRenderPasses();
-
-        InitializeIBLPasses();
-
-        // IBL and reflection calculations
-        device->ImmediateSubmit([&](VkCommandBuffer commandBuffer) {
-            frameGraphRenderPasses["IrradianceMapPass"]->Render(commandBuffer, sceneGraph);
-            frameGraphRenderPasses["BrdfLUTPass"]->Render(commandBuffer, sceneGraph);
-            frameGraphRenderPasses["PrefilterMapPass"]->Render(commandBuffer, sceneGraph);
-
-            delete frameGraphRenderPasses.find("IrradianceMapPass")->second;
-            frameGraphRenderPasses.erase("IrradianceMapPass");
-
-            delete frameGraphRenderPasses.find("BrdfLUTPass")->second;
-            frameGraphRenderPasses.erase("BrdfLUTPass");
-
-            delete frameGraphRenderPasses.find("PrefilterMapPass")->second;
-            frameGraphRenderPasses.erase("PrefilterMapPass");
-        });
+        frameGraph->Init(renderResolution);
 
         isSceneLoaded = true;
     }
@@ -299,7 +140,7 @@ namespace MongooseVK
 
         device->DrawFrame(vulkanSwapChain->GetSwapChain(),
                           [&](const VkCommandBuffer cmd, const uint32_t imgIndex) {
-                              //RotateLight(deltaTime);
+                              RotateLight(deltaTime);
                               sceneGraph->directionalLight.UpdateCascades(camera);
                               UpdateLightsBuffer();
                               UpdateCameraBuffer(camera);
@@ -346,14 +187,8 @@ namespace MongooseVK
     void VulkanRenderer::ResizeSwapchain()
     {
         IdleWait();
-
         CreateSwapchain();
-        CreateFrameGraphOutputs();
-
-        for (const auto& renderPass: frameGraphRenderPasses | std::views::values)
-            renderPass->Resize(renderResolution);
-
-        InitializeRenderPasses();
+        frameGraph->Resize(renderResolution);
     }
 
     void VulkanRenderer::UpdateCameraBuffer(Camera& camera)
@@ -364,7 +199,7 @@ namespace MongooseVK
             .cameraPosition = camera.GetTransform().m_Position
         };
 
-        memcpy(renderPassResourceMap["camera_buffer"].resourceInfo.buffer.allocatedBuffer.GetData(), &bufferData, sizeof(CameraBuffer));
+        memcpy(cameraBuffer->allocatedBuffer.GetData(), &bufferData, sizeof(CameraBuffer));
     }
 
     void VulkanRenderer::RotateLight(float deltaTime)
@@ -392,16 +227,15 @@ namespace MongooseVK
         bufferData.ambientIntensity = sceneGraph->directionalLight.ambientIntensity;
         bufferData.bias = sceneGraph->directionalLight.bias;
 
-        memcpy(renderPassResourceMap["lights_buffer"].resourceInfo.buffer.allocatedBuffer.GetData(), &bufferData, sizeof(LightsBuffer));
+        memcpy(lightBuffer->allocatedBuffer.GetData(), &bufferData, sizeof(LightsBuffer));
     }
 
-    void VulkanRenderer::PresentFrame(const VkCommandBuffer& commandBuffer, uint32_t imageIndex)
+    void VulkanRenderer::PresentFrame(const VkCommandBuffer& commandBuffer, uint32_t imageIndex, TextureHandle textureToPresent)
     {
         VkImage swapchainImage = vulkanSwapChain->GetImages()[imageIndex];
-        VulkanTexture* mainFrameTexture = device->GetTexture(
-            renderPassResourceMap["main_frame_color"].resourceInfo.texture.textureHandle);
+        VulkanTexture* presentTexture = device->GetTexture(textureToPresent);
 
-        VulkanUtils::TransitionImageLayout(commandBuffer, mainFrameTexture->allocatedImage,
+        VulkanUtils::TransitionImageLayout(commandBuffer, presentTexture->allocatedImage,
                                            VK_IMAGE_ASPECT_COLOR_BIT,
                                            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                                            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
@@ -415,14 +249,14 @@ namespace MongooseVK
         copyParams.regionWidth = renderResolution.width;
         copyParams.regionHeight = renderResolution.height;
 
-        CopyImage(commandBuffer, mainFrameTexture->allocatedImage, swapchainImage, copyParams);
+        CopyImage(commandBuffer, presentTexture->allocatedImage, swapchainImage, copyParams);
 
         VulkanUtils::TransitionImageLayout(commandBuffer, swapchainImage,
                                            VK_IMAGE_ASPECT_COLOR_BIT,
                                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
-        VulkanUtils::TransitionImageLayout(commandBuffer, mainFrameTexture->allocatedImage,
+        VulkanUtils::TransitionImageLayout(commandBuffer, presentTexture->allocatedImage,
                                            VK_IMAGE_ASPECT_COLOR_BIT,
                                            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                                            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
@@ -430,265 +264,129 @@ namespace MongooseVK
 
     void VulkanRenderer::DrawFrame(const VkCommandBuffer& commandBuffer, uint32_t imageIndex)
     {
-        if (vulkanSwapChain->GetExtent().width != renderResolution.width || vulkanSwapChain->GetExtent().height != renderResolution.height)
+        if (vulkanSwapChain->GetExtent().width != renderResolution.width ||
+            vulkanSwapChain->GetExtent().height != renderResolution.height)
             return;
 
-        frameGraphRenderPasses["GBufferPass"]->Render(commandBuffer, sceneGraph);
-        frameGraphRenderPasses["ShadowMapPass"]->Render(commandBuffer, sceneGraph);
-        frameGraphRenderPasses["SSAOPass"]->Render(commandBuffer, sceneGraph);
-        frameGraphRenderPasses["SkyboxPass"]->Render(commandBuffer, sceneGraph);
+        frameGraph->Render(commandBuffer, sceneGraph);
 
-        VulkanTexture* depthMap = device->GetTexture(renderPassResourceMap["depth_map"].resourceInfo.texture.textureHandle);
-        VulkanUtils::TransitionImageLayout(commandBuffer, depthMap->allocatedImage,
-                                           VK_IMAGE_ASPECT_DEPTH_BIT,
-                                           VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-                                           VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
-
-        frameGraphRenderPasses["LightingPass"]->Render(commandBuffer, sceneGraph);
-        frameGraphRenderPasses["InfiniteGridPass"]->Render(commandBuffer, sceneGraph);
-
-        VulkanUtils::TransitionImageLayout(commandBuffer, depthMap->allocatedImage,
-                                           VK_IMAGE_ASPECT_DEPTH_BIT,
-                                           VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
-                                           VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-
-        frameGraphRenderPasses["ToneMappingPass"]->Render(commandBuffer, sceneGraph);
-        frameGraphRenderPasses["UiPass"]->Render(commandBuffer, sceneGraph);
-
-        PresentFrame(commandBuffer, imageIndex);
+        PresentFrame(commandBuffer, imageIndex, frameGraph->GetResource("main_frame_color")->textureHandle);
     }
 
-    void VulkanRenderer::CreateFrameGraphOutputs()
+    void VulkanRenderer::CreateExternalResources()
     {
-        // Viewspace Normal
-        {
-            FrameGraphResourceCreate outputCreation{};
-            outputCreation.name = "viewspace_normal";
-            outputCreation.type = FrameGraphResourceType::Texture;
-            outputCreation.resourceInfo.texture.textureCreateInfo = {
-                .width = renderResolution.width,
-                .height = renderResolution.height,
-                .format = ImageFormat::RGBA32_SFLOAT,
-                .addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-            };
+        std::vector<FrameGraph::FrameGraphResourceCreate> frameGraphInputCreations;
 
-            frameGraphOutputCreations[outputCreation.name] = outputCreation;
-        }
-
-        // Viewspace Position
-        {
-            FrameGraphResourceCreate outputCreation{};
-            outputCreation.name = "viewspace_position";
-            outputCreation.type = FrameGraphResourceType::Texture;
-            outputCreation.resourceInfo.texture.textureCreateInfo = {
-                .width = renderResolution.width,
-                .height = renderResolution.height,
-                .format = ImageFormat::RGBA32_SFLOAT,
-                .addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-            };
-
-            frameGraphOutputCreations[outputCreation.name] = outputCreation;
-        }
-
-        // Depth Map
-        {
-            FrameGraphResourceCreate outputCreation{};
-            outputCreation.name = "depth_map";
-            outputCreation.type = FrameGraphResourceType::Texture;
-            outputCreation.resourceInfo.texture.textureCreateInfo = {
-                .width = renderResolution.width,
-                .height = renderResolution.height,
-                .format = ImageFormat::DEPTH24_STENCIL8,
-                .addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-            };
-
-            frameGraphOutputCreations[outputCreation.name] = outputCreation;
-        }
-
-        // SSAO Texture
-        {
-            FrameGraphResourceCreate outputCreation{};
-            outputCreation.name = "ssao_texture";
-            outputCreation.type = FrameGraphResourceType::Texture;
-            outputCreation.resourceInfo.texture.textureCreateInfo = {
-                .width = static_cast<uint32_t>(renderResolution.width * 0.5),
-                .height = static_cast<uint32_t>(renderResolution.height * 0.5),
-                .format = ImageFormat::R8_UNORM,
-            };
-
-            frameGraphOutputCreations[outputCreation.name] = outputCreation;
-        }
-
-        // HDR Image
-        {
-            FrameGraphResourceCreate outputCreation{};
-            outputCreation.name = "hdr_image";
-            outputCreation.type = FrameGraphResourceType::Texture;
-            outputCreation.resourceInfo.texture.textureCreateInfo = {
-                .width = renderResolution.width,
-                .height = renderResolution.height,
-                .format = ImageFormat::RGBA16_SFLOAT,
-                .addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-            };
-
-            frameGraphOutputCreations[outputCreation.name] = outputCreation;
-        }
-
-        // Main Frame Color
-        {
-            FrameGraphResourceCreate outputCreation{};
-            outputCreation.name = "main_frame_color";
-            outputCreation.type = FrameGraphResourceType::Texture;
-            outputCreation.resourceInfo.texture.textureCreateInfo = {
-                .width = renderResolution.width,
-                .height = renderResolution.height,
-                .format = ImageFormat::RGBA8_UNORM,
-                .addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-            };
-
-            frameGraphOutputCreations[outputCreation.name] = outputCreation;
-        }
-
-        for (auto& [name, type, resourceInfo]: frameGraphOutputCreations | std::views::values)
-            CreateFrameGraphResource(name, type, resourceInfo);
-    }
-
-    void VulkanRenderer::CreateFrameGraphInputs()
-    {
         // Lights Buffer
         {
-            FrameGraphResourceCreate inputCreation{};
-            inputCreation.name = "lights_buffer";
-            inputCreation.type = FrameGraphResourceType::Buffer;
-            inputCreation.resourceInfo.buffer.size = sizeof(LightsBuffer);
-            inputCreation.resourceInfo.buffer.usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-            inputCreation.resourceInfo.buffer.memoryUsage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+            FrameGraph::FrameGraphBufferCreateInfo bufferCreateInfo{};
+            bufferCreateInfo.size = sizeof(LightsBuffer);
+            bufferCreateInfo.usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+            bufferCreateInfo.memoryUsage = VMA_MEMORY_USAGE_CPU_TO_GPU;
 
-            frameGraphInputCreations[inputCreation.name] = inputCreation;
+            FrameGraph::FrameGraphResourceCreate inputCreation{};
+            inputCreation.name = "lights_buffer";
+            inputCreation.type = FrameGraph::FrameGraphResourceType::Buffer;
+            inputCreation.bufferCreateInfo = bufferCreateInfo;
+
+            lightBuffer = CreateFrameGraphBufferResource(inputCreation.name, inputCreation.bufferCreateInfo);
+            frameGraph->AddExternalResource(inputCreation.name, lightBuffer);
         }
 
         // Camera Buffer
         {
-            FrameGraphResourceCreate inputCreation{};
-            inputCreation.name = "camera_buffer";
-            inputCreation.type = FrameGraphResourceType::Buffer;
-            inputCreation.resourceInfo.buffer.size = sizeof(CameraBuffer);
-            inputCreation.resourceInfo.buffer.usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-            inputCreation.resourceInfo.buffer.memoryUsage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+            FrameGraph::FrameGraphBufferCreateInfo bufferCreateInfo{};
+            bufferCreateInfo.size = sizeof(CameraBuffer);
+            bufferCreateInfo.usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+            bufferCreateInfo.memoryUsage = VMA_MEMORY_USAGE_CPU_TO_GPU;
 
-            frameGraphInputCreations[inputCreation.name] = inputCreation;
+            FrameGraph::FrameGraphResourceCreate inputCreation{};
+            inputCreation.name = "camera_buffer";
+            inputCreation.type = FrameGraph::FrameGraphResourceType::Buffer;
+            inputCreation.bufferCreateInfo = bufferCreateInfo;
+
+            cameraBuffer = CreateFrameGraphBufferResource(inputCreation.name, inputCreation.bufferCreateInfo);
+            frameGraph->AddExternalResource(inputCreation.name, cameraBuffer);
         }
 
         // BRDF LUT
         {
-            FrameGraphResourceCreate inputCreation{};
-            inputCreation.name = "brdflut_texture";
-            inputCreation.type = FrameGraphResourceType::Texture;
-            inputCreation.resourceInfo.texture.textureCreateInfo = {};
-            inputCreation.resourceInfo.texture.textureCreateInfo.width = 512;
-            inputCreation.resourceInfo.texture.textureCreateInfo.height = 512;
-            inputCreation.resourceInfo.texture.textureCreateInfo.format = ImageFormat::RGBA16_SFLOAT;
+            TextureCreateInfo textureCreateInfo{};
+            textureCreateInfo.resolution = {512, 512};
+            textureCreateInfo.format = ImageFormat::RGBA16_SFLOAT;
 
-            frameGraphInputCreations[inputCreation.name] = inputCreation;
+            FrameGraph::FrameGraphResourceCreate inputCreation{};
+            inputCreation.name = "brdflut_texture";
+            inputCreation.type = FrameGraph::FrameGraphResourceType::Texture;
+            inputCreation.textureInfo = textureCreateInfo;
+
+            brdfLUT = CreateFrameGraphTextureResource(inputCreation.name, inputCreation.textureInfo);
+            frameGraph->AddExternalResource(inputCreation.name, brdfLUT);
         }
 
         // Prefilter Map
         {
-            FrameGraphResourceCreate inputCreation{};
-            inputCreation.name = "prefilter_map_texture";
-            inputCreation.type = FrameGraphResourceType::TextureCube;
-            inputCreation.resourceInfo.texture.textureCreateInfo.width = 256;
-            inputCreation.resourceInfo.texture.textureCreateInfo.height = 256;
-            inputCreation.resourceInfo.texture.textureCreateInfo.format = ImageFormat::RGBA16_SFLOAT;
-            inputCreation.resourceInfo.texture.textureCreateInfo.addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-            inputCreation.resourceInfo.texture.textureCreateInfo.mipLevels = 6;
-            inputCreation.resourceInfo.texture.textureCreateInfo.arrayLayers = 6;
-            inputCreation.resourceInfo.texture.textureCreateInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
-            inputCreation.resourceInfo.texture.textureCreateInfo.isCubeMap = true;
+            TextureCreateInfo textureCreateInfo{};
+            textureCreateInfo.resolution = {256, 256};
+            textureCreateInfo.format = ImageFormat::RGBA16_SFLOAT;
+            textureCreateInfo.addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+            textureCreateInfo.mipLevels = 6;
+            textureCreateInfo.arrayLayers = 6;
+            textureCreateInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+            textureCreateInfo.isCubeMap = true;
 
-            frameGraphInputCreations[inputCreation.name] = inputCreation;
+            FrameGraph::FrameGraphResourceCreate inputCreation{};
+            inputCreation.name = "prefilter_map_texture";
+            inputCreation.type = FrameGraph::FrameGraphResourceType::Texture;
+            inputCreation.textureInfo = textureCreateInfo;
+
+            prefilteredMap = CreateFrameGraphTextureResource(inputCreation.name, inputCreation.textureInfo);
+            frameGraph->AddExternalResource(inputCreation.name, prefilteredMap);
         }
 
         // Irradiance Map
         {
-            FrameGraphResourceCreate inputCreation{};
+            TextureCreateInfo textureCreateInfo{};
+            textureCreateInfo.resolution = {32, 32};
+            textureCreateInfo.format = ImageFormat::RGBA16_SFLOAT;
+            textureCreateInfo.addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+            textureCreateInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+            textureCreateInfo.isCubeMap = true;
+            textureCreateInfo.arrayLayers = 6;
+
+            FrameGraph::FrameGraphResourceCreate inputCreation{};
             inputCreation.name = "irradiance_map_texture";
-            inputCreation.type = FrameGraphResourceType::TextureCube;
-            inputCreation.resourceInfo.texture.textureCreateInfo = {};
-            inputCreation.resourceInfo.texture.textureCreateInfo.width = 32;
-            inputCreation.resourceInfo.texture.textureCreateInfo.height = 32;
-            inputCreation.resourceInfo.texture.textureCreateInfo.format = ImageFormat::RGBA16_SFLOAT;
-            inputCreation.resourceInfo.texture.textureCreateInfo.addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-            inputCreation.resourceInfo.texture.textureCreateInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
-            inputCreation.resourceInfo.texture.textureCreateInfo.isCubeMap = true;
-            inputCreation.resourceInfo.texture.textureCreateInfo.arrayLayers = 6;
+            inputCreation.type = FrameGraph::FrameGraphResourceType::Texture;
+            inputCreation.textureInfo = textureCreateInfo;
 
-            frameGraphInputCreations[inputCreation.name] = inputCreation;
-        }
-
-        // Directional Shadow Map
-        {
-            const uint16_t SHADOW_MAP_RESOLUTION = EnumValue(sceneGraph->directionalLight.shadowMapResolution);
-
-            FrameGraphResourceCreate inputCreation{};
-            inputCreation.name = "directional_shadow_map";
-            inputCreation.type = FrameGraphResourceType::Texture;
-            inputCreation.resourceInfo.texture.textureCreateInfo = {};
-            inputCreation.resourceInfo.texture.textureCreateInfo.width = SHADOW_MAP_RESOLUTION;
-            inputCreation.resourceInfo.texture.textureCreateInfo.height = SHADOW_MAP_RESOLUTION;
-            inputCreation.resourceInfo.texture.textureCreateInfo.format = ImageFormat::DEPTH32;
-            inputCreation.resourceInfo.texture.textureCreateInfo.addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-            inputCreation.resourceInfo.texture.textureCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-            inputCreation.resourceInfo.texture.textureCreateInfo.arrayLayers = SHADOW_MAP_CASCADE_COUNT;
-            inputCreation.resourceInfo.texture.textureCreateInfo.compareEnabled = true;
-            inputCreation.resourceInfo.texture.textureCreateInfo.compareOp = VK_COMPARE_OP_LESS;
-
-            frameGraphInputCreations[inputCreation.name] = inputCreation;
-        }
-
-        for (auto& [name, type, resourceInfo]: frameGraphInputCreations | std::views::values)
-        {
-            CreateFrameGraphResource(name, type, resourceInfo);
+            irradianceMap = CreateFrameGraphTextureResource(inputCreation.name, inputCreation.textureInfo);
+            frameGraph->AddExternalResource(inputCreation.name, irradianceMap);
         }
     }
 
-    void VulkanRenderer::CreateFrameGraphResource(const char* resourceName, FrameGraphResourceType type,
-                                                  FrameGraphResourceCreateInfo& createInfo)
+    FrameGraph::FrameGraphResource* VulkanRenderer::CreateFrameGraphTextureResource(const char* resourceName, TextureCreateInfo& createInfo)
     {
-        if (frameGraphResourceHandles.contains(resourceName))
-        {
-            FrameGraphResource* resource = frameGraphResources.Get(frameGraphResourceHandles[resourceName].index);
-
-            if (type == FrameGraphResourceType::Texture || type == FrameGraphResourceType::TextureCube)
-                device->DestroyTexture(resource->resourceInfo.texture.textureHandle);
-
-            if (type == FrameGraphResourceType::Buffer)
-                device->DestroyBuffer(resource->resourceInfo.buffer.allocatedBuffer);
-
-            frameGraphResourceHandles.erase(resourceName);
-            frameGraphResources.Release(resource);
-        }
-
-        if (type == FrameGraphResourceType::Texture || type == FrameGraphResourceType::TextureCube)
-        {
-            createInfo.texture.textureHandle = device->CreateTexture(createInfo.texture.textureCreateInfo);
-        }
-
-        if (type == FrameGraphResourceType::Buffer)
-        {
-            createInfo.buffer.allocatedBuffer = device->CreateBuffer(
-                createInfo.buffer.size,
-                createInfo.buffer.usageFlags,
-                createInfo.buffer.memoryUsage
-            );
-        }
-
-        FrameGraphResource* graphResource = frameGraphResources.Obtain();
+        FrameGraph::FrameGraphResource* graphResource = new FrameGraph::FrameGraphResource();
         graphResource->name = resourceName;
-        graphResource->type = type;
-        graphResource->resourceInfo = createInfo;
+        graphResource->type = FrameGraph::FrameGraphResourceType::Texture;
+        graphResource->textureInfo = createInfo;
+        graphResource->textureHandle =  device->CreateTexture(createInfo);
 
-        frameGraphResourceHandles[graphResource->name] = {graphResource->index};
-        renderPassResourceMap[graphResource->name] = *graphResource;
+        return graphResource;
+    }
+
+    FrameGraph::FrameGraphResource*
+    VulkanRenderer::CreateFrameGraphBufferResource(const char* resourceName, FrameGraph::FrameGraphBufferCreateInfo& createInfo)
+    {
+        FrameGraph::FrameGraphResource* graphResource = new FrameGraph::FrameGraphResource();
+        graphResource->name = resourceName;
+        graphResource->type = FrameGraph::FrameGraphResourceType::Buffer;
+        graphResource->allocatedBuffer = device->CreateBuffer(
+            createInfo.size,
+            createInfo.usageFlags,
+            createInfo.memoryUsage
+        );
+
+        return graphResource;
     }
 }

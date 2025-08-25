@@ -1,12 +1,12 @@
 #pragma once
-#include <renderer/frame_graph.h>
+#include "renderer/frame_graph/frame_graph_renderpass.h"
 #include <renderer/vulkan/vulkan_mesh.h>
 
 namespace MongooseVK
 {
-    class BrdfLUTPass final : public FrameGraphRenderPass {
+    class BrdfLUTPass final : public FrameGraph::FrameGraphRenderPass {
     public:
-        BrdfLUTPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution);
+        BrdfLUTPass(VulkanDevice* vulkanDevice);
         ~BrdfLUTPass() override = default;
 
         virtual void Init() override;
@@ -17,6 +17,6 @@ namespace MongooseVK
         virtual void LoadPipeline(PipelineCreateInfo& pipelineCreate) override;
 
     private:
-        Ref<VulkanMesh> screenRect;
+        Scope<VulkanMesh> screenRect;
     };
 }

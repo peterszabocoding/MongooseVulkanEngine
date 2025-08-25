@@ -1,11 +1,11 @@
 #pragma once
-#include <renderer/frame_graph.h>
+#include "renderer/frame_graph/frame_graph_renderpass.h"
 
 namespace MongooseVK
 {
     class VulkanBuffer;
 
-    class SSAOPass final : public FrameGraphRenderPass {
+    class SSAOPass final : public FrameGraph::FrameGraphRenderPass {
     public:
         struct SSAOBuffer {
             glm::vec4 samples[64];

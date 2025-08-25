@@ -148,8 +148,7 @@ namespace MongooseVK
         imageResource.format = ImageFormat::RGBA32_SFLOAT;
 
         ssaoNoiseTextureHandle = device->CreateTexture({
-            .width = imageResource.width,
-            .height = imageResource.height,
+            .resolution = {imageResource.width, imageResource.height},
             .format = imageResource.format,
             .data = imageResource.data,
             .size = imageResource.size,

@@ -18,15 +18,15 @@ namespace MongooseVK
         lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f))
     };
 
-    IrradianceMapPass::IrradianceMapPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution): FrameGraphRenderPass(
-        vulkanDevice, _resolution)
+    IrradianceMapPass::IrradianceMapPass(VulkanDevice* vulkanDevice): FrameGraphRenderPass(
+        vulkanDevice, {32, 32})
     {
         cubeMesh = ResourceManager::LoadMesh(device, "resources/models/cube.obj");
     }
 
     void IrradianceMapPass::CreateFramebuffer()
     {
-        TextureHandle outputHandle = outputs[0].resource.resourceInfo.texture.textureHandle;
+        TextureHandle outputHandle = outputs[0].resource->textureHandle;
         VulkanTexture* outputTexture = device->GetTexture(outputHandle);
 
         std::vector<FramebufferHandle> iblIrradianceFramebuffes;

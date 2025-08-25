@@ -107,8 +107,7 @@ namespace MongooseVK
         LOG_INFO("Load Texture: " + textureImagePath);
         const ImageResource imageResource = LoadImageResource(textureImagePath);
         const TextureHandle textureHandle = device->CreateTexture({
-            .width = imageResource.width,
-            .height = imageResource.height,
+            .resolution = {imageResource.width, imageResource.height},
             .format = imageResource.format,
             .data = imageResource.data,
             .size = imageResource.size,
@@ -172,8 +171,7 @@ namespace MongooseVK
 
         Bitmap cubemapBitmap = LoadHDRCubeMapBitmap(device, skyboxPath);
         const TextureCreateInfo textureCreateInfo = {
-            .width = cubemapBitmap.width,
-            .height = cubemapBitmap.height,
+            .resolution = {cubemapBitmap.width, cubemapBitmap.height},
             .format = ImageFormat::RGBA32_SFLOAT,
             .addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
             .arrayLayers = 6,

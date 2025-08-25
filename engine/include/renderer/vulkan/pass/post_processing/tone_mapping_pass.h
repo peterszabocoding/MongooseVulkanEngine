@@ -1,10 +1,10 @@
 #pragma once
-#include <renderer/frame_graph.h>
+#include "renderer/frame_graph/frame_graph_renderpass.h"
 #include "renderer/vulkan/vulkan_mesh.h"
 
 namespace MongooseVK
 {
-    class ToneMappingPass final : public FrameGraphRenderPass {
+    class ToneMappingPass final : public FrameGraph::FrameGraphRenderPass {
     public:
         struct ToneMappingParams {
             float exposure = 1.0;

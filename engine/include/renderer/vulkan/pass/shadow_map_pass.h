@@ -1,14 +1,16 @@
 #pragma once
 
-#include <renderer/frame_graph.h>
+#include "renderer/frame_graph/frame_graph.h"
 
 #include "renderer/scene.h"
+
+#include "renderer/frame_graph/frame_graph_renderpass.h"
 
 namespace MongooseVK
 {
     constexpr uint32_t SHADOW_MAP_RESOLUTION = 4096;
 
-    class ShadowMapPass final : public FrameGraphRenderPass {
+    class ShadowMapPass final : public FrameGraph::FrameGraphRenderPass {
     public:
         explicit ShadowMapPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution);
         ~ShadowMapPass() override = default;

@@ -1,11 +1,11 @@
 #pragma once
-#include <renderer/frame_graph.h>
+#include "renderer/frame_graph/frame_graph_renderpass.h"
 
 namespace MongooseVK
 {
-    class PrefilterMapPass final: public FrameGraphRenderPass {
+    class PrefilterMapPass final: public FrameGraph::FrameGraphRenderPass {
     public:
-        PrefilterMapPass(VulkanDevice* vulkanDevice, const VkExtent2D& _resolution);
+        PrefilterMapPass(VulkanDevice* vulkanDevice);
 
         virtual void Init() override;
         virtual void CreateFramebuffer() override;
@@ -23,7 +23,7 @@ namespace MongooseVK
         Ref<VulkanMesh> cubeMesh;
 
         float roughness = 0.0f;
-        TextureHandle cubemapTextureHandle;
-        TextureHandle targetTexture;
+        TextureHandle cubemapTextureHandle = INVALID_TEXTURE_HANDLE;
+        TextureHandle targetTexture = INVALID_TEXTURE_HANDLE;
     };
 }

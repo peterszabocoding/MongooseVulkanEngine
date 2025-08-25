@@ -58,8 +58,7 @@ namespace MongooseVK
     };
 
     struct TextureCreateInfo {
-        uint32_t width;
-        uint32_t height;
+        VkExtent2D resolution;
         ImageFormat format;
 
         void* data = nullptr;
