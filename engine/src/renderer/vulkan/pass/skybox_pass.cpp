@@ -3,7 +3,6 @@
 #include <renderer/vulkan/vulkan_framebuffer.h>
 #include <renderer/vulkan/vulkan_mesh.h>
 
-#include "renderer/shader_cache.h"
 #include "renderer/vulkan/vulkan_pipeline.h"
 #include "resource/resource_manager.h"
 #include "util/log.h"

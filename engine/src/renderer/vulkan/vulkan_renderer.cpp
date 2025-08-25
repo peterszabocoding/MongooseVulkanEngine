@@ -5,13 +5,10 @@
 #include <renderer/vulkan/vulkan_utils.h>
 #include <renderer/vulkan/pass/gbufferPass.h>
 #include <renderer/vulkan/pass/infinite_grid_pass.h>
-#include <renderer/vulkan/pass/lighting_pass.h>
 #include <renderer/vulkan/pass/shadow_map_pass.h>
 #include <renderer/vulkan/pass/skybox_pass.h>
-#include <renderer/vulkan/pass/ui_pass.h>
 #include <renderer/vulkan/pass/lighting/brdf_lut_pass.h>
-#include <renderer/vulkan/pass/post_processing/ssao_pass.h>
-#include <renderer/vulkan/pass/post_processing/tone_mapping_pass.h>
+
 #include <util/thread_pool.h>
 #include <util/timer.h>
 
@@ -73,22 +70,22 @@ namespace MongooseVK
             // BRDF LUT pass
             {
                 brdfLutPass->Reset();
-                brdfLutPass->AddOutput({
-                    .resource = brdfLUT,
-                    .loadOp = RenderPassOperation::LoadOp::Clear,
-                    .storeOp = RenderPassOperation::StoreOp::Store
-                });
+                brdfLutPass->AddOutput(brdfLUT, {
+                                           FrameGraph::ResourceUsage::Access::Write,
+                                           FrameGraph::ResourceUsage::Type::Texture,
+                                           FrameGraph::ResourceUsage::Usage::ColorAttachment
+                                       });
                 brdfLutPass->Init();
             }
 
             // Prefilter map pass
             {
                 prefilterPass->Reset();
-                prefilterPass->AddOutput({
-                    .resource = prefilteredMap,
-                    .loadOp = RenderPassOperation::LoadOp::Clear,
-                    .storeOp = RenderPassOperation::StoreOp::Store
-                });
+                prefilterPass->AddOutput(prefilteredMap, {
+                                             FrameGraph::ResourceUsage::Access::Write,
+                                             FrameGraph::ResourceUsage::Type::Texture,
+                                             FrameGraph::ResourceUsage::Usage::ColorAttachment
+                                         });
                 prefilterPass->SetCubemapTexture(sceneGraph->skyboxTexture);
                 prefilterPass->Init();
             }
@@ -96,11 +93,14 @@ namespace MongooseVK
             // Irradiance map pass
             {
                 irradiancePass->Reset();
-                irradiancePass->AddOutput({
-                    .resource = irradianceMap,
-                    .loadOp = RenderPassOperation::LoadOp::Clear,
-                    .storeOp = RenderPassOperation::StoreOp::Store
-                });
+                FrameGraph::ResourceUsage usage;
+
+                irradiancePass->AddOutput(irradianceMap, {
+                                              FrameGraph::ResourceUsage::Access::Write,
+                                              FrameGraph::ResourceUsage::Type::Texture,
+                                              FrameGraph::ResourceUsage::Usage::ColorAttachment
+                                          });
+
                 irradiancePass->SetCubemapTexture(sceneGraph->skyboxTexture);
                 irradiancePass->Init();
             }
@@ -130,6 +130,18 @@ namespace MongooseVK
         CalculateIBL();
 
         frameGraph->Compile(renderResolution);
+
+        frameGraph->AddPass<SkyboxPass::Data>("SkyboxPass", [&](FrameGraph::PassBuilder& builder, SkyboxPass::Data& params) {
+                                                  params.cubeMesh = ResourceManager::LoadMesh(device, "resources/models/cube.obj");
+
+                                                  TextureCreateInfo info{};
+                                                  info.resolution = builder.GetResolution();
+                                                  info.format = ImageFormat::RGBA16_SFLOAT;
+
+                                                  builder.CreateTexture("hdr_image", info);
+                                                  builder.Write("hdr_image");
+                                              }, [&](VkCommandBuffer cmd, const SkyboxPass::Data& data,
+                                                     const FrameGraph::RenderPassContext& ctx) {});
 
         isSceneLoaded = true;
     }
@@ -286,7 +298,7 @@ namespace MongooseVK
 
             FrameGraph::FrameGraphResourceCreate inputCreation{};
             inputCreation.name = "lights_buffer";
-            inputCreation.type = FrameGraph::FrameGraphResourceType::Buffer;
+            inputCreation.type = FrameGraph::ResourceUsage::Type::Buffer;
             inputCreation.bufferCreateInfo = bufferCreateInfo;
 
             lightBuffer = CreateFrameGraphBufferResource(inputCreation.name, inputCreation.bufferCreateInfo);
@@ -302,7 +314,7 @@ namespace MongooseVK
 
             FrameGraph::FrameGraphResourceCreate inputCreation{};
             inputCreation.name = "camera_buffer";
-            inputCreation.type = FrameGraph::FrameGraphResourceType::Buffer;
+            inputCreation.type = FrameGraph::ResourceUsage::Type::Buffer;
             inputCreation.bufferCreateInfo = bufferCreateInfo;
 
             cameraBuffer = CreateFrameGraphBufferResource(inputCreation.name, inputCreation.bufferCreateInfo);
@@ -317,7 +329,7 @@ namespace MongooseVK
 
             FrameGraph::FrameGraphResourceCreate inputCreation{};
             inputCreation.name = "brdflut_texture";
-            inputCreation.type = FrameGraph::FrameGraphResourceType::Texture;
+            inputCreation.type = FrameGraph::ResourceUsage::Type::Texture;
             inputCreation.textureInfo = textureCreateInfo;
 
             brdfLUT = CreateFrameGraphTextureResource(inputCreation.name, inputCreation.textureInfo);
@@ -337,7 +349,7 @@ namespace MongooseVK
 
             FrameGraph::FrameGraphResourceCreate inputCreation{};
             inputCreation.name = "prefilter_map_texture";
-            inputCreation.type = FrameGraph::FrameGraphResourceType::Texture;
+            inputCreation.type = FrameGraph::ResourceUsage::Type::Texture;
             inputCreation.textureInfo = textureCreateInfo;
 
             prefilteredMap = CreateFrameGraphTextureResource(inputCreation.name, inputCreation.textureInfo);
@@ -356,7 +368,7 @@ namespace MongooseVK
 
             FrameGraph::FrameGraphResourceCreate inputCreation{};
             inputCreation.name = "irradiance_map_texture";
-            inputCreation.type = FrameGraph::FrameGraphResourceType::Texture;
+            inputCreation.type = FrameGraph::ResourceUsage::Type::Texture;
             inputCreation.textureInfo = textureCreateInfo;
 
             irradianceMap = CreateFrameGraphTextureResource(inputCreation.name, inputCreation.textureInfo);
@@ -368,9 +380,9 @@ namespace MongooseVK
     {
         FrameGraph::FrameGraphResource* graphResource = new FrameGraph::FrameGraphResource();
         graphResource->name = resourceName;
-        graphResource->type = FrameGraph::FrameGraphResourceType::Texture;
+        graphResource->type = FrameGraph::ResourceUsage::Type::Texture;
         graphResource->textureInfo = createInfo;
-        graphResource->textureHandle =  device->CreateTexture(createInfo);
+        graphResource->textureHandle = device->CreateTexture(createInfo);
 
         return graphResource;
     }
@@ -380,7 +392,7 @@ namespace MongooseVK
     {
         FrameGraph::FrameGraphResource* graphResource = new FrameGraph::FrameGraphResource();
         graphResource->name = resourceName;
-        graphResource->type = FrameGraph::FrameGraphResourceType::Buffer;
+        graphResource->type = FrameGraph::ResourceUsage::Type::Buffer;
         graphResource->allocatedBuffer = device->CreateBuffer(
             createInfo.size,
             createInfo.usageFlags,

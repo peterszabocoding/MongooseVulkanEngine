@@ -10,7 +10,6 @@ namespace MongooseVK
 
         virtual void CreateFramebuffer() override;
         virtual void Render(VkCommandBuffer commandBuffer, SceneGraph* scene) override;
-        virtual void Resize(VkExtent2D _resolution) override;
 
         void SetFaceIndex(uint8_t index);
         void SetCubemapTexture(TextureHandle cubemapTexture);

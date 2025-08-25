@@ -7,6 +7,11 @@ namespace MongooseVK
 {
     class SkyboxPass final : public FrameGraph::FrameGraphRenderPass {
     public:
+        struct Data {
+            Ref<VulkanMesh> cubeMesh;
+        };
+
+    public:
         SkyboxPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution);
         ~SkyboxPass() override = default;
 

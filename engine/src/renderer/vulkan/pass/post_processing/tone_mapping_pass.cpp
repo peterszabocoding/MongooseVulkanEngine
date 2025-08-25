@@ -41,11 +41,6 @@ namespace MongooseVK
         renderPass->End(commandBuffer);
     }
 
-    void ToneMappingPass::Resize(VkExtent2D _resolution)
-    {
-        FrameGraphRenderPass::Resize(_resolution);
-    }
-
     void ToneMappingPass::LoadPipeline(PipelineCreateInfo& pipelineCreate)
     {
         pipelineCreate.name = "ToneMappingPass";

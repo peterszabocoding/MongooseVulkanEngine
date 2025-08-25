@@ -14,7 +14,7 @@ namespace MongooseVK
 
     void ShadowMapPass::CreateFramebuffer()
     {
-        const TextureHandle outputTextureHandle = outputs[0].resource->textureHandle;
+        const TextureHandle outputTextureHandle = outputs[0].first->textureHandle;
         const VulkanTexture* outputTexture = device->GetTexture(outputTextureHandle);
 
         for (uint32_t i = 0; i < outputTexture->createInfo.arrayLayers; i++)

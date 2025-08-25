@@ -79,8 +79,8 @@ namespace MongooseVK
     };
 
     struct AllocatedBuffer {
-        VkBuffer buffer;
-        VmaAllocation allocation;
+        VkBuffer buffer = VK_NULL_HANDLE;
+        VmaAllocation allocation = VK_NULL_HANDLE;
         VmaAllocationInfo info;
         VkDeviceAddress address;
 

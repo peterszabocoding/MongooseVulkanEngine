@@ -26,7 +26,7 @@ namespace MongooseVK
 
     void IrradianceMapPass::CreateFramebuffer()
     {
-        TextureHandle outputHandle = outputs[0].resource->textureHandle;
+        TextureHandle outputHandle = outputs[0].first->textureHandle;
         VulkanTexture* outputTexture = device->GetTexture(outputHandle);
 
         std::vector<FramebufferHandle> iblIrradianceFramebuffes;
@@ -76,11 +76,6 @@ namespace MongooseVK
 
             GetRenderPass()->End(commandBuffer);
         }
-    }
-
-    void IrradianceMapPass::Resize(VkExtent2D _resolution)
-    {
-        FrameGraphRenderPass::Resize(_resolution);
     }
 
     void IrradianceMapPass::LoadPipeline(PipelineCreateInfo& pipelineCreate)

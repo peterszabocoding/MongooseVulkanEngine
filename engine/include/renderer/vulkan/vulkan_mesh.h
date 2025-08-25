@@ -38,9 +38,12 @@ namespace MongooseVK
 
         std::vector<VulkanMeshlet>& GetMeshlets() { return meshlets; }
 
-    private:
-        AllocatedBuffer CreateVertexBuffer(const std::vector<Vertex>& vertices);
-        AllocatedBuffer CreateIndexBuffer(const std::vector<uint32_t>& indices);
+        static VulkanMeshlet MakeMeshlet(VulkanDevice* device,
+                                         const std::vector<Vertex>& vertices,
+                                         const std::vector<uint32_t>& indices, MaterialHandle materialHandle = INVALID_MATERIAL_HANDLE);
+
+        static AllocatedBuffer CreateVertexBuffer(VulkanDevice* device, const std::vector<Vertex>& vertices);
+        static AllocatedBuffer CreateIndexBuffer(VulkanDevice* device, const std::vector<uint32_t>& indices);
 
     private:
         VulkanDevice* vulkanDevice;

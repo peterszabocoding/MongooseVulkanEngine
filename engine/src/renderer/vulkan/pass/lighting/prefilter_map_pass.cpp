@@ -29,7 +29,7 @@ namespace MongooseVK
 
     void PrefilterMapPass::CreateFramebuffer()
     {
-        const TextureHandle outputTextureHandle = outputs[0].resource->textureHandle;
+        const TextureHandle outputTextureHandle = outputs[0].first->textureHandle;
         const VulkanTexture* outputTexture = device->GetTexture(outputTextureHandle);
 
         for (unsigned int mip = 0; mip < PREFILTER_MIP_LEVELS; ++mip)
@@ -92,11 +92,6 @@ namespace MongooseVK
                 GetRenderPass()->End(commandBuffer);
             }
         }
-    }
-
-    void PrefilterMapPass::Resize(VkExtent2D _resolution)
-    {
-        FrameGraphRenderPass::Resize(_resolution);
     }
 
     void PrefilterMapPass::SetCubemapTexture(TextureHandle _cubemapTextureHandle)

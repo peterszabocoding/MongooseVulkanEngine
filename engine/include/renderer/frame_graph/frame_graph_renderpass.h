@@ -16,15 +16,12 @@ namespace MongooseVK
             virtual void Init();
             virtual void Reset();
             virtual void Resize(VkExtent2D _resolution);
-
-            virtual void PreRender(VkCommandBuffer commandBuffer, SceneGraph* scene) {}
             virtual void Render(VkCommandBuffer commandBuffer, SceneGraph* scene) {}
-            virtual void OnResolutionChanged(const uint32_t width, const uint32_t height) {}
 
             VulkanRenderPass* GetRenderPass() const;
 
-            void AddOutput(const FrameGraphNodeOutput& output);
-            void AddInput(const FrameGraphResource& input);
+            void AddInput(FrameGraphResource* input);
+            void AddOutput(FrameGraphResource* output, ResourceUsage usage);
 
         protected:
             virtual void LoadPipeline(PipelineCreateInfo& pipelineCreate) = 0;
@@ -46,8 +43,8 @@ namespace MongooseVK
             DescriptorSetLayoutHandle passDescriptorSetLayoutHandle = INVALID_DESCRIPTOR_SET_LAYOUT_HANDLE;
             VkDescriptorSet passDescriptorSet = VK_NULL_HANDLE;
 
-            std::vector<FrameGraphResource> inputs;
-            std::vector<FrameGraphNodeOutput> outputs;
+            std::vector<FrameGraphResource*> inputs;
+            std::vector<std::pair<FrameGraphResource*, ResourceUsage>> outputs;
         };
     }
 }

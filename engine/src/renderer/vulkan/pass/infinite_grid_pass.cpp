@@ -25,7 +25,6 @@ namespace MongooseVK
         drawCommandParams.meshlet = &screenRect->GetMeshlets()[0];
         drawCommandParams.pushConstantParams.data = &gridParams;
         drawCommandParams.pushConstantParams.size = sizeof(GridParams);
-
         drawCommandParams.pipelineHandle = pipelineHandle;
         drawCommandParams.descriptorSets = {
             device->bindlessTextureDescriptorSet,

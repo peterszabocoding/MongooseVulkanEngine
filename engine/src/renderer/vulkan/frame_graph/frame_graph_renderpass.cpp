@@ -1,5 +1,6 @@
 #include "renderer/frame_graph/frame_graph_renderpass.h"
 
+#include <ranges>
 #include <renderer/vulkan/vulkan_descriptor_writer.h>
 #include <renderer/vulkan/vulkan_image.h>
 #include <renderer/vulkan/vulkan_texture.h>
@@ -76,12 +77,13 @@ namespace MongooseVK
             return device->renderPassPool.Get(renderPassHandle.handle);
         }
 
-        void FrameGraphRenderPass::AddOutput(const FrameGraphNodeOutput& output)
+        void FrameGraphRenderPass::AddOutput(FrameGraphResource* output, ResourceUsage usage)
         {
-            outputs.push_back(output);
+            outputs.push_back({output, usage});
         }
 
-        void FrameGraphRenderPass::AddInput(const FrameGraphResource& input)
+
+        void FrameGraphRenderPass::AddInput(FrameGraphResource* input)
         {
             inputs.push_back(input);
         }
@@ -90,17 +92,19 @@ namespace MongooseVK
         {
             VulkanRenderPass::RenderPassConfig renderpassConfig{};
 
-            for (const auto& output: outputs)
+            for (const auto& [resource, usage]: outputs)
             {
-                if (output.resource->type == FrameGraphResourceType::Buffer) continue;
+                if (resource->type == ResourceUsage::Type::Buffer) continue;
 
-                const ImageFormat format = output.resource->textureInfo.format;
+                const ImageFormat format = resource->textureInfo.format;
                 if (!IsDepthFormat(format))
                 {
                     renderpassConfig.AddColorAttachment({
                         .imageFormat = format,
-                        .loadOp = output.loadOp,
-                        .storeOp = output.storeOp,
+                        .loadOp = usage.access == ResourceUsage::Access::Write
+                                      ? RenderPassOperation::LoadOp::Clear
+                                      : RenderPassOperation::LoadOp::Load,
+                        .storeOp = RenderPassOperation::StoreOp::Store,
                         .initialLayout = ImageUtils::GetLayoutFromFormat(format),
                         .finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                     });
@@ -108,7 +112,9 @@ namespace MongooseVK
                 {
                     renderpassConfig.AddDepthAttachment({
                         .depthFormat = format,
-                        .loadOp = output.loadOp,
+                        .loadOp = usage.access == ResourceUsage::Access::Write
+                                      ? RenderPassOperation::LoadOp::Clear
+                                      : RenderPassOperation::LoadOp::Load,
                     });
                 }
             }
@@ -119,17 +125,14 @@ namespace MongooseVK
         void FrameGraphRenderPass::CreatePipeline()
         {
             PipelineCreateInfo pipelineCreate{};
-
             LoadPipeline(pipelineCreate);
 
             if (pipelineCreate.name == "" || pipelineCreate.vertexShaderPath == "" || pipelineCreate.fragmentShaderPath == "") return;
 
             LOG_TRACE(pipelineCreate.name);
-            for (const auto& output: outputs)
+            for (const auto& resource: outputs | std::views::keys)
             {
-                if (output.resource->type == FrameGraphResourceType::Buffer) continue;
-
-                ImageFormat format = output.resource->textureInfo.format;
+                ImageFormat format = resource->textureInfo.format;
                 if (!IsDepthFormat(format))
                     pipelineCreate.colorAttachments.push_back(format);
                 else
@@ -146,7 +149,7 @@ namespace MongooseVK
 
             for (uint32_t i = 0; i < inputs.size(); i++)
             {
-                const DescriptorSetBindingType type = inputs[i].type == FrameGraphResourceType::Buffer
+                const DescriptorSetBindingType type = inputs[i]->type == ResourceUsage::Type::Buffer
                                                           ? DescriptorSetBindingType::UniformBuffer
                                                           : DescriptorSetBindingType::TextureSampler;
                 descriptorSetLayoutBuilder.AddBinding({i, type, {ShaderStage::VertexShader, ShaderStage::FragmentShader}});
@@ -157,19 +160,19 @@ namespace MongooseVK
                                                               device->GetShaderDescriptorPool());
             for (uint32_t i = 0; i < inputs.size(); i++)
             {
-                if (inputs[i].type == FrameGraphResourceType::Buffer)
+                if (inputs[i]->type == ResourceUsage::Type::Buffer)
                 {
                     VkDescriptorBufferInfo bufferInfo{};
-                    bufferInfo.buffer = inputs[i].allocatedBuffer.buffer;
+                    bufferInfo.buffer = inputs[i]->allocatedBuffer.buffer;
                     bufferInfo.offset = 0;
-                    bufferInfo.range = inputs[i].allocatedBuffer.info.size;
+                    bufferInfo.range = inputs[i]->allocatedBuffer.info.size;
 
                     descriptorSetWriter.WriteBuffer(i, bufferInfo);
                 }
 
-                if (inputs[i].type == FrameGraphResourceType::Texture)
+                if (inputs[i]->type == ResourceUsage::Type::Texture)
                 {
-                    const VulkanTexture* texture = device->GetTexture(inputs[i].textureHandle);
+                    const VulkanTexture* texture = device->GetTexture(inputs[i]->textureHandle);
                     const ImageFormat format = texture->createInfo.format;
 
                     VkDescriptorImageInfo imageInfo{};
@@ -196,9 +199,9 @@ namespace MongooseVK
                 .resolution = resolution,
             };
 
-            for (const auto& output: outputs)
+            for (const auto& resource: outputs | std::views::keys)
             {
-                const TextureHandle outputTextureHandle = output.resource->textureHandle;
+                const TextureHandle outputTextureHandle = resource->textureHandle;
                 framebufferCreateInfo.attachments.push_back({.textureHandle = outputTextureHandle});
             }
 

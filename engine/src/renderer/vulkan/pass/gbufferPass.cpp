@@ -5,9 +5,7 @@
 #include <renderer/vulkan/vulkan_framebuffer.h>
 #include <renderer/vulkan/vulkan_mesh.h>
 
-#include "renderer/shader_cache.h"
 #include "renderer/vulkan/vulkan_pipeline.h"
-#include "util/log.h"
 
 namespace MongooseVK
 {
@@ -52,11 +50,6 @@ namespace MongooseVK
         }
 
         GetRenderPass()->End(commandBuffer);
-    }
-
-    void GBufferPass::Resize(VkExtent2D _resolution)
-    {
-        FrameGraphRenderPass::Resize(_resolution);
     }
 
     void GBufferPass::LoadPipeline(PipelineCreateInfo& pipelineCreate)

@@ -29,17 +29,11 @@ namespace MongooseVK
         GetRenderPass()->End(commandBuffer);
     }
 
-    void BrdfLUTPass::Resize(VkExtent2D _resolution)
-    {
-        FrameGraphRenderPass::Resize(_resolution);
-    }
-
     void BrdfLUTPass::LoadPipeline(PipelineCreateInfo& pipelineCreate)
     {
         pipelineCreate.name = "BrdfLUTPass";
         pipelineCreate.vertexShaderPath = "brdf.vert";
         pipelineCreate.fragmentShaderPath = "brdf.frag";
-
         pipelineCreate.cullMode = PipelineCullMode::Front;
         pipelineCreate.enableDepthTest = false;
     }

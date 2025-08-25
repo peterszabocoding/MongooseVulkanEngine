@@ -13,7 +13,6 @@ namespace MongooseVK
         ~GBufferPass() override = default;
 
         virtual void Render(VkCommandBuffer commandBuffer, SceneGraph* scene) override;
-        virtual void Resize(VkExtent2D _resolution) override;
 
     protected:
         virtual void LoadPipeline(PipelineCreateInfo& pipelineCreate) override;

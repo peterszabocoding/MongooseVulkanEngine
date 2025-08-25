@@ -207,7 +207,7 @@ namespace MongooseVK
         CreateSyncObjects();
     }
 
-    VkResult VulkanDevice::SubmitDrawCommands(VkSemaphore* signalSemaphores) const
+    VkResult VulkanDevice::SubmitDrawCommands(const VkSemaphore* signalSemaphores) const
     {
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -402,7 +402,7 @@ namespace MongooseVK
         return texturePool.Get(textureHandle.handle);
     }
 
-    void VulkanDevice::UploadTextureData(TextureHandle textureHandle, void* data, uint64_t size)
+    void VulkanDevice::UploadTextureData(TextureHandle textureHandle, const void* data, uint64_t size)
     {
         if (!data || size == 0) return;
 
@@ -447,7 +447,7 @@ namespace MongooseVK
         DestroyBuffer(stagingBuffer);
     }
 
-    void VulkanDevice::UploadCubemapTextureData(TextureHandle textureHandle, Bitmap* cubemap)
+    void VulkanDevice::UploadCubemapTextureData(TextureHandle textureHandle, const Bitmap* cubemap)
     {
         VulkanTexture* texture = GetTexture(textureHandle);
         const TextureCreateInfo info = texture->createInfo;
@@ -547,13 +547,7 @@ namespace MongooseVK
 
         material->params = params;
 
-        // Get specific params location from buffer and write into that
-        void* materialParams;
-
-        vmaMapMemory(vmaAllocator, materialBuffer.allocation, &materialParams);
-        static_cast<MaterialParams*>(materialParams)[material->index] = params;
-
-        vmaUnmapMemory(vmaAllocator, materialBuffer.allocation);
+        SetDataInBuffer(materialBuffer, &params, sizeof(MaterialParams), material->index);
 
         return {material->index};
     }
@@ -1111,6 +1105,16 @@ namespace MongooseVK
         allocatedBuffer.address = vkGetBufferDeviceAddress(device, &deviceAdressInfo);
 
         return allocatedBuffer;
+    }
+
+    void VulkanDevice::SetDataInBuffer(const AllocatedBuffer& buffer, const void* data, const uint64_t size, const uint64_t offset)
+    {
+        // Get specific params location from buffer and write into that
+        void* bufferLocation;
+
+        vmaMapMemory(vmaAllocator, buffer.allocation, &bufferLocation);
+        memcpy(static_cast<char*>(bufferLocation) + (size * offset), data, size);
+        vmaUnmapMemory(vmaAllocator, buffer.allocation);
     }
 
     void VulkanDevice::DestroyBuffer(const AllocatedBuffer& buffer)

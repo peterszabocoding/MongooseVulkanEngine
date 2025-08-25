@@ -152,15 +152,15 @@ namespace MongooseVK
 
         // Buffer management
         AllocatedBuffer CreateBuffer(uint64_t size, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage = VMA_MEMORY_USAGE_AUTO);
-
+        void SetDataInBuffer(const AllocatedBuffer& buffer, const void* data, uint64_t size, uint64_t offset);
         void CopyBuffer(const AllocatedBuffer& src, const AllocatedBuffer& dst);
         void DestroyBuffer(const AllocatedBuffer& buffer);
 
         // Texture management
         TextureHandle CreateTexture(const TextureCreateInfo& createInfo);
         VulkanTexture* GetTexture(TextureHandle textureHandle);
-        void UploadTextureData(TextureHandle textureHandle, void* data, uint64_t size);
-        void UploadCubemapTextureData(TextureHandle textureHandle, Bitmap* cubemap);
+        void UploadTextureData(TextureHandle textureHandle, const void* data, uint64_t size);
+        void UploadCubemapTextureData(TextureHandle textureHandle, const Bitmap* cubemap);
         void MakeBindlessTexture(TextureHandle textureHandle);
         void DestroyTexture(TextureHandle textureHandle);
 
@@ -202,7 +202,7 @@ namespace MongooseVK
         VkResult SetupNextFrame(VkSwapchainKHR swapchain);
         void SetViewportAndScissor(VkExtent2D extent2D) const;
 
-        VkResult SubmitDrawCommands(VkSemaphore* signalSemaphores) const;
+        VkResult SubmitDrawCommands(const VkSemaphore* signalSemaphores) const;
         VkResult PresentFrame(VkSwapchainKHR swapchain, uint32_t imageIndex, const VkSemaphore* signalSemaphores) const;
 
     public:

@@ -13,147 +13,204 @@ namespace MongooseVK
     {
         class FrameGraphRenderPass;
 
-    typedef uint32_t FrameGraphHandle;
+        typedef uint32_t FrameGraphHandle;
 
-    struct FrameGraphResourceHandle {
-        FrameGraphHandle index;
-    };
+        struct FrameGraphResourceHandle {
+            FrameGraphHandle index;
+        };
 
-    struct FrameGraphNodeHandle {
-        FrameGraphHandle index;
-    };
+        struct FrameGraphNodeHandle {
+            FrameGraphHandle index;
+        };
 
-    enum class FrameGraphResourceType: int8_t {
-        Invalid = -1,
-        Texture = 0,
-        Buffer,
-    };
+        struct ResourceUsage {
+            enum class Access { Read, Write, ReadWrite };
 
-    struct FrameGraphBufferCreateInfo {
-        uint64_t size;
-        VkBufferUsageFlags usageFlags;
-        VmaMemoryUsage memoryUsage;
-    };
+            enum class Type { Texture, Buffer };
 
-    struct FrameGraphResourceCreate {
-        const char* name;
-        FrameGraphResourceType type;
-        FrameGraphBufferCreateInfo bufferCreateInfo{};
+            enum class Usage { Sampled, Storage, ColorAttachment, DepthStencil, UniformBuffer };
 
-        TextureHandle textureHandle = INVALID_TEXTURE_HANDLE;
-        TextureCreateInfo textureInfo{};
-    };
+            Access access;
+            Type type;
+            Usage usage;
+        };
 
-    struct FrameGraphResource: PoolObject{
-        const char* name;
-        FrameGraphResourceType type;
-        AllocatedBuffer allocatedBuffer;
+        struct FrameGraphBufferCreateInfo {
+            uint64_t size;
+            VkBufferUsageFlags usageFlags;
+            VmaMemoryUsage memoryUsage;
+        };
 
-        TextureHandle textureHandle = INVALID_TEXTURE_HANDLE;
-        TextureCreateInfo textureInfo{};
+        struct FrameGraphResourceCreate {
+            const char* name;
+            ResourceUsage::Type type;
+            FrameGraphBufferCreateInfo bufferCreateInfo{};
 
-        FrameGraphNodeHandle producer;
-    };
+            TextureHandle textureHandle = INVALID_TEXTURE_HANDLE;
+            TextureCreateInfo textureInfo{};
+        };
 
-    struct FrameGraphNodeInputCreate {
-        const char* name;
-        FrameGraphResourceType type;
-        FrameGraphBufferCreateInfo bufferCreateInfo{};
+        struct RenderPassContext {
+            PipelineHandle pipeline = INVALID_PIPELINE_HANDLE;
+            RenderPassHandle renderPass = INVALID_RENDER_PASS_HANDLE;
+            std::vector<FramebufferHandle> framebuffers{};
 
-        TextureHandle textureHandle = INVALID_TEXTURE_HANDLE;
-        TextureCreateInfo textureInfo{};
-    };
+            VkExtent2D renderArea{};
 
-    struct FrameGraphNodeInput {
-        const char* name;
-        FrameGraphResourceType type;
-        FrameGraphBufferCreateInfo bufferCreateInfo{};
+            VkRenderPassBeginInfo beginInfo{}; // prefilled for convenience
+        };
 
-        TextureHandle textureHandle = INVALID_TEXTURE_HANDLE;
-        TextureCreateInfo textureInfo{};
-    };
+        struct FrameGraphPassBase {
+            friend class PassBuilder;
 
-    struct FrameGraphNodeOutputCreate {
-        FrameGraphResourceCreate resourceCreate;
-        RenderPassOperation::LoadOp loadOp;
-        RenderPassOperation::StoreOp storeOp;
-    };
+            std::string name;
+            std::function<void(VkCommandBuffer)> executeFn; // generic placeholder
 
-    struct FrameGraphNodeOutput {
-        FrameGraphResource* resource;
-        RenderPassOperation::LoadOp loadOp;
-        RenderPassOperation::StoreOp storeOp;
-    };
+            virtual ~FrameGraphPassBase() = default;
 
-    struct FrameGraphNodeCreation {
-        const char* name;
-        std::vector<FrameGraphNodeInputCreate> inputs{};
-        std::vector<FrameGraphNodeOutputCreate> outputs{};
+            virtual void Setup(PassBuilder& builder) = 0;
+            virtual void Execute(VkCommandBuffer cmd, const RenderPassContext& ctx) = 0;
 
-        bool enabled = true;
-    };
-
-    struct FrameGraphNode {
-        const char* name = nullptr;
-
-        FrameGraphRenderPass* graphRenderPass;
-
-        std::vector<FrameGraphResourceHandle> inputs;
-        std::vector<FrameGraphResourceHandle> outputs;
-
-        std::vector<FrameGraphNodeHandle> edges;
-
-        bool enabled = true;
-        int32_t refCount = 0;
-    };
-
-    class FrameGraph {
-    public:
-        FrameGraph(VulkanDevice* device);
-        ~FrameGraph() = default;
-
-        void Compile(VkExtent2D _resolution);
-        void PreRender(VkCommandBuffer cmd, SceneGraph* scene);
-        void Execute(VkCommandBuffer cmd, SceneGraph* scene);
-        void Resize(VkExtent2D newResolution);
-        void Cleanup();
+            std::vector<const char*> writeResources;
+            std::vector<const char*> readResources;
+        };
 
         template<typename T>
-        void AddRenderPass(const char* name)
-        {
-            renderPasses[name] = new T(device, resolution);
-            renderPassList.push_back(renderPasses[name]);
-        }
+        struct FrameGraphPass : FrameGraphPassBase {
+            using SetupFunc = std::function<void(PassBuilder&, T&)>;
+            using ExecuteFunc = std::function<void(VkCommandBuffer, const T&, const RenderPassContext&)>;
 
-        void AddExternalResource(const char* name, FrameGraphResource* resource);
-        FrameGraphResource* GetResource(const char* name);
+            void Setup(PassBuilder& builder) override
+            {
+                setup(builder, data);
+            }
 
+            void Execute(VkCommandBuffer cmd, const RenderPassContext& ctx) override
+            {
+                execute(cmd, data, ctx);
+            }
 
-    private:
-        FrameGraphResourceHandle CreateTextureResource(const char* resourceName, TextureCreateInfo& createInfo);
-        FrameGraphResourceHandle CreateBufferResource(const char* resourceName, FrameGraphBufferCreateInfo& createInfo);
+            T data; // user-defined per-pass data
+            SetupFunc setup;
+            ExecuteFunc execute;
+        };
 
-        void DestroyResources();
-        void InitializeRenderPasses();
-        void CreateFrameGraphOutputs();
+        struct FrameGraphResource : PoolObject {
+            const char* name;
+            ResourceUsage::Type type;
+            AllocatedBuffer allocatedBuffer;
 
-        void CreateFrameGraphTextureResource(const char* resourceName, TextureCreateInfo& createInfo);
-        void CreateFrameGraphBufferResource(const char* resourceName, FrameGraphBufferCreateInfo& createInfo);
+            TextureHandle textureHandle = INVALID_TEXTURE_HANDLE;
+            TextureCreateInfo textureInfo{};
 
-    public:
-        std::vector<FrameGraphRenderPass*> renderPassList{};
-        std::unordered_map<std::string, FrameGraphRenderPass*> renderPasses;
-        std::unordered_map<std::string, FrameGraphResourceHandle> resourceHandles;
+            FrameGraphPassBase* producer;
+            FrameGraphPassBase* lastWriter;
+            uint32_t refCount = 0;
+        };
 
-        std::unordered_map<std::string, FrameGraphResource*> renderPassResourceMap;
-        std::unordered_map<std::string, FrameGraphResource*> externalResources;
+        class PassBuilder {
+            friend class FrameGraph;
 
-    private:
-        VulkanDevice* device;
-        VkExtent2D resolution;
+        public:
+            PassBuilder(FrameGraph& fg, FrameGraphPassBase* pass): frameGraph(fg), pass(pass) {}
 
-        ObjectResourcePool<FrameGraphResource> resourcePool;
+            void CreateTexture(const char* name, TextureCreateInfo& info);
+            void CreateBuffer(const char* name, FrameGraphBufferCreateInfo& info);
 
-    };
+            void Write(const char* name);
+            void Read(const char* name);
+
+            VkExtent2D GetResolution() const;
+
+        private:
+            FrameGraph& frameGraph;
+            FrameGraphPassBase* pass;
+        };
+
+        template<typename T>
+        struct FrameGraphNode {
+            std::string name;
+            T* renderPass;
+
+            std::vector<std::string> inputs;
+            std::vector<std::pair<std::string, ResourceUsage>> outputs;
+        };
+
+        class FrameGraph {
+            friend class PassBuilder;
+
+        public:
+            FrameGraph(VulkanDevice* device);
+            ~FrameGraph() = default;
+
+            void Compile(VkExtent2D _resolution);
+            void Execute(VkCommandBuffer cmd, SceneGraph* scene);
+            void Resize(VkExtent2D newResolution);
+            void Cleanup();
+
+            template<typename T>
+            void AddRenderPass(const char* name)
+            {
+                renderPasses[name] = new T(device, resolution);
+                renderPassList.push_back(renderPasses[name]);
+            }
+
+            template<typename T, typename SetupFunc, typename ExecuteFunc>
+            FrameGraphPass<T>& AddPass(const std::string& name, SetupFunc&& setup, ExecuteFunc&& execute)
+            {
+                // Construct the pass
+                auto pass = CreateScope<FrameGraphPass<T>>();
+                pass->name = name;
+                pass->setup = std::forward<SetupFunc>(setup);
+                pass->execute = std::forward<ExecuteFunc>(execute);
+
+                // Call setup with a PassBuilder so the user can declare resources
+                PassBuilder builder(*this, pass.get());
+                pass->setup(builder, pass->data);
+
+                // Store pass in graph (ownership transfer)
+                FrameGraphPass<T>& ref = *pass;
+                passes.push_back(std::move(pass));
+
+                return ref;
+            }
+
+            void AddExternalResource(const char* name, FrameGraphResource* resource);
+            FrameGraphResource* GetResource(const char* name);
+
+        private:
+            FrameGraphResourceHandle CreateTextureResource(const char* resourceName, TextureCreateInfo& createInfo);
+            FrameGraphResourceHandle CreateBufferResource(const char* resourceName, FrameGraphBufferCreateInfo& createInfo);
+
+            void DestroyResources();
+            void InitializeRenderPasses();
+            void CreateFrameGraphOutputs();
+            RenderPassHandle CreateRenderPass(const std::vector<std::pair<FrameGraphResource*, ResourceUsage>>& outputs);
+            PipelineHandle CreatePipeline(PipelineCreateInfo pipelineCreate, RenderPassHandle renderPassHandle,
+                                          const std::vector<std::pair<FrameGraphResource*, ResourceUsage>>& outputs);
+            FramebufferHandle CreateFramebuffer(RenderPassHandle renderPassHandle,
+                                                const std::vector<std::pair<FrameGraphResource*, ResourceUsage>>& outputs);
+
+            void CreateFrameGraphTextureResource(const char* resourceName, const TextureCreateInfo& createInfo);
+            void CreateFrameGraphBufferResource(const char* resourceName, FrameGraphBufferCreateInfo& createInfo);
+
+        public:
+            std::vector<FrameGraphRenderPass*> renderPassList{};
+            std::unordered_map<std::string, FrameGraphRenderPass*> renderPasses;
+            std::unordered_map<std::string, FrameGraphResourceHandle> resourceHandles;
+
+            std::unordered_map<std::string, FrameGraphResource*> renderPassResourceMap;
+            std::unordered_map<std::string, FrameGraphResource*> externalResources;
+
+            std::unordered_map<std::string, RenderPassContext> renderContextMap;
+
+            std::vector<Scope<FrameGraphPassBase>> passes;
+
+        private:
+            VulkanDevice* device;
+            VkExtent2D resolution;
+
+            ObjectResourcePool<FrameGraphResource> resourcePool;
+        };
     }
 }
