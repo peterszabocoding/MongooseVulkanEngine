@@ -27,11 +27,6 @@ namespace MongooseVK
         cubeMesh = ResourceManager::LoadMesh(device, "resources/models/cube.obj");
     }
 
-    void PrefilterMapPass::Init()
-    {
-        FrameGraphRenderPass::Init();
-    }
-
     void PrefilterMapPass::CreateFramebuffer()
     {
         const TextureHandle outputTextureHandle = outputs[0].resource->textureHandle;

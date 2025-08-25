@@ -12,11 +12,6 @@ namespace MongooseVK
         screenRect->AddMeshlet(Primitives::RECTANGLE_VERTICES, Primitives::RECTANGLE_INDICES);
     }
 
-    void BrdfLUTPass::Init()
-    {
-        FrameGraphRenderPass::Init();
-    }
-
     void BrdfLUTPass::Render(VkCommandBuffer commandBuffer, SceneGraph* scene)
     {
         const VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandles[0]);

@@ -16,7 +16,6 @@ namespace MongooseVK
         InfiniteGridPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution);
         ~InfiniteGridPass() override = default;
 
-        virtual void Init() override;
         virtual void Render(VkCommandBuffer commandBuffer, SceneGraph* scene) override;
 
     protected:

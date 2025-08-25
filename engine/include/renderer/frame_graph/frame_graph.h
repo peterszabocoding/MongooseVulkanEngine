@@ -112,9 +112,9 @@ namespace MongooseVK
         FrameGraph(VulkanDevice* device);
         ~FrameGraph() = default;
 
-        void Init(VkExtent2D _resolution);
+        void Compile(VkExtent2D _resolution);
         void PreRender(VkCommandBuffer cmd, SceneGraph* scene);
-        void Render(VkCommandBuffer cmd, SceneGraph* scene);
+        void Execute(VkCommandBuffer cmd, SceneGraph* scene);
         void Resize(VkExtent2D newResolution);
         void Cleanup();
 

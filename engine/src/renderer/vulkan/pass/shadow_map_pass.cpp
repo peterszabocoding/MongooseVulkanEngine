@@ -12,11 +12,6 @@ namespace MongooseVK
     ShadowMapPass::ShadowMapPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution): FrameGraphRenderPass(
         vulkanDevice, VkExtent2D{SHADOW_MAP_RESOLUTION, SHADOW_MAP_RESOLUTION}) {}
 
-    void ShadowMapPass::Init()
-    {
-        FrameGraphRenderPass::Init();
-    }
-
     void ShadowMapPass::CreateFramebuffer()
     {
         const TextureHandle outputTextureHandle = outputs[0].resource->textureHandle;

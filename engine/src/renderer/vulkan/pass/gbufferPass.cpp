@@ -13,11 +13,6 @@ namespace MongooseVK
 {
     GBufferPass::GBufferPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution): FrameGraphRenderPass(vulkanDevice, _resolution) {}
 
-    void GBufferPass::Init()
-    {
-        FrameGraphRenderPass::Init();
-    }
-
     void GBufferPass::Render(VkCommandBuffer commandBuffer, SceneGraph* scene)
     {
         const VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandles[0]);
@@ -36,7 +31,6 @@ namespace MongooseVK
             for (auto& meshlet: scene->meshes[i]->GetMeshlets())
             {
                 VulkanMaterial* material = device->GetMaterial(meshlet.material);
-
 
                 if (material->params.alphaTested) continue;
 

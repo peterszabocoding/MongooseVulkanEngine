@@ -13,11 +13,6 @@ namespace MongooseVK
         screenRect->AddMeshlet(Primitives::GRID_VERTICES, Primitives::GRID_INDICES);
     }
 
-    void InfiniteGridPass::Init()
-    {
-        FrameGraphRenderPass::Init();
-    }
-
     void InfiniteGridPass::Render(VkCommandBuffer commandBuffer, SceneGraph* scene)
     {
         const VulkanFramebuffer* framebuffer = device->GetFramebuffer(framebufferHandles[0]);

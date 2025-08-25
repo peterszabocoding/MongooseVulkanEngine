@@ -129,7 +129,7 @@ namespace MongooseVK
         CreateExternalResources();
         CalculateIBL();
 
-        frameGraph->Init(renderResolution);
+        frameGraph->Compile(renderResolution);
 
         isSceneLoaded = true;
     }
@@ -268,7 +268,7 @@ namespace MongooseVK
             vulkanSwapChain->GetExtent().height != renderResolution.height)
             return;
 
-        frameGraph->Render(commandBuffer, sceneGraph);
+        frameGraph->Execute(commandBuffer, sceneGraph);
 
         PresentFrame(commandBuffer, imageIndex, frameGraph->GetResource("main_frame_color")->textureHandle);
     }
