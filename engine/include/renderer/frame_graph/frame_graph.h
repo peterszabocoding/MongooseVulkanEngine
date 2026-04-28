@@ -26,7 +26,7 @@ namespace MongooseVK
         struct ResourceUsage {
             enum class Access { Read, Write, ReadWrite };
 
-            enum class Type { Texture, Buffer };
+            enum class Type { Texture, Buffer, ImageView };
 
             enum class Usage { Sampled, Storage, ColorAttachment, DepthStencil, UniformBuffer };
 
@@ -56,6 +56,9 @@ namespace MongooseVK
             std::vector<FramebufferHandle> framebuffers{};
 
             VkExtent2D renderArea{};
+
+            DescriptorSetLayoutHandle descriptorSetLayout = INVALID_DESCRIPTOR_SET_LAYOUT_HANDLE;
+            VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
 
             VkRenderPassBeginInfo beginInfo{}; // prefilled for convenience
         };
@@ -103,6 +106,8 @@ namespace MongooseVK
             TextureHandle textureHandle = INVALID_TEXTURE_HANDLE;
             TextureCreateInfo textureInfo{};
 
+            VkImageView imageView = VK_NULL_HANDLE;
+
             FrameGraphPassBase* producer;
             FrameGraphPassBase* lastWriter;
             uint32_t refCount = 0;
@@ -114,11 +119,11 @@ namespace MongooseVK
         public:
             PassBuilder(FrameGraph& fg, FrameGraphPassBase* pass): frameGraph(fg), pass(pass) {}
 
-            void CreateTexture(const char* name, TextureCreateInfo& info);
-            void CreateBuffer(const char* name, FrameGraphBufferCreateInfo& info);
+            void CreateTexture(const char* name, TextureCreateInfo& info) const;
+            void CreateBuffer(const char* name, FrameGraphBufferCreateInfo& info) const;
 
-            void Write(const char* name);
-            void Read(const char* name);
+            void Write(const char* name) const;
+            void Read(const char* name) const;
 
             VkExtent2D GetResolution() const;
 
@@ -144,7 +149,7 @@ namespace MongooseVK
             ~FrameGraph() = default;
 
             void Compile(VkExtent2D _resolution);
-            void Execute(VkCommandBuffer cmd, SceneGraph* scene);
+            void Execute(VkCommandBuffer cmd, SceneGraph* scene) const;
             void Resize(VkExtent2D newResolution);
             void Cleanup();
 
@@ -185,11 +190,15 @@ namespace MongooseVK
             void DestroyResources();
             void InitializeRenderPasses();
             void CreateFrameGraphOutputs();
-            RenderPassHandle CreateRenderPass(const std::vector<std::pair<FrameGraphResource*, ResourceUsage>>& outputs);
-            PipelineHandle CreatePipeline(PipelineCreateInfo pipelineCreate, RenderPassHandle renderPassHandle,
-                                          const std::vector<std::pair<FrameGraphResource*, ResourceUsage>>& outputs);
+            RenderPassHandle CreateRenderPass(const std::vector<std::pair<FrameGraphResource*, ResourceUsage>>& outputs) const;
+            PipelineHandle CreatePipeline(PipelineCreateInfo& pipelineCreate, RenderPassHandle renderPassHandle,
+                                          const std::vector<std::pair<FrameGraphResource*, ResourceUsage>>& outputs) const;
             FramebufferHandle CreateFramebuffer(RenderPassHandle renderPassHandle,
-                                                const std::vector<std::pair<FrameGraphResource*, ResourceUsage>>& outputs);
+                                                const std::vector<std::pair<FrameGraphResource*, ResourceUsage>>& outputs) const;
+            DescriptorSetLayoutHandle CreateDescriptorSetLayout(const std::vector<FrameGraphResource*>& inputs) const;
+            VkDescriptorSet CreateDescriptorSet(DescriptorSetLayoutHandle descriptorSetLayoutHandle,
+                                                const std::vector<FrameGraphResource*>& inputs) const;
+            void CreateFrameGraphImageViewResource(const char* resourceName, TextureHandle textureHandle, VkImageView imageView);
 
             void CreateFrameGraphTextureResource(const char* resourceName, const TextureCreateInfo& createInfo);
             void CreateFrameGraphBufferResource(const char* resourceName, FrameGraphBufferCreateInfo& createInfo);

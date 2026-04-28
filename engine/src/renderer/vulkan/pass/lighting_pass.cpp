@@ -43,7 +43,7 @@ namespace MongooseVK
                 drawCommandParams.descriptorSets = {
                     device->bindlessTextureDescriptorSet,
                     device->materialDescriptorSet,
-                    passDescriptorSet
+                    descriptorSet
                 };
 
                 device->DrawMeshlet(drawCommandParams);
@@ -62,7 +62,7 @@ namespace MongooseVK
         pipelineCreate.descriptorSetLayouts = {
             device->bindlessTexturesDescriptorSetLayoutHandle,
             device->materialsDescriptorSetLayoutHandle,
-            passDescriptorSetLayoutHandle
+            descriptorSetLayoutHandle
         };
 
         pipelineCreate.disableBlending = false;

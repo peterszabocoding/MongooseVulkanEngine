@@ -44,16 +44,16 @@ namespace MongooseVK
             }
 
             // Descriptors
-            if (passDescriptorSetLayoutHandle != INVALID_DESCRIPTOR_SET_LAYOUT_HANDLE)
+            if (descriptorSetLayoutHandle != INVALID_DESCRIPTOR_SET_LAYOUT_HANDLE)
             {
-                device->DestroyDescriptorSetLayout(passDescriptorSetLayoutHandle);
-                passDescriptorSetLayoutHandle = INVALID_DESCRIPTOR_SET_LAYOUT_HANDLE;
+                device->DestroyDescriptorSetLayout(descriptorSetLayoutHandle);
+                descriptorSetLayoutHandle = INVALID_DESCRIPTOR_SET_LAYOUT_HANDLE;
             }
 
-            if (passDescriptorSet != VK_NULL_HANDLE)
+            if (descriptorSet != VK_NULL_HANDLE)
             {
-                vkFreeDescriptorSets(device->GetDevice(), device->GetShaderDescriptorPool().GetDescriptorPool(), 1, &passDescriptorSet);
-                passDescriptorSet = VK_NULL_HANDLE;
+                vkFreeDescriptorSets(device->GetDevice(), device->GetShaderDescriptorPool().GetDescriptorPool(), 1, &descriptorSet);
+                descriptorSet = VK_NULL_HANDLE;
             }
 
             inputs.clear();
@@ -149,14 +149,23 @@ namespace MongooseVK
 
             for (uint32_t i = 0; i < inputs.size(); i++)
             {
-                const DescriptorSetBindingType type = inputs[i]->type == ResourceUsage::Type::Buffer
-                                                          ? DescriptorSetBindingType::UniformBuffer
-                                                          : DescriptorSetBindingType::TextureSampler;
+                auto type = DescriptorSetBindingType::Unknown;
+                switch (inputs[i]->type)
+                {
+                    case ResourceUsage::Type::Buffer:
+                        type = DescriptorSetBindingType::UniformBuffer;
+                        break;
+                    case ResourceUsage::Type::Texture:
+                        type = DescriptorSetBindingType::TextureSampler;
+                        break;
+                    default:
+                        ASSERT(false, "Invalid resource type");
+                }
                 descriptorSetLayoutBuilder.AddBinding({i, type, {ShaderStage::VertexShader, ShaderStage::FragmentShader}});
             }
-            passDescriptorSetLayoutHandle = descriptorSetLayoutBuilder.Build();
+            descriptorSetLayoutHandle = descriptorSetLayoutBuilder.Build();
 
-            auto descriptorSetWriter = VulkanDescriptorWriter(*device->GetDescriptorSetLayout(passDescriptorSetLayoutHandle),
+            auto descriptorSetWriter = VulkanDescriptorWriter(*device->GetDescriptorSetLayout(descriptorSetLayoutHandle),
                                                               device->GetShaderDescriptorPool());
             for (uint32_t i = 0; i < inputs.size(); i++)
             {
@@ -175,35 +184,39 @@ namespace MongooseVK
                     const VulkanTexture* texture = device->GetTexture(inputs[i]->textureHandle);
                     const ImageFormat format = texture->createInfo.format;
 
+                    VkImageLayout layout = IsDepthFormat(format)
+                                               ? format == ImageFormat::DEPTH32
+                                                     ? VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL
+                                                     : VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
+                                               : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
                     VkDescriptorImageInfo imageInfo{};
                     imageInfo.sampler = texture->GetSampler();
                     imageInfo.imageView = texture->GetImageView();
-                    imageInfo.imageLayout = IsDepthFormat(format)
-                                                ? format == ImageFormat::DEPTH32
-                                                      ? VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL
-                                                      : VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
-                                                : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                    imageInfo.imageLayout = layout;
 
                     descriptorSetWriter.WriteImage(i, imageInfo);
                 }
             }
 
-            descriptorSetWriter.Build(passDescriptorSet);
+            descriptorSetWriter.Build(descriptorSet);
         }
 
         void FrameGraphRenderPass::CreateFramebuffer()
         {
-            FramebufferCreateInfo framebufferCreateInfo = {
-                .attachments = {},
-                .renderPassHandle = renderPassHandle,
-                .resolution = resolution,
-            };
+            FramebufferCreateInfo framebufferCreateInfo;
+            framebufferCreateInfo.renderPassHandle = renderPassHandle;
+            framebufferCreateInfo.resolution = resolution;
 
             for (const auto& resource: outputs | std::views::keys)
             {
-                const TextureHandle outputTextureHandle = resource->textureHandle;
-                framebufferCreateInfo.attachments.push_back({.textureHandle = outputTextureHandle});
+                if (resource->type == ResourceUsage::Type::Texture)
+                    framebufferCreateInfo.attachments.push_back({.textureHandle = resource->textureHandle});
+
+                if (resource->type == ResourceUsage::Type::ImageView)
+                    framebufferCreateInfo.attachments.push_back({.imageView = resource->imageView});
             }
+
 
             framebufferHandles.push_back(device->CreateFramebuffer(framebufferCreateInfo));
         }

@@ -71,7 +71,7 @@ namespace MongooseVK
                 drawCommandParams.meshlet = &cubeMesh->GetMeshlets()[0];
                 drawCommandParams.descriptorSets = {
                     device->bindlessTextureDescriptorSet,
-                    passDescriptorSet
+                    descriptorSet
                 };
 
                 PrefilterData pushConstantData;
@@ -112,7 +112,7 @@ namespace MongooseVK
 
         pipelineCreate.descriptorSetLayouts = {
             device->bindlessTexturesDescriptorSetLayoutHandle,
-            passDescriptorSetLayoutHandle,
+            descriptorSetLayoutHandle,
         };
 
         pipelineCreate.enableDepthTest = false;

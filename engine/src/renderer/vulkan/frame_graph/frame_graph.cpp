@@ -1,6 +1,7 @@
 #include "renderer/frame_graph/frame_graph.h"
 
 #include <ranges>
+#include <renderer/vulkan/vulkan_descriptor_writer.h>
 #include <renderer/vulkan/vulkan_renderer.h>
 #include <renderer/vulkan/vulkan_texture.h>
 #include <renderer/vulkan/pass/gbufferPass.h>
@@ -17,17 +18,17 @@ namespace MongooseVK
 {
     namespace FrameGraph
     {
-        void PassBuilder::CreateTexture(const char* name, TextureCreateInfo& info)
+        void PassBuilder::CreateTexture(const char* name, TextureCreateInfo& info) const
         {
             frameGraph.CreateFrameGraphTextureResource(name, info);
         }
 
-        void PassBuilder::CreateBuffer(const char* name, FrameGraphBufferCreateInfo& info)
+        void PassBuilder::CreateBuffer(const char* name, FrameGraphBufferCreateInfo& info) const
         {
             frameGraph.CreateFrameGraphBufferResource(name, info);
         }
 
-        void PassBuilder::Read(const char* name)
+        void PassBuilder::Read(const char* name) const
         {
             pass->readResources.push_back(name);
         }
@@ -37,7 +38,7 @@ namespace MongooseVK
             return frameGraph.resolution;
         }
 
-        void PassBuilder::Write(const char* name)
+        void PassBuilder::Write(const char* name) const
         {
             pass->writeResources.push_back(name);
         }
@@ -55,7 +56,7 @@ namespace MongooseVK
             InitializeRenderPasses();
         }
 
-        void FrameGraph::Execute(const VkCommandBuffer cmd, SceneGraph* scene)
+        void FrameGraph::Execute(const VkCommandBuffer cmd, SceneGraph* scene) const
         {
             for (const auto& renderPass: renderPassList)
                 renderPass->Render(cmd, scene);
@@ -270,8 +271,30 @@ namespace MongooseVK
                                                   });
             }
 
-            for (const auto& renderPass: renderPasses | std::views::values)
+            for (const auto& [name, renderPass]: renderPasses)
+            {
+                /*
+                if (name == "ShadowMapPass") continue;
+                if (name == "SSAOPass") continue;
+
+                // Build VkRenderpass
+                renderPass->renderPassHandle = CreateRenderPass(renderPass->outputs);
+
+                // Setup descriptors
+                renderPass->descriptorSetLayoutHandle = CreateDescriptorSetLayout(renderPass->inputs);
+                renderPass->descriptorSet = CreateDescriptorSet(renderPass->descriptorSetLayoutHandle, renderPass->inputs);
+
+                // Build framebuffer
+                renderPass->framebufferHandles.push_back(CreateFramebuffer(renderPass->renderPassHandle, renderPass->outputs));
+
+                // Prepare pipeline
+                PipelineCreateInfo pipelineCreateInfo{};
+                renderPass->LoadPipeline(pipelineCreateInfo);
+                renderPass->pipelineHandle = CreatePipeline(pipelineCreateInfo, renderPass->renderPassHandle, renderPass->outputs);
+                */
+
                 renderPass->Init();
+            }
         }
 
         void FrameGraph::CreateFrameGraphOutputs()
@@ -316,6 +339,14 @@ namespace MongooseVK
                 textureCreateInfo.compareOp = VK_COMPARE_OP_LESS;
 
                 CreateFrameGraphTextureResource("directional_shadow_map", textureCreateInfo);
+
+                TextureHandle textureHandle = renderPassResourceMap["directional_shadow_map"]->textureHandle;
+                VulkanTexture* shadowMap = device->GetTexture(textureHandle);
+
+                CreateFrameGraphImageViewResource("directional_shadow_map_c1", textureHandle, shadowMap->GetImageView(0));
+                CreateFrameGraphImageViewResource("directional_shadow_map_c2", textureHandle, shadowMap->GetImageView(1));
+                CreateFrameGraphImageViewResource("directional_shadow_map_c3", textureHandle, shadowMap->GetImageView(2));
+                CreateFrameGraphImageViewResource("directional_shadow_map_c4", textureHandle, shadowMap->GetImageView(3));
             }
 
             // SSAO Texture
@@ -348,7 +379,7 @@ namespace MongooseVK
             }
         }
 
-        RenderPassHandle FrameGraph::CreateRenderPass(const std::vector<std::pair<FrameGraphResource*, ResourceUsage>>& outputs)
+        RenderPassHandle FrameGraph::CreateRenderPass(const std::vector<std::pair<FrameGraphResource*, ResourceUsage>>& outputs) const
         {
             VulkanRenderPass::RenderPassConfig renderpassConfig{};
 
@@ -380,11 +411,11 @@ namespace MongooseVK
             return device->CreateRenderPass(renderpassConfig);
         }
 
-        PipelineHandle FrameGraph::CreatePipeline(PipelineCreateInfo pipelineCreate, RenderPassHandle renderPassHandle,
-                                                  const std::vector<std::pair<FrameGraphResource*, ResourceUsage>>& outputs)
+        PipelineHandle FrameGraph::CreatePipeline(PipelineCreateInfo& pipelineCreate, RenderPassHandle renderPassHandle,
+                                                  const std::vector<std::pair<FrameGraphResource*, ResourceUsage>>& outputs) const
         {
             if (pipelineCreate.name == "" || pipelineCreate.vertexShaderPath == "" || pipelineCreate.fragmentShaderPath == "")
-                ASSERT(false, "Invalid pipeline creation");
+                return INVALID_PIPELINE_HANDLE;
 
             LOG_TRACE(pipelineCreate.name);
             for (const auto& resource: outputs | std::views::keys)
@@ -401,7 +432,7 @@ namespace MongooseVK
         }
 
         FramebufferHandle FrameGraph::CreateFramebuffer(RenderPassHandle renderPassHandle,
-                                                        const std::vector<std::pair<FrameGraphResource*, ResourceUsage>>& outputs)
+                                                        const std::vector<std::pair<FrameGraphResource*, ResourceUsage>>& outputs) const
         {
             FramebufferCreateInfo framebufferCreateInfo = {
                 .attachments = {},
@@ -416,6 +447,86 @@ namespace MongooseVK
             }
 
             return device->CreateFramebuffer(framebufferCreateInfo);
+        }
+
+
+        DescriptorSetLayoutHandle FrameGraph::CreateDescriptorSetLayout(const std::vector<FrameGraphResource*>& inputs) const
+        {
+            auto descriptorSetLayoutBuilder = VulkanDescriptorSetLayoutBuilder(device);
+
+            for (uint32_t i = 0; i < inputs.size(); i++)
+            {
+                auto type = DescriptorSetBindingType::Unknown;
+                switch (inputs[i]->type)
+                {
+                    case ResourceUsage::Type::Buffer:
+                        type = DescriptorSetBindingType::UniformBuffer;
+                        break;
+                    case ResourceUsage::Type::Texture:
+                        type = DescriptorSetBindingType::TextureSampler;
+                        break;
+                    default:
+                        ASSERT(false, "Invalid resource type");
+                }
+                descriptorSetLayoutBuilder.AddBinding({i, type, {ShaderStage::VertexShader, ShaderStage::FragmentShader}});
+            }
+            return descriptorSetLayoutBuilder.Build();
+        }
+
+        VkDescriptorSet FrameGraph::CreateDescriptorSet(DescriptorSetLayoutHandle descriptorSetLayoutHandle,
+                                                        const std::vector<FrameGraphResource*>& inputs) const
+        {
+            auto descriptorSetWriter = VulkanDescriptorWriter(*device->GetDescriptorSetLayout(descriptorSetLayoutHandle),
+                                                              device->GetShaderDescriptorPool());
+            for (uint32_t i = 0; i < inputs.size(); i++)
+            {
+                if (inputs[i]->type == ResourceUsage::Type::Buffer)
+                {
+                    VkDescriptorBufferInfo bufferInfo{};
+                    bufferInfo.buffer = inputs[i]->allocatedBuffer.buffer;
+                    bufferInfo.offset = 0;
+                    bufferInfo.range = inputs[i]->allocatedBuffer.info.size;
+
+                    descriptorSetWriter.WriteBuffer(i, bufferInfo);
+                }
+
+                if (inputs[i]->type == ResourceUsage::Type::Texture)
+                {
+                    const VulkanTexture* texture = device->GetTexture(inputs[i]->textureHandle);
+                    const ImageFormat format = texture->createInfo.format;
+
+                    VkImageLayout layout = IsDepthFormat(format)
+                                               ? format == ImageFormat::DEPTH32
+                                                     ? VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL
+                                                     : VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
+                                               : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+                    VkDescriptorImageInfo imageInfo{};
+                    imageInfo.sampler = texture->GetSampler();
+                    imageInfo.imageView = texture->GetImageView();
+                    imageInfo.imageLayout = layout;
+
+                    descriptorSetWriter.WriteImage(i, imageInfo);
+                }
+            }
+
+            VkDescriptorSet descriptorSet;
+            descriptorSetWriter.Build(descriptorSet);
+
+            return descriptorSet;
+        }
+
+        void FrameGraph::CreateFrameGraphImageViewResource(const char* resourceName, const TextureHandle textureHandle,
+                                                           const VkImageView imageView)
+        {
+            FrameGraphResource* graphResource = resourcePool.Obtain();
+            graphResource->name = resourceName;
+            graphResource->type = ResourceUsage::Type::ImageView;
+            graphResource->textureHandle = textureHandle;
+            graphResource->imageView = imageView;
+
+            resourceHandles[graphResource->name] = {graphResource->index};
+            renderPassResourceMap[graphResource->name] = graphResource;
         }
 
         void FrameGraph::CreateFrameGraphTextureResource(const char* resourceName, const TextureCreateInfo& createInfo)

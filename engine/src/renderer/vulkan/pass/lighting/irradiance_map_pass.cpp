@@ -59,7 +59,7 @@ namespace MongooseVK
             drawCommandParams.pipelineHandle = pipelineHandle;
             drawCommandParams.descriptorSets = {
                 device->bindlessTextureDescriptorSet,
-                passDescriptorSet
+                descriptorSet
             };
 
             IrradiancePushConstantData pushConstantData;
@@ -86,7 +86,7 @@ namespace MongooseVK
 
         pipelineCreate.descriptorSetLayouts = {
             device->bindlessTexturesDescriptorSetLayoutHandle,
-            passDescriptorSetLayoutHandle
+            descriptorSetLayoutHandle
         };
 
         pipelineCreate.enableDepthTest = false;

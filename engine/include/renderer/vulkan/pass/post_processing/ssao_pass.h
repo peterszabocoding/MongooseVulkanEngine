@@ -9,17 +9,12 @@ namespace MongooseVK
     public:
         struct SSAOBuffer {
             glm::vec4 samples[64];
-        };
-
-        struct SSAOParams {
-            glm::vec2 resolution;
+            alignas(16)glm::vec2 resolution;
             int kernelSize = 45;
             float radius = 0.15f;
             float bias = 0.005f;
             float strength = 1.0f;
         };
-
-        struct BlurParams {};
 
     public:
         explicit SSAOPass(VulkanDevice* _device, VkExtent2D _resolution);
@@ -38,10 +33,8 @@ namespace MongooseVK
         void GenerateKernel();
 
     public:
-        SSAOParams ssaoParams;
+        SSAOBuffer ssaoParams;
 
-    private:
-        SSAOBuffer buffer;
         std::vector<glm::vec4> ssaoNoiseData;
 
         DescriptorSetLayoutHandle ssaoDescriptorSetLayout;
@@ -49,7 +42,7 @@ namespace MongooseVK
 
         TextureHandle ssaoNoiseTextureHandle;
 
-        Ref<VulkanBuffer> ssaoBuffer;
+        AllocatedBuffer ssaoBuffer;
         Scope<VulkanMesh> screenRect;
     };
 }

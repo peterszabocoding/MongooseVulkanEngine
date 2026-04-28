@@ -28,7 +28,7 @@ namespace MongooseVK
         drawCommandParams.descriptorSets = {
             device->bindlessTextureDescriptorSet,
             device->materialDescriptorSet,
-            passDescriptorSet
+            descriptorSet
         };
 
         SkyboxPushConstantData pushConstantData;
@@ -55,7 +55,7 @@ namespace MongooseVK
         pipelineCreate.descriptorSetLayouts = {
             device->bindlessTexturesDescriptorSetLayoutHandle,
             device->materialsDescriptorSetLayoutHandle,
-            passDescriptorSetLayoutHandle
+            descriptorSetLayoutHandle
         };
 
         pipelineCreate.pushConstantData.shaderStageBits = VK_SHADER_STAGE_FRAGMENT_BIT;

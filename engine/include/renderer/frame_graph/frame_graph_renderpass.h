@@ -9,6 +9,7 @@ namespace MongooseVK
     namespace FrameGraph
     {
         class FrameGraphRenderPass {
+            friend class FrameGraph;
         public:
             FrameGraphRenderPass(VulkanDevice* vulkanDevice, VkExtent2D _resolution): device(vulkanDevice), resolution(_resolution) {}
             virtual ~FrameGraphRenderPass() { FrameGraphRenderPass::Reset(); }
@@ -40,8 +41,8 @@ namespace MongooseVK
 
             std::vector<FramebufferHandle> framebufferHandles;
 
-            DescriptorSetLayoutHandle passDescriptorSetLayoutHandle = INVALID_DESCRIPTOR_SET_LAYOUT_HANDLE;
-            VkDescriptorSet passDescriptorSet = VK_NULL_HANDLE;
+            DescriptorSetLayoutHandle descriptorSetLayoutHandle = INVALID_DESCRIPTOR_SET_LAYOUT_HANDLE;
+            VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
 
             std::vector<FrameGraphResource*> inputs;
             std::vector<std::pair<FrameGraphResource*, ResourceUsage>> outputs;

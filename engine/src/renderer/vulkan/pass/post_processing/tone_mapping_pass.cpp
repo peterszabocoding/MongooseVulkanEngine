@@ -29,7 +29,7 @@ namespace MongooseVK
         drawParams.pipelineHandle = pipelineHandle;
 
         drawParams.descriptorSets = {
-            passDescriptorSet,
+            descriptorSet,
         };
 
         drawParams.pushConstantParams = {
@@ -53,7 +53,7 @@ namespace MongooseVK
         pipelineCreate.descriptorSetLayouts = {
             device->bindlessTexturesDescriptorSetLayoutHandle,
             device->materialsDescriptorSetLayoutHandle,
-            passDescriptorSetLayoutHandle
+            descriptorSetLayoutHandle
         };
 
         pipelineCreate.pushConstantData.shaderStageBits = VK_SHADER_STAGE_FRAGMENT_BIT;

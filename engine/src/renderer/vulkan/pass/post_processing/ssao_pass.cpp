@@ -30,6 +30,8 @@ namespace MongooseVK
     SSAOPass::~SSAOPass()
     {
         vkFreeDescriptorSets(device->GetDevice(), device->GetShaderDescriptorPool().GetDescriptorPool(), 1, &ssaoDescriptorSet);
+        device->DestroyBuffer(ssaoBuffer);
+        device->DestroyTexture(ssaoNoiseTextureHandle);
     }
 
     void SSAOPass::CreateDescriptors()
@@ -41,7 +43,6 @@ namespace MongooseVK
         InitDescriptorSet();
         FrameGraphRenderPass::CreateDescriptors();
     }
-
 
     void SSAOPass::Render(VkCommandBuffer commandBuffer, SceneGraph* scene)
     {
@@ -57,15 +58,11 @@ namespace MongooseVK
         drawParams.meshlet = &screenRect->GetMeshlets()[0];
         drawParams.pipelineHandle = pipelineHandle;
         drawParams.descriptorSets = {
-            passDescriptorSet,
+            descriptorSet,
             ssaoDescriptorSet,
         };
 
         ssaoParams.resolution = glm::vec2(resolution.width, resolution.height);
-        drawParams.pushConstantParams = {
-            &ssaoParams,
-            sizeof(SSAOParams)
-        };
 
         device->DrawMeshlet(drawParams);
         renderPass->End(commandBuffer);
@@ -84,37 +81,28 @@ namespace MongooseVK
         pipelineCreate.name = "SSAOPass";
         pipelineCreate.vertexShaderPath = "quad.vert";
         pipelineCreate.fragmentShaderPath = "post_processing_ssao.frag";
-
         pipelineCreate.cullMode = PipelineCullMode::Front;
-
+        pipelineCreate.enableDepthTest = false;
         pipelineCreate.descriptorSetLayouts = {
-            passDescriptorSetLayoutHandle,
+            descriptorSetLayoutHandle,
             ssaoDescriptorSetLayout,
         };
-
-        pipelineCreate.enableDepthTest = false;
-
-        pipelineCreate.pushConstantData.shaderStageBits = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-        pipelineCreate.pushConstantData.size = sizeof(SSAOParams);
     }
 
     void SSAOPass::InitDescriptorSet()
     {
-        ssaoBuffer = CreateRef<VulkanBuffer>(
-            device,
+        ssaoBuffer = device->CreateBuffer(
             sizeof(SSAOBuffer),
-            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            VMA_MEMORY_USAGE_CPU_TO_GPU);
+            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 
-        memcpy(ssaoBuffer->GetData(), &buffer, sizeof(SSAOBuffer));
+        memcpy(ssaoBuffer.GetData(), &ssaoParams, sizeof(SSAOBuffer));
 
         VkDescriptorBufferInfo bufferInfo{};
-        bufferInfo.buffer = ssaoBuffer->GetBuffer();
+        bufferInfo.buffer = ssaoBuffer.buffer;
         bufferInfo.offset = 0;
         bufferInfo.range = sizeof(SSAOBuffer);
 
-        VulkanTexture* ssaoNoiseTexture = device->texturePool.Get(ssaoNoiseTextureHandle.handle);
+        const VulkanTexture* ssaoNoiseTexture = device->texturePool.Get(ssaoNoiseTextureHandle.handle);
 
         VkDescriptorImageInfo ssaoNoiseTextureInfo{};
         ssaoNoiseTextureInfo.sampler = ssaoNoiseTexture->GetSampler();
@@ -175,7 +163,7 @@ namespace MongooseVK
             scale = lerp(0.1f, 1.0f, scale * scale);
             sample *= scale;
 
-            buffer.samples[i] = sample;
+            ssaoParams.samples[i] = sample;
         }
     }
 }
